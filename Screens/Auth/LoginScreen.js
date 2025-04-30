@@ -4,7 +4,7 @@ import React from 'react'
 const LoginScreen = () => {
     return (
         <SafeAreaView style={{ flex: 1 }}>
-            <Text>LoginScreen</Text>
+            <Text >LoginScreen</Text>
         </SafeAreaView>
     )
 }
