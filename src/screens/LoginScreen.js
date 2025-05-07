@@ -10,14 +10,11 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-  Dimensions,
 } from "react-native";
 import { useDispatch } from "react-redux";
 import { useLoginMutation } from "../redux/api/apiSlice";
 import { setCredentials } from "../redux/slices/authSlice";
-
-// Get screen dimensions for responsive design
-const { width, height } = Dimensions.get("window");
+import { CommonActions } from "@react-navigation/native";
 
 const LoginScreen = ({ navigation }) => {
   // State for form inputs
@@ -42,11 +39,15 @@ const LoginScreen = ({ navigation }) => {
     }
 
     try {
+      console.log("Giriş işlemi başlatılıyor...");
+
       // Call the login API
       const response = await login({
         userName: username.trim(),
         password: password.trim(),
       }).unwrap();
+
+      console.log("Login API yanıtı:", response);
 
       // Check if login successful
       if (response && response.isSuccess) {
@@ -58,17 +59,15 @@ const LoginScreen = ({ navigation }) => {
           })
         );
 
-        // Navigate based on user role
-        if (response.result.user.role === "landlord") {
-          // Navigate to landlord dashboard
-        } else if (response.result.user.role === "tenant") {
-          // Navigate to tenant dashboard
-        } else {
-          // Navigate to role selection
-          navigation.navigate("RoleSelection");
-        }
+        console.log("Kimlik bilgileri Redux'a kaydedildi");
+        console.log("Kullanıcı rolü:", response.result.user?.role);
+
+        // Başarılı giriş sonrası, kullanıcı rol bilgisi kontrolü
+        // Navigasyon otomatik olarak AppNavigator tarafından yapılacak
+        // Ekstra bir yönlendirme yapmaya gerek yok
       } else {
         // Show error if response is not successful
+        console.log("Giriş hatası:", response?.message);
         Alert.alert(
           "Giriş Başarısız",
           response?.message || "Kullanıcı adı veya şifre hatalı."
