@@ -15,11 +15,17 @@ import {
   Dimensions,
   ActivityIndicator,
   Alert,
+  StatusBar
 } from "react-native";
 import { useDispatch } from "react-redux";
 import { useLoginMutation } from "../redux/api/apiSlice";
 import { setCredentials } from "../redux/slices/authSlice";
 import { CommonActions } from "@react-navigation/native";
+
+const { width } = Dimensions.get("window");
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faUser, faLock, faEyeSlash, faEye } from '@fortawesome/pro-solid-svg-icons';
+import { faApple, faGoogle } from '@fortawesome/pro-regular-svg-icons';
 
 const LoginScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
