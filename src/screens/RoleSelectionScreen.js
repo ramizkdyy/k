@@ -12,7 +12,7 @@ import { setRole } from "../redux/slices/authSlice";
 import { useAssignRoleMutation } from "../redux/api/apiSlice";
 import { selectCurrentUser } from "../redux/slices/authSlice";
 
-const RoleSelectionScreen = () => {
+const RoleSelectionScreen = ({ navigation }) => {
   const [selectedRole, setSelectedRole] = useState(null);
   const dispatch = useDispatch();
   const user = useSelector(selectCurrentUser);
@@ -27,41 +27,53 @@ const RoleSelectionScreen = () => {
     }
 
     try {
+      console.log("Rol atama isteği gönderiliyor:", {
+        userName: user?.userName || user?.email || "",
+        role: selectedRole,
+      });
+
+      // Manuel olarak Redux'ta rolü güncelle (API başarısız olsa bile)
+      dispatch(setRole(selectedRole));
+      console.log("Rol Redux'a kaydedildi:", selectedRole);
+
       // Call the assignRole API
       const response = await assignRole({
-        userName: user?.userName || "",
+        userName: user?.userName || user?.email || "",
         role: selectedRole,
+        email: user?.email || "",
       }).unwrap();
+
+      console.log("API yanıtı:", response);
 
       // Check for successful response
       if (response && response.isSuccess) {
-        // Store selected role in Redux
-        dispatch(setRole(selectedRole));
-
-        Alert.alert(
-          "Başarılı",
-          `${
-            selectedRole === "landlord" ? "Ev Sahibi" : "Kiracı"
-          } rolü başarıyla seçildi`,
-          [
-            {
-              text: "Tamam",
-              onPress: () => {
-                // Navigate based on role - handled by AppNavigator
-              },
-            },
-          ]
-        );
+        console.log("API rol ataması başarılı");
       } else {
-        // Show error from API
-        Alert.alert("Hata", response?.message || "Rol seçimi başarısız oldu");
+        // API hatası olsa bile devam et, sadece log at
+        console.log("API hata mesajı (ama devam ediyoruz):", response?.message);
       }
+
+      // Rol seçimi başarılı olduğunda hemen profil oluşturma ekranına yönlendir
+      // (API başarısız olsa bile, Redux'ta rol güncellendiği için devam edebiliriz)
+      navigation.navigate("CreateProfile");
     } catch (error) {
       console.error("Role selection error:", error);
+
+      // Hata olsa bile profil oluşturmaya yönlendir çünkü Redux'ta rol ayarlandı
+      console.log(
+        "API hatası olmasına rağmen devam ediliyor - Redux'ta rol güncellendi"
+      );
+
+      // Kullanıcıya bilgi ver ama işlemi kesme
       Alert.alert(
-        "Hata",
-        error.data?.message ||
-          "Rol seçimi sırasında bir hata oluştu. Lütfen tekrar deneyin."
+        "Uyarı",
+        "Rol seçimi kaydedildi ancak sunucuyla iletişimde bir hata oluştu. İşleminize devam edebilirsiniz.",
+        [
+          {
+            text: "Devam Et",
+            onPress: () => navigation.navigate("CreateProfile"),
+          },
+        ]
       );
     }
   };
@@ -88,17 +100,18 @@ const RoleSelectionScreen = () => {
         <View className="mb-8">
           <TouchableOpacity
             className={`bg-white p-5 rounded-xl mb-4 border-2 ${
-              selectedRole === "landlord"
+              selectedRole === "EVSAHIBI"
                 ? "border-blue-500 bg-blue-50"
                 : "border-gray-200"
             }`}
-            onPress={() => setSelectedRole("landlord")}
+            onPress={() => setSelectedRole("EVSAHIBI")}
           >
             <View className="w-14 h-14 rounded-full bg-blue-50 justify-center items-center mb-4">
               <Image
                 source={require("../../assets/logo_kirax.jpg")}
-                className="w-8 h-8 tint-blue-500"
+                className="w-8 h-8"
                 resizeMode="contain"
+                style={{ tintColor: "#4A90E2" }}
               />
             </View>
             <Text className="text-xl font-bold text-gray-800 mb-2">
@@ -112,17 +125,18 @@ const RoleSelectionScreen = () => {
 
           <TouchableOpacity
             className={`bg-white p-5 rounded-xl border-2 ${
-              selectedRole === "tenant"
+              selectedRole === "KIRACI"
                 ? "border-blue-500 bg-blue-50"
                 : "border-gray-200"
             }`}
-            onPress={() => setSelectedRole("tenant")}
+            onPress={() => setSelectedRole("KIRACI")}
           >
             <View className="w-14 h-14 rounded-full bg-blue-50 justify-center items-center mb-4">
               <Image
                 source={require("../../assets/logo_kirax.jpg")}
-                className="w-8 h-8 tint-blue-500"
+                className="w-8 h-8"
                 resizeMode="contain"
+                style={{ tintColor: "#4A90E2" }}
               />
             </View>
             <Text className="text-xl font-bold text-gray-800 mb-2">Kiracı</Text>
