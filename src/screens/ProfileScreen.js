@@ -66,6 +66,11 @@ const ProfileScreen = ({ navigation }) => {
     ]);
   };
 
+  // Navigate to edit profile screen
+  const handleEditProfile = () => {
+    navigation.navigate("EditProfile");
+  };
+
   // Render loading state
   if (isLoading && !userProfile) {
     return (
@@ -145,7 +150,7 @@ const ProfileScreen = ({ navigation }) => {
 
           <TouchableOpacity
             className="mt-5 bg-blue-50 py-3 rounded-lg"
-            onPress={() => navigation.navigate("EditProfile")}
+            onPress={handleEditProfile}
           >
             <Text className="text-blue-600 font-semibold text-center">
               Profili Düzenle

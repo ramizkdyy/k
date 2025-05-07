@@ -12,8 +12,9 @@ import {
   Alert,
 } from "react-native";
 import { useDispatch } from "react-redux";
-import { useRegisterMutation } from "../redux/api/apiSlice";
+import { useRegisterMutation, useLoginMutation } from "../redux/api/apiSlice";
 import { setCredentials } from "../redux/slices/authSlice";
+import { CommonActions } from "@react-navigation/native";
 
 const RegisterScreen = ({ navigation }) => {
   // State for form inputs
@@ -29,7 +30,8 @@ const RegisterScreen = ({ navigation }) => {
 
   // Redux hooks
   const dispatch = useDispatch();
-  const [register, { isLoading }] = useRegisterMutation();
+  const [register, { isLoading: registerLoading }] = useRegisterMutation();
+  const [login, { isLoading: loginLoading }] = useLoginMutation();
 
   // Basic email validation
   const isEmailValid = (email) => {
@@ -86,6 +88,8 @@ const RegisterScreen = ({ navigation }) => {
     }
 
     try {
+      console.log("Kayıt işlemi başlatılıyor...");
+
       // Call the register API
       const response = await register({
         name: name.trim(),
@@ -97,37 +101,92 @@ const RegisterScreen = ({ navigation }) => {
         password: password.trim(),
       }).unwrap();
 
+      console.log("API yanıtı:", response);
+
       // Check if registration successful
       if (response && response.isSuccess) {
-        // Show success message
-        Alert.alert(
-          "Kayıt Başarılı",
-          "Hesabınız başarıyla oluşturuldu. Şimdi giriş yapabilirsiniz.",
-          [
-            {
-              text: "Tamam",
-              onPress: () => {
-                if (response.result && response.result.token) {
-                  // If API returns user data and token, store credentials
-                  dispatch(
-                    setCredentials({
-                      user: response.result.user,
-                      token: response.result.token,
-                    })
-                  );
+        console.log("Kayıt başarılı");
 
-                  // Navigate to role selection
-                  navigation.navigate("RoleSelection");
-                } else {
-                  // Navigate to login if no auto-login
+        // API kayıt işlemi başarılı ama token dönmediyse, otomatik olarak login yapalım
+        try {
+          console.log("Otomatik giriş yapılıyor...");
+
+          const loginResponse = await login({
+            userName: username.trim(),
+            password: password.trim(),
+          }).unwrap();
+
+          console.log("Giriş yanıtı:", loginResponse);
+
+          if (
+            loginResponse &&
+            loginResponse.isSuccess &&
+            loginResponse.result
+          ) {
+            // Store credentials in Redux
+            dispatch(
+              setCredentials({
+                user: loginResponse.result.user,
+                token: loginResponse.result.token,
+              })
+            );
+
+            console.log("Kimlik bilgileri Redux'a kaydedildi");
+
+            // React Navigation'da iç içe navigasyonda CommonActions kullanın
+            // ve doğrudan AuthNavigator'dan RoleSelection'a gitmek yerine önce "reset" yapın
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: "Login" }], // Önce Login'e geri dönün
+              })
+            );
+
+            // Başarılı mesajı gösterin
+            Alert.alert(
+              "Kayıt Başarılı",
+              "Hesabınız başarıyla oluşturuldu. Giriş yapabilirsiniz.",
+              [
+                {
+                  text: "Tamam",
+                },
+              ]
+            );
+          } else {
+            // If automatic login failed, still show success message and navigate to login
+            Alert.alert(
+              "Kayıt Başarılı",
+              "Hesabınız oluşturuldu. Şimdi giriş yapabilirsiniz.",
+              [
+                {
+                  text: "Tamam",
+                  onPress: () => {
+                    navigation.navigate("Login");
+                  },
+                },
+              ]
+            );
+          }
+        } catch (loginError) {
+          console.error("Otomatik giriş hatası:", loginError);
+
+          // Even if auto login fails, registration was successful
+          Alert.alert(
+            "Kayıt Başarılı",
+            "Hesabınız oluşturuldu. Şimdi giriş yapabilirsiniz.",
+            [
+              {
+                text: "Tamam",
+                onPress: () => {
                   navigation.navigate("Login");
-                }
+                },
               },
-            },
-          ]
-        );
+            ]
+          );
+        }
       } else {
         // Show error if response is not successful
+        console.log("Kayıt hatası:", response?.message);
         Alert.alert(
           "Kayıt Hatası",
           response?.message || "Kayıt işlemi başarısız oldu."
@@ -145,11 +204,13 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   // While API call in progress
-  if (isLoading) {
+  if (registerLoading || loginLoading) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
         <ActivityIndicator size="large" color="#4A90E2" />
-        <Text className="mt-3 text-base text-gray-500">Kayıt yapılıyor...</Text>
+        <Text className="mt-3 text-base text-gray-500">
+          {registerLoading ? "Kayıt yapılıyor..." : "Giriş yapılıyor..."}
+        </Text>
       </View>
     );
   }
@@ -272,10 +333,12 @@ const RegisterScreen = ({ navigation }) => {
           </View>
 
           <TouchableOpacity
-            className={`bg-blue-500 rounded-lg h-12 justify-center items-center mb-4 mt-2 ${isLoading ? "opacity-70" : ""
-              }`}
+
+            className={`bg-blue-500 rounded-lg h-12 justify-center items-center mb-4 mt-2 ${
+              registerLoading || loginLoading ? "opacity-70" : ""
+            }`}
             onPress={handleRegister}
-            disabled={isLoading}
+            disabled={registerLoading || loginLoading}
           >
             <Text className="text-white text-lg font-semibold">Kaydol</Text>
           </TouchableOpacity>

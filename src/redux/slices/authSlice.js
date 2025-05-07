@@ -7,7 +7,7 @@ const initialState = {
   user: null,
   token: null,
   isAuthenticated: false,
-  role: null, // 'tenant' or 'landlord'
+  role: null, // 'tenant' or 'landlord' or null
   isLoading: false,
   error: null,
 };
@@ -21,8 +21,14 @@ const authSlice = createSlice({
       state.user = user;
       state.token = token;
       state.isAuthenticated = true;
-      state.role = user.role;
+
+      // Eğer kullanıcının rolü varsa bu alanı güncelle
+      // API'den gelen kullanıcı verisinde role değeri olup olmadığını kontrol et
+      state.role = user?.role || null;
+
       state.error = null;
+
+      console.log("setCredentials çalıştı:", { user, token, role: state.role });
     },
     logout: (state) => {
       state.user = null;
@@ -36,6 +42,7 @@ const authSlice = createSlice({
       if (state.user) {
         state.user.role = action.payload;
       }
+      console.log("setRole çalıştı:", { newRole: action.payload });
     },
     setError: (state, action) => {
       state.error = action.payload;
@@ -62,8 +69,11 @@ const authSlice = createSlice({
           state.user = payload.result.user;
           state.token = payload.result.token;
           state.isAuthenticated = true;
-          state.role = payload.result.user.role;
+          state.role = payload.result.user?.role || null;
           state.error = null;
+
+          console.log("Login API yanıtı:", payload);
+          console.log("Kullanıcı rolü:", payload.result.user?.role);
         }
       }
     );
@@ -81,12 +91,18 @@ const authSlice = createSlice({
     builder.addMatcher(
       apiSlice.endpoints.register?.matchFulfilled,
       (state, { payload }) => {
+        console.log("Register API yanıtı:", payload);
         if (payload && payload.result) {
           state.user = payload.result.user;
           state.token = payload.result.token;
           state.isAuthenticated = true;
-          state.role = payload.result.user.role;
+          state.role = payload.result.user?.role || null;
           state.error = null;
+
+          console.log(
+            "Kayıt sonrası kullanıcı rolü:",
+            payload.result.user?.role
+          );
         }
       }
     );
@@ -103,9 +119,12 @@ const authSlice = createSlice({
     builder.addMatcher(
       apiSlice.endpoints.assignRole?.matchFulfilled,
       (state, { payload }) => {
+        console.log("AssignRole API yanıtı:", payload);
         if (payload && payload.result && state.user) {
           state.role = payload.result.role;
           state.user.role = payload.result.role;
+
+          console.log("Rol atama sonrası:", { role: state.role });
         }
       }
     );

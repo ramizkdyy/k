@@ -6,22 +6,23 @@ import { useSelector } from "react-redux";
 import {
   selectIsAuthenticated,
   selectUserRole,
+  selectCurrentUser,
 } from "../redux/slices/authSlice";
+import { selectUserProfile } from "../redux/slices/profileSlice";
 import { Image } from "react-native";
 
-// Import screens - Yeni Tailwind ile oluşturulmuş ekranları kullan
+// Import screens
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import RoleSelectionScreen from "../screens/RoleSelectionScreen";
+import CreateProfileScreen from "../screens/CreateProfileScreen"; // Yeni profil oluşturma ekranı
 import HomeScreen from "../screens/HomeScreen";
 import ProfileScreen from "../screens/ProfileScreen";
+import EditProfileScreen from "../screens/EditProfileScreen";
 import PostDetailScreen from "../screens/PostDetailScreen";
 
-// Daha sonra ekleyebileceğiniz diğer ekranlar için hazırlık
-// PostsScreen'i gerçek uygulama ile değiştirmek için kullanılabilir
+// Placeholder screens
 import { View, Text } from "react-native";
-
-// Placeholder screens - daha sonra bunları gerçek ekranlarla değiştirebilirsiniz
 const PostsScreen = () => (
   <View className="flex-1 justify-center items-center">
     <Text>Posts Screen</Text>
@@ -35,6 +36,7 @@ const OffersScreen = () => (
 
 // Create navigation stacks
 const AuthStack = createStackNavigator();
+const MainStack = createStackNavigator(); // Ana stack - rol seçimi için
 const LandlordStack = createStackNavigator();
 const TenantStack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -77,7 +79,49 @@ const AuthNavigator = () => {
           headerShown: false,
         }}
       />
+      <AuthStack.Screen
+        name="CreateProfile"
+        component={CreateProfileScreen}
+        options={{
+          title: "Profil Oluştur",
+          headerShown: false,
+        }}
+      />
     </AuthStack.Navigator>
+  );
+};
+
+// Rol seçimi ve profil oluşturma için navigator
+const OnboardingNavigator = () => {
+  return (
+    <MainStack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: "#4A90E2",
+        },
+        headerTintColor: "#fff",
+        headerTitleStyle: {
+          fontWeight: "bold",
+        },
+      }}
+    >
+      <MainStack.Screen
+        name="RoleSelection"
+        component={RoleSelectionScreen}
+        options={{
+          title: "Rol Seçin",
+          headerShown: false,
+        }}
+      />
+      <MainStack.Screen
+        name="CreateProfile"
+        component={CreateProfileScreen}
+        options={{
+          title: "Profil Oluştur",
+          headerShown: false,
+        }}
+      />
+    </MainStack.Navigator>
   );
 };
 
@@ -95,7 +139,6 @@ const LandlordHomeStack = () => {
         component={PostDetailScreen}
         options={{ title: "İlan Detayı" }}
       />
-      {/* Buraya diğer ilgili ekranları ekleyin */}
     </LandlordStack.Navigator>
   );
 };
@@ -113,7 +156,6 @@ const LandlordPropertiesStack = () => {
         component={PostDetailScreen}
         options={{ title: "İlan Detayı" }}
       />
-      {/* Buraya diğer ilgili ekranları ekleyin */}
     </LandlordStack.Navigator>
   );
 };
@@ -126,7 +168,6 @@ const LandlordOffersStack = () => {
         component={OffersScreen}
         options={{ title: "Gelen Teklifler" }}
       />
-      {/* Buraya diğer ilgili ekranları ekleyin */}
     </LandlordStack.Navigator>
   );
 };
@@ -139,7 +180,11 @@ const LandlordProfileStack = () => {
         component={ProfileScreen}
         options={{ headerShown: false }}
       />
-      {/* Buraya diğer ilgili ekranları ekleyin */}
+      <LandlordStack.Screen
+        name="EditProfile"
+        component={EditProfileScreen}
+        options={{ headerShown: false }}
+      />
     </LandlordStack.Navigator>
   );
 };
@@ -158,7 +203,6 @@ const TenantHomeStack = () => {
         component={PostDetailScreen}
         options={{ title: "İlan Detayı" }}
       />
-      {/* Buraya diğer ilgili ekranları ekleyin */}
     </TenantStack.Navigator>
   );
 };
@@ -176,7 +220,6 @@ const TenantPropertiesStack = () => {
         component={PostDetailScreen}
         options={{ title: "İlan Detayı" }}
       />
-      {/* Buraya diğer ilgili ekranları ekleyin */}
     </TenantStack.Navigator>
   );
 };
@@ -189,7 +232,6 @@ const TenantOffersStack = () => {
         component={OffersScreen}
         options={{ title: "Gönderilen Teklifler" }}
       />
-      {/* Buraya diğer ilgili ekranları ekleyin */}
     </TenantStack.Navigator>
   );
 };
@@ -202,7 +244,11 @@ const TenantProfileStack = () => {
         component={ProfileScreen}
         options={{ headerShown: false }}
       />
-      {/* Buraya diğer ilgili ekranları ekleyin */}
+      <TenantStack.Screen
+        name="EditProfile"
+        component={EditProfileScreen}
+        options={{ headerShown: false }}
+      />
     </TenantStack.Navigator>
   );
 };
@@ -332,15 +378,41 @@ const TenantTabNavigator = () => {
   );
 };
 
-// Main navigator that determines which navigator to show based on auth state
+// Main navigator that determines which navigator to show based on auth and profile state
 const AppNavigator = () => {
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const userRole = useSelector(selectUserRole);
+  const userProfile = useSelector(selectUserProfile);
+  const currentUser = useSelector(selectCurrentUser);
+
+  console.log("Navigation State:", {
+    isAuthenticated,
+    userRole,
+    userProfile,
+    currentUser,
+  });
+
+  // Profil durumuna göre akışı belirle
+  const hasProfile = userProfile !== null && userProfile !== undefined;
+  const shouldShowCreateProfile = isAuthenticated && userRole && !hasProfile;
+  const shouldShowRoleSelection =
+    isAuthenticated &&
+    (!userRole || userRole === "none" || userRole === null || userRole === "");
 
   return (
     <NavigationContainer>
       {!isAuthenticated ? (
         <AuthNavigator />
+      ) : shouldShowRoleSelection ? (
+        <OnboardingNavigator />
+      ) : shouldShowCreateProfile ? (
+        <MainStack.Navigator>
+          <MainStack.Screen
+            name="CreateProfile"
+            component={CreateProfileScreen}
+            options={{ headerShown: false }}
+          />
+        </MainStack.Navigator>
       ) : userRole === "landlord" ? (
         <LandlordTabNavigator />
       ) : (
