@@ -282,13 +282,7 @@ const LandlordTabNavigator = () => {
         options={{
           title: "Ana Sayfa",
           tabBarLabel: "Ana Sayfa",
-          tabBarIcon: ({ color, size }) => (
-            <Image
-              source={require("../../assets/logo_kirax.jpg")} // Ev ikonuyla değiştirin
-              style={{ width: size, height: size, tintColor: color }}
-              resizeMode="contain"
-            />
-          ),
+
         }}
       />
       <Tab.Screen
@@ -297,13 +291,7 @@ const LandlordTabNavigator = () => {
         options={{
           title: "Mülklerim",
           tabBarLabel: "Mülklerim",
-          tabBarIcon: ({ color, size }) => (
-            <Image
-              source={require("../../assets/logo_kirax.jpg")} // Mülk ikonuyla değiştirin
-              style={{ width: size, height: size, tintColor: color }}
-              resizeMode="contain"
-            />
-          ),
+
         }}
       />
       <Tab.Screen
@@ -312,13 +300,7 @@ const LandlordTabNavigator = () => {
         options={{
           title: "Teklifler",
           tabBarLabel: "Teklifler",
-          tabBarIcon: ({ color, size }) => (
-            <Image
-              source={require("../../assets/logo_kirax.jpg")} // Teklif ikonuyla değiştirin
-              style={{ width: size, height: size, tintColor: color }}
-              resizeMode="contain"
-            />
-          ),
+
         }}
       />
       <Tab.Screen
@@ -327,13 +309,7 @@ const LandlordTabNavigator = () => {
         options={{
           title: "Profil",
           tabBarLabel: "Profil",
-          tabBarIcon: ({ color, size }) => (
-            <Image
-              source={require("../../assets/logo_kirax.jpg")} // Profil ikonuyla değiştirin
-              style={{ width: size, height: size, tintColor: color }}
-              resizeMode="contain"
-            />
-          ),
+
         }}
       />
     </Tab.Navigator>
@@ -369,13 +345,7 @@ const TenantTabNavigator = () => {
         options={{
           title: "Ana Sayfa",
           tabBarLabel: "Ana Sayfa",
-          tabBarIcon: ({ color, size }) => (
-            <Image
-              source={require("../../assets/logo_kirax.jpg")} // Ev ikonuyla değiştirin
-              style={{ width: size, height: size, tintColor: color }}
-              resizeMode="contain"
-            />
-          ),
+
         }}
       />
       <Tab.Screen
@@ -384,13 +354,6 @@ const TenantTabNavigator = () => {
         options={{
           title: "İlanlar",
           tabBarLabel: "İlanlar",
-          tabBarIcon: ({ color, size }) => (
-            <Image
-              source={require("../../assets/logo_kirax.jpg")} // Arama ikonuyla değiştirin
-              style={{ width: size, height: size, tintColor: color }}
-              resizeMode="contain"
-            />
-          ),
         }}
       />
       <Tab.Screen
@@ -399,13 +362,7 @@ const TenantTabNavigator = () => {
         options={{
           title: "Tekliflerim",
           tabBarLabel: "Tekliflerim",
-          tabBarIcon: ({ color, size }) => (
-            <Image
-              source={require("../../assets/logo_kirax.jpg")} // Teklif ikonuyla değiştirin
-              style={{ width: size, height: size, tintColor: color }}
-              resizeMode="contain"
-            />
-          ),
+
         }}
       />
       <Tab.Screen
@@ -414,13 +371,7 @@ const TenantTabNavigator = () => {
         options={{
           title: "Profil",
           tabBarLabel: "Profil",
-          tabBarIcon: ({ color, size }) => (
-            <Image
-              source={require("../../assets/logo_kirax.jpg")} // Profil ikonuyla değiştirin
-              style={{ width: size, height: size, tintColor: color }}
-              resizeMode="contain"
-            />
-          ),
+
         }}
       />
     </Tab.Navigator>

@@ -82,7 +82,7 @@ const RoleSelectionScreen = ({ navigation }) => {
     <View className="flex-1 bg-gray-50 px-5">
       <View className="items-center mt-12 mb-6">
         <Image
-          source={require("../../assets/logo_kirax.jpg")}
+          source={require("../../assets/logo-kirax.png")}
           className="w-20 h-20"
           resizeMode="contain"
         />
@@ -148,9 +148,8 @@ const RoleSelectionScreen = ({ navigation }) => {
         </View>
 
         <TouchableOpacity
-          className={`h-14 rounded-lg justify-center items-center ${
-            !selectedRole || isLoading ? "bg-blue-300" : "bg-blue-500"
-          }`}
+          className={`h-14 rounded-lg justify-center items-center ${!selectedRole || isLoading ? "bg-blue-300" : "bg-blue-500"
+            }`}
           onPress={handleRoleSelection}
           disabled={!selectedRole || isLoading}
         >
