@@ -1,43 +1,72 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from 'react';
 import {
-  Text,
-  View,
-  TextInput,
-  TouchableOpacity,
-  Image,
+  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  TouchableWithoutFeedback,
   ScrollView,
+  View,
+  Text,
+  Pressable,
+  TextInput,
+  Image,
+  TouchableOpacity,
+  Keyboard,
+  Dimensions,
   ActivityIndicator,
   Alert,
-  Dimensions,
-} from "react-native";
-import { useDispatch } from "react-redux";
-import { useLoginMutation } from "../redux/api/apiSlice";
-import { setCredentials } from "../redux/slices/authSlice";
+  StatusBar
+} from 'react-native';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import {
+  faEye,
+  faEyeSlash,
 
-// Get screen dimensions for responsive design
-const { width, height } = Dimensions.get("window");
+} from '@fortawesome/pro-solid-svg-icons';
+import {
+  faUser,
+  faLock
+} from '@fortawesome/pro-regular-svg-icons';
+import { useDispatch } from 'react-redux';
+import { useLoginMutation } from '../redux/api/apiSlice';
+import { setCredentials } from '../redux/slices/authSlice';
+import { faGoogle, faApple } from '@fortawesome/free-brands-svg-icons';
+const { width } = Dimensions.get('window');
 
 const LoginScreen = ({ navigation }) => {
-  // State for form inputs
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [keyboardStatus, setKeyboardStatus] = useState(false);
+  const [errorlogin, setErrorLogin] = useState('');
 
   // Redux hooks
   const dispatch = useDispatch();
   const [login, { isLoading }] = useLoginMutation();
 
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardStatus(true);
+    });
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardStatus(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
   // Handle login button press
   const handleLogin = async () => {
     // Validate inputs
     if (!username.trim()) {
-      Alert.alert("Hata", "Lütfen kullanıcı adı giriniz.");
+      Alert.alert('Hata', 'Lütfen kullanıcı adı giriniz.');
       return;
     }
     if (!password.trim()) {
-      Alert.alert("Hata", "Lütfen şifre giriniz.");
+      Alert.alert('Hata', 'Lütfen şifre giriniz.');
       return;
     }
 
@@ -59,120 +88,195 @@ const LoginScreen = ({ navigation }) => {
         );
 
         // Navigate based on user role
-        if (response.result.user.role === "landlord") {
+        if (response.result.user.role === 'landlord') {
           // Navigate to landlord dashboard
-        } else if (response.result.user.role === "tenant") {
+        } else if (response.result.user.role === 'tenant') {
           // Navigate to tenant dashboard
         } else {
           // Navigate to role selection
-          navigation.navigate("RoleSelection");
+          navigation.navigate('RoleSelection');
         }
       } else {
         // Show error if response is not successful
-        Alert.alert(
-          "Giriş Başarısız",
-          response?.message || "Kullanıcı adı veya şifre hatalı."
-        );
+        setErrorLogin(response?.message || 'Kullanıcı adı veya şifre hatalı.');
       }
     } catch (error) {
       // Handle API call errors
-      console.error("Login error:", error);
-      Alert.alert(
-        "Giriş Hatası",
+      console.error('Login error:', error);
+      setErrorLogin(
         error.data?.message ||
-          "Giriş sırasında bir hata oluştu. Lütfen tekrar deneyin."
+        'Giriş sırasında bir hata oluştu. Lütfen tekrar deneyin.'
       );
     }
   };
 
-  // While API call in progress
+  const Shadows = {
+    shadow1: {
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 1,
+      },
+      shadowOpacity: 0.18,
+      shadowRadius: 1.00,
+      elevation: 1,
+    }
+  };
+
+  // Loading indicator while API call in progress
   if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color="#006400" />
         <Text className="mt-3 text-base text-gray-500">Giriş yapılıyor...</Text>
       </View>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-white"
-    >
-      <ScrollView className="flex-grow">
-        <View className="items-center mt-12 mb-8">
-          {/* App logo */}
-          <Image
-            source={require("../../assets/logo_kirax.jpg")}
-            className="w-40 h-40 mb-3"
-            resizeMode="contain"
-          />
-          <Text className="text-2xl font-bold text-blue-500">Kirax</Text>
-          <Text className="text-base text-gray-600 mt-1">
-            Kiralama Uygulaması
-          </Text>
-        </View>
-
-        <View className="px-5">
-          <View className="mb-5">
-            <Text className="text-base mb-2 text-gray-600">Kullanıcı Adı</Text>
-            <TextInput
-              className="h-12 bg-gray-100 rounded-lg px-4 text-base border border-gray-200"
-              placeholder="Kullanıcı adınızı giriniz"
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-          </View>
-
-          <View className="mb-5">
-            <Text className="text-base mb-2 text-gray-600">Şifre</Text>
-            <View className="flex-row items-center bg-gray-100 rounded-lg border border-gray-200">
-              <TextInput
-                className="flex-1 h-12 px-4 text-base"
-                placeholder="Şifrenizi giriniz"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-              />
-              <TouchableOpacity
-                className="px-4"
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                <Text className="text-blue-500 text-sm">
-                  {showPassword ? "Gizle" : "Göster"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <TouchableOpacity className="self-end mb-6">
-            <Text className="text-blue-500 text-sm">Şifremi Unuttum</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            className={`bg-blue-500 rounded-lg h-12 justify-center items-center mb-5 ${
-              isLoading ? "opacity-70" : ""
-            }`}
-            onPress={handleLogin}
-            disabled={isLoading}
+    <SafeAreaView className="flex-1  bg-gray-100">
+      <StatusBar barStyle="dark-content" backgroundColor="#f9fafb" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 20}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView
+            contentContainerStyle={{
+              flexGrow: 1,
+              paddingBottom: keyboardStatus ? (Platform.OS === 'ios' ? 200 : 120) : 20,
+            }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <Text className="text-white text-lg font-semibold">Giriş Yap</Text>
-          </TouchableOpacity>
+            <View className="flex-1 items-center gap-5 px-8">
+              {/* Logo - Boyutu küçültülmüş ve boşluklar azaltılmış */}
+              <View className="mt-6 mb-2">
+                <Image
+                  source={require("../../assets/logo-kirax.png")}
+                  style={{ width: width * 0.7, height: width * 0.5 }}
+                  resizeMode="contain"
+                />
 
-          <View className="flex-row justify-center mt-2">
-            <Text className="text-base text-gray-600">Hesabınız yok mu? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-              <Text className="text-base text-blue-500 font-semibold">
-                Kayıt Ol
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+              </View>
+
+              {/* Form Başlangıcı - Logodan sonra küçük boşluk */}
+
+
+              {/* Social Login Butonları */}
+              <View className="gap-2 w-full">
+                <Pressable
+                  className="rounded-[12px] bg-white overflow-hidden flex-row items-center justify-center px-4 py-3 gap-2 w-full"
+                  style={[Shadows.shadow1]}
+                  onPress={() => console.log('Apple login')}
+                >
+                  <FontAwesomeIcon icon={faApple} size={20} />
+                  <Text style={{ fontSize: 14, fontWeight: '500' }}>
+                    Apple İle Devam Et
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  className="rounded-[12px] bg-white overflow-hidden flex-row items-center justify-center px-4 py-3 gap-2 w-full"
+                  style={[Shadows.shadow1]}
+                  onPress={() => console.log('Google login')}
+                >
+                  <FontAwesomeIcon icon={faGoogle} size={20} color="#DB4437" />
+                  <Text style={{ fontSize: 14, fontWeight: '500' }}>
+                    Google İle Devam Et
+                  </Text>
+                </Pressable>
+              </View>
+
+              {/* Ayırıcı */}
+              <View className="flex flex-row items-center w-full my-2">
+                <View className="flex-1 h-[1px] bg-gray-300"></View>
+                <Text className="mx-3 text-gray-400 font-medium text-[14px]">veya</Text>
+                <View className="flex-1 h-[1px] bg-gray-300"></View>
+              </View>
+
+              {/* Form Alanları - Boşluklar minimize edilmiş */}
+              <View className="w-full gap-3">
+                <View
+                  style={[Shadows.shadow1]}
+                  className="shadow-custom flex gap-4 bg-[#ECECEC] flex-row items-center rounded-[12px] border-[2px] border-[#006400] px-4 py-3 w-full"
+                >
+                  <FontAwesomeIcon icon={faUser} size={20} color="#595959" />
+                  <TextInput
+                    placeholder='Kullanıcı Adı'
+                    className="text-gray-700 flex-1 font-semibold"
+                    placeholderTextColor={"#484848"}
+                    value={username}
+                    onChangeText={setUsername}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
+
+                <View
+                  style={[Shadows.shadow1]}
+                  className="justify-between shadow-custom flex gap-4 bg-[#ECECEC] flex-row items-center rounded-[12px] border-[2px] border-[#006400] px-4 py-3 w-full"
+                >
+                  <View className="items-center flex flex-row gap-4 flex-1">
+                    <FontAwesomeIcon icon={faLock} size={20} color="#595959" />
+                    <TextInput
+                      placeholder='Şifre'
+                      className="text-gray-700 font-semibold flex-1"
+                      placeholderTextColor={"#484848"}
+                      secureTextEntry={!showPassword}
+                      value={password}
+                      onChangeText={setPassword}
+                    />
+                  </View>
+                  <Pressable onPress={() => setShowPassword(!showPassword)}>
+                    <FontAwesomeIcon
+                      color='#595959'
+                      icon={showPassword ? faEye : faEyeSlash}
+                      size={20}
+                    />
+                  </Pressable>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("ForgotPassword")}
+                  className="self-end"
+                >
+                  <Text className="text-gray-600 underline font-medium">Şifreni mi unuttun?</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Hata Mesajı */}
+              {errorlogin ?
+                <Text className="text-red-500 text-center my-2">{errorlogin}</Text>
+                : null}
+
+              {/* Giriş Yap Butonu */}
+              <TouchableOpacity
+                className="rounded-full border-[2px] border-[#006400] items-center justify-center py-3 w-full mt-3"
+                style={[Shadows.shadow1]}
+                onPress={handleLogin}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#006400" />
+                ) : (
+                  <Text className="text-[15px] text-[#006400] font-semibold">Giriş Yap</Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Alt Bilgi */}
+              <View className="flex-row gap-2 justify-center mt-3">
+                <Text className="font-medium text-gray-600">Hesabınız yok mu?</Text>
+                <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+                  <Text className="text-[#006400] font-bold">Kayıt Ol</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 

@@ -40,8 +40,7 @@ const RoleSelectionScreen = () => {
 
         Alert.alert(
           "Başarılı",
-          `${
-            selectedRole === "landlord" ? "Ev Sahibi" : "Kiracı"
+          `${selectedRole === "landlord" ? "Ev Sahibi" : "Kiracı"
           } rolü başarıyla seçildi`,
           [
             {
@@ -61,7 +60,7 @@ const RoleSelectionScreen = () => {
       Alert.alert(
         "Hata",
         error.data?.message ||
-          "Rol seçimi sırasında bir hata oluştu. Lütfen tekrar deneyin."
+        "Rol seçimi sırasında bir hata oluştu. Lütfen tekrar deneyin."
       );
     }
   };
@@ -70,7 +69,7 @@ const RoleSelectionScreen = () => {
     <View className="flex-1 bg-gray-50 px-5">
       <View className="items-center mt-12 mb-6">
         <Image
-          source={require("../../assets/logo_kirax.jpg")}
+          source={require("../../assets/logo-kirax.png")}
           className="w-20 h-20"
           resizeMode="contain"
         />
@@ -87,16 +86,15 @@ const RoleSelectionScreen = () => {
 
         <View className="mb-8">
           <TouchableOpacity
-            className={`bg-white p-5 rounded-xl mb-4 border-2 ${
-              selectedRole === "landlord"
-                ? "border-blue-500 bg-blue-50"
-                : "border-gray-200"
-            }`}
+            className={`bg-white p-5 rounded-xl mb-4 border-2 ${selectedRole === "landlord"
+              ? "border-blue-500 bg-blue-50"
+              : "border-gray-200"
+              }`}
             onPress={() => setSelectedRole("landlord")}
           >
             <View className="w-14 h-14 rounded-full bg-blue-50 justify-center items-center mb-4">
               <Image
-                source={require("../../assets/logo_kirax.jpg")}
+                source={require("../../assets/logo-kirax.png")}
                 className="w-8 h-8 tint-blue-500"
                 resizeMode="contain"
               />
@@ -111,16 +109,15 @@ const RoleSelectionScreen = () => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            className={`bg-white p-5 rounded-xl border-2 ${
-              selectedRole === "tenant"
-                ? "border-blue-500 bg-blue-50"
-                : "border-gray-200"
-            }`}
+            className={`bg-white p-5 rounded-xl border-2 ${selectedRole === "tenant"
+              ? "border-blue-500 bg-blue-50"
+              : "border-gray-200"
+              }`}
             onPress={() => setSelectedRole("tenant")}
           >
             <View className="w-14 h-14 rounded-full bg-blue-50 justify-center items-center mb-4">
               <Image
-                source={require("../../assets/logo_kirax.jpg")}
+                source={require("../../assets/logo-kirax.png")}
                 className="w-8 h-8 tint-blue-500"
                 resizeMode="contain"
               />
@@ -134,9 +131,8 @@ const RoleSelectionScreen = () => {
         </View>
 
         <TouchableOpacity
-          className={`h-14 rounded-lg justify-center items-center ${
-            !selectedRole || isLoading ? "bg-blue-300" : "bg-blue-500"
-          }`}
+          className={`h-14 rounded-lg justify-center items-center ${!selectedRole || isLoading ? "bg-blue-300" : "bg-blue-500"
+            }`}
           onPress={handleRoleSelection}
           disabled={!selectedRole || isLoading}
         >
