@@ -6,11 +6,15 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  Dimensions,
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { setRole } from "../redux/slices/authSlice";
 import { useAssignRoleMutation } from "../redux/api/apiSlice";
 import { selectCurrentUser } from "../redux/slices/authSlice";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+const { width } = Dimensions.get("window");
 
 const RoleSelectionScreen = ({ navigation }) => {
   const [selectedRole, setSelectedRole] = useState(null);
@@ -72,45 +76,45 @@ const RoleSelectionScreen = ({ navigation }) => {
           {
             text: "Devam Et",
             onPress: () => navigation.navigate("CreateProfile"),
-          },
+          }, className = "w-20 h-20"
+
         ]
       );
     }
   };
 
   return (
-    <View className="flex-1 bg-gray-50 px-5">
+    <SafeAreaView className="flex-1 bg-gray-50 px-5">
       <View className="items-center mt-12 mb-6">
         <Image
           source={require("../../assets/logo-kirax.png")}
-          className="w-20 h-20"
           resizeMode="contain"
+          style={{ width: width * 0.5, height: width * 0.3 }}
         />
-        <Text className="text-2xl font-bold text-blue-500 mt-1">KiraX</Text>
       </View>
 
       <View className="flex-1 justify-center pb-12">
         <Text className="text-2xl font-bold text-gray-800 text-center mb-2">
-          Hoş Geldiniz, {user?.name || "Kullanıcı"}
+          Hoş Geldin, {user?.name || "Kullanıcı"}
         </Text>
         <Text className="text-base text-gray-600 text-center mb-8">
-          Devam etmek için lütfen rol seçin:
+          Devam etmek için lütfen bir rol seç:
         </Text>
 
         <View className="mb-8">
           <TouchableOpacity
             className={`bg-white p-5 rounded-xl mb-4 border-2 ${selectedRole === "EVSAHIBI"
-              ? "border-blue-500 bg-blue-50"
+              ? "border-[#2C8700] bg-blue-50"
               : "border-gray-200"
               }`}
             onPress={() => setSelectedRole("EVSAHIBI")}
           >
-            <View className="w-14 h-14 rounded-full bg-blue-50 justify-center items-center mb-4">
+            <View className="w-14 h-14 rounded-full bg-green-50 justify-center items-center mb-4">
               <Image
-                source={require("../../assets/logo-kirax.png")}
-                className="w-8 h-8"
+                source={require("../../assets/ev-sahibi.png")}
+                className="w-16 h-16"
                 resizeMode="contain"
-                style={{ tintColor: "#4A90E2" }}
+                style={{ tintColor: "#2C8700" }}
               />
             </View>
             <Text className="text-xl font-bold text-gray-800 mb-2">
@@ -124,17 +128,17 @@ const RoleSelectionScreen = ({ navigation }) => {
 
           <TouchableOpacity
             className={`bg-white p-5 rounded-xl border-2 ${selectedRole === "KIRACI"
-              ? "border-blue-500 bg-blue-50"
+              ? "border-[#2C8700] bg-blue-50"
               : "border-gray-200"
               }`}
             onPress={() => setSelectedRole("KIRACI")}
           >
-            <View className="w-14 h-14 rounded-full bg-blue-50 justify-center items-center mb-4">
+            <View className="w-14 h-14 rounded-full  bg-green-50 justify-center items-center mb-4">
               <Image
-                source={require("../../assets/logo-kirax.png")}
+                source={require("../../assets/kiraci.png")}
                 className="w-8 h-8"
                 resizeMode="contain"
-                style={{ tintColor: "#4A90E2" }}
+                style={{ tintColor: "#2C8700" }}
               />
             </View>
             <Text className="text-xl font-bold text-gray-800 mb-2">Kiracı</Text>
@@ -146,7 +150,7 @@ const RoleSelectionScreen = ({ navigation }) => {
         </View>
 
         <TouchableOpacity
-          className={`h-14 rounded-lg justify-center items-center ${!selectedRole || isLoading ? "bg-blue-300" : "bg-blue-500"
+          className={`h-14 rounded-lg justify-center items-center ${!selectedRole || isLoading ? "bg-[#39a802]" : "bg-[#2C8700]"
             }`}
           onPress={handleRoleSelection}
           disabled={!selectedRole || isLoading}
@@ -158,7 +162,7 @@ const RoleSelectionScreen = ({ navigation }) => {
           )}
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
