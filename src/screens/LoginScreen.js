@@ -25,7 +25,12 @@ import { setUserProfile } from "../redux/slices/profileSlice";
 const { width } = Dimensions.get("window");
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faUser, faLock, faEyeSlash, faEye } from '@fortawesome/pro-solid-svg-icons';
-import { faApple, faGoogle } from '@fortawesome/pro-regular-svg-icons';
+import { faApple } from '@fortawesome/free-brands-svg-icons';
+
+
+import Checkbox from 'expo-checkbox';
+
+
 
 const LoginScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
@@ -33,6 +38,7 @@ const LoginScreen = ({ navigation }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [keyboardStatus, setKeyboardStatus] = useState(false);
   const [errorlogin, setErrorLogin] = useState('');
+  const [isChecked, setChecked] = useState(false);
 
   // Redux hooks
   const dispatch = useDispatch();
@@ -142,16 +148,21 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
+
   const Shadows = {
     shadow1: {
-      shadowColor: "#000",
+      // iOS için gölge özellikleri
+      shadowColor: "#000000",
       shadowOffset: {
         width: 0,
-        height: 1,
+        height: 2,
       },
-      shadowOpacity: 0.18,
-      shadowRadius: 1.00,
-      elevation: 1,
+      shadowOpacity: 0.12,
+      shadowRadius: 3,
+
+      // Android için
+      elevation: 3,
+
     }
   };
 
@@ -166,79 +177,80 @@ const LoginScreen = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView className="flex-1  bg-gray-100">
+    <SafeAreaView className="flex-1  bg-white">
       <StatusBar barStyle="dark-content" backgroundColor="#f9fafb" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 20}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 60}
+        enableOnAndroid={true} // Android'de de etkinleştir
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <ScrollView
             contentContainerStyle={{
               flexGrow: 1,
-              paddingBottom: keyboardStatus ? (Platform.OS === 'ios' ? 200 : 120) : 20,
+              justifyContent: "center",
+              paddingBottom: keyboardStatus ? (Platform.OS === 'ios' ? 250 : 150) : 20,
             }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
             <View className="flex-1 items-center gap-5 px-8">
               {/* Logo - Boyutu küçültülmüş ve boşluklar azaltılmış */}
-              <View className="mt-6 mb-2">
+              <View className="mt-16 mb-10">
                 <Image
                   source={require("../../assets/logo-kirax.png")}
-                  style={{ width: width * 0.7, height: width * 0.5 }}
+                  style={{ width: width * 0.5, height: width * 0.3 }}
                   resizeMode="contain"
                 />
 
               </View>
 
-              {/* Form Başlangıcı - Logodan sonra küçük boşluk */}
 
 
               {/* Social Login Butonları */}
-              <View className="gap-2 w-full">
+              <View className="flex justify-center items-center gap-4 w-full">
                 <Pressable
-                  className="rounded-[12px] bg-white overflow-hidden flex-row items-center justify-center px-4 py-3 gap-2 w-full"
+                  className="rounded-[12px] bg-white flex-row items-center justify-center px-4 py-3 gap-2 w-full"
                   style={[Shadows.shadow1]}
                   onPress={() => console.log('Apple login')}
                 >
                   <FontAwesomeIcon icon={faApple} size={20} />
                   <Text style={{ fontSize: 14, fontWeight: '500' }}>
-                    Apple İle Devam Et
+                    Apple ile devam et
                   </Text>
                 </Pressable>
 
                 <Pressable
-                  className="rounded-[12px] bg-white overflow-hidden flex-row items-center justify-center px-4 py-3 gap-2 w-full"
+                  className="rounded-[12px] bg-white flex-row items-center justify-center px-4 py-3 gap-2 w-full"
                   style={[Shadows.shadow1]}
                   onPress={() => console.log('Google login')}
                 >
-                  <FontAwesomeIcon icon={faGoogle} size={20} color="#DB4437" />
+                  <Image source={require('../../assets/google-logo.svg')} className="w-6 h-6" />
                   <Text style={{ fontSize: 14, fontWeight: '500' }}>
-                    Google İle Devam Et
+                    Google ile devam et
                   </Text>
                 </Pressable>
               </View>
 
-              {/* Ayırıcı */}
+
               <View className="flex flex-row items-center w-full my-2">
-                <View className="flex-1 h-[1px] bg-gray-300"></View>
-                <Text className="mx-3 text-gray-400 font-medium text-[14px]">veya</Text>
-                <View className="flex-1 h-[1px] bg-gray-300"></View>
+                <View className="flex-1 h-[1px] bg-gray-500"></View>
+                <Text className="mx-3 text-gray-500 font-medium text-[14px]">Veya</Text>
+                <View className="flex-1 h-[1px] bg-gray-500"></View>
               </View>
 
               {/* Form Alanları - Boşluklar minimize edilmiş */}
-              <View className="w-full gap-3">
+              <View className="w-full gap-4">
                 <View
-                  style={[Shadows.shadow1]}
-                  className="shadow-custom flex gap-4 bg-[#ECECEC] flex-row items-center rounded-[12px] border-[2px] border-[#006400] px-4 py-3 w-full"
+
+                  className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full"
                 >
-                  <FontAwesomeIcon icon={faUser} size={20} color="#595959" />
+                  <FontAwesomeIcon icon={faUser} size={20} color="#6b7280" />
                   <TextInput
                     placeholder='Kullanıcı Adı'
-                    className="text-gray-700 flex-1 font-semibold"
-                    placeholderTextColor={"#484848"}
+                    className="text-gray-600 flex-1 font-normal"
+                    placeholderTextColor={"#4b5563"}
                     value={username}
                     onChangeText={setUsername}
                     keyboardType="email-address"
@@ -247,15 +259,14 @@ const LoginScreen = ({ navigation }) => {
                 </View>
 
                 <View
-                  style={[Shadows.shadow1]}
-                  className="justify-between shadow-custom flex gap-4 bg-[#ECECEC] flex-row items-center rounded-[12px] border-[2px] border-[#006400] px-4 py-3 w-full"
+                  className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full"
                 >
                   <View className="items-center flex flex-row gap-4 flex-1">
-                    <FontAwesomeIcon icon={faLock} size={20} color="#595959" />
+                    <FontAwesomeIcon icon={faLock} size={20} color='#6b7280' />
                     <TextInput
                       placeholder='Şifre'
-                      className="text-gray-700 font-semibold flex-1"
-                      placeholderTextColor={"#484848"}
+                      className="text-gray-600 font-normal flex-1"
+                      placeholderTextColor={"#4b5563"}
                       secureTextEntry={!showPassword}
                       value={password}
                       onChangeText={setPassword}
@@ -269,23 +280,30 @@ const LoginScreen = ({ navigation }) => {
                     />
                   </Pressable>
                 </View>
+                <View className="flex-row justify-between items-center w-full">
+                  <View className="items-center flex-row gap-1" >
 
-                <TouchableOpacity
-                  onPress={() => navigation.navigate("ForgotPassword")}
-                  className="self-end"
-                >
-                  <Text className="text-gray-600 underline font-medium">Şifreni mi unuttun?</Text>
-                </TouchableOpacity>
+                    <Checkbox
+                      value={isChecked}
+                      onValueChange={setChecked}
+                      color={isChecked ? '#2C8700' : undefined}
+                      style={{ borderRadius: 4, width: 16, height: 16 }}
+                    />
+                    <TouchableOpacity onPress={() => setChecked(!isChecked)}>
+                      <Text className="text-gray-600 font-normal">Beni Hatırla</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate("ForgotPassword")}
+                    className="self-end"
+                  >
+                    <Text className="text-gray-600 underline font-medium">Şifreni mi unuttun?</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
-              {/* Hata Mesajı */}
-              {errorlogin ?
-                <Text className="text-red-500 text-center my-2">{errorlogin}</Text>
-                : null}
-
-              {/* Giriş Yap Butonu */}
               <TouchableOpacity
-                className="rounded-full border-[2px] border-[#006400] items-center justify-center py-3 w-full mt-3"
+                className="rounded-xl bg-[#2C8700] items-center justify-center py-3 w-full mt-3"
                 style={[Shadows.shadow1]}
                 onPress={handleLogin}
                 disabled={isLoading}
@@ -293,15 +311,28 @@ const LoginScreen = ({ navigation }) => {
                 {isLoading ? (
                   <ActivityIndicator color="#006400" />
                 ) : (
-                  <Text className="text-[15px] text-[#006400] font-semibold">Giriş Yap</Text>
+                  <Text className="text-[15px] text-white font-semibold">Giriş Yap</Text>
                 )}
               </TouchableOpacity>
 
+
+              {/* Ayırıcı */}
+
+
+
+              {/* Hata Mesajı */}
+              {errorlogin ?
+                <Text className="text-red-500 text-center my-2">{errorlogin}</Text>
+                : null}
+
+              {/* Giriş Yap Butonu */}
+
+
               {/* Alt Bilgi */}
               <View className="flex-row gap-2 justify-center mt-3">
-                <Text className="font-medium text-gray-600">Hesabınız yok mu?</Text>
+                <Text className="font-medium text-gray-600">Henüz hesabın yok mu?</Text>
                 <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-                  <Text className="text-[#006400] font-bold">Kayıt Ol</Text>
+                  <Text className="text-[#2C8700] font-bold">Kayıt Ol</Text>
                 </TouchableOpacity>
               </View>
             </View>
