@@ -113,7 +113,7 @@ const HomeScreen = ({ navigation }) => {
               Merhaba, {currentUser?.name || "Kullanıcı"}
             </Text>
             <Text className="text-white text-sm opacity-80">
-              {userRole === "landlord" ? "Ev Sahibi" : "Kiracı"} hesabı
+              {userRole === "EVSAHIBI" ? "Ev Sahibi" : "Kiracı"} hesabı
             </Text>
           </View>
           <TouchableOpacity
@@ -139,7 +139,7 @@ const HomeScreen = ({ navigation }) => {
           <TextInput
             className="flex-1 text-base"
             placeholder={
-              userRole === "tenant"
+              userRole === "KIRACI"
                 ? "Konuma göre ev ara..."
                 : "İlanlarınızda arayın..."
             }
@@ -155,7 +155,7 @@ const HomeScreen = ({ navigation }) => {
         <View className="mb-6">
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-xl font-bold text-gray-800">
-              {userRole === "tenant" ? "Öne Çıkan Evler" : "Son İlanlarınız"}
+              {userRole === "KIRACI" ? "Öne Çıkan Evler" : "Son İlanlarınız"}
             </Text>
             <TouchableOpacity>
               <Text className="text-blue-500">Tümünü Gör</Text>
@@ -177,7 +177,7 @@ const HomeScreen = ({ navigation }) => {
         </View>
 
         {/* Categories Section for Tenants */}
-        {userRole === "tenant" && (
+        {userRole === "KIRACI" && (
           <View className="mb-6">
             <Text className="text-xl font-bold text-gray-800 mb-4">
               Kategoriler
@@ -244,7 +244,7 @@ const HomeScreen = ({ navigation }) => {
         )}
 
         {/* Dashboard Stats for Landlords */}
-        {userRole === "landlord" && (
+        {userRole === "EVSAHIBI" && (
           <View className="mb-6">
             <Text className="text-xl font-bold text-gray-800 mb-4">
               Genel Durum
@@ -279,10 +279,10 @@ const HomeScreen = ({ navigation }) => {
         {/* Recent Activity or Nearby Properties */}
         <View className="mb-6">
           <Text className="text-xl font-bold text-gray-800 mb-4">
-            {userRole === "tenant" ? "Size Yakın Mülkler" : "Son Aktiviteler"}
+            {userRole === "EVSAHIBI" ? "Size Yakın Mülkler" : "Son Aktiviteler"}
           </Text>
 
-          {userRole === "tenant" ? (
+          {userRole === "KIRACI" ? (
             // Nearby properties for tenants
             <View>
               {[1, 2, 3].map((item) => (
@@ -385,13 +385,13 @@ const HomeScreen = ({ navigation }) => {
               className="w-[48%] bg-blue-50 rounded-xl p-4 mb-3 border border-blue-100"
               onPress={() => {
                 /* Navigate based on role */
-                userRole === "landlord"
+                userRole === "EVSAHIBI"
                   ? navigation.navigate("CreatePost")
                   : navigation.navigate("FindProperties");
               }}
             >
               <Text className="text-blue-800 font-semibold text-center">
-                {userRole === "landlord" ? "Yeni İlan Oluştur" : "İlan Ara"}
+                {userRole === "EVSAHIBI" ? "Yeni İlan Oluştur" : "İlan Ara"}
               </Text>
             </TouchableOpacity>
 
@@ -400,12 +400,12 @@ const HomeScreen = ({ navigation }) => {
               onPress={() => {
                 /* Navigate to offers */
                 navigation.navigate(
-                  userRole === "landlord" ? "ReceivedOffers" : "MySentOffers"
+                  userRole === "EVSAHIBI" ? "ReceivedOffers" : "MySentOffers"
                 );
               }}
             >
               <Text className="text-green-800 font-semibold text-center">
-                {userRole === "landlord"
+                {userRole === "EVSAHIBI"
                   ? "Teklifleri Görüntüle"
                   : "Tekliflerim"}
               </Text>

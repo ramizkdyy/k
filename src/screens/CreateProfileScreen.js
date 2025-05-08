@@ -13,6 +13,7 @@ import {
   Modal,
   FlatList,
   Switch,
+  SafeAreaView,
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -622,7 +623,7 @@ const CreateProfileScreen = ({ navigation }) => {
   }
 
   return (
-    <KeyboardAvoidingView
+    <SafeAreaView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1 bg-gray-50"
     >
@@ -963,7 +964,7 @@ const CreateProfileScreen = ({ navigation }) => {
           </View>
         </View>
       </Modal>
-    </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 

@@ -267,7 +267,7 @@ const EditProfileScreen = ({ navigation }) => {
 
   // Use appropriate queries and mutations based on user role
   const { data: profileData, isLoading: profileLoading } =
-    userRole === "landlord"
+    userRole === "EVSAHIBI"
       ? useGetLandlordProfileQuery(currentUser?.id)
       : useGetTenantProfileQuery(currentUser?.id);
 
@@ -294,7 +294,7 @@ const EditProfileScreen = ({ navigation }) => {
       }
 
       // Rol bazlı alanları doldur
-      if (userRole === "landlord") {
+      if (userRole === "EVSAHIBI") {
         setRentalLocation(userProfile.rentalLocation || "İstanbul");
         setRentalPriceExpectation(
           userProfile.rentalPriceExpectation || "0-5000"
@@ -342,7 +342,7 @@ const EditProfileScreen = ({ navigation }) => {
       }
 
       // Rol bazlı alanları doldur
-      if (userRole === "landlord") {
+      if (userRole === "EVSAHIBI") {
         setRentalLocation(profile.rentalLocation || "İstanbul");
         setRentalPriceExpectation(profile.rentalPriceExpectation || "0-5000");
         setNumberOfOccupants(profile.numberOfOccupants || "1-2");
@@ -447,7 +447,7 @@ const EditProfileScreen = ({ navigation }) => {
 
   // Veri doğrulama
   const validateForm = () => {
-    if (userRole === "landlord") {
+    if (userRole === "EVSAHIBI") {
       // Ev sahibi doğrulaması
       if (!rentalLocation) {
         Alert.alert("Hata", "Kiralama konumu zorunludur.");
@@ -533,7 +533,7 @@ const EditProfileScreen = ({ navigation }) => {
       }
 
       // Add role-specific fields
-      if (userRole === "landlord") {
+      if (userRole === "EVSAHIBI") {
         formData.append("RentalLocation", rentalLocation);
         formData.append("RentalPriceExpectation", rentalPriceExpectation);
         formData.append("NumberOfOccupants", numberOfOccupants);
@@ -716,7 +716,7 @@ const EditProfileScreen = ({ navigation }) => {
         {/* Form fields */}
         <View className="px-5">
           {/* Role-specific fields */}
-          {userRole === "landlord" ? (
+          {userRole === "EVSAHIBI" ? (
             <>
               {/* Ev Sahibi Bilgileri */}
               <View className="bg-white rounded-xl shadow-sm p-5 mb-6">
