@@ -198,7 +198,7 @@ const RegisterScreen = ({ navigation }) => {
       Alert.alert(
         "Kayıt Hatası",
         error.data?.message ||
-          "Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin."
+        "Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin."
       );
     }
   };
@@ -223,7 +223,7 @@ const RegisterScreen = ({ navigation }) => {
       <ScrollView className="flex-grow">
         <View className="items-center mt-6 mb-4">
           <Image
-            source={require("../../assets/logo_kirax.jpg")}
+            source={require("../../assets/logo-kirax.png")}
             className="w-20 h-20"
             resizeMode="contain"
           />
@@ -333,6 +333,7 @@ const RegisterScreen = ({ navigation }) => {
           </View>
 
           <TouchableOpacity
+
             className={`bg-blue-500 rounded-lg h-12 justify-center items-center mb-4 mt-2 ${
               registerLoading || loginLoading ? "opacity-70" : ""
             }`}

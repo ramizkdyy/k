@@ -132,7 +132,7 @@ const HomeScreen = ({ navigation }) => {
         {/* Search Bar */}
         <View className="bg-white rounded-lg flex-row items-center px-4 py-2">
           <Image
-            source={require("../../assets/logo_kirax.jpg")} // Replace with search icon
+            source={require("../../assets/logo-kirax.png")} // Replace with search icon
             className="w-5 h-5 mr-2"
             resizeMode="contain"
           />
@@ -187,7 +187,7 @@ const HomeScreen = ({ navigation }) => {
               <TouchableOpacity className="w-[48%] bg-white rounded-xl p-4 mb-3 border border-gray-200">
                 <View className="w-12 h-12 rounded-full bg-blue-100 justify-center items-center mb-3">
                   <Image
-                    source={require("../../assets/logo_kirax.jpg")} // Replace with category icon
+                    source={require("../../assets/logo-kirax.png")} // Replace with category icon
                     className="w-6 h-6"
                     resizeMode="contain"
                   />
@@ -201,7 +201,7 @@ const HomeScreen = ({ navigation }) => {
               <TouchableOpacity className="w-[48%] bg-white rounded-xl p-4 mb-3 border border-gray-200">
                 <View className="w-12 h-12 rounded-full bg-green-100 justify-center items-center mb-3">
                   <Image
-                    source={require("../../assets/logo_kirax.jpg")} // Replace with category icon
+                    source={require("../../assets/logo-kirax.png")} // Replace with category icon
                     className="w-6 h-6"
                     resizeMode="contain"
                   />
@@ -215,7 +215,7 @@ const HomeScreen = ({ navigation }) => {
               <TouchableOpacity className="w-[48%] bg-white rounded-xl p-4 mb-3 border border-gray-200">
                 <View className="w-12 h-12 rounded-full bg-yellow-100 justify-center items-center mb-3">
                   <Image
-                    source={require("../../assets/logo_kirax.jpg")} // Replace with category icon
+                    source={require("../../assets/logo-kirax.png")} // Replace with category icon
                     className="w-6 h-6"
                     resizeMode="contain"
                   />
@@ -229,7 +229,7 @@ const HomeScreen = ({ navigation }) => {
               <TouchableOpacity className="w-[48%] bg-white rounded-xl p-4 mb-3 border border-gray-200">
                 <View className="w-12 h-12 rounded-full bg-purple-100 justify-center items-center mb-3">
                   <Image
-                    source={require("../../assets/logo_kirax.jpg")} // Replace with category icon
+                    source={require("../../assets/logo-kirax.png")} // Replace with category icon
                     className="w-6 h-6"
                     resizeMode="contain"
                   />
@@ -302,22 +302,22 @@ const HomeScreen = ({ navigation }) => {
                       {item === 1
                         ? "Modern Stüdyo Daire"
                         : item === 2
-                        ? "2+1 Bahçeli Daire"
-                        : "3+1 Lüks Daire"}
+                          ? "2+1 Bahçeli Daire"
+                          : "3+1 Lüks Daire"}
                     </Text>
                     <Text className="text-sm text-gray-500 mb-1">
                       {item === 1
                         ? "Beşiktaş, İstanbul"
                         : item === 2
-                        ? "Çankaya, Ankara"
-                        : "Konak, İzmir"}
+                          ? "Çankaya, Ankara"
+                          : "Konak, İzmir"}
                     </Text>
                     <Text className="text-base font-semibold text-blue-600">
                       {item === 1
                         ? "3.500 ₺"
                         : item === 2
-                        ? "4.200 ₺"
-                        : "6.000 ₺"}
+                          ? "4.200 ₺"
+                          : "6.000 ₺"}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -332,22 +332,20 @@ const HomeScreen = ({ navigation }) => {
                   className="flex-row bg-white rounded-xl p-3 mb-3 border border-gray-200"
                 >
                   <View
-                    className={`w-10 h-10 rounded-full ${
-                      item === 1
-                        ? "bg-blue-100"
-                        : item === 2
+                    className={`w-10 h-10 rounded-full ${item === 1
+                      ? "bg-blue-100"
+                      : item === 2
                         ? "bg-green-100"
                         : "bg-yellow-100"
-                    } justify-center items-center mr-3`}
+                      } justify-center items-center mr-3`}
                   >
                     <Text
-                      className={`${
-                        item === 1
-                          ? "text-blue-600"
-                          : item === 2
+                      className={`${item === 1
+                        ? "text-blue-600"
+                        : item === 2
                           ? "text-green-600"
                           : "text-yellow-600"
-                      } font-bold`}
+                        } font-bold`}
                     >
                       {item === 1 ? "M" : item === 2 ? "K" : "İ"}
                     </Text>
@@ -357,15 +355,15 @@ const HomeScreen = ({ navigation }) => {
                       {item === 1
                         ? "Modern Daire için yeni teklif"
                         : item === 2
-                        ? "Bahçeli Ev kiralandı"
-                        : "İlan görüntülendi"}
+                          ? "Bahçeli Ev kiralandı"
+                          : "İlan görüntülendi"}
                     </Text>
                     <Text className="text-xs text-gray-500">
                       {item === 1
                         ? "5 dakika önce"
                         : item === 2
-                        ? "3 saat önce"
-                        : "Dün"}
+                          ? "3 saat önce"
+                          : "Dün"}
                     </Text>
                   </View>
                 </View>

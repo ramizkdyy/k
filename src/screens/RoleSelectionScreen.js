@@ -112,7 +112,7 @@ const RoleSelectionScreen = ({ navigation }) => {
     <View className="flex-1 bg-gray-50 px-5">
       <View className="items-center mt-12 mb-6">
         <Image
-          source={require("../../assets/logo_kirax.jpg")}
+          source={require("../../assets/logo-kirax.png")}
           className="w-20 h-20"
           resizeMode="contain"
         />
@@ -129,16 +129,15 @@ const RoleSelectionScreen = ({ navigation }) => {
 
         <View className="mb-8">
           <TouchableOpacity
-            className={`bg-white p-5 rounded-xl mb-4 border-2 ${
-              selectedRole === "EVSAHIBI"
-                ? "border-blue-500 bg-blue-50"
-                : "border-gray-200"
-            }`}
+            className={`bg-white p-5 rounded-xl mb-4 border-2 ${selectedRole === "EVSAHIBI"
+              ? "border-blue-500 bg-blue-50"
+              : "border-gray-200"
+              }`}
             onPress={() => setSelectedRole("EVSAHIBI")}
           >
             <View className="w-14 h-14 rounded-full bg-blue-50 justify-center items-center mb-4">
               <Image
-                source={require("../../assets/logo_kirax.jpg")}
+                source={require("../../assets/logo-kirax.png")}
                 className="w-8 h-8"
                 resizeMode="contain"
                 style={{ tintColor: "#4A90E2" }}
@@ -154,16 +153,15 @@ const RoleSelectionScreen = ({ navigation }) => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            className={`bg-white p-5 rounded-xl border-2 ${
-              selectedRole === "KIRACI"
-                ? "border-blue-500 bg-blue-50"
-                : "border-gray-200"
-            }`}
+            className={`bg-white p-5 rounded-xl border-2 ${selectedRole === "KIRACI"
+              ? "border-blue-500 bg-blue-50"
+              : "border-gray-200"
+              }`}
             onPress={() => setSelectedRole("KIRACI")}
           >
             <View className="w-14 h-14 rounded-full bg-blue-50 justify-center items-center mb-4">
               <Image
-                source={require("../../assets/logo_kirax.jpg")}
+                source={require("../../assets/logo-kirax.png")}
                 className="w-8 h-8"
                 resizeMode="contain"
                 style={{ tintColor: "#4A90E2" }}
@@ -178,9 +176,8 @@ const RoleSelectionScreen = ({ navigation }) => {
         </View>
 
         <TouchableOpacity
-          className={`h-14 rounded-lg justify-center items-center ${
-            !selectedRole || isLoading ? "bg-blue-300" : "bg-blue-500"
-          }`}
+          className={`h-14 rounded-lg justify-center items-center ${!selectedRole || isLoading ? "bg-blue-300" : "bg-blue-500"
+            }`}
           onPress={handleRoleSelection}
           disabled={!selectedRole || isLoading}
         >
