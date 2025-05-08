@@ -46,6 +46,10 @@ export const apiSlice = createApi({
     }),
 
     // Post endpoints
+    getAllPosts: builder.query({
+      query: () => "/api/post",
+      providesTags: ["Post"],
+    }),
     getPost: builder.query({
       query: (id) => `/api/post/${id}`,
       providesTags: (result, error, id) => [{ type: "Post", id }],
@@ -146,6 +150,7 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: (result, error, { UserId }) => [
         { type: "Profile", id: UserId },
+        { type: "User", id: UserId }, // Also invalidate User tag
       ],
     }),
     updateTenantProfile: builder.mutation({
@@ -157,6 +162,7 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: (result, error, { UserId }) => [
         { type: "Profile", id: UserId },
+        { type: "User", id: UserId }, // Also invalidate User tag
       ],
     }),
     getLandlordProfiles: builder.query({
@@ -217,6 +223,7 @@ export const {
   useAssignRoleMutation,
 
   // Post hooks
+  useGetAllPostsQuery, // Export the new hook
   useGetPostQuery,
   useCreatePostMutation,
   useUpdatePostMutation,

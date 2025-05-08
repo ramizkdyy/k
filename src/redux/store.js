@@ -19,6 +19,7 @@ const initialState = {
     role: null,
     isLoading: false,
     error: null,
+    hasUserProfile: false, // Eklendi: Profil durumunu izlemek için
   },
   posts: {
     posts: [],
@@ -61,7 +62,7 @@ const initialState = {
 const persistConfig = {
   key: "root",
   storage: AsyncStorage,
-  whitelist: ["auth"], // only auth will be persisted
+  whitelist: ["auth", "profiles"], // profiles eklendi, profil verilerinin de kalıcı olması için
 };
 
 const rootReducer = combineReducers({

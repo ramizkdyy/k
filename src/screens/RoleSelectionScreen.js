@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { setRole } from "../redux/slices/authSlice";
-import { useAssignRoleMutation } from "../redux/api/apiSlice";
+import { useAssignRoleMutation, apiSlice } from "../redux/api/apiSlice";
 import { selectCurrentUser } from "../redux/slices/authSlice";
 
 const RoleSelectionScreen = ({ navigation }) => {
@@ -45,17 +45,47 @@ const RoleSelectionScreen = ({ navigation }) => {
 
       console.log("API yanıtı:", response);
 
-      // Check for successful response
-      if (response && response.isSuccess) {
-        console.log("API rol ataması başarılı");
-      } else {
-        // API hatası olsa bile devam et, sadece log at
-        console.log("API hata mesajı (ama devam ediyoruz):", response?.message);
-      }
+      // Rol seçildikten sonra profil kontrolü yap
+      try {
+        const userId = user?.id;
 
-      // Rol seçimi başarılı olduğunda hemen profil oluşturma ekranına yönlendir
-      // (API başarısız olsa bile, Redux'ta rol güncellendiği için devam edebiliriz)
-      navigation.navigate("CreateProfile");
+        if (selectedRole === "EVSAHIBI") {
+          // Ev sahibi profili sorgula
+          const profileResponse = await dispatch(
+            apiSlice.endpoints.getLandlordProfile.initiate(userId)
+          ).unwrap();
+
+          if (profileResponse?.isSuccess && profileResponse.result) {
+            // Profil var, ana sayfaya yönlendir
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "Main" }],
+            });
+            return;
+          }
+        } else if (selectedRole === "KIRACI") {
+          // Kiracı profili sorgula
+          const profileResponse = await dispatch(
+            apiSlice.endpoints.getTenantProfile.initiate(userId)
+          ).unwrap();
+
+          if (profileResponse?.isSuccess && profileResponse.result) {
+            // Profil var, ana sayfaya yönlendir
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "Main" }],
+            });
+            return;
+          }
+        }
+
+        // Profil bulunamadı veya oluşturulmamış, profil oluşturmaya yönlendir
+        navigation.navigate("CreateProfile");
+      } catch (profileError) {
+        console.error("Profil sorgulama hatası:", profileError);
+        // Hata durumunda profil oluşturmaya yönlendir
+        navigation.navigate("CreateProfile");
+      }
     } catch (error) {
       console.error("Role selection error:", error);
 

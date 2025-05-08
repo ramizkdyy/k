@@ -36,9 +36,11 @@ const ProfileScreen = ({ navigation }) => {
     data: profileData,
     isLoading,
     refetch,
-  } = userRole === "landlord"
-      ? useGetLandlordProfileQuery(currentUser?.id)
-      : useGetTenantProfileQuery(currentUser?.id);
+
+  } = userRole === "EVSAHIBI"
+    ? useGetLandlordProfileQuery(currentUser?.id)
+    : useGetTenantProfileQuery(currentUser?.id);
+
 
   useEffect(() => {
     if (profileData && profileData.isSuccess && profileData.result) {
@@ -83,6 +85,16 @@ const ProfileScreen = ({ navigation }) => {
     );
   }
 
+  // Helper function to render field
+  const renderField = (label, value, isLast = false) => (
+    <View className={`mb-4 ${isLast ? "mb-0" : ""}`}>
+      <Text className="text-gray-500 text-sm mb-1">{label}</Text>
+      <Text className="text-gray-800 text-base">
+        {value || "Belirtilmemiş"}
+      </Text>
+    </View>
+  );
+
   return (
     <ScrollView
       className="flex-1 bg-gray-50"
@@ -106,47 +118,32 @@ const ProfileScreen = ({ navigation }) => {
           )}
         </View>
         <Text className="text-xl font-bold text-white mb-1">
-          {userProfile?.fullName ||
-            `${currentUser?.name || ""} ${currentUser?.surname || ""}`}
+          {userProfile?.user?.name || currentUser?.name || ""}{" "}
+          {userProfile?.user?.surname || currentUser?.surname || ""}
         </Text>
         <Text className="text-white text-base opacity-80">
-          {userRole === "landlord" ? "Ev Sahibi" : "Kiracı"}
+          {userRole === "EVSAHIBI" ? "Ev Sahibi" : "Kiracı"}
         </Text>
       </View>
 
       {/* Profile Content */}
       <View className="px-5 mt-[-50px]">
-        {/* Profile Info Card */}
+        {/* User Profile Card */}
         <View className="bg-white rounded-xl shadow-sm p-5 mb-6 border border-gray-100">
-          <View className="mb-4">
-            <Text className="text-gray-500 text-sm mb-1">E-posta</Text>
-            <Text className="text-gray-800 text-base">
-              {currentUser?.email || "N/A"}
-            </Text>
-          </View>
+          <Text className="text-lg font-bold text-gray-800 mb-4">
+            Kullanıcı Bilgileri
+          </Text>
 
-          <View className="mb-4">
-            <Text className="text-gray-500 text-sm mb-1">Telefon</Text>
-            <Text className="text-gray-800 text-base">
-              {currentUser?.phoneNumber || "N/A"}
-            </Text>
-          </View>
-
-          {userProfile?.location && (
-            <View className="mb-4">
-              <Text className="text-gray-500 text-sm mb-1">Konum</Text>
-              <Text className="text-gray-800 text-base">
-                {userProfile.location}
-              </Text>
-            </View>
+          {renderField("Kullanıcı ID", currentUser?.id)}
+          {renderField("E-posta", currentUser?.email)}
+          {renderField("Ad", currentUser?.name)}
+          {renderField(
+            "Soyad",
+            userProfile?.user?.surname || currentUser?.surname || ""
           )}
-
-          {userProfile?.bio && (
-            <View>
-              <Text className="text-gray-500 text-sm mb-1">Hakkımda</Text>
-              <Text className="text-gray-800 text-base">{userProfile.bio}</Text>
-            </View>
-          )}
+          {renderField("Telefon", currentUser?.phoneNumber)}
+          {renderField("Cinsiyet", currentUser?.gender)}
+          {renderField("Rol", currentUser?.role)}
 
           <TouchableOpacity
             className="mt-5 bg-blue-50 py-3 rounded-lg"
@@ -158,6 +155,66 @@ const ProfileScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
+        {/* Landlord Profile Details */}
+        {userRole === "EVSAHIBI" && userProfile && (
+          <View className="bg-white rounded-xl shadow-sm p-5 mb-6 border border-gray-100">
+            <Text className="text-lg font-bold text-gray-800 mb-4">
+              Ev Sahibi Profil Detayları
+            </Text>
+
+            {renderField("Profil ID", userProfile.landlordProfileId)}
+            {renderField("Konum", userProfile.rentalLocation)}
+            {renderField("Profil Resmi", userProfile.profileImageUrl)}
+            {renderField("Kapak Resmi", userProfile.coverProfileImageUrl)}
+            {renderField(
+              "Kiracı Meslek Önemli",
+              userProfile.isTenantProfessionImportant ? "Evet" : "Hayır"
+            )}
+            {renderField(
+              "Kiracı Medeni Durum Önemli",
+              userProfile.isTenantMaritalStatusImportant ? "Evet" : "Hayır"
+            )}
+            {renderField(
+              "Kiracı Sayısı Önemli",
+              userProfile.isNumberOfOccupantsImportant ? "Evet" : "Hayır"
+            )}
+            {renderField("Kiracı Mesleği", userProfile.tenantProfession)}
+            {renderField(
+              "Kiracı Medeni Durumu",
+              userProfile.tenantMaritalStatus
+            )}
+            {renderField("Kiracı Sayısı", userProfile.numberOfOccupants)}
+            {renderField(
+              "Kira Fiyat Beklentisi",
+              userProfile.rentalPriceExpectation
+            )}
+
+            <View className="mt-4">
+              <Text className="text-gray-500 text-sm mb-1">Profil Puanı</Text>
+              <View className="flex-row items-center">
+                <Text className="text-gray-800 text-base mr-2">
+                  {userProfile.profileRating || "0"}/5
+                </Text>
+                <Text className="text-gray-500 text-xs">
+                  ({userProfile.ratingCount || "0"} değerlendirme)
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Tenant Profile Details - Add this if you have tenant-specific fields */}
+        {userRole === "KIRACI" && userProfile && (
+          <View className="bg-white rounded-xl shadow-sm p-5 mb-6 border border-gray-100">
+            <Text className="text-lg font-bold text-gray-800 mb-4">
+              Kiracı Profil Detayları
+            </Text>
+
+            {/* Add tenant-specific fields here */}
+            {/* Similar structure to landlord profile */}
+          </View>
+        )}
+
         {/* Stats Card */}
         <View className="bg-white rounded-xl shadow-sm p-5 mb-6 border border-gray-100">
           <Text className="text-lg font-bold text-gray-800 mb-4">
@@ -167,28 +224,34 @@ const ProfileScreen = ({ navigation }) => {
           <View className="flex-row justify-between mb-2">
             <View>
               <Text className="text-2xl font-bold text-blue-500">
-                {userRole === "landlord" ? "3" : "5"}
+                {userRole === "EVSAHIBI"
+                  ? userProfile?.rentalPosts?.length || "0"
+                  : "0"}
               </Text>
               <Text className="text-sm text-gray-600">
-                {userRole === "landlord" ? "İlanlar" : "Favoriler"}
+                {userRole === "EVSAHIBI" ? "İlanlar" : "Favoriler"}
               </Text>
             </View>
 
             <View>
               <Text className="text-2xl font-bold text-green-500">
-                {userRole === "landlord" ? "12" : "8"}
+                {userRole === "EVSAHIBI"
+                  ? userProfile?.rentalRequests?.length || "0"
+                  : "0"}
               </Text>
               <Text className="text-sm text-gray-600">
-                {userRole === "landlord" ? "Teklifler" : "Görüntülenen"}
+                {userRole === "EVSAHIBI" ? "Teklifler" : "Görüntülenen"}
               </Text>
             </View>
 
             <View>
               <Text className="text-2xl font-bold text-purple-500">
-                {userRole === "landlord" ? "2" : "3"}
+                {userRole === "EVSAHIBI"
+                  ? "0"
+                  : userProfile?.rentalOffers?.length || "0"}
               </Text>
               <Text className="text-sm text-gray-600">
-                {userRole === "landlord" ? "Kiralanmış" : "Teklifler"}
+                {userRole === "EVSAHIBI" ? "Kiralanmış" : "Teklifler"}
               </Text>
             </View>
           </View>
@@ -200,7 +263,7 @@ const ProfileScreen = ({ navigation }) => {
             className="p-4 flex-row items-center"
             onPress={() => {
               navigation.navigate(
-                userRole === "landlord" ? "MyProperties" : "FindProperties"
+                userRole === "EVSAHIBI" ? "MyProperties" : "FindProperties"
               );
             }}
           >
@@ -212,7 +275,7 @@ const ProfileScreen = ({ navigation }) => {
               />
             </View>
             <Text className="text-gray-800 text-base">
-              {userRole === "landlord" ? "Mülklerim" : "İlan Ara"}
+              {userRole === "EVSAHIBI" ? "Mülklerim" : "İlan Ara"}
             </Text>
           </TouchableOpacity>
 
@@ -220,23 +283,25 @@ const ProfileScreen = ({ navigation }) => {
             className="p-4 flex-row items-center"
             onPress={() => {
               navigation.navigate(
-                userRole === "landlord" ? "ReceivedOffers" : "MySentOffers"
+                userRole === "EVSAHIBI" ? "ReceivedOffers" : "MySentOffers"
               );
             }}
           >
             <View className="w-8 h-8 rounded-full bg-green-100 justify-center items-center mr-3">
               <Image
+
                 source={require("../../assets/logo-kirax.png")} // Replace with appropriate icon
+
                 className="w-4 h-4"
                 resizeMode="contain"
               />
             </View>
             <Text className="text-gray-800 text-base">
-              {userRole === "landlord" ? "Teklifler" : "Tekliflerim"}
+              {userRole === "EVSAHIBI" ? "Teklifler" : "Tekliflerim"}
             </Text>
           </TouchableOpacity>
 
-          {userRole === "tenant" && (
+          {userRole === "KIRACI" && (
             <TouchableOpacity
               className="p-4 flex-row items-center"
               onPress={() => {
@@ -245,7 +310,9 @@ const ProfileScreen = ({ navigation }) => {
             >
               <View className="w-8 h-8 rounded-full bg-red-100 justify-center items-center mr-3">
                 <Image
+
                   source={require("../../assets/logo-kirax.png")} // Replace with appropriate icon
+
                   className="w-4 h-4"
                   resizeMode="contain"
                 />
@@ -254,7 +321,7 @@ const ProfileScreen = ({ navigation }) => {
             </TouchableOpacity>
           )}
 
-          {userRole === "landlord" && (
+          {userRole === "EVSAHIBI" && (
             <TouchableOpacity
               className="p-4 flex-row items-center"
               onPress={() => {
@@ -263,7 +330,9 @@ const ProfileScreen = ({ navigation }) => {
             >
               <View className="w-8 h-8 rounded-full bg-yellow-100 justify-center items-center mr-3">
                 <Image
+
                   source={require("../../assets/logo-kirax.png")} // Replace with appropriate icon
+
                   className="w-4 h-4"
                   resizeMode="contain"
                 />
@@ -283,7 +352,9 @@ const ProfileScreen = ({ navigation }) => {
           >
             <View className="w-8 h-8 rounded-full bg-gray-100 justify-center items-center mr-3">
               <Image
+
                 source={require("../../assets/logo-kirax.png")} // Replace with appropriate icon
+
                 className="w-4 h-4"
                 resizeMode="contain"
               />
@@ -299,7 +370,9 @@ const ProfileScreen = ({ navigation }) => {
           >
             <View className="w-8 h-8 rounded-full bg-purple-100 justify-center items-center mr-3">
               <Image
+
                 source={require("../../assets/logo-kirax.png")} // Replace with appropriate icon
+
                 className="w-4 h-4"
                 resizeMode="contain"
               />
@@ -313,7 +386,9 @@ const ProfileScreen = ({ navigation }) => {
           >
             <View className="w-8 h-8 rounded-full bg-red-100 justify-center items-center mr-3">
               <Image
+
                 source={require("../../assets/logo-kirax.png")} // Replace with appropriate icon
+
                 className="w-4 h-4"
                 resizeMode="contain"
               />

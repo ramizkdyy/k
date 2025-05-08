@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   Alert,
   Modal,
   TextInput,
+  Dimensions,
+  FlatList,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
@@ -20,6 +22,9 @@ import {
 } from "../redux/api/apiSlice";
 import { setCurrentPost } from "../redux/slices/postSlice";
 import { selectFavoriteProperties } from "../redux/slices/profileSlice";
+import { MaterialIcons } from "@expo/vector-icons";
+
+const { width } = Dimensions.get("window");
 
 const PostDetailScreen = ({ route, navigation }) => {
   const { postId } = route.params;
@@ -32,6 +37,9 @@ const PostDetailScreen = ({ route, navigation }) => {
   const [offerAmount, setOfferAmount] = useState("");
   const [offerMessage, setOfferMessage] = useState("");
   const [isFavorite, setIsFavorite] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const flatListRef = useRef(null);
 
   // Get post details
   const { data, isLoading, refetch } = useGetPostQuery(postId);
@@ -127,6 +135,20 @@ const PostDetailScreen = ({ route, navigation }) => {
     }
   };
 
+  // Function to navigate to specific image
+  const goToImage = (index) => {
+    if (flatListRef.current) {
+      flatListRef.current.scrollToIndex({ index, animated: true });
+    }
+  };
+
+  // Handle scroll end on image slider
+  const handleViewableItemsChanged = useRef(({ viewableItems }) => {
+    if (viewableItems.length > 0) {
+      setCurrentImageIndex(viewableItems[0].index);
+    }
+  }).current;
+
   // Render loading state
   if (isLoading) {
     return (
@@ -153,58 +175,135 @@ const PostDetailScreen = ({ route, navigation }) => {
   }
 
   const post = data.result;
+  const images = post.postImages || [];
+
+  // Render image item for slider
+  const renderImageItem = ({ item }) => (
+    <View style={{ width, height: 300 }}>
+      <Image
+        source={{ uri: item.postImageUrl }}
+        style={{ width, height: 300 }}
+        resizeMode="cover"
+      />
+    </View>
+  );
 
   return (
     <View className="flex-1 bg-white">
       <ScrollView className="flex-1">
-        {/* Image Gallery */}
-        <View className="w-full h-64 bg-gray-200">
-          {post.images && post.images.length > 0 ? (
-            <Image
-              source={{ uri: post.images[0].imageUrl }}
-              className="w-full h-full"
-              resizeMode="cover"
-            />
+        {/* Image Gallery Slider */}
+        <View className="w-full h-80 bg-gray-200">
+          {images.length > 0 ? (
+            <View>
+              <FlatList
+                ref={flatListRef}
+                data={images}
+                renderItem={renderImageItem}
+                keyExtractor={(item, index) =>
+                  `image-${index}-${item.postImageId || item.id}`
+                }
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onViewableItemsChanged={handleViewableItemsChanged}
+                viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
+              />
+
+              {/* Navigation arrows */}
+              {images.length > 1 && (
+                <>
+                  <TouchableOpacity
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-30 rounded-full p-2"
+                    onPress={() => {
+                      const prevIndex = Math.max(0, currentImageIndex - 1);
+                      goToImage(prevIndex);
+                    }}
+                    disabled={currentImageIndex === 0}
+                  >
+                    <MaterialIcons
+                      name="chevron-left"
+                      size={28}
+                      color="white"
+                    />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-30 rounded-full p-2"
+                    onPress={() => {
+                      const nextIndex = Math.min(
+                        images.length - 1,
+                        currentImageIndex + 1
+                      );
+                      goToImage(nextIndex);
+                    }}
+                    disabled={currentImageIndex === images.length - 1}
+                  >
+                    <MaterialIcons
+                      name="chevron-right"
+                      size={28}
+                      color="white"
+                    />
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {/* Pagination dots */}
+              {images.length > 1 && (
+                <View className="absolute bottom-4 left-0 right-0 flex-row justify-center">
+                  {images.map((_, index) => (
+                    <TouchableOpacity
+                      key={`dot-${index}`}
+                      className={`mx-1 h-2 w-2 rounded-full ${
+                        index === currentImageIndex
+                          ? "bg-white"
+                          : "bg-white bg-opacity-50"
+                      }`}
+                      onPress={() => goToImage(index)}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
           ) : (
             <View className="w-full h-full justify-center items-center">
               <Text className="text-gray-500">Resim bulunamadı</Text>
             </View>
           )}
-
-          {/* Image navigation controls would go here */}
         </View>
 
         {/* Post Details */}
         <View className="p-5">
           <View className="flex-row justify-between items-center mb-3">
             <Text className="text-2xl font-bold text-gray-800">
-              {post.title}
+              {post.ilanBasligi}
             </Text>
             <Text className="text-xl font-bold text-blue-600">
-              {post.price} ₺
+              {post.kiraFiyati} {post.paraBirimi || "₺"}
             </Text>
           </View>
 
-          <Text className="text-gray-500 mb-4">{post.location}</Text>
+          <Text className="text-gray-500 mb-4">
+            {post.il}, {post.ilce}, {post.mahalle}
+          </Text>
 
           {/* Property Features */}
           <View className="flex-row justify-between bg-gray-50 p-3 rounded-lg mb-5">
             <View className="items-center">
               <Text className="text-sm text-gray-500">Oda Sayısı</Text>
               <Text className="text-base font-bold text-gray-800">
-                {post.bedroom || "N/A"}
+                {post.odaSayisi || "N/A"}
               </Text>
             </View>
             <View className="items-center">
               <Text className="text-sm text-gray-500">Banyo</Text>
               <Text className="text-base font-bold text-gray-800">
-                {post.bathroom || "N/A"}
+                {post.banyoSayisi || "N/A"}
               </Text>
             </View>
             <View className="items-center">
               <Text className="text-sm text-gray-500">Metrekare</Text>
               <Text className="text-base font-bold text-gray-800">
-                {post.area ? `${post.area} m²` : "N/A"}
+                {post.brutMetreKare ? `${post.brutMetreKare} m²` : "N/A"}
               </Text>
             </View>
           </View>
@@ -215,7 +314,7 @@ const PostDetailScreen = ({ route, navigation }) => {
               Açıklama
             </Text>
             <Text className="text-base text-gray-700 leading-6">
-              {post.description || "Bu ilan için açıklama bulunmamaktadır."}
+              {post.postDescription || "Bu ilan için açıklama bulunmamaktadır."}
             </Text>
           </View>
 
@@ -247,15 +346,82 @@ const PostDetailScreen = ({ route, navigation }) => {
               <View className="flex-row justify-between py-2 border-b border-gray-200">
                 <Text className="text-gray-600">Isınma</Text>
                 <Text className="font-semibold text-gray-800">
-                  {post.heatingType || "Belirtilmemiş"}
+                  {post.isitmaTipi || "Belirtilmemiş"}
                 </Text>
               </View>
 
               <View className="flex-row justify-between py-2 border-b border-gray-200">
                 <Text className="text-gray-600">Depozito</Text>
                 <Text className="font-semibold text-gray-800">
-                  {post.depositAmount
-                    ? `${post.depositAmount} ₺`
+                  {post.depozito
+                    ? `${post.depozito} ${post.paraBirimi || "₺"}`
+                    : "Belirtilmemiş"}
+                </Text>
+              </View>
+
+              <View className="flex-row justify-between py-2 border-b border-gray-200">
+                <Text className="text-gray-600">Kimden</Text>
+                <Text className="font-semibold text-gray-800">
+                  {post.kimden || "Sahibinden"}
+                </Text>
+              </View>
+
+              <View className="flex-row justify-between py-2 border-b border-gray-200">
+                <Text className="text-gray-600">Site Adı</Text>
+                <Text className="font-semibold text-gray-800">
+                  {post.siteAdi || "Belirtilmemiş"}
+                </Text>
+              </View>
+
+              <View className="flex-row justify-between py-2 border-b border-gray-200">
+                <Text className="text-gray-600">Net Metrekare</Text>
+                <Text className="font-semibold text-gray-800">
+                  {post.netMetreKare
+                    ? `${post.netMetreKare} m²`
+                    : "Belirtilmemiş"}
+                </Text>
+              </View>
+
+              <View className="flex-row justify-between py-2 border-b border-gray-200">
+                <Text className="text-gray-600">Kullanım Durumu</Text>
+                <Text className="font-semibold text-gray-800">
+                  {post.kullanimDurumu || "Belirtilmemiş"}
+                </Text>
+              </View>
+
+              <View className="flex-row justify-between py-2 border-b border-gray-200">
+                <Text className="text-gray-600">Mutfak</Text>
+                <Text className="font-semibold text-gray-800">
+                  {post.mutfak || "Belirtilmemiş"}
+                </Text>
+              </View>
+
+              <View className="flex-row justify-between py-2 border-b border-gray-200">
+                <Text className="text-gray-600">Bina Yaşı</Text>
+                <Text className="font-semibold text-gray-800">
+                  {post.binaYasi || "Belirtilmemiş"}
+                </Text>
+              </View>
+
+              <View className="flex-row justify-between py-2 border-b border-gray-200">
+                <Text className="text-gray-600">Toplam Kat</Text>
+                <Text className="font-semibold text-gray-800">
+                  {post.toplamKat || "Belirtilmemiş"}
+                </Text>
+              </View>
+
+              <View className="flex-row justify-between py-2 border-b border-gray-200">
+                <Text className="text-gray-600">Aidat</Text>
+                <Text className="font-semibold text-gray-800">
+                  {post.aidat ? `${post.aidat} ₺` : "Belirtilmemiş"}
+                </Text>
+              </View>
+
+              <View className="flex-row justify-between py-2 border-b border-gray-200">
+                <Text className="text-gray-600">Min. Kiralama Süresi</Text>
+                <Text className="font-semibold text-gray-800">
+                  {post.minimumKiralamaSuresi
+                    ? `${post.minimumKiralamaSuresi} Ay`
                     : "Belirtilmemiş"}
                 </Text>
               </View>
@@ -268,6 +434,46 @@ const PostDetailScreen = ({ route, navigation }) => {
                     : "Belirtilmemiş"}
                 </Text>
               </View>
+            </View>
+          </View>
+
+          {/* Property Features */}
+          <View className="mb-5">
+            <Text className="text-lg font-bold text-gray-800 mb-2">
+              Özellikler
+            </Text>
+
+            <View className="flex-row flex-wrap">
+              {post.balkon === "true" && (
+                <View className="bg-blue-50 rounded-lg px-3 py-2 mr-2 mb-2">
+                  <Text className="text-blue-700">Balkon</Text>
+                </View>
+              )}
+              {post.asansor === "true" && (
+                <View className="bg-blue-50 rounded-lg px-3 py-2 mr-2 mb-2">
+                  <Text className="text-blue-700">Asansör</Text>
+                </View>
+              )}
+              {post.otopark === "true" && (
+                <View className="bg-blue-50 rounded-lg px-3 py-2 mr-2 mb-2">
+                  <Text className="text-blue-700">Otopark</Text>
+                </View>
+              )}
+              {post.esyali === "true" && (
+                <View className="bg-blue-50 rounded-lg px-3 py-2 mr-2 mb-2">
+                  <Text className="text-blue-700">Eşyalı</Text>
+                </View>
+              )}
+              {post.siteIcerisinde === "true" && (
+                <View className="bg-blue-50 rounded-lg px-3 py-2 mr-2 mb-2">
+                  <Text className="text-blue-700">Site İçerisinde</Text>
+                </View>
+              )}
+              {post.takas === "true" && (
+                <View className="bg-blue-50 rounded-lg px-3 py-2 mr-2 mb-2">
+                  <Text className="text-blue-700">Takas</Text>
+                </View>
+              )}
             </View>
           </View>
 
@@ -286,27 +492,23 @@ const PostDetailScreen = ({ route, navigation }) => {
               }
             >
               <View className="w-12 h-12 rounded-full bg-blue-100 justify-center items-center mr-3">
-                {post.landlord?.profileImageUrl ? (
+                {post.user?.profileImageUrl ? (
                   <Image
-                    source={{ uri: post.landlord.profileImageUrl }}
+                    source={{ uri: post.user.profileImageUrl }}
                     className="w-full h-full rounded-full"
                   />
                 ) : (
                   <Text className="text-xl font-bold text-blue-500">
-                    {post.landlord?.name?.charAt(0) || "E"}
+                    {post.user?.name?.charAt(0) || "E"}
                   </Text>
                 )}
               </View>
 
               <View className="flex-1">
                 <Text className="text-base font-semibold text-gray-800">
-                  {post.landlord?.fullName || "İsim belirtilmemiş"}
+                  {post.user?.name} {post.user?.surname}
                 </Text>
-                <Text className="text-sm text-gray-500">
-                  {post.landlord
-                    ? `${post.landlord.totalProperties || 0} ilan`
-                    : ""}
-                </Text>
+                <Text className="text-sm text-gray-500">Ev sahibi</Text>
               </View>
 
               <View className="bg-blue-500 px-3 py-1 rounded">
@@ -319,7 +521,7 @@ const PostDetailScreen = ({ route, navigation }) => {
 
       {/* Bottom Action Bar */}
       <View className="flex-row justify-between items-center p-4 bg-white border-t border-gray-200">
-        {userRole === "tenant" && (
+        {userRole === "KIRACI" && (
           <>
             <TouchableOpacity
               className="w-12 h-12 rounded-full bg-red-50 justify-center items-center mr-3"
@@ -347,7 +549,7 @@ const PostDetailScreen = ({ route, navigation }) => {
           </>
         )}
 
-        {userRole === "landlord" && post.landlordId === currentUser?.id && (
+        {userRole === "EVSAHIBI" && post.landlordId === currentUser?.id && (
           <>
             <TouchableOpacity
               className="flex-1 bg-blue-50 py-3 rounded-lg mr-2"

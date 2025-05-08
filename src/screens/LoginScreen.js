@@ -19,8 +19,8 @@ import {
 } from "react-native";
 import { useDispatch } from "react-redux";
 import { useLoginMutation } from "../redux/api/apiSlice";
-import { setCredentials } from "../redux/slices/authSlice";
-import { CommonActions } from "@react-navigation/native";
+import { setCredentials, setHasUserProfile } from "../redux/slices/authSlice";
+import { setUserProfile } from "../redux/slices/profileSlice";
 
 const { width } = Dimensions.get("window");
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
@@ -77,19 +77,53 @@ const LoginScreen = ({ navigation }) => {
 
       // Check if login successful
       if (response && response.isSuccess) {
+        // API yanıtından gelen roles dizisini kontrol et
+        const userRole =
+          response.result.roles && response.result.roles.length > 0
+            ? response.result.roles[0]
+            : null;
+
+        console.log("API'den gelen rol dizisi:", response.result.roles);
+        console.log("Seçilen rol:", userRole);
+
+        // Kullanıcı nesnesini güncellenmiş rolle oluştur
+        const updatedUser = {
+          ...response.result.user,
+          role: response.result.user?.role || userRole,
+        };
+
+        console.log("Güncellenmiş kullanıcı nesnesi:", updatedUser);
+
+        // API'den gelen hasUserProfile değerini al
+        const hasUserProfile = response.result.hasUserProfile === true;
+        console.log("API'den gelen profil durumu:", hasUserProfile);
+
         // Store credentials in Redux state
         dispatch(
           setCredentials({
-            user: response.result.user,
+            user: updatedUser,
             token: response.result.token,
+            hasUserProfile: hasUserProfile,
           })
         );
-        console.log("Kimlik bilgileri Redux'a kaydedildi");
-        console.log("Kullanıcı rolü:", response.result.user?.role);
 
-        // Başarılı giriş sonrası, kullanıcı rol bilgisi kontrolü
-        // Navigasyon otomatik olarak AppNavigator tarafından yapılacak
-        // Ekstra bir yönlendirme yapmaya gerek yok
+
+        // Profil durumunu açıkça belirt (Redux persist için)
+        dispatch(setHasUserProfile(hasUserProfile));
+
+        // Eğer kullanıcının profili varsa API'den profil bilgilerini çekeceğiz
+        // Bu işlem AppNavigator'daki ProfileLoader bileşeni tarafından yapılacak
+        // Geçici profil kullanmıyoruz artık
+
+
+        console.log("Kimlik bilgileri Redux'a kaydedildi");
+        console.log("Kullanıcı rolü:", updatedUser.role);
+        console.log("Profil durumu:", hasUserProfile);
+
+        // Kullanıcı AppNavigator tarafından yönlendirilecek
+        console.log(
+          "Redux state güncellendi, AppNavigator tarafından yönlendirilecek"
+        );
       } else {
         // Show error if response is not successful
         console.log("Giriş hatası:", response?.message);
