@@ -36,11 +36,9 @@ const ProfileScreen = ({ navigation }) => {
     data: profileData,
     isLoading,
     refetch,
-
   } = userRole === "EVSAHIBI"
     ? useGetLandlordProfileQuery(currentUser?.id)
     : useGetTenantProfileQuery(currentUser?.id);
-
 
   useEffect(() => {
     if (profileData && profileData.isSuccess && profileData.result) {
@@ -145,14 +143,26 @@ const ProfileScreen = ({ navigation }) => {
           {renderField("Cinsiyet", currentUser?.gender)}
           {renderField("Rol", currentUser?.role)}
 
-          <TouchableOpacity
-            className="mt-5 bg-blue-50 py-3 rounded-lg"
-            onPress={handleEditProfile}
-          >
-            <Text className="text-blue-600 font-semibold text-center">
-              Profili Düzenle
-            </Text>
-          </TouchableOpacity>
+          {currentUser.isTenantExpectationCompleted == true ||
+          currentUser.isLandlordExpectationCompleted == true ? (
+            <TouchableOpacity
+              className="mt-5 bg-blue-50 py-3 rounded-lg"
+              onPress={handleEditProfile}
+            >
+              <Text className="text-blue-600 font-semibold text-center">
+                Profili Düzenle
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              className="mt-5 bg-green-50 py-3 rounded-lg"
+              onPress={handleEditProfile}
+            >
+              <Text className="text-green-600 font-semibold text-center">
+                Profili Tamamla
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Landlord Profile Details */}
@@ -289,9 +299,7 @@ const ProfileScreen = ({ navigation }) => {
           >
             <View className="w-8 h-8 rounded-full bg-green-100 justify-center items-center mr-3">
               <Image
-
                 source={require("../../assets/logo-kirax.png")} // Replace with appropriate icon
-
                 className="w-4 h-4"
                 resizeMode="contain"
               />
@@ -310,9 +318,7 @@ const ProfileScreen = ({ navigation }) => {
             >
               <View className="w-8 h-8 rounded-full bg-red-100 justify-center items-center mr-3">
                 <Image
-
                   source={require("../../assets/logo-kirax.png")} // Replace with appropriate icon
-
                   className="w-4 h-4"
                   resizeMode="contain"
                 />
@@ -330,9 +336,7 @@ const ProfileScreen = ({ navigation }) => {
             >
               <View className="w-8 h-8 rounded-full bg-yellow-100 justify-center items-center mr-3">
                 <Image
-
                   source={require("../../assets/logo-kirax.png")} // Replace with appropriate icon
-
                   className="w-4 h-4"
                   resizeMode="contain"
                 />
@@ -352,9 +356,7 @@ const ProfileScreen = ({ navigation }) => {
           >
             <View className="w-8 h-8 rounded-full bg-gray-100 justify-center items-center mr-3">
               <Image
-
                 source={require("../../assets/logo-kirax.png")} // Replace with appropriate icon
-
                 className="w-4 h-4"
                 resizeMode="contain"
               />
@@ -370,9 +372,7 @@ const ProfileScreen = ({ navigation }) => {
           >
             <View className="w-8 h-8 rounded-full bg-purple-100 justify-center items-center mr-3">
               <Image
-
                 source={require("../../assets/logo-kirax.png")} // Replace with appropriate icon
-
                 className="w-4 h-4"
                 resizeMode="contain"
               />
@@ -386,9 +386,7 @@ const ProfileScreen = ({ navigation }) => {
           >
             <View className="w-8 h-8 rounded-full bg-red-100 justify-center items-center mr-3">
               <Image
-
                 source={require("../../assets/logo-kirax.png")} // Replace with appropriate icon
-
                 className="w-4 h-4"
                 resizeMode="contain"
               />

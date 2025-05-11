@@ -13,14 +13,25 @@ import {
   Dimensions,
   SafeAreaView,
   Pressable,
-  Animated
+  Animated,
 } from "react-native";
 import { useDispatch } from "react-redux";
 import { useRegisterMutation, useLoginMutation } from "../redux/api/apiSlice";
 import { setCredentials } from "../redux/slices/authSlice";
 import { CommonActions } from "@react-navigation/native";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faSignature, faEnvelope, faPhone, faVenusMars, faUser, faLock, faEye, faEyeSlash, faCalendar, faArrowLeft } from "@fortawesome/pro-solid-svg-icons";
+import {
+  faSignature,
+  faEnvelope,
+  faPhone,
+  faVenusMars,
+  faUser,
+  faLock,
+  faEye,
+  faEyeSlash,
+  faCalendar,
+  faArrowLeft,
+} from "@fortawesome/pro-solid-svg-icons";
 const { width } = Dimensions.get("window");
 
 const RegisterScreen = ({ navigation }) => {
@@ -138,7 +149,7 @@ const RegisterScreen = ({ navigation }) => {
         Animated.timing(slideAnim, {
           toValue: -1, // Slide to left
           duration: 300,
-          useNativeDriver: true
+          useNativeDriver: true,
         }).start(() => {
           // Reset position and update step after animation completes
           slideAnim.setValue(1); // Position next content off screen to right
@@ -148,7 +159,7 @@ const RegisterScreen = ({ navigation }) => {
           Animated.timing(slideAnim, {
             toValue: 0, // Slide to center
             duration: 300,
-            useNativeDriver: true
+            useNativeDriver: true,
           }).start();
         });
       } else {
@@ -269,7 +280,7 @@ const RegisterScreen = ({ navigation }) => {
       Alert.alert(
         "Kayıt Hatası",
         error.data?.message ||
-        "Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin."
+          "Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin."
       );
     }
   };
@@ -292,18 +303,18 @@ const RegisterScreen = ({ navigation }) => {
                   style={{
                     flex: 1,
                     height: 4,
-                    backgroundColor: '#E5E7EB',
+                    backgroundColor: "#E5E7EB",
                     borderRadius: 6,
-                    overflow: 'hidden', // Animasyonu kırpmak için önemli
+                    overflow: "hidden", // Animasyonu kırpmak için önemli
                   }}
                 >
                   {isCompleted ? (
                     // Tamamlanmış adımlar - tamamen dolu
                     <View
                       style={{
-                        height: '100%',
-                        width: '100%',
-                        backgroundColor: '#2C8700',
+                        height: "100%",
+                        width: "100%",
+                        backgroundColor: "#2C8700",
                         borderRadius: 6,
                       }}
                     />
@@ -311,12 +322,12 @@ const RegisterScreen = ({ navigation }) => {
                     // Mevcut adım - soldan sağa animasyonlu dolum
                     <Animated.View
                       style={{
-                        height: '100%',
+                        height: "100%",
                         width: progressAnim.interpolate({
                           inputRange: [0, 1],
-                          outputRange: ['0%', '100%'],
+                          outputRange: ["0%", "100%"],
                         }),
-                        backgroundColor: '#2C8700',
+                        backgroundColor: "#2C8700",
                         borderRadius: 6,
                       }}
                     />
@@ -336,7 +347,7 @@ const RegisterScreen = ({ navigation }) => {
     Animated.timing(slideAnim, {
       toValue: 0,
       duration: 300,
-      useNativeDriver: true
+      useNativeDriver: true,
     }).start();
   }, []);
 
@@ -346,7 +357,7 @@ const RegisterScreen = ({ navigation }) => {
       Animated.timing(slideAnim, {
         toValue: 1, // Slide to right
         duration: 300,
-        useNativeDriver: true
+        useNativeDriver: true,
       }).start(() => {
         // Reset position and update step after animation completes
         slideAnim.setValue(-1); // Position next content off screen to left
@@ -356,7 +367,7 @@ const RegisterScreen = ({ navigation }) => {
         Animated.timing(slideAnim, {
           toValue: 0, // Slide to center
           duration: 300,
-          useNativeDriver: true
+          useNativeDriver: true,
         }).start();
       });
     }
@@ -369,12 +380,8 @@ const RegisterScreen = ({ navigation }) => {
         return (
           <>
             <View className="gap-1">
-              <Text className="text-gray-600 ml-1">
-                Adınız
-              </Text>
-              <View
-                className="flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full"
-              >
+              <Text className="text-gray-600 ml-1">Adınız</Text>
+              <View className="flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full">
                 <FontAwesomeIcon icon={faSignature} size={20} color="#6b7280" />
                 <TextInput
                   className="text-gray-600 flex-1 font-normal"
@@ -387,12 +394,8 @@ const RegisterScreen = ({ navigation }) => {
             </View>
 
             <View className="gap-1 mt-4">
-              <Text className="text-gray-600 ml-1">
-                Soyadınız
-              </Text>
-              <View
-                className="flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full"
-              >
+              <Text className="text-gray-600 ml-1">Soyadınız</Text>
+              <View className="flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full">
                 <FontAwesomeIcon icon={faSignature} size={20} color="#6b7280" />
                 <TextInput
                   className="text-gray-600 flex-1 font-normal"
@@ -405,12 +408,8 @@ const RegisterScreen = ({ navigation }) => {
             </View>
 
             <View className="gap-1 mt-4">
-              <Text className="text-gray-600 ml-1">
-                E-posta adresiniz
-              </Text>
-              <View
-                className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full"
-              >
+              <Text className="text-gray-600 ml-1">E-posta adresiniz</Text>
+              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full">
                 <FontAwesomeIcon icon={faEnvelope} size={20} color="#6b7280" />
                 <TextInput
                   className="text-gray-600 flex-1 font-normal"
@@ -429,12 +428,8 @@ const RegisterScreen = ({ navigation }) => {
         return (
           <>
             <View className="gap-1">
-              <Text className="text-gray-600 ml-1">
-                Kullanıcı adınız
-              </Text>
-              <View
-                className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full"
-              >
+              <Text className="text-gray-600 ml-1">Kullanıcı adınız</Text>
+              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full">
                 <FontAwesomeIcon icon={faUser} size={20} color="#6b7280" />
                 <TextInput
                   className="text-gray-600 flex-1 font-normal"
@@ -448,12 +443,8 @@ const RegisterScreen = ({ navigation }) => {
             </View>
 
             <View className="gap-1 mt-4">
-              <Text className="text-gray-600 ml-1">
-                Telefon numaranız
-              </Text>
-              <View
-                className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full"
-              >
+              <Text className="text-gray-600 ml-1">Telefon numaranız</Text>
+              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full">
                 <FontAwesomeIcon icon={faPhone} size={20} color="#6b7280" />
                 <TextInput
                   className="text-gray-600 flex-1 font-normal"
@@ -471,12 +462,8 @@ const RegisterScreen = ({ navigation }) => {
         return (
           <>
             <View className="gap-1">
-              <Text className="text-gray-600 ml-1">
-                Doğum tarihiniz
-              </Text>
-              <View
-                className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full"
-              >
+              <Text className="text-gray-600 ml-1">Doğum tarihiniz</Text>
+              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full">
                 <FontAwesomeIcon icon={faCalendar} size={20} color="#6b7280" />
                 <TextInput
                   className="text-gray-600 flex-1 font-normal"
@@ -496,9 +483,7 @@ const RegisterScreen = ({ navigation }) => {
               <Text className="text-gray-600 ml-1">
                 Cinsiyetiniz (İsteğe bağlı)
               </Text>
-              <View
-                className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full"
-              >
+              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full">
                 <FontAwesomeIcon icon={faVenusMars} size={20} color="#6b7280" />
                 <TextInput
                   className="text-gray-600 flex-1 font-normal"
@@ -515,11 +500,8 @@ const RegisterScreen = ({ navigation }) => {
         return (
           <>
             <View className="gap-1">
-              <Text className="text-gray-600 ml-1">
-                Şifreniz
-              </Text>
-              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full"
-              >
+              <Text className="text-gray-600 ml-1">Şifreniz</Text>
+              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full">
                 <FontAwesomeIcon icon={faLock} size={20} color="#6b7280" />
                 <TextInput
                   className="text-gray-600 flex-1 font-normal"
@@ -531,7 +513,7 @@ const RegisterScreen = ({ navigation }) => {
                 />
                 <Pressable onPress={() => setShowPassword(!showPassword)}>
                   <FontAwesomeIcon
-                    color='#595959'
+                    color="#595959"
                     icon={showPassword ? faEye : faEyeSlash}
                     size={20}
                   />
@@ -540,11 +522,8 @@ const RegisterScreen = ({ navigation }) => {
             </View>
 
             <View className="gap-1 mt-4">
-              <Text className="text-gray-600 ml-1">
-                Şifre tekrarı
-              </Text>
-              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full"
-              >
+              <Text className="text-gray-600 ml-1">Şifre tekrarı</Text>
+              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full">
                 <FontAwesomeIcon icon={faLock} size={20} color="#6b7280" />
                 <TextInput
                   className="text-gray-600 font-normal flex-1"
@@ -626,25 +605,27 @@ const RegisterScreen = ({ navigation }) => {
         keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
       >
         {/* Scrollable Content Area */}
-        <ScrollView
+        <View
           className="flex-grow px-5"
           contentContainerStyle={{ paddingBottom: 120 }} // Add enough padding to ensure content is visible
         >
           <Animated.View
             className="flex"
             style={{
-              transform: [{
-                translateX: slideAnim.interpolate({
-                  inputRange: [-1, 0, 1],
-                  outputRange: [-(width * 0.8), 0, width * 0.8] // Slide animation values
-                })
-              }]
+              transform: [
+                {
+                  translateX: slideAnim.interpolate({
+                    inputRange: [-1, 0, 1],
+                    outputRange: [-(width * 0.8), 0, width * 0.8], // Slide animation values
+                  }),
+                },
+              ],
             }}
           >
             {/* Current Step Content */}
             {renderStepContent()}
           </Animated.View>
-        </ScrollView>
+        </View>
 
         {/* Button Area that moves with keyboard */}
         <View className="bg-white px-5 py-4 border-t border-gray-200">

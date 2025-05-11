@@ -369,50 +369,6 @@ const CreateProfileScreen = ({ navigation }) => {
     }
   };
 
-  // Veri doğrulama
-  const validateForm = () => {
-    if (userRole === "EVSAHIBI") {
-      // Ev sahibi doğrulaması
-      if (!rentalLocation) {
-        Alert.alert("Hata", "Kiralama konumu zorunludur.");
-        return false;
-      }
-
-      if (!rentalPriceExpectation) {
-        Alert.alert("Hata", "Kira beklentisi zorunludur.");
-        return false;
-      }
-
-      if (!numberOfOccupants) {
-        Alert.alert("Hata", "Kiracı sayısı zorunludur.");
-        return false;
-      }
-    } else {
-      // Kiracı doğrulaması
-      if (!location) {
-        Alert.alert("Hata", "Konum alanı zorunludur.");
-        return false;
-      }
-
-      if (!priceRange) {
-        Alert.alert("Hata", "Fiyat aralığı alanı zorunludur.");
-        return false;
-      }
-
-      if (!profession) {
-        Alert.alert("Hata", "Meslek alanı zorunludur.");
-        return false;
-      }
-
-      if (!maritalStatus) {
-        Alert.alert("Hata", "Medeni durum alanı zorunludur.");
-        return false;
-      }
-    }
-
-    return true;
-  };
-
   const handleGoBack = () => {
     // Rol seçimi ekranına geri dön
     navigation.navigate("RoleSelection");
@@ -444,17 +400,12 @@ const CreateProfileScreen = ({ navigation }) => {
     );
   };
 
-  // Handle form submission
+  // Handle form submission - MODIFIED TO ONLY SEND REQUIRED FIELDS
   const handleCreateProfile = async () => {
-    // Form doğrulama
-    if (!validateForm()) {
-      return;
-    }
-
     try {
       const formData = new FormData();
 
-      // Add common fields
+      // Add user ID (required for association)
       formData.append("UserId", currentUser.id);
 
       // Add profile image if selected
@@ -487,95 +438,48 @@ const CreateProfileScreen = ({ navigation }) => {
         dispatch(updateCoverImageStatus("uploading"));
       }
 
-      // Add role-specific fields
+      // Add ProfileDescription field (using the appropriate field based on role)
       if (userRole === "EVSAHIBI") {
-        formData.append("RentalLocation", rentalLocation);
-        formData.append("RentalPriceExpectation", rentalPriceExpectation);
-        formData.append("NumberOfOccupants", numberOfOccupants);
-        formData.append(
-          "IsNumberOfOccupantsImportant",
-          isNumberOfOccupantsImportant
-        );
-        formData.append(
-          "IsTenantProfessionImportant",
-          isTenantProfessionImportant
-        );
-        formData.append(
-          "IsTenantMaritalStatusImportant",
-          isTenantMaritalStatusImportant
-        );
-        formData.append("TenantProfession", tenantProfession || "");
-        formData.append("TenantMaritalStatus", tenantMaritalStatus || "");
-        formData.append("Description", description || "");
-
-        // Alanları logla
-        console.log("Formda bulunan alanlar:");
-        for (let [key, value] of formData.entries()) {
-          console.log(`- ${key}: ${value}`);
-        }
-
-        // Create landlord profile
-        const response = await createLandlordProfile(formData).unwrap();
-        console.log("EVSAHIBI profil oluşturma yanıtı:", response);
-
-        if (response && response.isSuccess) {
-          // Redux'a profil bilgisini kaydet
-          if (response.result) {
-            dispatch(setUserProfile(response.result));
-          }
-
-          Alert.alert("Başarılı", "Profiliniz başarıyla oluşturuldu.", [
-            {
-              text: "Tamam",
-              onPress: () => {
-                // App navigator otomatik olarak ana sayfaya yönlendirecek
-              },
-            },
-          ]);
-        } else {
-          Alert.alert(
-            "Hata",
-            (response && response.message) || "Profil oluşturulamadı."
-          );
-        }
+        formData.append("ProfileDescription", description || "");
       } else {
-        formData.append("Location", location);
-        formData.append("PriceRange", priceRange);
-        formData.append("NumberOfPeople", numberOfPeople);
-        formData.append("Profession", profession);
-        formData.append("MaritalStatus", maritalStatus);
         formData.append("ProfileDescription", profileDescription || "");
+      }
 
-        // Alanları logla
-        console.log("Formda bulunan alanlar:");
-        for (let [key, value] of formData.entries()) {
-          console.log(`- ${key}: ${value}`);
-        }
+      // Log the fields in the form
+      console.log("Formda bulunan alanlar:");
+      for (let [key, value] of formData.entries()) {
+        console.log(`- ${key}: ${value}`);
+      }
 
-        // Create tenant profile
-        const response = await createTenantProfile(formData).unwrap();
+      // Create profile based on user role
+      let response;
+      if (userRole === "EVSAHIBI") {
+        response = await createLandlordProfile(formData).unwrap();
+        console.log("EVSAHIBI profil oluşturma yanıtı:", response);
+      } else {
+        response = await createTenantProfile(formData).unwrap();
         console.log("Tenant profil oluşturma yanıtı:", response);
+      }
 
-        if (response && response.isSuccess) {
-          // Redux'a profil bilgisini kaydet
-          if (response.result) {
-            dispatch(setUserProfile(response.result));
-          }
-
-          Alert.alert("Başarılı", "Profiliniz başarıyla oluşturuldu.", [
-            {
-              text: "Tamam",
-              onPress: () => {
-                // App navigator otomatik olarak ana sayfaya yönlendirecek
-              },
-            },
-          ]);
-        } else {
-          Alert.alert(
-            "Hata",
-            (response && response.message) || "Profil oluşturulamadı."
-          );
+      if (response && response.isSuccess) {
+        // Save profile information to Redux
+        if (response.result) {
+          dispatch(setUserProfile(response.result));
         }
+
+        Alert.alert("Başarılı", "Profiliniz başarıyla oluşturuldu.", [
+          {
+            text: "Tamam",
+            onPress: () => {
+              // App navigator will automatically redirect to the main page
+            },
+          },
+        ]);
+      } else {
+        Alert.alert(
+          "Hata",
+          (response && response.message) || "Profil oluşturulamadı."
+        );
       }
 
       // Reset image upload statuses
@@ -584,7 +488,7 @@ const CreateProfileScreen = ({ navigation }) => {
     } catch (error) {
       console.error("Profile creation error:", error);
 
-      // Detaylı hata mesajlarını göster
+      // Show detailed error messages
       if (error && error.data && error.data.errors) {
         let errorMessage = "API şu hataları döndürdü:\n";
 
@@ -664,7 +568,7 @@ const CreateProfileScreen = ({ navigation }) => {
                 <Text className="text-gray-500">Kapak Fotoğrafı Ekle</Text>
               </View>
             )}
-            <View className="absolute right-4 bottom-4 bg-white p-2 rounded-full shadow">
+            <View className="absolute right-4 bottom-4 bg-white p-2 rounded-full shadow-sm">
               <Text className="text-blue-500 font-bold">Düzenle</Text>
             </View>
           </TouchableOpacity>
@@ -703,203 +607,37 @@ const CreateProfileScreen = ({ navigation }) => {
           >
             <Text className="text-white text-base font-semibold">Geri Dön</Text>
           </TouchableOpacity>
-          {/* Role-specific fields */}
-          {userRole === "EVSAHIBI" ? (
-            <>
-              {/* Ev Sahibi Bilgileri */}
-              <View className="bg-white rounded-xl shadow-sm p-5 mb-6">
-                <Text className="text-lg font-bold text-gray-800 mb-4">
-                  Kiralama Tercihleri
-                </Text>
 
-                <View className="mb-4">
-                  <CustomDropdown
-                    label="Kiralama Konumu"
-                    value={rentalLocation}
-                    setValue={setRentalLocation}
-                    options={cities}
-                    placeholder="Konum seçiniz"
-                    required={true}
-                  />
-                </View>
+          {/* Description field (keeping this to maintain UI, but only sending ProfileDescription) */}
+          <View className="bg-white rounded-xl shadow-sm p-5 mb-6">
+            <Text className="text-lg font-bold text-gray-800 mb-4">
+              {userRole === "EVSAHIBI"
+                ? "Ev Sahibi Bilgileri"
+                : "Kiracı Bilgileri"}
+            </Text>
 
-                <View className="mb-4">
-                  <CustomDropdown
-                    label="Kira Beklentisi"
-                    value={rentalPriceExpectation}
-                    setValue={setRentalPriceExpectation}
-                    options={priceRanges}
-                    placeholder="Fiyat aralığı seçiniz"
-                    required={true}
-                  />
-                </View>
-
-                <View className="mb-4">
-                  <CustomDropdown
-                    label="Tercih Edilen Kiracı Sayısı"
-                    value={numberOfOccupants}
-                    setValue={setNumberOfOccupants}
-                    options={occupantOptions}
-                    placeholder="Kiracı sayısı seçiniz"
-                    required={true}
-                  />
-                </View>
-
-                <View className="flex-row justify-between items-center mb-4">
-                  <Text className="text-gray-600">
-                    Kiracı Sayısı Önemli mi?
-                  </Text>
-                  <Switch
-                    value={isNumberOfOccupantsImportant}
-                    onValueChange={setIsNumberOfOccupantsImportant}
-                    trackColor={{ false: "#767577", true: "#4A90E2" }}
-                    thumbColor={
-                      isNumberOfOccupantsImportant ? "#f4f3f4" : "#f4f3f4"
-                    }
-                  />
-                </View>
-
-                <View className="flex-row justify-between items-center mb-4">
-                  <Text className="text-gray-600">
-                    Kiracı Mesleği Önemli mi?
-                  </Text>
-                  <Switch
-                    value={isTenantProfessionImportant}
-                    onValueChange={setIsTenantProfessionImportant}
-                    trackColor={{ false: "#767577", true: "#4A90E2" }}
-                    thumbColor={
-                      isTenantProfessionImportant ? "#f4f3f4" : "#f4f3f4"
-                    }
-                  />
-                </View>
-
-                <View className="flex-row justify-between items-center mb-4">
-                  <Text className="text-gray-600">
-                    Kiracı Medeni Durumu Önemli mi?
-                  </Text>
-                  <Switch
-                    value={isTenantMaritalStatusImportant}
-                    onValueChange={setIsTenantMaritalStatusImportant}
-                    trackColor={{ false: "#767577", true: "#4A90E2" }}
-                    thumbColor={
-                      isTenantMaritalStatusImportant ? "#f4f3f4" : "#f4f3f4"
-                    }
-                  />
-                </View>
-
-                {isTenantProfessionImportant && (
-                  <View className="mb-4">
-                    <CustomDropdown
-                      label="Tercih Edilen Kiracı Mesleği"
-                      value={tenantProfession}
-                      setValue={setTenantProfession}
-                      options={professions}
-                      placeholder="Meslek seçiniz"
-                    />
-                  </View>
-                )}
-
-                {isTenantMaritalStatusImportant && (
-                  <View className="mb-4">
-                    <CustomDropdown
-                      label="Tercih Edilen Kiracı Medeni Durumu"
-                      value={tenantMaritalStatus}
-                      setValue={setTenantMaritalStatus}
-                      options={maritalStatuses}
-                      placeholder="Medeni durum seçiniz"
-                    />
-                  </View>
-                )}
-
-                <View className="mb-2">
-                  <Text className="text-gray-600 mb-2">Açıklama</Text>
-                  <TextInput
-                    className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200 min-h-[100px]"
-                    value={description}
-                    onChangeText={setDescription}
-                    placeholder="Eklemek istediğiniz bilgileri yazınız"
-                    multiline
-                    textAlignVertical="top"
-                  />
-                </View>
-              </View>
-            </>
-          ) : (
-            <>
-              {/* Kiracı Bilgileri */}
-              <View className="bg-white rounded-xl shadow-sm p-5 mb-6">
-                <Text className="text-lg font-bold text-gray-800 mb-4">
-                  Kiracı Bilgileri
-                </Text>
-
-                <View className="mb-4">
-                  <CustomDropdown
-                    label="Konum"
-                    value={location}
-                    setValue={setLocation}
-                    options={cities}
-                    placeholder="Konum seçiniz"
-                    required={true}
-                  />
-                </View>
-
-                <View className="mb-4">
-                  <CustomDropdown
-                    label="Fiyat Aralığı"
-                    value={priceRange}
-                    setValue={setPriceRange}
-                    options={priceRanges}
-                    placeholder="Fiyat aralığı seçiniz"
-                    required={true}
-                  />
-                </View>
-
-                <View className="mb-4">
-                  <CustomDropdown
-                    label="Kişi Sayısı"
-                    value={numberOfPeople}
-                    setValue={setNumberOfPeople}
-                    options={peopleNumbers}
-                    placeholder="Kişi sayısı seçiniz"
-                  />
-                </View>
-
-                <View className="mb-4">
-                  <CustomDropdown
-                    label="Meslek"
-                    value={profession}
-                    setValue={setProfession}
-                    options={professions}
-                    placeholder="Meslek seçiniz"
-                    required={true}
-                  />
-                </View>
-
-                <View className="mb-4">
-                  <CustomDropdown
-                    label="Medeni Durum"
-                    value={maritalStatus}
-                    setValue={setMaritalStatus}
-                    options={maritalStatuses}
-                    placeholder="Medeni durum seçiniz"
-                    required={true}
-                  />
-                </View>
-
-                <View className="mb-2">
-                  <Text className="text-gray-600 mb-2">Hakkımda</Text>
-                  <TextInput
-                    className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200 min-h-[100px]"
-                    value={profileDescription}
-                    onChangeText={setProfileDescription}
-                    placeholder="Kendinizi kısaca tanıtın"
-                    multiline
-                    textAlignVertical="top"
-                  />
-                </View>
-              </View>
-            </>
-          )}
+            <View className="mb-2">
+              <Text className="text-gray-600 mb-2">Açıklama</Text>
+              <TextInput
+                className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200 min-h-[100px]"
+                value={
+                  userRole === "EVSAHIBI" ? description : profileDescription
+                }
+                onChangeText={
+                  userRole === "EVSAHIBI"
+                    ? setDescription
+                    : setProfileDescription
+                }
+                placeholder={
+                  userRole === "EVSAHIBI"
+                    ? "Eklemek istediğiniz bilgileri yazınız"
+                    : "Kendinizi kısaca tanıtın"
+                }
+                multiline
+                textAlignVertical="top"
+              />
+            </View>
+          </View>
 
           {/* Create button */}
           <TouchableOpacity
@@ -920,15 +658,15 @@ const CreateProfileScreen = ({ navigation }) => {
         </View>
       </ScrollView>
 
-      {/* Image picker modal */}
+      {/* Image picker modal - Without darkening the entire screen */}
       <Modal
         visible={isImagePickerVisible}
         transparent={true}
         animationType="slide"
         onRequestClose={() => setIsImagePickerVisible(false)}
       >
-        <View className="flex-1 justify-end bg-black bg-opacity-50">
-          <View className="bg-white rounded-t-xl">
+        <View className="flex-1 justify-end">
+          <View className="bg-white rounded-t-xl shadow-lg">
             <View className="p-4 border-b border-gray-200">
               <Text className="text-xl font-bold text-gray-800 text-center">
                 {activeImageType === "profile"

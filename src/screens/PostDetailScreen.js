@@ -444,32 +444,32 @@ const PostDetailScreen = ({ route, navigation }) => {
             </Text>
 
             <View className="flex-row flex-wrap">
-              {post.balkon === "true" && (
+              {post.balkon === true && (
                 <View className="bg-blue-50 rounded-lg px-3 py-2 mr-2 mb-2">
                   <Text className="text-blue-700">Balkon</Text>
                 </View>
               )}
-              {post.asansor === "true" && (
+              {post.asansor === true && (
                 <View className="bg-blue-50 rounded-lg px-3 py-2 mr-2 mb-2">
                   <Text className="text-blue-700">Asansör</Text>
                 </View>
               )}
-              {post.otopark === "true" && (
+              {post.otopark === true && (
                 <View className="bg-blue-50 rounded-lg px-3 py-2 mr-2 mb-2">
                   <Text className="text-blue-700">Otopark</Text>
                 </View>
               )}
-              {post.esyali === "true" && (
+              {post.esyali === true && (
                 <View className="bg-blue-50 rounded-lg px-3 py-2 mr-2 mb-2">
                   <Text className="text-blue-700">Eşyalı</Text>
                 </View>
               )}
-              {post.siteIcerisinde === "true" && (
+              {post.siteIcerisinde === true && (
                 <View className="bg-blue-50 rounded-lg px-3 py-2 mr-2 mb-2">
                   <Text className="text-blue-700">Site İçerisinde</Text>
                 </View>
               )}
-              {post.takas === "true" && (
+              {post.takas === true && (
                 <View className="bg-blue-50 rounded-lg px-3 py-2 mr-2 mb-2">
                   <Text className="text-blue-700">Takas</Text>
                 </View>
