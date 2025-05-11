@@ -31,6 +31,8 @@ import {
   updateCoverImageStatus,
 } from "../redux/slices/profileSlice";
 import * as ImagePicker from "expo-image-picker";
+import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
+import { faPlus } from "@fortawesome/pro-solid-svg-icons";
 
 const CustomDropdown = ({
   label,
@@ -77,20 +79,18 @@ const CustomDropdown = ({
               keyExtractor={(item) => item.toString()}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  className={`p-4 border-b border-gray-100 ${
-                    value === item ? "bg-blue-50" : ""
-                  }`}
+                  className={`p-4 border-b border-gray-100 ${value === item ? "bg-blue-50" : ""
+                    }`}
                   onPress={() => {
                     setValue(item);
                     setIsOpen(false);
                   }}
                 >
                   <Text
-                    className={`text-base ${
-                      value === item
-                        ? "text-blue-500 font-semibold"
-                        : "text-gray-700"
-                    }`}
+                    className={`text-base ${value === item
+                      ? "text-blue-500 font-semibold"
+                      : "text-gray-700"
+                      }`}
                   >
                     {item}
                   </Text>
@@ -103,8 +103,10 @@ const CustomDropdown = ({
     </View>
   );
 };
+import { useNavigation } from '@react-navigation/native';
 
-const CreateProfileScreen = ({ navigation }) => {
+const CreateProfileScreen = (props) => {
+  const navigation = useNavigation();
   const dispatch = useDispatch();
   const currentUser = useSelector(selectCurrentUser);
   const userRole = useSelector(selectUserRole);
@@ -279,14 +281,12 @@ const CreateProfileScreen = ({ navigation }) => {
     if (currentUser && userRole) {
       if (userRole === "EVSAHIBI") {
         setDescription(
-          `Merhaba, ben ${currentUser.name || ""} ${
-            currentUser.surname || ""
+          `Merhaba, ben ${currentUser.name || ""} ${currentUser.surname || ""
           }. Kiralayanlar için buradayım.`
         );
       } else {
         setProfileDescription(
-          `Merhaba, ben ${currentUser.name || ""} ${
-            currentUser.surname || ""
+          `Merhaba, ben ${currentUser.name || ""} ${currentUser.surname || ""
           }. Kiralık ev arıyorum.`
         );
       }
@@ -505,7 +505,7 @@ const CreateProfileScreen = ({ navigation }) => {
         Alert.alert(
           "Oluşturma Hatası",
           (error && error.data && error.data.message) ||
-            "Profil oluşturulurken bir hata oluştu. Lütfen tekrar deneyin."
+          "Profil oluşturulurken bir hata oluştu. Lütfen tekrar deneyin."
         );
       }
 
@@ -529,26 +529,34 @@ const CreateProfileScreen = ({ navigation }) => {
   return (
     <SafeAreaView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-gray-50"
+      className="flex-1 bg-white"
     >
+      <View className="px-5 py-6 flex-row items-center justify-between bg-white">
+        <Text className="text-xl font-bold text-gray-600">
+          Profil Oluştur
+        </Text>
+        <View className="flex-row gap-2 items-center">
+          <Text className="text-green-600 mr-2">
+            {userRole === "EVSAHIBI" ? "Ev Sahibi" : "Kiracı"}
+          </Text>
+          <TouchableOpacity
+            className="rounded-lg px-3 py-1 justify-center items-center bg-gray-500"
+            onPress={handleGoBack}
+          >
+            <Text className="text-white font-semibold">Geri Dön</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleLogout}
+            className="bg-red-500 px-3 py-1 rounded-md"
+          >
+            <Text className="text-white font-medium">Çıkış</Text>
+          </TouchableOpacity>
+        </View>
+
+      </View>
       <ScrollView className="flex-1">
         {/* Header - Üst kısımda çıkış yapma tuşunu ekledik */}
-        <View className="px-5 py-6 flex-row items-center justify-between bg-white border-b border-gray-200">
-          <Text className="text-xl font-bold text-gray-800">
-            Profil Oluştur
-          </Text>
-          <View className="flex-row items-center">
-            <Text className="text-blue-500 mr-4">
-              {userRole === "EVSAHIBI" ? "Ev Sahibi" : "Kiracı"}
-            </Text>
-            <TouchableOpacity
-              onPress={handleLogout}
-              className="bg-red-500 px-3 py-1 rounded-md"
-            >
-              <Text className="text-white font-medium">Çıkış</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+
 
         {/* Profile image and cover photo section */}
         <View className="relative mb-16">
@@ -569,7 +577,7 @@ const CreateProfileScreen = ({ navigation }) => {
               </View>
             )}
             <View className="absolute right-4 bottom-4 bg-white p-2 rounded-full shadow-sm">
-              <Text className="text-blue-500 font-bold">Düzenle</Text>
+              <Text className="text-green-600 font-bold">Düzenle</Text>
             </View>
           </TouchableOpacity>
 
@@ -593,23 +601,18 @@ const CreateProfileScreen = ({ navigation }) => {
                 </View>
               )}
             </View>
-            <View className="absolute right-0 bottom-0 bg-blue-500 w-8 h-8 rounded-full justify-center items-center">
-              <Text className="text-white text-xl">+</Text>
+            <View className="absolute right-0 bottom-0 bg-green-500 w-8 h-8 rounded-full justify-center items-center">
+              <FontAwesomeIcon icon={faPlus} size={16} color="#fff" />
             </View>
           </TouchableOpacity>
         </View>
 
         {/* Form fields */}
         <View className="px-5">
-          <TouchableOpacity
-            className="rounded-lg h-12 justify-center items-center bg-gray-500 flex-1 mr-2 mb-4"
-            onPress={handleGoBack}
-          >
-            <Text className="text-white text-base font-semibold">Geri Dön</Text>
-          </TouchableOpacity>
+
 
           {/* Description field (keeping this to maintain UI, but only sending ProfileDescription) */}
-          <View className="bg-white rounded-xl shadow-sm p-5 mb-6">
+          <View className="rounded-xl p-5 mb-6">
             <Text className="text-lg font-bold text-gray-800 mb-4">
               {userRole === "EVSAHIBI"
                 ? "Ev Sahibi Bilgileri"
@@ -639,11 +642,13 @@ const CreateProfileScreen = ({ navigation }) => {
             </View>
           </View>
 
+          {/* Buraya ekstra boşluk bırakıyoruz butonun aşağıya inmesi için */}
+          <View className="h-60" />
+
           {/* Create button */}
           <TouchableOpacity
-            className={`rounded-lg h-12 justify-center items-center mb-10 ${
-              isLoading ? "bg-blue-300" : "bg-blue-500"
-            }`}
+            className={`rounded-lg h-12 justify-center items-center mb-10 ${isLoading ? "bg-green-300" : "bg-green-600"
+              }`}
             onPress={handleCreateProfile}
             disabled={isLoading}
           >
@@ -665,7 +670,7 @@ const CreateProfileScreen = ({ navigation }) => {
         animationType="slide"
         onRequestClose={() => setIsImagePickerVisible(false)}
       >
-        <View className="flex-1 justify-end">
+        <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <View className="bg-white rounded-t-xl shadow-lg">
             <View className="p-4 border-b border-gray-200">
               <Text className="text-xl font-bold text-gray-800 text-center">
