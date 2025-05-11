@@ -14,6 +14,7 @@ import {
   SafeAreaView,
   Pressable,
   Animated,
+  Modal,
 } from "react-native";
 import { useDispatch } from "react-redux";
 import { useRegisterMutation, useLoginMutation } from "../redux/api/apiSlice";
@@ -31,7 +32,10 @@ import {
   faEyeSlash,
   faCalendar,
   faArrowLeft,
+  faCheck,
+  faTimes,
 } from "@fortawesome/pro-solid-svg-icons";
+import DateTimePicker from '@react-native-community/datetimepicker';
 const { width } = Dimensions.get("window");
 
 const RegisterScreen = ({ navigation }) => {
@@ -44,8 +48,12 @@ const RegisterScreen = ({ navigation }) => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [gender, setGender] = useState(""); // Optional
-  const [birthDate, setBirthDate] = useState(""); // Keeping the input state
+
+  // Date picker states
+  const [birthDate, setBirthDate] = useState("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [dateValue, setDateValue] = useState(new Date(2000, 0, 1)); // Varsayılan olarak 1 Ocak 2000
 
   // Step handling
   const [currentStep, setCurrentStep] = useState(0);
@@ -60,6 +68,16 @@ const RegisterScreen = ({ navigation }) => {
   const [register, { isLoading: registerLoading }] = useRegisterMutation();
   const [login, { isLoading: loginLoading }] = useLoginMutation();
 
+  // Input refs for keyboard navigation
+  const nameInputRef = useRef(null);
+  const surnameInputRef = useRef(null);
+  const emailInputRef = useRef(null);
+  const usernameInputRef = useRef(null);
+  const phoneInputRef = useRef(null);
+  const genderInputRef = useRef(null);
+  const passwordInputRef = useRef(null);
+  const confirmPasswordInputRef = useRef(null);
+
   // Basic email validation
   const isEmailValid = (email) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -68,6 +86,23 @@ const RegisterScreen = ({ navigation }) => {
   // Basic phone number validation (simple format check)
   const isPhoneValid = (phone) => {
     return /^\d{10,11}$/.test(phone.replace(/[\s()-]/g, ""));
+  };
+
+  // Date picker handlers
+  const handleOpenDatePicker = () => {
+    setShowDatePicker(true);
+  };
+
+  const handleDateChange = (event, selectedDate) => {
+    const currentDate = selectedDate || dateValue;
+    // setShowDatePicker(false); // Bu satırı kaldırıyoruz böylece takvim açık kalacak
+    setDateValue(currentDate);
+
+    // Görüntüleme için tarihi formatla (GG/AA/YYYY)
+    const day = String(currentDate.getDate()).padStart(2, '0');
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const year = currentDate.getFullYear();
+    setBirthDate(`${day}/${month}/${year}`);
   };
 
   // Validate current step
@@ -173,6 +208,9 @@ const RegisterScreen = ({ navigation }) => {
     try {
       console.log("Kayıt işlemi başlatılıyor...");
 
+      // Prepare the birthDate in ISO format for API if it exists
+      const formattedBirthDate = dateValue ? dateValue.toISOString() : null;
+
       // Call the register API
       const response = await register({
         name: name.trim(),
@@ -182,7 +220,7 @@ const RegisterScreen = ({ navigation }) => {
         email: email.trim(),
         phoneNumber: phoneNumber.trim(),
         password: password.trim(),
-        // birthDate: birthDate || null, // Commented out birthDate in API request
+        birthDate: formattedBirthDate,
       }).unwrap();
 
       console.log("API yanıtı:", response);
@@ -280,7 +318,7 @@ const RegisterScreen = ({ navigation }) => {
       Alert.alert(
         "Kayıt Hatası",
         error.data?.message ||
-          "Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin."
+        "Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin."
       );
     }
   };
@@ -381,44 +419,55 @@ const RegisterScreen = ({ navigation }) => {
           <>
             <View className="gap-1">
               <Text className="text-gray-600 ml-1">Adınız</Text>
-              <View className="flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full">
+              <View className="flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 w-full">
                 <FontAwesomeIcon icon={faSignature} size={20} color="#6b7280" />
                 <TextInput
-                  className="text-gray-600 flex-1 font-normal"
+                  className="text-gray-600 flex-1 w-full h-full py-3 font-normal"
                   placeholder="Adınızı giriniz"
                   placeholderTextColor={"#484848"}
                   value={name}
                   onChangeText={setName}
+                  ref={nameInputRef}
+                  returnKeyType="next"
+                  onSubmitEditing={() => surnameInputRef.current?.focus()}
+                  blurOnSubmit={false}
                 />
               </View>
             </View>
 
             <View className="gap-1 mt-4">
               <Text className="text-gray-600 ml-1">Soyadınız</Text>
-              <View className="flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full">
+              <View className="flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4  w-full">
                 <FontAwesomeIcon icon={faSignature} size={20} color="#6b7280" />
                 <TextInput
-                  className="text-gray-600 flex-1 font-normal"
+                  className="text-gray-600 flex-1 py-3 font-normal"
                   placeholderTextColor={"#484848"}
                   placeholder="Soyadınızı giriniz"
                   value={surname}
                   onChangeText={setSurname}
+                  ref={surnameInputRef}
+                  returnKeyType="next"
+                  onSubmitEditing={() => emailInputRef.current?.focus()}
+                  blurOnSubmit={false}
                 />
               </View>
             </View>
 
             <View className="gap-1 mt-4">
               <Text className="text-gray-600 ml-1">E-posta adresiniz</Text>
-              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full">
+              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4  w-full">
                 <FontAwesomeIcon icon={faEnvelope} size={20} color="#6b7280" />
                 <TextInput
-                  className="text-gray-600 flex-1 font-normal"
+                  className="text-gray-600 flex-1 py-3 font-normal"
                   placeholder="E-posta adresinizi giriniz"
                   value={email}
                   placeholderTextColor={"#4b5563"}
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  ref={emailInputRef}
+                  returnKeyType="done"
+                  onSubmitEditing={handleNextStep}
                 />
               </View>
             </View>
@@ -429,30 +478,37 @@ const RegisterScreen = ({ navigation }) => {
           <>
             <View className="gap-1">
               <Text className="text-gray-600 ml-1">Kullanıcı adınız</Text>
-              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full">
+              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4  w-full">
                 <FontAwesomeIcon icon={faUser} size={20} color="#6b7280" />
                 <TextInput
-                  className="text-gray-600 flex-1 font-normal"
+                  className="text-gray-600 flex-1 py-3 font-normal"
                   placeholderTextColor={"#4b5563"}
                   placeholder="Kullanıcı adınızı giriniz"
                   value={username}
                   onChangeText={setUsername}
                   autoCapitalize="none"
+                  ref={usernameInputRef}
+                  returnKeyType="next"
+                  onSubmitEditing={() => phoneInputRef.current?.focus()}
+                  blurOnSubmit={false}
                 />
               </View>
             </View>
 
             <View className="gap-1 mt-4">
               <Text className="text-gray-600 ml-1">Telefon numaranız</Text>
-              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full">
+              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4  w-full">
                 <FontAwesomeIcon icon={faPhone} size={20} color="#6b7280" />
                 <TextInput
-                  className="text-gray-600 flex-1 font-normal"
+                  className="text-gray-600 flex-1 py-3 font-normal"
                   placeholder="Telefon numaranızı giriniz"
                   placeholderTextColor={"#4b5563"}
                   value={phoneNumber}
                   onChangeText={setPhoneNumber}
                   keyboardType="phone-pad"
+                  ref={phoneInputRef}
+                  returnKeyType="done"
+                  onSubmitEditing={handleNextStep}
                 />
               </View>
             </View>
@@ -463,16 +519,41 @@ const RegisterScreen = ({ navigation }) => {
           <>
             <View className="gap-1">
               <Text className="text-gray-600 ml-1">Doğum tarihiniz</Text>
-              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full">
+              <View className="shadow-custom bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full">
                 <FontAwesomeIcon icon={faCalendar} size={20} color="#6b7280" />
-                <TextInput
-                  className="text-gray-600 flex-1 font-normal"
-                  placeholder="Doğum tarihi (isteğe bağlı)"
-                  placeholderTextColor={"#4b5563"}
-                  value={birthDate}
-                  onChangeText={setBirthDate}
-                />
+                <TouchableOpacity
+                  className="flex-1 flex-row items-center"
+                  onPress={handleOpenDatePicker}
+                >
+                  <Text
+                    className={`ml-4 flex-1 ${birthDate ? 'text-gray-700' : 'text-gray-400'}`}
+                  >
+                    {birthDate || "Doğum tarihi seçin (isteğe bağlı)"}
+                  </Text>
+                </TouchableOpacity>
+                {showDatePicker ? (
+                  <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                    <FontAwesomeIcon icon={faTimes} size={18} color="#6b7280" />
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity onPress={handleOpenDatePicker}>
+                    <FontAwesomeIcon icon={faCalendar} size={18} color="#6b7280" />
+                  </TouchableOpacity>
+                )}
               </View>
+
+              {/* DateTimePicker (only showing when activated) */}
+              {showDatePicker && (
+                <DateTimePicker
+                  value={dateValue}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={handleDateChange}
+                  maximumDate={new Date()} // Bugünden sonraki tarihleri seçmeyi engelle
+                  minimumDate={new Date(1920, 0, 1)} // Çok eski tarihleri engelle
+                />
+              )}
+
               {/* Added a small note to indicate birthDate is optional */}
               <Text className="text-xs text-gray-500 ml-1 mt-1">
                 Not: Doğum tarihi şu an zorunlu değildir.
@@ -483,14 +564,17 @@ const RegisterScreen = ({ navigation }) => {
               <Text className="text-gray-600 ml-1">
                 Cinsiyetiniz (İsteğe bağlı)
               </Text>
-              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full">
+              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4  w-full">
                 <FontAwesomeIcon icon={faVenusMars} size={20} color="#6b7280" />
                 <TextInput
-                  className="text-gray-600 flex-1 font-normal"
+                  className="text-gray-600 flex-1 py-3 font-normal"
                   placeholderTextColor={"#4b5563"}
                   placeholder="Cinsiyetinizi giriniz"
                   value={gender}
                   onChangeText={setGender}
+                  ref={genderInputRef}
+                  returnKeyType="done"
+                  onSubmitEditing={handleNextStep}
                 />
               </View>
             </View>
@@ -501,15 +585,19 @@ const RegisterScreen = ({ navigation }) => {
           <>
             <View className="gap-1">
               <Text className="text-gray-600 ml-1">Şifreniz</Text>
-              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full">
+              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4  w-full">
                 <FontAwesomeIcon icon={faLock} size={20} color="#6b7280" />
                 <TextInput
-                  className="text-gray-600 flex-1 font-normal"
+                  className="text-gray-600 flex-1 py-3 font-normal"
                   placeholderTextColor={"#4b5563"}
                   placeholder="Şifrenizi giriniz"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
+                  ref={passwordInputRef}
+                  returnKeyType="next"
+                  onSubmitEditing={() => confirmPasswordInputRef.current?.focus()}
+                  blurOnSubmit={false}
                 />
                 <Pressable onPress={() => setShowPassword(!showPassword)}>
                   <FontAwesomeIcon
@@ -523,15 +611,18 @@ const RegisterScreen = ({ navigation }) => {
 
             <View className="gap-1 mt-4">
               <Text className="text-gray-600 ml-1">Şifre tekrarı</Text>
-              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full">
+              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4  w-full">
                 <FontAwesomeIcon icon={faLock} size={20} color="#6b7280" />
                 <TextInput
-                  className="text-gray-600 font-normal flex-1"
+                  className="text-gray-600 font-normal flex-1 py-3"
                   placeholderTextColor={"#4b5563"}
                   placeholder="Şifrenizi tekrar giriniz"
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   secureTextEntry={!showPassword}
+                  ref={confirmPasswordInputRef}
+                  returnKeyType="done"
+                  onSubmitEditing={handleNextStep}
                 />
               </View>
             </View>
