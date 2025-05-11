@@ -29,6 +29,7 @@ import {
   updateCoverImageStatus,
 } from "../redux/slices/profileSlice";
 import * as ImagePicker from "expo-image-picker";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const CustomDropdown = ({
   label,
@@ -646,7 +647,7 @@ const EditProfileScreen = ({ navigation }) => {
   }
 
   return (
-    <KeyboardAvoidingView
+    <SafeAreaView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1 bg-gray-50"
     >
@@ -976,7 +977,7 @@ const EditProfileScreen = ({ navigation }) => {
           </View>
         </View>
       </Modal>
-    </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
