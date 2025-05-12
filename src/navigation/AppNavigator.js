@@ -8,6 +8,7 @@ import {
   selectUserRole,
   selectCurrentUser,
   selectHasUserProfile,
+  syncExpectationStatus,
 } from "../redux/slices/authSlice";
 
 import {
@@ -29,8 +30,9 @@ import HomeScreen from "../screens/HomeScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import EditProfileScreen from "../screens/EditProfileScreen";
 import PostDetailScreen from "../screens/PostDetailScreen";
-import PostsScreen from "../screens/PostsScreen"; // Import the new PostsScreen
-import CreatePostScreen from "../screens/CreatePostScreen"; // Import the new CreatePostScreen
+import PostsScreen from "../screens/PostsScreen";
+import CreatePostScreen from "../screens/CreatePostScreen";
+import ProfileExpectationScreen from "../screens/ProfileExpectationScreen"; // Import the ProfileExpectationScreen
 
 // Placeholder screens
 import { View, Text, ActivityIndicator } from "react-native";
@@ -161,6 +163,14 @@ const LandlordHomeStack = () => {
           headerShown: false,
         }}
       />
+      <LandlordStack.Screen
+        name="ProfileExpectation"
+        component={ProfileExpectationScreen}
+        options={{
+          title: "Beklenti Profili Oluştur",
+          headerShown: false,
+        }}
+      />
     </LandlordStack.Navigator>
   );
 };
@@ -170,7 +180,7 @@ const LandlordPropertiesStack = () => {
     <LandlordStack.Navigator>
       <LandlordStack.Screen
         name="MyPropertiesList"
-        component={PostsScreen} // Use the new PostsScreen component
+        component={PostsScreen}
         options={{ title: "Mülklerim" }}
       />
       <LandlordStack.Screen
@@ -180,7 +190,7 @@ const LandlordPropertiesStack = () => {
       />
       <LandlordStack.Screen
         name="CreatePost"
-        component={CreatePostScreen} // Add CreatePostScreen to navigation
+        component={CreatePostScreen}
         options={{
           title: "Yeni İlan Oluştur",
           headerShown: false,
@@ -188,7 +198,7 @@ const LandlordPropertiesStack = () => {
       />
       <LandlordStack.Screen
         name="EditPost"
-        component={CreatePostScreen} // Reuse CreatePostScreen for editing
+        component={CreatePostScreen}
         options={{
           title: "İlan Düzenle",
           headerShown: false,
@@ -241,6 +251,14 @@ const LandlordProfileStack = () => {
           headerShown: false,
         }}
       />
+      <LandlordStack.Screen
+        name="ProfileExpectation"
+        component={ProfileExpectationScreen}
+        options={{
+          title: "Beklenti Profili Oluştur",
+          headerShown: false,
+        }}
+      />
     </LandlordStack.Navigator>
   );
 };
@@ -259,6 +277,14 @@ const TenantHomeStack = () => {
         component={PostDetailScreen}
         options={{ title: "İlan Detayı" }}
       />
+      <TenantStack.Screen
+        name="ProfileExpectation"
+        component={ProfileExpectationScreen}
+        options={{
+          title: "Beklenti Profili Oluştur",
+          headerShown: false,
+        }}
+      />
     </TenantStack.Navigator>
   );
 };
@@ -268,7 +294,7 @@ const TenantPropertiesStack = () => {
     <TenantStack.Navigator>
       <TenantStack.Screen
         name="FindPropertiesList"
-        component={PostsScreen} // Use the new PostsScreen component
+        component={PostsScreen}
         options={{ title: "İlanlar" }}
       />
       <TenantStack.Screen
@@ -315,6 +341,14 @@ const TenantProfileStack = () => {
         component={EditProfileScreen}
         options={{ headerShown: false }}
       />
+      <TenantStack.Screen
+        name="ProfileExpectation"
+        component={ProfileExpectationScreen}
+        options={{
+          title: "Beklenti Profili Oluştur",
+          headerShown: false,
+        }}
+      />
     </TenantStack.Navigator>
   );
 };
@@ -348,7 +382,6 @@ const LandlordTabNavigator = () => {
         options={{
           title: "Ana Sayfa",
           tabBarLabel: "Ana Sayfa",
-
         }}
       />
       <Tab.Screen
@@ -357,7 +390,6 @@ const LandlordTabNavigator = () => {
         options={{
           title: "Mülklerim",
           tabBarLabel: "Mülklerim",
-
         }}
       />
       <Tab.Screen
@@ -366,7 +398,6 @@ const LandlordTabNavigator = () => {
         options={{
           title: "Teklifler",
           tabBarLabel: "Teklifler",
-
         }}
       />
       <Tab.Screen
@@ -375,7 +406,6 @@ const LandlordTabNavigator = () => {
         options={{
           title: "Profil",
           tabBarLabel: "Profil",
-
         }}
       />
     </Tab.Navigator>
@@ -411,7 +441,6 @@ const TenantTabNavigator = () => {
         options={{
           title: "Ana Sayfa",
           tabBarLabel: "Ana Sayfa",
-
         }}
       />
       <Tab.Screen
@@ -428,7 +457,6 @@ const TenantTabNavigator = () => {
         options={{
           title: "Tekliflerim",
           tabBarLabel: "Tekliflerim",
-
         }}
       />
       <Tab.Screen
@@ -437,7 +465,6 @@ const TenantTabNavigator = () => {
         options={{
           title: "Profil",
           tabBarLabel: "Profil",
-
         }}
       />
     </Tab.Navigator>
@@ -470,6 +497,17 @@ const ProfileLoader = ({ children }) => {
   useEffect(() => {
     if (profileData && profileData.isSuccess && profileData.result) {
       dispatch(setUserProfile(profileData.result));
+
+      // Also sync expectation completion status with proper property names
+      const profile = profileData.result;
+      dispatch(
+        syncExpectationStatus({
+          isTenantExpectationCompleted: profile.isTenantExpectationCompleted,
+          isLandlordExpectationCompleted:
+            profile.isLandLordExpectationCompleted ||
+            profile.isLandlordExpectationCompleted,
+        })
+      );
     }
   }, [profileData, dispatch]);
 

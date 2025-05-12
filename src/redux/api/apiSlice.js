@@ -2,7 +2,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 // Define the base URL for the API
-const BASE_URL = "https://02b6-213-238-188-73.ngrok-free.app";
+const BASE_URL = "https://6861-213-238-188-73.ngrok-free.app";
 
 export const apiSlice = createApi({
   reducerPath: "api",
@@ -20,7 +20,7 @@ export const apiSlice = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Post", "Offer", "Profile", "User"],
+  tagTypes: ["Post", "Offer", "Profile", "User", "Expectation"],
   endpoints: (builder) => ({
     // User endpoints
     register: builder.mutation({
@@ -212,6 +212,58 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ["Profile", "Post"],
     }),
+
+    // Yeni eklenen beklenti profili endpoint'leri
+    createLandlordExpectation: builder.mutation({
+      query: (expectationData) => ({
+        url: "/api/profile/CreateLandlordExpectation",
+        method: "POST",
+        body: expectationData,
+      }),
+      invalidatesTags: ["Expectation", "User", "Profile"],
+    }),
+    createTenantExpectation: builder.mutation({
+      query: (expectationData) => ({
+        url: "/api/profile/CreateTenantExpectation",
+        method: "POST",
+        body: expectationData,
+      }),
+      invalidatesTags: ["Expectation", "User", "Profile"],
+    }),
+    getLandlordExpectation: builder.query({
+      query: (userId) => `/api/profile/GetLandlordExpectation/${userId}`,
+      providesTags: (result, error, userId) => [
+        { type: "Expectation", id: userId },
+      ],
+    }),
+    getTenantExpectation: builder.query({
+      query: (userId) => `/api/profile/GetTenantExpectation/${userId}`,
+      providesTags: (result, error, userId) => [
+        { type: "Expectation", id: userId },
+      ],
+    }),
+    updateLandlordExpectation: builder.mutation({
+      query: (expectationData) => ({
+        url: "/api/profile/UpdateLandlordExpectation",
+        method: "PUT",
+        body: expectationData,
+      }),
+      invalidatesTags: (result, error, { userId }) => [
+        { type: "Expectation", id: userId },
+        { type: "User", id: userId },
+      ],
+    }),
+    updateTenantExpectation: builder.mutation({
+      query: (expectationData) => ({
+        url: "/api/profile/UpdateTenantExpectation",
+        method: "PUT",
+        body: expectationData,
+      }),
+      invalidatesTags: (result, error, { userId }) => [
+        { type: "Expectation", id: userId },
+        { type: "User", id: userId },
+      ],
+    }),
   }),
 });
 
@@ -223,7 +275,7 @@ export const {
   useAssignRoleMutation,
 
   // Post hooks
-  useGetAllPostsQuery, // Export the new hook
+  useGetAllPostsQuery,
   useGetPostQuery,
   useCreatePostMutation,
   useUpdatePostMutation,
@@ -251,4 +303,12 @@ export const {
   useGetTenantFavoritePropertiesQuery,
   useAddFavoritePropertyMutation,
   useRemoveFavoritePropertyMutation,
+
+  // Beklenti profili hooks'ları (Yeni eklenenler)
+  useCreateLandlordExpectationMutation,
+  useCreateTenantExpectationMutation,
+  useGetLandlordExpectationQuery,
+  useGetTenantExpectationQuery,
+  useUpdateLandlordExpectationMutation,
+  useUpdateTenantExpectationMutation,
 } = apiSlice;

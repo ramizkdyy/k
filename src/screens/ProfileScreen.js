@@ -66,9 +66,17 @@ const ProfileScreen = ({ navigation }) => {
     ]);
   };
 
-  // Navigate to edit profile screen
+  // Navigate to edit profile screen or profile expectations based on completion status
   const handleEditProfile = () => {
-    navigation.navigate("EditProfile");
+    // Check if the user has completed the expectations
+    if (
+      currentUser?.isTenantExpectationCompleted ||
+      currentUser?.isLandlordExpectationCompleted
+    ) {
+      navigation.navigate("EditProfile");
+    } else {
+      navigation.navigate("ProfileExpectation");
+    }
   };
 
   // Render loading state
@@ -92,6 +100,8 @@ const ProfileScreen = ({ navigation }) => {
       </Text>
     </View>
   );
+
+  console.log(currentUser);
 
   return (
     <ScrollView
@@ -141,10 +151,11 @@ const ProfileScreen = ({ navigation }) => {
           )}
           {renderField("Telefon", currentUser?.phoneNumber)}
           {renderField("Cinsiyet", currentUser?.gender)}
-          {renderField("Rol", currentUser?.role)}
+          {renderField("Rol", currentUser?.role || userRole)}
 
-          {currentUser.isTenantExpectationCompleted == true ||
-          currentUser.isLandlordExpectationCompleted == true ? (
+          {/* Fix the condition check - use proper property names */}
+          {currentUser?.isTenantExpectationCompleted ||
+          currentUser?.isLandlordExpectationCompleted ? (
             <TouchableOpacity
               className="mt-5 bg-blue-50 py-3 rounded-lg"
               onPress={handleEditProfile}
@@ -344,6 +355,29 @@ const ProfileScreen = ({ navigation }) => {
               <Text className="text-gray-800 text-base">Yeni İlan Oluştur</Text>
             </TouchableOpacity>
           )}
+
+          {/* Profile Expectations Button */}
+          {/* Fix the condition check - use proper property names */}
+          {!currentUser?.isTenantExpectationCompleted &&
+            !currentUser?.isLandlordExpectationCompleted && (
+              <TouchableOpacity
+                className="p-4 flex-row items-center"
+                onPress={() => {
+                  navigation.navigate("ProfileExpectation");
+                }}
+              >
+                <View className="w-8 h-8 rounded-full bg-purple-100 justify-center items-center mr-3">
+                  <Image
+                    source={require("../../assets/logo-kirax.png")} // Replace with appropriate icon
+                    className="w-4 h-4"
+                    resizeMode="contain"
+                  />
+                </View>
+                <Text className="text-gray-800 text-base">
+                  Beklenti Profili Oluştur
+                </Text>
+              </TouchableOpacity>
+            )}
         </View>
 
         {/* Settings and Logout */}
