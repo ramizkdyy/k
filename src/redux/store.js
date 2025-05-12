@@ -7,6 +7,7 @@ import authReducer from "./slices/authSlice";
 import postReducer from "./slices/postSlice";
 import offerReducer from "./slices/offerSlice";
 import profileReducer from "./slices/profileSlice";
+import expectationReducer from "./slices/expectationSlice"; // Yeni eklenen reducer
 import { apiSlice } from "./api/apiSlice";
 
 // Initialize empty initial state for development
@@ -19,7 +20,7 @@ const initialState = {
     role: null,
     isLoading: false,
     error: null,
-    hasUserProfile: false, // Eklendi: Profil durumunu izlemek için
+    hasUserProfile: false,
   },
   posts: {
     posts: [],
@@ -57,12 +58,20 @@ const initialState = {
     profileImageUploadStatus: null,
     coverImageUploadStatus: null,
   },
+  expectations: {
+    // Yeni eklenen bölüexpectations: { // Yeni eklenen bölüm
+    landlordExpectation: null,
+    tenantExpectation: null,
+    isLoading: false,
+    error: null,
+    expectationFormData: null,
+  },
 };
 
 const persistConfig = {
   key: "root",
   storage: AsyncStorage,
-  whitelist: ["auth", "profiles"], // profiles eklendi, profil verilerinin de kalıcı olması için
+  whitelist: ["auth", "profiles", "expectations"], // expectations eklendi, profil beklenti verilerinin de kalıcı olması için
 };
 
 const rootReducer = combineReducers({
@@ -70,6 +79,7 @@ const rootReducer = combineReducers({
   posts: postReducer,
   offers: offerReducer,
   profiles: profileReducer,
+  expectations: expectationReducer, // Yeni eklenen reducer
   [apiSlice.reducerPath]: apiSlice.reducer,
 });
 

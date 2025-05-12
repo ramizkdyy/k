@@ -81,6 +81,45 @@ const authSlice = createSlice({
       }
       console.log("updateUserData çalıştı:", { updatedUser: state.user });
     },
+    // Kullanıcı profilinden gelen bilgileri senkronize et
+    syncUserDataFromProfile: (state, action) => {
+      const profile = action.payload;
+      if (profile && profile.user) {
+        // Eğer userProfile içinde user bilgisi varsa currentUser ile birleştir
+        state.user = {
+          ...state.user,
+          ...profile.user,
+          // Beklenti tamamlanma durumunu da ekle
+          isLandlordExpectationCompleted:
+            profile.isLandlordExpectationCompleted ||
+            profile.isLandLordExpectationCompleted,
+          isTenantExpectationCompleted: profile.isTenantExpectationCompleted,
+        };
+
+        console.log("User data synced from profile:", state.user);
+      }
+    },
+    syncExpectationStatus: (state, action) => {
+      const { isTenantExpectationCompleted, isLandlordExpectationCompleted } =
+        action.payload;
+
+      if (state.user) {
+        if (isTenantExpectationCompleted !== undefined) {
+          state.user.isTenantExpectationCompleted =
+            isTenantExpectationCompleted;
+        }
+        if (isLandlordExpectationCompleted !== undefined) {
+          state.user.isLandlordExpectationCompleted =
+            isLandlordExpectationCompleted;
+        }
+
+        console.log("Expectation status synced:", {
+          isTenantExpectationCompleted: state.user.isTenantExpectationCompleted,
+          isLandlordExpectationCompleted:
+            state.user.isLandlordExpectationCompleted,
+        });
+      }
+    },
     setError: (state, action) => {
       state.error = action.payload;
     },
@@ -190,6 +229,95 @@ const authSlice = createSlice({
         console.log("Kiracı profili oluşturuldu, profil durumu güncellendi");
       }
     );
+
+    // Profil yüklendiğinde kullanıcı verilerini senkronize et
+    builder.addMatcher(
+      apiSlice.endpoints.getLandlordProfile?.matchFulfilled,
+      (state, { payload }) => {
+        if (payload && payload.isSuccess && payload.result) {
+          // Sync user data from profile
+          const profile = payload.result;
+
+          // Sync expectation completion status
+          if (
+            profile.isLandlordExpectationCompleted !== undefined &&
+            state.user
+          ) {
+            state.user.isLandlordExpectationCompleted =
+              profile.isLandlordExpectationCompleted;
+          }
+
+          // Sync user data from profile
+          if (profile && profile.user) {
+            state.user = {
+              ...state.user,
+              ...profile.user,
+              isLandlordExpectationCompleted:
+                profile.isLandlordExpectationCompleted,
+              isTenantExpectationCompleted:
+                profile.isTenantExpectationCompleted,
+            };
+
+            console.log("User data synced from landlord profile:", state.user);
+          }
+        }
+      }
+    );
+
+    builder.addMatcher(
+      apiSlice.endpoints.getTenantProfile?.matchFulfilled,
+      (state, { payload }) => {
+        if (payload && payload.isSuccess && payload.result) {
+          // Sync user data from profile
+          const profile = payload.result;
+
+          // Sync expectation completion status
+          if (
+            profile.isTenantExpectationCompleted !== undefined &&
+            state.user
+          ) {
+            state.user.isTenantExpectationCompleted =
+              profile.isTenantExpectationCompleted;
+          }
+
+          // Sync user data from profile
+          if (profile && profile.user) {
+            state.user = {
+              ...state.user,
+              ...profile.user,
+              isLandlordExpectationCompleted:
+                profile.isLandLordExpectationCompleted ||
+                profile.isLandlordExpectationCompleted,
+              isTenantExpectationCompleted:
+                profile.isTenantExpectationCompleted,
+            };
+
+            console.log("User data synced from tenant profile:", state.user);
+          }
+        }
+      }
+    );
+
+    // Beklenti profilleri oluşturulduğunda kullanıcı durumunu güncelle
+    builder.addMatcher(
+      apiSlice.endpoints.createLandlordExpectation?.matchFulfilled,
+      (state, { payload }) => {
+        if (payload && payload.isSuccess && state.user) {
+          state.user.isLandlordExpectationCompleted = true;
+          console.log("Landlord expectation completed - Auth state updated");
+        }
+      }
+    );
+
+    builder.addMatcher(
+      apiSlice.endpoints.createTenantExpectation?.matchFulfilled,
+      (state, { payload }) => {
+        if (payload && payload.isSuccess && state.user) {
+          state.user.isTenantExpectationCompleted = true;
+          console.log("Tenant expectation completed - Auth state updated");
+        }
+      }
+    );
   },
 });
 
@@ -200,8 +328,10 @@ export const {
   setError,
   clearError,
   setTestCredentials,
-  setHasUserProfile, // Yeni eklenen action
-  updateUserData, // Yeni eklenen action
+  setHasUserProfile,
+  updateUserData,
+  syncUserDataFromProfile,
+  syncExpectationStatus,
 } = authSlice.actions;
 
 export default authSlice.reducer;
@@ -209,7 +339,7 @@ export default authSlice.reducer;
 // Selectors
 export const selectCurrentUser = (state) => state.auth.user;
 export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
-export const selectUserRole = (state) => state.auth.userRole || state.auth.role; // Her ikisini de kontrol et
+export const selectUserRole = (state) => state.auth.userRole || state.auth.role;
 export const selectAuthError = (state) => state.auth.error;
 export const selectAuthToken = (state) => state.auth.token;
-export const selectHasUserProfile = (state) => state.auth.hasUserProfile; // Yeni eklenen selector
+export const selectHasUserProfile = (state) => state.auth.hasUserProfile;

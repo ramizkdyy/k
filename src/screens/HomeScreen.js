@@ -26,8 +26,8 @@ const HomeScreen = ({ navigation }) => {
   // Check if profile needs to be completed
   const needsProfileCompletion =
     currentUser &&
-    ((userRole === "EVSAHIBI" && !currentUser.isTenantExpectationCompleted) ||
-      (userRole === "KIRACI" && !currentUser.isLandlordExpectationCompleted));
+    ((userRole === "EVSAHIBI" && !currentUser.isLandlordExpectationCompleted) ||
+      (userRole === "KIRACI" && !currentUser.isTenantExpectationCompleted));
 
   // Fetch data based on user role
   const { data, isLoading, refetch } = useGetLandlordProfilesQuery();
@@ -119,18 +119,19 @@ const HomeScreen = ({ navigation }) => {
       }
     >
       {/* Profile Completion Banner - Only show if profile needs to be completed */}
-      {needsProfileCompletion && (
-        <TouchableOpacity
-          className="bg-yellow-500 py-3 px-4 flex-row justify-between items-center"
-          onPress={handleCompleteProfile}
-        >
-          <View className="flex-row items-center">
-            <Text className="text-white font-bold mr-2">!</Text>
-            <Text className="text-white font-semibold">Profili Tamamla</Text>
-          </View>
-          <Text className="text-white">→</Text>
-        </TouchableOpacity>
-      )}
+      {!currentUser.isTenantExpectationCompleted &&
+        !currentUser.isLandlordExpectationCompleted && (
+          <TouchableOpacity
+            className="bg-yellow-500 py-3 px-4 flex-row justify-between items-center"
+            onPress={handleCompleteProfile}
+          >
+            <View className="flex-row items-center">
+              <Text className="text-white font-bold mr-2">!</Text>
+              <Text className="text-white font-semibold">Profili Tamamla</Text>
+            </View>
+            <Text className="text-white">→</Text>
+          </TouchableOpacity>
+        )}
 
       {/* Header Section */}
       <View className="bg-blue-500 pt-12 pb-4 px-5">
@@ -439,6 +440,18 @@ const HomeScreen = ({ navigation }) => {
                   : "Tekliflerim"}
               </Text>
             </TouchableOpacity>
+
+            {/* Add ProfileExpectation button when needed */}
+            {needsProfileCompletion && (
+              <TouchableOpacity
+                className="w-full bg-yellow-50 rounded-xl p-4 mb-3 border border-yellow-100"
+                onPress={handleCompleteProfile}
+              >
+                <Text className="text-yellow-800 font-semibold text-center">
+                  Beklenti Profili Oluştur
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </View>
