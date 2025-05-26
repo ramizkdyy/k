@@ -13,17 +13,44 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Bu uygulama konum bilginizi ilan oluştururken kullanır.",
+        "NSLocationUsageDescription": "Bu uygulama konum bilginizi ilan oluştururken kullanır.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Bu uygulama konum bilginizi ilan oluştururken kullanır."
+      },
+      "config": {
+        "googleMapsApiKey": "AIzaSyBmN5yPYOrGCGaIzp8hcoWNkKFX0sqmI7g"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#FFFFFF"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBmN5yPYOrGCGaIzp8hcoWNkKFX0sqmI7g"
+        }
       }
     },
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
-    }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Bu uygulama konum bilginizi ilan oluştururken kullanır."
+        }
+      ]
+    ]
   }
 }

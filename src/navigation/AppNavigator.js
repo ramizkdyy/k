@@ -8,7 +8,6 @@ import {
   selectUserRole,
   selectCurrentUser,
   selectHasUserProfile,
-  syncExpectationStatus,
 } from "../redux/slices/authSlice";
 
 
@@ -530,17 +529,6 @@ const ProfileLoader = ({ children }) => {
   useEffect(() => {
     if (profileData && profileData.isSuccess && profileData.result) {
       dispatch(setUserProfile(profileData.result));
-
-      // Also sync expectation completion status with proper property names
-      const profile = profileData.result;
-      dispatch(
-        syncExpectationStatus({
-          isTenantExpectationCompleted: profile.isTenantExpectationCompleted,
-          isLandlordExpectationCompleted:
-            profile.isLandLordExpectationCompleted ||
-            profile.isLandlordExpectationCompleted,
-        })
-      );
     }
   }, [profileData, dispatch]);
 

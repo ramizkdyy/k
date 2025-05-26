@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,15 +6,13 @@ import {
   TouchableOpacity,
   Image,
   TextInput,
-  ActivityIndicator,
-  FlatList,
   RefreshControl,
   Alert,
 } from "react-native";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { selectUserRole, selectCurrentUser } from "../redux/slices/authSlice";
-import { useGetLandlordProfilesQuery } from "../redux/api/apiSlice";
 import { selectUserProfile } from "../redux/slices/profileSlice";
+import NearbyProperties from "../components/NearbyProperties";
 
 const HomeScreen = ({ navigation }) => {
   const userRole = useSelector(selectUserRole);
@@ -29,87 +27,18 @@ const HomeScreen = ({ navigation }) => {
     ((userRole === "EVSAHIBI" && !currentUser.isLandlordExpectationCompleted) ||
       (userRole === "KIRACI" && !currentUser.isTenantExpectationCompleted));
 
-  // Fetch data based on user role
-  const { data, isLoading, refetch } = useGetLandlordProfilesQuery();
-
-  // Placeholder for featured properties - replace with actual data fetching
-  const [featuredProperties, setFeaturedProperties] = useState([
-    {
-      id: 1,
-      title: "Modern Daire",
-      location: "Kadıköy, İstanbul",
-      price: "5.500 ₺",
-      image: "https://via.placeholder.com/300x200",
-      bedroom: 2,
-      bathroom: 1,
-      area: "90 m²",
-    },
-    {
-      id: 2,
-      title: "Deniz Manzaralı Villa",
-      location: "Çeşme, İzmir",
-      price: "12.000 ₺",
-      image: "https://via.placeholder.com/300x200",
-      bedroom: 4,
-      bathroom: 3,
-      area: "220 m²",
-    },
-    {
-      id: 3,
-      title: "Şehir Merkezinde Daire",
-      location: "Kızılay, Ankara",
-      price: "4.200 ₺",
-      image: "https://via.placeholder.com/300x200",
-      bedroom: 3,
-      bathroom: 1,
-      area: "110 m²",
-    },
-  ]);
-
   const onRefresh = async () => {
     setRefreshing(true);
-    await refetch();
-    setRefreshing(false);
+    // The NearbyProperties component will handle its own refresh
+    // This is just to coordinate the overall refresh state
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
   };
 
   const handleCompleteProfile = () => {
     navigation.navigate("ProfileExpectation");
   };
-
-  const renderPropertyCard = ({ item }) => (
-    <TouchableOpacity
-      className="mr-4 bg-white rounded-xl overflow-hidden w-64 shadow-sm border border-gray-200"
-      onPress={() => {
-        /* Navigate to property details */
-      }}
-    >
-      <Image
-        source={{ uri: item.image }}
-        className="w-full h-36"
-        resizeMode="cover"
-      />
-      <View className="p-3">
-        <Text className="text-lg font-bold text-gray-800">{item.title}</Text>
-        <Text className="text-sm text-gray-500 mb-2">{item.location}</Text>
-        <Text className="text-base font-semibold text-blue-600">
-          {item.price}
-        </Text>
-        <View className="flex-row justify-between mt-2">
-          <View className="flex-row items-center">
-            <Text className="text-xs text-gray-700">
-              {item.bedroom} Yatak Odası
-            </Text>
-          </View>
-          <View className="flex-row items-center">
-            <Text className="text-xs text-gray-700">{item.bathroom} Banyo</Text>
-          </View>
-          <View className="flex-row items-center">
-            <Text className="text-xs text-gray-700">{item.area}</Text>
-          </View>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
 
   return (
     <ScrollView
@@ -181,29 +110,13 @@ const HomeScreen = ({ navigation }) => {
 
       {/* Main Content */}
       <View className="p-5">
-        {/* Featured Section */}
-        <View className="mb-6">
-          <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-xl font-bold text-gray-800">
-              {userRole === "KIRACI" ? "Öne Çıkan Evler" : "Son İlanlarınız"}
-            </Text>
-            <TouchableOpacity>
-              <Text className="text-blue-500">Tümünü Gör</Text>
-            </TouchableOpacity>
-          </View>
-
-          {isLoading ? (
-            <ActivityIndicator size="large" color="#4A90E2" />
-          ) : (
-            <FlatList
-              data={featuredProperties}
-              renderItem={renderPropertyCard}
-              keyExtractor={(item) => item.id.toString()}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              className="pt-2"
-            />
-          )}
+        {/* Nearby Properties Section - NEW COMPONENT */}
+        <View style={{ zIndex: 1 }}>
+          <NearbyProperties
+            navigation={navigation}
+            refreshing={refreshing}
+            onRefresh={() => setRefreshing(false)}
+          />
         </View>
 
         {/* Categories Section for Tenants */}
@@ -309,11 +222,11 @@ const HomeScreen = ({ navigation }) => {
         {/* Recent Activity or Nearby Properties */}
         <View className="mb-6">
           <Text className="text-xl font-bold text-gray-800 mb-4">
-            {userRole === "EVSAHIBI" ? "Size Yakın Mülkler" : "Son Aktiviteler"}
+            {userRole === "EVSAHIBI" ? "Son Aktiviteler" : "Son Aktiviteler"}
           </Text>
 
           {userRole === "KIRACI" ? (
-            // Nearby properties for tenants
+            // Recent activities for tenants
             <View>
               {[1, 2, 3].map((item) => (
                 <TouchableOpacity
