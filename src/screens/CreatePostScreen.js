@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   Platform,
+  Modal,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser } from "../redux/slices/authSlice";
@@ -22,6 +23,7 @@ import {
 import { useCreatePostMutation } from "../redux/api/apiSlice";
 import * as ImagePicker from "expo-image-picker";
 import { MaterialIcons } from "@expo/vector-icons";
+import LocationPicker from "../components/LocationPicker";
 
 const CreatePostScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
@@ -65,6 +67,10 @@ const CreatePostScreen = ({ navigation, route }) => {
   const [paraBirimi, setParaBirimi] = useState("TL");
   const [kullanimDurumu, setKullanimDurumu] = useState("");
 
+  // Location picker states
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [selectedCoordinates, setSelectedCoordinates] = useState(null);
+
   // Property type options
   const propertyTypes = [
     "Daire",
@@ -96,9 +102,25 @@ const CreatePostScreen = ({ navigation, route }) => {
     const parts = locationString.split(",").map((part) => part.trim());
 
     if (parts.length >= 2) {
-      setIl(parts[1]); // Assuming second part is province (İstanbul)
-      setIlce(parts[0]); // Assuming first part is district (Kadıköy)
+      setIl(parts[parts.length - 1]); // Son kısım genellikle il
+      setIlce(parts[0]); // İlk kısım genellikle ilçe
+
+      // Eğer 3 parça varsa, ortadaki mahalle olabilir
+      if (parts.length >= 3) {
+        setMahalle(parts[1]);
+      }
     }
+  };
+
+  // Handle location selection from map
+  const handleLocationSelect = (locationData) => {
+    setSelectedCoordinates({
+      latitude: locationData.latitude,
+      longitude: locationData.longitude,
+    });
+    setLocation(locationData.address);
+    parseLocation(locationData.address);
+    setShowLocationPicker(false);
   };
 
   // Initialize form with property data if editing
@@ -135,6 +157,14 @@ const CreatePostScreen = ({ navigation, route }) => {
       setParaBirimi(propertyData.paraBirimi || "TL");
       setKullanimDurumu(propertyData.kullanimDurumu || "");
 
+      // Set coordinates if available
+      if (propertyData.latitude && propertyData.longitude) {
+        setSelectedCoordinates({
+          latitude: parseFloat(propertyData.latitude),
+          longitude: parseFloat(propertyData.longitude),
+        });
+      }
+
       // Handle images if available
       if (propertyData.postImages && propertyData.postImages.length > 0) {
         const formattedImages = propertyData.postImages.map((img, index) => ({
@@ -169,6 +199,14 @@ const CreatePostScreen = ({ navigation, route }) => {
       setParaBirimi(savedFormData.paraBirimi || "TL");
       setKullanimDurumu(savedFormData.kullanimDurumu || "");
 
+      // Load coordinates if available
+      if (savedFormData.latitude && savedFormData.longitude) {
+        setSelectedCoordinates({
+          latitude: savedFormData.latitude,
+          longitude: savedFormData.longitude,
+        });
+      }
+
       // Parse location if il and ilce are not already set
       if (
         savedFormData.location &&
@@ -177,7 +215,7 @@ const CreatePostScreen = ({ navigation, route }) => {
         parseLocation(savedFormData.location);
       }
     }
-  }, [propertyData, savedFormData]); // Dependencies include both propertyData and savedFormData
+  }, [propertyData, savedFormData]);
 
   // Request camera/gallery permissions
   useEffect(() => {
@@ -258,7 +296,7 @@ const CreatePostScreen = ({ navigation, route }) => {
       return false;
     }
     if (!location.trim()) {
-      Alert.alert("Lütfen konum bilgisi giriniz.");
+      Alert.alert("Hata", "Lütfen konum bilgisi giriniz.");
       return false;
     }
     if (!postDescription.trim()) {
@@ -316,6 +354,18 @@ const CreatePostScreen = ({ navigation, route }) => {
       formData.append("KiraFiyati", kiraFiyati);
       formData.append("Location", location);
 
+      // Add coordinates if available
+      if (selectedCoordinates) {
+        formData.append(
+          "PostLatitude",
+          selectedCoordinates.latitude.toString()
+        );
+        formData.append(
+          "PostLongitude",
+          selectedCoordinates.longitude.toString()
+        );
+      }
+
       // Required fields
       formData.append("Il", il);
       formData.append("Ilce", ilce);
@@ -371,14 +421,11 @@ const CreatePostScreen = ({ navigation, route }) => {
         // Add image status
         formData.append("PostImageStatus", "pending");
       });
-
       // Log the form data being sent
       console.log("===== SENDING POST DATA =====");
-      for (const [key, value] of Object.entries(formData._parts)) {
-        console.log(`${key}: ${JSON.stringify(value)}`);
-      }
       console.log("UserId:", currentUser.id);
       console.log("Total images being sent:", newImages.length);
+      console.log("Selected coordinates:", selectedCoordinates);
       console.log("=============================");
 
       // Submit post
@@ -453,6 +500,9 @@ const CreatePostScreen = ({ navigation, route }) => {
         siteAdi,
         paraBirimi,
         kullanimDurumu,
+        // Save coordinates
+        latitude: selectedCoordinates?.latitude,
+        longitude: selectedCoordinates?.longitude,
       })
     );
     Alert.alert("Bilgi", "Form bilgileri kaydedildi.");
@@ -514,17 +564,38 @@ const CreatePostScreen = ({ navigation, route }) => {
             />
           </View>
 
-          {/* Location with detailed fields */}
+          {/* Location with Map Integration */}
           <View className="mb-4">
             <Text className="text-gray-700 mb-1 font-medium">Konum *</Text>
-            <TextInput
-              className="border border-gray-300 rounded-lg p-3 text-base mb-3"
-              placeholder="Kadıköy, İstanbul"
-              value={location}
-              onChangeText={setLocation}
-            />
 
-            {/* Add explicit Il, Ilce and Mahalle fields */}
+            {/* Location Input with Map Button */}
+            <View className="flex-row items-center mb-3">
+              <TextInput
+                className="flex-1 border border-gray-300 rounded-lg p-3 text-base mr-2"
+                placeholder="Haritadan konum seçin"
+                value={location}
+                onChangeText={setLocation}
+                editable={false}
+              />
+              <TouchableOpacity
+                className="bg-blue-500 rounded-lg p-3"
+                onPress={() => setShowLocationPicker(true)}
+              >
+                <MaterialIcons name="location-on" size={24} color="white" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Show coordinates if selected */}
+            {selectedCoordinates && (
+              <View className="bg-gray-100 rounded-lg p-3 mb-3">
+                <Text className="text-sm text-gray-600">
+                  Koordinatlar: {selectedCoordinates.latitude.toFixed(6)},{" "}
+                  {selectedCoordinates.longitude.toFixed(6)}
+                </Text>
+              </View>
+            )}
+
+            {/* Manual Location Fields */}
             <View className="flex-row justify-between mb-3">
               <View className="w-[48%]">
                 <Text className="text-gray-600 mb-1 text-sm">İl *</Text>
@@ -734,7 +805,6 @@ const CreatePostScreen = ({ navigation, route }) => {
           </View>
 
           {/* Description */}
-          {/* Description */}
           <View className="mb-4">
             <Text className="text-gray-700 mb-1 font-medium">Açıklama *</Text>
             <TextInput
@@ -913,18 +983,6 @@ const CreatePostScreen = ({ navigation, route }) => {
           </View>
         </View>
 
-        {/* Optional: Save Form State Button */}
-        {/* 
-        <TouchableOpacity
-          className="py-3 rounded-lg mb-4 bg-gray-500"
-          onPress={handleSaveFormState}
-        >
-          <Text className="text-white font-semibold text-center">
-            Form Bilgilerini Kaydet
-          </Text>
-        </TouchableOpacity>
-        */}
-
         {/* Submit Button */}
         <TouchableOpacity
           className={`py-3 rounded-lg mb-10 ${
@@ -951,6 +1009,19 @@ const CreatePostScreen = ({ navigation, route }) => {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Location Picker Modal */}
+      <Modal
+        visible={showLocationPicker}
+        animationType="slide"
+        presentationStyle="fullScreen"
+      >
+        <LocationPicker
+          onLocationSelect={handleLocationSelect}
+          initialLocation={selectedCoordinates}
+          onClose={() => setShowLocationPicker(false)}
+        />
+      </Modal>
     </ScrollView>
   );
 };
