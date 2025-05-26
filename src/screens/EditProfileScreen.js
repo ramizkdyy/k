@@ -35,6 +35,8 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
+import { faPlus } from "@fortawesome/pro-solid-svg-icons";
 
 const CustomDropdown = ({
   label,
@@ -67,12 +69,12 @@ const CustomDropdown = ({
         animationType="slide"
         onRequestClose={() => setIsOpen(false)}
       >
-        <View className="flex-1 justify-end bg-black bg-opacity-50">
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
           <View className="bg-white rounded-t-lg max-h-1/2">
             <View className="p-4 border-b border-gray-200 flex-row justify-between items-center">
               <Text className="text-lg font-bold text-gray-800">{label}</Text>
               <TouchableOpacity onPress={() => setIsOpen(false)}>
-                <Text className="text-blue-500 font-bold">Kapat</Text>
+                <Text className="text-green-700 font-bold">Kapat</Text>
               </TouchableOpacity>
             </View>
 
@@ -81,20 +83,18 @@ const CustomDropdown = ({
               keyExtractor={(item) => item.toString()}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  className={`p-4 border-b border-gray-100 ${
-                    value === item ? "bg-blue-50" : ""
-                  }`}
+                  className={`p-4 border-b border-gray-100 ${value === item ? "bg-green-50" : ""
+                    }`}
                   onPress={() => {
                     setValue(item);
                     setIsOpen(false);
                   }}
                 >
                   <Text
-                    className={`text-base ${
-                      value === item
-                        ? "text-blue-500 font-semibold"
-                        : "text-gray-700"
-                    }`}
+                    className={`text-base ${value === item
+                      ? "text-green-500 font-semibold"
+                      : "text-gray-700"
+                      }`}
                   >
                     {item}
                   </Text>
@@ -1288,7 +1288,7 @@ const EditProfileScreen = ({ navigation }) => {
         Alert.alert(
           "Güncelleme Hatası",
           (error && error.data && error.data.message) ||
-            "Profil güncellenirken bir hata oluştu. Lütfen tekrar deneyin."
+          "Profil güncellenirken bir hata oluştu. Lütfen tekrar deneyin."
         );
       }
 
@@ -1310,23 +1310,12 @@ const EditProfileScreen = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView
+    <View
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1 bg-gray-50"
     >
       <ScrollView className="flex-1">
-        {/* Header with back button */}
-        <View className="px-5 py-6 flex-row items-center bg-white border-b border-gray-200">
-          <TouchableOpacity
-            className="mr-4"
-            onPress={() => navigation.goBack()}
-          >
-            <Text className="text-blue-500 text-base">Geri</Text>
-          </TouchableOpacity>
-          <Text className="text-xl font-bold text-gray-800">
-            Profili Düzenle
-          </Text>
-        </View>
+
 
         {/* Profile image and cover photo section */}
         <View className="relative mb-16">
@@ -1347,7 +1336,7 @@ const EditProfileScreen = ({ navigation }) => {
               </View>
             )}
             <View className="absolute right-4 bottom-4 bg-white p-2 rounded-full shadow">
-              <Text className="text-blue-500 font-bold">Düzenle</Text>
+              <Text className="text-green-600 font-bold">Düzenle</Text>
             </View>
           </TouchableOpacity>
 
@@ -1365,14 +1354,14 @@ const EditProfileScreen = ({ navigation }) => {
                 />
               ) : (
                 <View className="w-full h-full bg-gray-200 justify-center items-center">
-                  <Text className="text-gray-500 text-3xl font-bold">
+                  <Text className="text-gray-600 text-3xl font-bold">
                     {currentUser?.name?.charAt(0) || "P"}
                   </Text>
                 </View>
               )}
             </View>
-            <View className="absolute right-0 bottom-0 bg-blue-500 w-8 h-8 rounded-full justify-center items-center">
-              <Text className="text-white text-xl">+</Text>
+            <View className="absolute right-0 bottom-0 bg-green-600 w-8 h-8 rounded-full justify-center items-center">
+              <FontAwesomeIcon icon={faPlus} size={16} color='#fff' />
             </View>
           </TouchableOpacity>
         </View>
@@ -1380,29 +1369,25 @@ const EditProfileScreen = ({ navigation }) => {
         {/* Tabs */}
         <View className="flex-row bg-white border-b border-gray-200 mb-4">
           <TouchableOpacity
-            className={`flex-1 py-3 ${
-              activeTab === "basicInfo" ? "border-b-2 border-blue-500" : ""
-            }`}
+            className={`flex-1 py-3 ${activeTab === "basicInfo" ? "border-b-2 border-green-600" : ""
+              }`}
             onPress={() => setActiveTab("basicInfo")}
           >
             <Text
-              className={`text-center font-medium ${
-                activeTab === "basicInfo" ? "text-blue-500" : "text-gray-600"
-              }`}
+              className={`text-center font-medium ${activeTab === "basicInfo" ? "text-green-600" : "text-gray-600"
+                }`}
             >
               Temel Bilgiler
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            className={`flex-1 py-3 ${
-              activeTab === "expectations" ? "border-b-2 border-blue-500" : ""
-            }`}
+            className={`flex-1 py-3 ${activeTab === "expectations" ? "border-b-2 border-green-600" : ""
+              }`}
             onPress={() => setActiveTab("expectations")}
           >
             <Text
-              className={`text-center font-medium ${
-                activeTab === "expectations" ? "text-blue-500" : "text-gray-600"
-              }`}
+              className={`text-center font-medium ${activeTab === "expectations" ? "text-green-600" : "text-gray-600"
+                }`}
             >
               Beklentiler
             </Text>
@@ -1612,9 +1597,8 @@ const EditProfileScreen = ({ navigation }) => {
               )}
 
               <TouchableOpacity
-                className={`rounded-lg h-12 justify-center items-center mb-10 ${
-                  isLoading ? "bg-blue-300" : "bg-blue-500"
-                }`}
+                className={`rounded-lg h-12 justify-center items-center mb-10 ${isLoading ? "bg-green-300" : "bg-green-600"
+                  }`}
                 onPress={handleSaveProfile}
                 disabled={isLoading}
               >
@@ -2203,7 +2187,7 @@ const EditProfileScreen = ({ navigation }) => {
                     >
                       <Text
                         className={
-                          earliestMoveInDate ? "text-black" : "text-gray-500"
+                          earliestMoveInDate ? "text-black" : "text-gray-600"
                         }
                       >
                         {earliestMoveInDate
@@ -2492,9 +2476,8 @@ const EditProfileScreen = ({ navigation }) => {
               )}
 
               <TouchableOpacity
-                className={`rounded-lg h-12 justify-center items-center mb-10 ${
-                  isLoading ? "bg-blue-300" : "bg-blue-500"
-                }`}
+                className={`rounded-lg h-12 justify-center items-center mb-10 ${isLoading ? "bg-green-300" : "bg-green-600"
+                  }`}
                 onPress={handleSaveProfile}
                 disabled={isLoading}
               >
@@ -2534,7 +2517,7 @@ const EditProfileScreen = ({ navigation }) => {
               className="p-4 border-b border-gray-200"
               onPress={pickImageFromGallery}
             >
-              <Text className="text-lg text-blue-500 text-center">
+              <Text className="text-lg text-green-600 text-center">
                 Galeriden Seç
               </Text>
             </TouchableOpacity>
@@ -2543,7 +2526,7 @@ const EditProfileScreen = ({ navigation }) => {
               className="p-4 border-b border-gray-200"
               onPress={takePhoto}
             >
-              <Text className="text-lg text-blue-500 text-center">
+              <Text className="text-lg text-green-600 text-center">
                 Fotoğraf Çek
               </Text>
             </TouchableOpacity>
@@ -2552,12 +2535,12 @@ const EditProfileScreen = ({ navigation }) => {
               className="p-4 mb-6"
               onPress={() => setIsImagePickerVisible(false)}
             >
-              <Text className="text-lg text-red-500 text-center">İptal</Text>
+              <Text className="text-lg text-red-600 text-center">İptal</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 

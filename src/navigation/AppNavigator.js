@@ -11,6 +11,7 @@ import {
   syncExpectationStatus,
 } from "../redux/slices/authSlice";
 
+
 import {
   selectUserProfile,
   setUserProfile,
@@ -34,8 +35,10 @@ import PostsScreen from "../screens/PostsScreen";
 import CreatePostScreen from "../screens/CreatePostScreen";
 import ProfileExpectationScreen from "../screens/ProfileExpectationScreen"; // Import the ProfileExpectationScreen
 
+import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
+import { faChevronLeft } from "@fortawesome/pro-solid-svg-icons";
 // Placeholder screens
-import { View, Text, ActivityIndicator } from "react-native";
+import { View, Text, ActivityIndicator, TouchableOpacity } from "react-native";
 const OffersScreen = () => (
   <View className="flex-1 justify-center items-center">
     <Text>Offers Screen</Text>
@@ -232,16 +235,47 @@ const LandlordOffersStack = () => {
 
 const LandlordProfileStack = () => {
   return (
-    <LandlordStack.Navigator>
+    <LandlordStack.Navigator
+      screenOptions={{
+        headerTintColor: '#fff',
+        headerStyle: {
+          backgroundColor: '#15803d',
+          borderBottomWidth: 0,
+          shadowOpacity: 0,
+          shadowOffset: { height: 0, width: 0 },
+          shadowRadius: 0,
+          elevation: 0
+        },
+        // iOS back title'ı gizleme
+        headerBackTitle: null,
+      }}
+    >
       <LandlordStack.Screen
         name="LandlordProfileScreen"
         component={ProfileScreen}
-        options={{ headerShown: false }}
+        options={{
+          headerTitle: 'Profil',
+          headerShown: true
+        }}
       />
       <LandlordStack.Screen
         name="EditProfile"
         component={EditProfileScreen}
-        options={{ headerShown: false }}
+        options={({ navigation }) => ({
+          headerTitle: 'Profili Düzenle',
+          // Completely custom back button
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={{ paddingHorizontal: 15 }}
+            >
+              <FontAwesomeIcon icon={faChevronLeft} size={20} color="#fff" />
+            </TouchableOpacity>
+          ),
+          // Back title'ı tamamen kaldır
+          headerBackTitle: '',
+          headerBackTitleVisible: false
+        })}
       />
       <LandlordStack.Screen
         name="CreatePost"
@@ -262,7 +296,6 @@ const LandlordProfileStack = () => {
     </LandlordStack.Navigator>
   );
 };
-
 // Tenant Stack Navigators for each tab
 const TenantHomeStack = () => {
   return (
@@ -486,10 +519,10 @@ const ProfileLoader = ({ children }) => {
     isLoading,
     error,
   } = userRole === "EVSAHIBI"
-    ? useGetLandlordProfileQuery(currentUser?.id, {
+      ? useGetLandlordProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       })
-    : useGetTenantProfileQuery(currentUser?.id, {
+      : useGetTenantProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       });
 
