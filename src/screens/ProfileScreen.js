@@ -37,8 +37,8 @@ const ProfileScreen = ({ navigation }) => {
     isLoading,
     refetch,
   } = userRole === "EVSAHIBI"
-    ? useGetLandlordProfileQuery(currentUser?.id)
-    : useGetTenantProfileQuery(currentUser?.id);
+      ? useGetLandlordProfileQuery(currentUser?.id)
+      : useGetTenantProfileQuery(currentUser?.id);
 
   useEffect(() => {
     if (profileData && profileData.isSuccess && profileData.result) {
@@ -111,7 +111,7 @@ const ProfileScreen = ({ navigation }) => {
       }
     >
       {/* Profile Header */}
-      <View className="bg-blue-500 pt-12 pb-20 items-center">
+      <View className="bg-green-700 pt-12 pb-20 items-center">
         <View className="w-24 h-24 rounded-full bg-white justify-center items-center mb-3 border-4 border-white">
           {userProfile?.profileImageUrl ? (
             <Image
@@ -155,7 +155,7 @@ const ProfileScreen = ({ navigation }) => {
 
           {/* Fix the condition check - use proper property names */}
           {currentUser?.isTenantExpectationCompleted ||
-          currentUser?.isLandlordExpectationCompleted ? (
+            currentUser?.isLandlordExpectationCompleted ? (
             <TouchableOpacity
               className="mt-5 bg-blue-50 py-3 rounded-lg"
               onPress={handleEditProfile}
