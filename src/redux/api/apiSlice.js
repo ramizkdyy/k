@@ -85,7 +85,7 @@ export const apiSlice = createApi({
     // Offer endpoints
     createOffer: builder.mutation({
       query: (offerData) => ({
-        url: "/api/post/offer",
+        url: "/api/post/tenant-action",
         method: "POST",
         body: offerData,
       }),
@@ -103,23 +103,41 @@ export const apiSlice = createApi({
       query: (landlordId) => `/api/post/offers/received/${landlordId}`,
       providesTags: ["Offer"],
     }),
-    acceptOffer: builder.mutation({
-      query: (offerId) => ({
-        url: `/api/post/offer/${offerId}/accept`,
-        method: "PUT",
+
+    // DÜZELTME: Landlord offer action endpoint'i
+    landlordOfferAction: builder.mutation({
+      query: (actionData) => ({
+        url: "/api/post/landlord-action",
+        method: "POST",
+        body: actionData, // { userId, offerId, actionType }
       }),
-      invalidatesTags: (result, error, id) => [
-        { type: "Offer", id },
-        "Post",
-        "Offer",
-      ],
+      invalidatesTags: ["Offer", "Post"],
+    }),
+
+    // Eski endpoint'ler (geriye dönük uyumluluk için)
+    acceptOffer: builder.mutation({
+      query: (actionData) => ({
+        url: "/api/post/landlord-action",
+        method: "POST",
+        body: {
+          userId: actionData.userId,
+          offerId: actionData.offerId,
+          actionType: 0, // Accept action
+        },
+      }),
+      invalidatesTags: ["Offer", "Post"],
     }),
     rejectOffer: builder.mutation({
-      query: (offerId) => ({
-        url: `/api/post/offer/${offerId}/reject`,
-        method: "PUT",
+      query: (actionData) => ({
+        url: "/api/post/landlord-action",
+        method: "POST",
+        body: {
+          userId: actionData.userId,
+          offerId: actionData.offerId,
+          actionType: 1, // Reject action
+        },
       }),
-      invalidatesTags: (result, error, id) => [{ type: "Offer", id }, "Offer"],
+      invalidatesTags: ["Offer", "Post"],
     }),
 
     // ForYou page endpoint
@@ -207,18 +225,10 @@ export const apiSlice = createApi({
       query: (userId) => `/api/profile/GetTenantFavoriteProperties/${userId}`,
       providesTags: ["Post", "Profile"],
     }),
-    addFavoriteProperty: builder.mutation({
+    toggleFavoriteProperty: builder.mutation({
       query: (favoriteData) => ({
-        url: "/api/profile/AddFavoriteProperty",
+        url: "/api/post/tenant-action",
         method: "POST",
-        body: favoriteData,
-      }),
-      invalidatesTags: ["Profile", "Post"],
-    }),
-    removeFavoriteProperty: builder.mutation({
-      query: (favoriteData) => ({
-        url: "/api/profile/RemoveFavoriteProperty",
-        method: "DELETE",
         body: favoriteData,
       }),
       invalidatesTags: ["Profile", "Post"],
@@ -300,6 +310,11 @@ export const {
   useGetOfferQuery,
   useGetSentOffersQuery,
   useGetReceivedOffersQuery,
+
+  // DÜZELTME: Yeni landlord action hook'u
+  useLandlordOfferActionMutation,
+
+  // Geriye dönük uyumluluk için eski hook'lar
   useAcceptOfferMutation,
   useRejectOfferMutation,
 
@@ -315,8 +330,7 @@ export const {
   useDeleteProfileMutation,
   useGetLandlordPropertyListingsQuery,
   useGetTenantFavoritePropertiesQuery,
-  useAddFavoritePropertyMutation,
-  useRemoveFavoritePropertyMutation,
+  useToggleFavoritePropertyMutation,
 
   // Updated expectation hooks (changed to ById)
   useCreateLandlordExpectationMutation,

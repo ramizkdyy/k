@@ -31,17 +31,14 @@ import EditProfileScreen from "../screens/EditProfileScreen";
 import PostDetailScreen from "../screens/PostDetailScreen";
 import PostsScreen from "../screens/PostsScreen";
 import CreatePostScreen from "../screens/CreatePostScreen";
-import ProfileExpectationScreen from "../screens/ProfileExpectationScreen"; // Import the ProfileExpectationScreen
+import ProfileExpectationScreen from "../screens/ProfileExpectationScreen";
+import OffersScreen from "../screens/OffersScreen"; // Import the actual OffersScreen
 
-// Placeholder screens
-import { View, Text, ActivityIndicator } from "react-native";
-const OffersScreen = () => (
-  <View className="flex-1 justify-center items-center">
-    <Text>Offers Screen</Text>
-  </View>
-);
+// Import icons for tab navigation
+import Icon from "react-native-vector-icons/MaterialIcons";
 
 // Loading screen to show while fetching profile
+import { View, Text, ActivityIndicator } from "react-native";
 const LoadingScreen = () => (
   <View className="flex-1 justify-center items-center bg-white">
     <ActivityIndicator size="large" color="#4A90E2" />
@@ -381,6 +378,9 @@ const LandlordTabNavigator = () => {
         options={{
           title: "Ana Sayfa",
           tabBarLabel: "Ana Sayfa",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="home" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen
@@ -389,6 +389,9 @@ const LandlordTabNavigator = () => {
         options={{
           title: "Mülklerim",
           tabBarLabel: "Mülklerim",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="apartment" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen
@@ -397,6 +400,9 @@ const LandlordTabNavigator = () => {
         options={{
           title: "Teklifler",
           tabBarLabel: "Teklifler",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="local-offer" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen
@@ -405,6 +411,9 @@ const LandlordTabNavigator = () => {
         options={{
           title: "Profil",
           tabBarLabel: "Profil",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="person" size={size} color={color} />
+          ),
         }}
       />
     </Tab.Navigator>
@@ -440,6 +449,9 @@ const TenantTabNavigator = () => {
         options={{
           title: "Ana Sayfa",
           tabBarLabel: "Ana Sayfa",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="home" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen
@@ -448,6 +460,9 @@ const TenantTabNavigator = () => {
         options={{
           title: "İlanlar",
           tabBarLabel: "İlanlar",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="search" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen
@@ -456,6 +471,9 @@ const TenantTabNavigator = () => {
         options={{
           title: "Tekliflerim",
           tabBarLabel: "Tekliflerim",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="send" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen
@@ -464,6 +482,9 @@ const TenantTabNavigator = () => {
         options={{
           title: "Profil",
           tabBarLabel: "Profil",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="person" size={size} color={color} />
+          ),
         }}
       />
     </Tab.Navigator>
