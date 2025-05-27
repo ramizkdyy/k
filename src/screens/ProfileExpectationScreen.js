@@ -55,12 +55,19 @@ const CustomDropdown = ({
         animationType="slide"
         onRequestClose={() => setIsOpen(false)}
       >
-        <View className="flex-1 justify-end bg-black bg-opacity-50">
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'flex-end',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)' // Saydam siyah arka plan
+          }}
+        >
           <View className="bg-white rounded-t-lg max-h-[50%]">
+            {/* Modal içeriği aynı kalıyor */}
             <View className="p-4 border-b border-gray-200 flex-row justify-between items-center">
               <Text className="text-lg font-bold text-gray-800">{label}</Text>
               <TouchableOpacity onPress={() => setIsOpen(false)}>
-                <Text className="text-blue-500 font-bold">Kapat</Text>
+                <Text className="text-green-500 font-bold">Kapat</Text>
               </TouchableOpacity>
             </View>
 
@@ -68,20 +75,14 @@ const CustomDropdown = ({
               {options.map((option, index) => (
                 <TouchableOpacity
                   key={index}
-                  className={`p-4 border-b border-gray-100 ${
-                    value === option ? "bg-blue-50" : ""
-                  }`}
+                  className={`p-4 border-b border-gray-100 ${value === option ? "bg-green-50" : ""}`}
                   onPress={() => {
                     setValue(option);
                     setIsOpen(false);
                   }}
                 >
                   <Text
-                    className={`text-base ${
-                      value === option
-                        ? "text-blue-500 font-semibold"
-                        : "text-gray-700"
-                    }`}
+                    className={`text-base ${value === option ? "text-green-500 font-semibold" : "text-gray-700"}`}
                   >
                     {option}
                   </Text>
@@ -277,81 +278,81 @@ const ProfileExpectationScreen = ({ navigation }) => {
   ];
 
   const maintenanceFeeResponsibilityOptions = [
-    "Kiracı", // 1
-    "Ev Sahibi", // 2
-    "Paylaşımlı", // 3
+    "Kiracıya Ait", // 1
+    "Ev Sahibine Ait", // 2
+    "Ortak Ödeme", // 3
   ];
 
   const rentalPeriodOptions = [
-    "3 Ay", // 1
-    "6 Ay", // 2
-    "1 Yıl", // 3
-    "1+ Yıl", // 4
+    "6 Ay", // 1
+    "1 Yıl", // 2
+    "Uzun Vadeli (1+ Yıl)", // 3
+    "Kısa Dönem Olabilir" // 4
   ];
 
   const petPolicyOptions = [
-    "İzin Verilmez", // 1
-    "Bazı Evcil Hayvanlara İzin Verilir", // 2
-    "Tüm Evcil Hayvanlara İzin Verilir", // 3
+    "Evet, Kabul Ediyorum", // 1
+    "Hayır, Kabul Etmiyorum", // 2
+    "Sadece Küçük Hayvan", // 3
   ];
 
   const studentPolicyOptions = [
-    "İzin Verilmez", // 1
-    "Öğrencilere İzin Verilir", // 2
-    "Sadece Öğrenciler", // 3
+    "Evet, Kabul Ediyorum", // 1
+    "Hayır, Kabul Etmiyorum", // 2
+    "Referanslı Öğrenci Olabilir", // 3
   ];
 
   const smokingPolicyOptions = [
-    "İzin Verilmez", // 1
-    "Sadece Balkon/Dışarıda", // 2
-    "İzin Verilir", // 3
+    "Evet, İzin Veriyorum", // 1
+    "Hayır, İzin Vermiyorum", // 2
+    "Sadece Balkonda İçilebilir", // 3
   ];
 
   const buildingApprovalPolicyOptions = [
-    "Gerekli Değil", // 1
-    "Tercih Edilir", // 2
-    "Zorunlu", // 3
+    "Evet, Önemli", // 1
+    "Hayır, Önemli Değil", // 2
+    "Ortak Karar Alınacak", // 3
   ];
 
   const currencyOptions = [
-    "Türk Lirası", // 1
-    "Dolar", // 2
-    "Euro", // 3
-    "Diğer", // 4
+    "TL", // 1
+    "USD (Amerikan Doları)", // 2
+    "EUR (Euro)", // 3
+    "GBP (İngiliz Sterlini)", // 4
   ];
 
   const paymentMethodOptions = [
-    "Nakit", // 1
-    "Banka Transferi", // 2
-    "Kredi Kartı", // 3
-    "Hepsi Kabul Edilir", // 4
+    "Banka Havalesi", // 1
+    "Nakit Ödeme", // 2
+    "Çek", // 3
+    "Fark Etmez", // 4
   ];
 
   const furnishedPreferenceOptions = [
-    "Farketmez", // 1
-    "Eşyalı", // 2
-    "Eşyasız", // 3
-    "Yarı Eşyalı", // 4
+    "Mobilyalı Olmalı", // 1
+    "Mobilyasız Olmalı", // 2
+    "Kısmen Mobilyalı Olabilir", // 3
+    "Fark Etmez", // 4
   ];
 
   const heatingTypeOptions = [
-    "Farketmez", // 1
-    "Merkezi Isıtma", // 2
-    "Kombi", // 3
+    "Doğalgaz Kombi", // 1
+    "Merkezi Sistem", // 2
+    "Elektrikli Isıtma", // 3
     "Soba", // 4
-    "Elektrikli Isıtıcı", // 5
+    "Fark Etmez", // 5
   ];
 
   const neighborRelationOptions = [
-    "Minimum Etkileşim", // 1
-    "Normal Komşuluk İlişkisi", // 2
-    "Sosyal Komşuluk İlişkisi", // 3
+    "Yakın İlişki", // 1
+    "Mesafeli İlişki", // 2
+    "Fark Etmez", // 3
   ];
 
   const noisePreferenceOptions = [
-    "Sessiz Ortam", // 1
-    "Normal", // 2
-    "Hareketli Ortam", // 3
+    "Sessiz Olmalı", // 1
+    "Normal Seviyede Olabilir", // 2
+    "Fark Etmez", // 3
   ];
 
   const numericOptions = Array.from({ length: 30 }, (_, i) =>
@@ -370,27 +371,33 @@ const ProfileExpectationScreen = ({ navigation }) => {
           required
         />
 
-        <View className="mb-4">
+        <View className="mb-3">
           <Text className="text-gray-600 mb-2">İlçe</Text>
-          <TextInput
-            className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-            value={district}
-            onChangeText={setDistrict}
-            placeholder="İlçe girin"
-          />
+          <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+            <TextInput
+              className="flex-1 py-3"
+              value={district}
+              onChangeText={setDistrict}
+              placeholder="İlçe girin"
+              placeholderTextColor={'#000'}
+            />
+          </View>
         </View>
 
-        <View className="mb-4">
+        <View className="mb-3">
           <Text className="text-gray-600 mb-2">
             Kira Miktarı (₺)<Text className="text-red-500">*</Text>
           </Text>
-          <TextInput
-            className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-            value={rentAmount}
-            onChangeText={setRentAmount}
-            placeholder="Kira miktarı girin"
-            keyboardType="numeric"
-          />
+          <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+            <TextInput
+              className="flex-1 py-3"
+              value={rentAmount}
+              onChangeText={setRentAmount}
+              placeholder="Kira miktarı girin"
+              placeholderTextColor={'#000'}
+              keyboardType="numeric"
+            />
+          </View>
         </View>
       </FormSection>
 
@@ -402,15 +409,18 @@ const ProfileExpectationScreen = ({ navigation }) => {
         />
 
         {!isMaintenanceFeeIncluded && (
-          <View className="mb-4">
+          <View className="mb-3">
             <Text className="text-gray-600 mb-2">Aidat Miktarı (₺)</Text>
-            <TextInput
-              className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-              value={maintenanceFee}
-              onChangeText={setMaintenanceFee}
-              placeholder="Aidat miktarı girin"
-              keyboardType="numeric"
-            />
+            <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+              <TextInput
+                className="flex-1 py-3"
+                value={maintenanceFee}
+                onChangeText={setMaintenanceFee}
+                placeholder="Aidat miktarı girin"
+                placeholderTextColor={'#000'}
+                keyboardType="numeric"
+              />
+            </View>
           </View>
         )}
 
@@ -418,7 +428,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
           label="Aidat Sorumluluğu"
           value={
             maintenanceFeeResponsibilityOptions[
-              maintenanceFeeResponsibility - 1
+            maintenanceFeeResponsibility - 1
             ]
           }
           setValue={(value) => {
@@ -436,15 +446,18 @@ const ProfileExpectationScreen = ({ navigation }) => {
         />
 
         {isDepositRequired && (
-          <View className="mb-4">
+          <View className="mb-3">
             <Text className="text-gray-600 mb-2">Depozito Miktarı (₺)</Text>
-            <TextInput
-              className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-              value={depositAmount}
-              onChangeText={setDepositAmount}
-              placeholder="Depozito miktarı girin"
-              keyboardType="numeric"
-            />
+            <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+              <TextInput
+                className="flex-1 py-3"
+                value={depositAmount}
+                onChangeText={setDepositAmount}
+                placeholder="Depozito miktarı girin"
+                placeholderTextColor={'#000'}
+                keyboardType="numeric"
+              />
+            </View>
           </View>
         )}
       </FormSection>
@@ -493,15 +506,18 @@ const ProfileExpectationScreen = ({ navigation }) => {
           setValue={setIsBankTransferRequired}
         />
 
-        <View className="mb-4">
+        <View className="mb-3">
           <Text className="text-gray-600 mb-2">Maksimum Kiracı Sayısı</Text>
-          <TextInput
-            className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-            value={maximumOccupants}
-            onChangeText={setMaximumOccupants}
-            placeholder="Kişi sayısı girin"
-            keyboardType="numeric"
-          />
+          <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+            <TextInput
+              className="flex-1 py-3"
+              value={maximumOccupants}
+              onChangeText={setMaximumOccupants}
+              placeholder="Kişi sayısı girin"
+              placeholderTextColor={'#000'}
+              keyboardType="numeric"
+            />
+          </View>
         </View>
       </FormSection>
 
@@ -518,16 +534,19 @@ const ProfileExpectationScreen = ({ navigation }) => {
         />
 
         {petPolicy === 2 && (
-          <View className="mb-4">
+          <View className="mb-3">
             <Text className="text-gray-600 mb-2">
               İzin Verilen Evcil Hayvan Türleri
             </Text>
-            <TextInput
-              className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-              value={acceptedPetTypes}
-              onChangeText={setAcceptedPetTypes}
-              placeholder="Örn: Kedi, küçük köpekler"
-            />
+            <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+              <TextInput
+                className="flex-1 py-3"
+                value={acceptedPetTypes}
+                onChangeText={setAcceptedPetTypes}
+                placeholder="Örn: Kedi, küçük köpekler"
+                placeholderTextColor={'#000'}
+              />
+            </View>
           </View>
         )}
 
@@ -567,15 +586,18 @@ const ProfileExpectationScreen = ({ navigation }) => {
         />
 
         {isIncomeProofRequired && (
-          <View className="mb-4">
+          <View className="mb-3">
             <Text className="text-gray-600 mb-2">Minimum Aylık Gelir (₺)</Text>
-            <TextInput
-              className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-              value={minimumMonthlyIncome}
-              onChangeText={setMinimumMonthlyIncome}
-              placeholder="Minimum gelir miktarı"
-              keyboardType="numeric"
-            />
+            <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+              <TextInput
+                className="flex-1 py-3"
+                value={minimumMonthlyIncome}
+                onChangeText={setMinimumMonthlyIncome}
+                placeholder="Minimum gelir miktarı"
+                placeholderTextColor={'#000'}
+                keyboardType="numeric"
+              />
+            </View>
           </View>
         )}
 
@@ -634,62 +656,77 @@ const ProfileExpectationScreen = ({ navigation }) => {
           required
         />
 
-        <View className="mb-4">
+        <View className="mb-3">
           <Text className="text-gray-600 mb-2">Tercih Edilen İlçe</Text>
-          <TextInput
-            className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-            value={district}
-            onChangeText={setDistrict}
-            placeholder="Örn: Kadıköy"
-          />
+          <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+            <TextInput
+              className="flex-1 py-3"
+              value={district}
+              onChangeText={setDistrict}
+              placeholder="Örn: Kadıköy"
+              placeholderTextColor={'#000'}
+            />
+          </View>
         </View>
 
-        <View className="mb-4">
+        <View className="mb-3">
           <Text className="text-gray-600 mb-2">Alternatif İlçeler</Text>
-          <TextInput
-            className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-            value={alternativeDistricts}
-            onChangeText={setAlternativeDistricts}
-            placeholder="Örn: Beşiktaş, Şişli"
-          />
+          <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+            <TextInput
+              className="flex-1 py-3"
+              value={alternativeDistricts}
+              onChangeText={setAlternativeDistricts}
+              placeholder="Örn: Beşiktaş, Şişli"
+              placeholderTextColor={'#000'}
+            />
+          </View>
         </View>
 
-        <View className="mb-4">
+        <View className="mb-3">
           <Text className="text-gray-600 mb-2">Tercih Edilen Mahalleler</Text>
-          <TextInput
-            className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-            value={preferredNeighborhoods}
-            onChangeText={setPreferredNeighborhoods}
-            placeholder="Örn: Caferağa, Moda"
-          />
+          <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+            <TextInput
+              className="flex-1 py-3"
+              value={preferredNeighborhoods}
+              onChangeText={setPreferredNeighborhoods}
+              placeholder="Örn: Caferağa, Moda"
+              placeholderTextColor={'#000'}
+            />
+          </View>
         </View>
       </FormSection>
 
       <FormSection title="Bütçe ve Ödeme">
-        <View className="mb-4">
+        <View className="mb-3">
           <Text className="text-gray-600 mb-2">
             Minimum Kira Bütçesi (₺)<Text className="text-red-500">*</Text>
           </Text>
-          <TextInput
-            className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-            value={minRentBudget}
-            onChangeText={setMinRentBudget}
-            placeholder="Minimum kira bütçesi"
-            keyboardType="numeric"
-          />
+          <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+            <TextInput
+              className="flex-1 py-3"
+              value={minRentBudget}
+              onChangeText={setMinRentBudget}
+              placeholder="Minimum kira bütçesi"
+              placeholderTextColor={'#000'}
+              keyboardType="numeric"
+            />
+          </View>
         </View>
 
-        <View className="mb-4">
+        <View className="mb-3">
           <Text className="text-gray-600 mb-2">
             Maksimum Kira Bütçesi (₺)<Text className="text-red-500">*</Text>
           </Text>
-          <TextInput
-            className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-            value={maxRentBudget}
-            onChangeText={setMaxRentBudget}
-            placeholder="Maksimum kira bütçesi"
-            keyboardType="numeric"
-          />
+          <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+            <TextInput
+              className="flex-1 py-3"
+              value={maxRentBudget}
+              onChangeText={setMaxRentBudget}
+              placeholder="Maksimum kira bütçesi"
+              placeholderTextColor={'#000'}
+              keyboardType="numeric"
+            />
+          </View>
         </View>
 
         <CustomDropdown
@@ -705,15 +742,18 @@ const ProfileExpectationScreen = ({ navigation }) => {
           placeholder="Aidat sorumluluğu seçin"
         />
 
-        <View className="mb-4">
+        <View className="mb-3">
           <Text className="text-gray-600 mb-2">Maksimum Aidat Miktarı (₺)</Text>
-          <TextInput
-            className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-            value={maxMaintenanceFee}
-            onChangeText={setMaxMaintenanceFee}
-            placeholder="Maksimum aidat miktarı"
-            keyboardType="numeric"
-          />
+          <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+            <TextInput
+              className="flex-1 py-3"
+              value={maxMaintenanceFee}
+              onChangeText={setMaxMaintenanceFee}
+              placeholder="Maksimum aidat miktarı"
+              placeholderTextColor={'#000'}
+              keyboardType="numeric"
+            />
+          </View>
         </View>
 
         <SwitchField
@@ -723,17 +763,20 @@ const ProfileExpectationScreen = ({ navigation }) => {
         />
 
         {canPayDeposit && (
-          <View className="mb-4">
+          <View className="mb-3">
             <Text className="text-gray-600 mb-2">
               Maksimum Ödeyebileceğiniz Depozit (₺)
             </Text>
-            <TextInput
-              className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-              value={maxDepositAmount}
-              onChangeText={setMaxDepositAmount}
-              placeholder="Maksimum depozit miktarı"
-              keyboardType="numeric"
-            />
+            <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+              <TextInput
+                className="flex-1 py-3"
+                value={maxDepositAmount}
+                onChangeText={setMaxDepositAmount}
+                placeholder="Maksimum depozit miktarı"
+                placeholderTextColor={'#000'}
+                keyboardType="numeric"
+              />
+            </View>
           </View>
         )}
 
@@ -750,26 +793,32 @@ const ProfileExpectationScreen = ({ navigation }) => {
       </FormSection>
 
       <FormSection title="Emlak Özellikleri">
-        <View className="mb-4">
+        <View className="mb-3">
           <Text className="text-gray-600 mb-2">Minimum Oda Sayısı</Text>
-          <TextInput
-            className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-            value={minRoomCount}
-            onChangeText={setMinRoomCount}
-            placeholder="Minimum oda sayısı"
-            keyboardType="numeric"
-          />
+          <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+            <TextInput
+              className="flex-1 py-3"
+              value={minRoomCount}
+              onChangeText={setMinRoomCount}
+              placeholder="Minimum oda sayısı"
+              placeholderTextColor={'#000'}
+              keyboardType="numeric"
+            />
+          </View>
         </View>
 
-        <View className="mb-4">
+        <View className="mb-3">
           <Text className="text-gray-600 mb-2">Minimum Metrekare</Text>
-          <TextInput
-            className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-            value={minSquareMeters}
-            onChangeText={setMinSquareMeters}
-            placeholder="Minimum metrekare"
-            keyboardType="numeric"
-          />
+          <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+            <TextInput
+              className="flex-1 py-3"
+              value={minSquareMeters}
+              onChangeText={setMinSquareMeters}
+              placeholder="Minimum metrekare"
+              placeholderTextColor={'#000'}
+              keyboardType="numeric"
+            />
+          </View>
         </View>
 
         <CustomDropdown
@@ -794,25 +843,31 @@ const ProfileExpectationScreen = ({ navigation }) => {
           placeholder="Isıtma tipi seçin"
         />
 
-        <View className="mb-4">
+        <View className="mb-3">
           <Text className="text-gray-600 mb-2">Maksimum Bina Yaşı</Text>
-          <TextInput
-            className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-            value={maxBuildingAge}
-            onChangeText={setMaxBuildingAge}
-            placeholder="Maksimum bina yaşı"
-            keyboardType="numeric"
-          />
+          <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+            <TextInput
+              className="flex-1 py-3"
+              value={maxBuildingAge}
+              onChangeText={setMaxBuildingAge}
+              placeholder="Maksimum bina yaşı"
+              placeholderTextColor={'#000'}
+              keyboardType="numeric"
+            />
+          </View>
         </View>
 
-        <View className="mb-4">
+        <View className="mb-3">
           <Text className="text-gray-600 mb-2">Tercih Edilen Kat Aralığı</Text>
-          <TextInput
-            className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-            value={preferredFloorRange}
-            onChangeText={setPreferredFloorRange}
-            placeholder="Örn: 2-5"
-          />
+          <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+            <TextInput
+              className="flex-1 py-3"
+              value={preferredFloorRange}
+              onChangeText={setPreferredFloorRange}
+              placeholder="Örn: 2-5"
+              placeholderTextColor={'#000'}
+            />
+          </View>
         </View>
 
         <SwitchField
@@ -873,15 +928,18 @@ const ProfileExpectationScreen = ({ navigation }) => {
       </FormSection>
 
       <FormSection title="Kişisel Bilgiler">
-        <View className="mb-4">
+        <View className="mb-3">
           <Text className="text-gray-600 mb-2">Kiralayacak Kişi Sayısı</Text>
-          <TextInput
-            className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-            value={occupantCount}
-            onChangeText={setOccupantCount}
-            placeholder="Kişi sayısı"
-            keyboardType="numeric"
-          />
+          <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+            <TextInput
+              className="flex-1 py-3"
+              value={occupantCount}
+              onChangeText={setOccupantCount}
+              placeholder="Kişi sayısı"
+              placeholderTextColor={'#000'}
+              keyboardType="numeric"
+            />
+          </View>
         </View>
 
         <SwitchField
@@ -891,14 +949,17 @@ const ProfileExpectationScreen = ({ navigation }) => {
         />
 
         {hasPets && (
-          <View className="mb-4">
+          <View className="mb-3">
             <Text className="text-gray-600 mb-2">Evcil Hayvan Türleri</Text>
-            <TextInput
-              className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-              value={petTypes}
-              onChangeText={setPetTypes}
-              placeholder="Örn: Kedi, küçük köpek"
-            />
+            <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+              <TextInput
+                className="flex-1 py-3"
+                value={petTypes}
+                onChangeText={setPetTypes}
+                placeholder="Örn: Kedi, küçük köpek"
+                placeholderTextColor={'#000'}
+              />
+            </View>
           </View>
         )}
 
@@ -908,14 +969,17 @@ const ProfileExpectationScreen = ({ navigation }) => {
           setValue={setIsStudent}
         />
 
-        <View className="mb-4">
+        <View className="mb-3">
           <Text className="text-gray-600 mb-2">Meslek</Text>
-          <TextInput
-            className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-            value={occupation}
-            onChangeText={setOccupation}
-            placeholder="Mesleğinizi belirtin"
-          />
+          <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+            <TextInput
+              className="flex-1 py-3"
+              value={occupation}
+              onChangeText={setOccupation}
+              placeholder="Mesleğinizi belirtin"
+              placeholderTextColor={'#000'}
+            />
+          </View>
         </View>
 
         <SwitchField
@@ -933,15 +997,18 @@ const ProfileExpectationScreen = ({ navigation }) => {
             />
 
             {hasChildren && (
-              <View className="mb-4">
+              <View className="mb-3">
                 <Text className="text-gray-600 mb-2">Çocuk Sayısı</Text>
-                <TextInput
-                  className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-                  value={childrenCount}
-                  onChangeText={setChildrenCount}
-                  placeholder="Çocuk sayısı"
-                  keyboardType="numeric"
-                />
+                <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+                  <TextInput
+                    className="flex-1 py-3"
+                    value={childrenCount}
+                    onChangeText={setChildrenCount}
+                    placeholder="Çocuk sayısı"
+                    placeholderTextColor={'#000'}
+                    keyboardType="numeric"
+                  />
+                </View>
               </View>
             )}
           </>
@@ -965,15 +1032,18 @@ const ProfileExpectationScreen = ({ navigation }) => {
           setValue={setCanProvideGuarantor}
         />
 
-        <View className="mb-4">
+        <View className="mb-3">
           <Text className="text-gray-600 mb-2">Aylık Gelir (₺)</Text>
-          <TextInput
-            className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-            value={monthlyIncome}
-            onChangeText={setMonthlyIncome}
-            placeholder="Aylık geliriniz"
-            keyboardType="numeric"
-          />
+          <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+            <TextInput
+              className="flex-1 py-3"
+              value={monthlyIncome}
+              onChangeText={setMonthlyIncome}
+              placeholder="Aylık geliriniz"
+              placeholderTextColor={'#000'}
+              keyboardType="numeric"
+            />
+          </View>
         </View>
 
         <SwitchField
@@ -1006,14 +1076,17 @@ const ProfileExpectationScreen = ({ navigation }) => {
           placeholder="Gürültü tercihi seçin"
         />
 
-        <View className="mb-4">
+        <View className="mb-3">
           <Text className="text-gray-600 mb-2">Güvenlik Tercihleri</Text>
-          <TextInput
-            className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-            value={securityPreferences}
-            onChangeText={setSecurityPreferences}
-            placeholder="Örn: 7/24 güvenlik, kamera sistemi"
-          />
+          <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+            <TextInput
+              className="flex-1 py-3"
+              value={securityPreferences}
+              onChangeText={setSecurityPreferences}
+              placeholder="Örn: 7/24 güvenlik, kamera sistemi"
+              placeholderTextColor={'#000'}
+            />
+          </View>
         </View>
 
         <SwitchField
@@ -1040,17 +1113,20 @@ const ProfileExpectationScreen = ({ navigation }) => {
           setValue={setRequiresHospitalAccess}
         />
 
-        <View className="mb-4">
+        <View className="mb-3">
           <Text className="text-gray-600 mb-2">Ek Notlar</Text>
-          <TextInput
-            className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-            value={additionalNotes}
-            onChangeText={setAdditionalNotes}
-            placeholder="Belirtmek istediğiniz diğer tercihler"
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-          />
+          <View className="bg-gray-100 px-3 rounded-lg border border-gray-200">
+            <TextInput
+              className="flex-1 py-3"
+              value={additionalNotes}
+              onChangeText={setAdditionalNotes}
+              placeholder="Belirtmek istediğiniz diğer tercihler"
+              placeholderTextColor={'#000'}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+          </View>
         </View>
       </FormSection>
     </View>
@@ -1177,7 +1253,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
       Alert.alert(
         "Hata",
         error?.data?.message ||
-          "Beklenti profili oluşturulurken bir hata oluştu"
+        "Beklenti profili oluşturulurken bir hata oluştu"
       );
     }
   };

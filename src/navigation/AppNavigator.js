@@ -10,6 +10,7 @@ import {
   selectHasUserProfile,
 } from "../redux/slices/authSlice";
 
+
 import {
   selectUserProfile,
   setUserProfile,
@@ -34,7 +35,6 @@ import CreatePostScreen from "../screens/CreatePostScreen";
 import ProfileExpectationScreen from "../screens/ProfileExpectationScreen";
 import OffersScreen from "../screens/OffersScreen"; // Import the actual OffersScreen
 
-// Import icons for tab navigation
 import Icon from "react-native-vector-icons/MaterialIcons";
 
 // Loading screen to show while fetching profile
@@ -228,16 +228,47 @@ const LandlordOffersStack = () => {
 
 const LandlordProfileStack = () => {
   return (
-    <LandlordStack.Navigator>
+    <LandlordStack.Navigator
+      screenOptions={{
+        headerTintColor: '#fff',
+        headerStyle: {
+          backgroundColor: '#15803d',
+          borderBottomWidth: 0,
+          shadowOpacity: 0,
+          shadowOffset: { height: 0, width: 0 },
+          shadowRadius: 0,
+          elevation: 0
+        },
+        // iOS back title'ı gizleme
+        headerBackTitle: null,
+      }}
+    >
       <LandlordStack.Screen
         name="LandlordProfileScreen"
         component={ProfileScreen}
-        options={{ headerShown: false }}
+        options={{
+          headerTitle: 'Profil',
+          headerShown: true
+        }}
       />
       <LandlordStack.Screen
         name="EditProfile"
         component={EditProfileScreen}
-        options={{ headerShown: false }}
+        options={({ navigation }) => ({
+          headerTitle: 'Profili Düzenle',
+          // Completely custom back button
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={{ paddingHorizontal: 15 }}
+            >
+              <FontAwesomeIcon icon={faChevronLeft} size={20} color="#fff" />
+            </TouchableOpacity>
+          ),
+          // Back title'ı tamamen kaldır
+          headerBackTitle: '',
+          headerBackTitleVisible: false
+        })}
       />
       <LandlordStack.Screen
         name="CreatePost"
@@ -258,7 +289,6 @@ const LandlordProfileStack = () => {
     </LandlordStack.Navigator>
   );
 };
-
 // Tenant Stack Navigators for each tab
 const TenantHomeStack = () => {
   return (
@@ -506,10 +536,10 @@ const ProfileLoader = ({ children }) => {
     isLoading,
     error,
   } = userRole === "EVSAHIBI"
-    ? useGetLandlordProfileQuery(currentUser?.id, {
+      ? useGetLandlordProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       })
-    : useGetTenantProfileQuery(currentUser?.id, {
+      : useGetTenantProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       });
 
