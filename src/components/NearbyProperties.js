@@ -85,6 +85,66 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   // Combine both arrays for display, prioritizing nearFromYou
   const allProperties = [...nearFromYouProperties, ...nearbyProperties];
 
+
+  // Log the response for debugging
+  // useEffect(() => {
+  //   if (nearbyData) {
+  //     console.log("===== NEARBY PROPERTIES RESPONSE =====");
+  //     console.log("Full Response:", JSON.stringify(nearbyData, null, 2));
+  //     console.log("Best For You Array:", nearbyData?.result?.bestForYou);
+  //     console.log(
+  //       "Best For You Length:",
+  //       nearbyData?.result?.bestForYou?.length || 0
+  //     );
+  //     console.log("Near From You Array:", nearbyData?.result?.nearFromYou);
+  //     console.log(
+  //       "Near From You Length:",
+  //       nearbyData?.result?.nearFromYou?.length || 0
+  //     );
+  //     console.log("Combined Properties Length:", allProperties.length);
+  //     console.log("Is Success:", nearbyData?.isSuccess);
+  //     console.log("Message:", nearbyData?.message);
+  //     console.log("Status Code:", nearbyData?.statusCode);
+
+  //     if (nearFromYouProperties.length > 0) {
+  //       console.log(
+  //         "First Near Property:",
+  //         JSON.stringify(nearFromYouProperties[0], null, 2)
+  //       );
+  //       console.log("Distance:", nearFromYouProperties[0].distanceInKM, "km");
+  //     }
+  //     if (nearbyProperties.length > 0) {
+  //       console.log(
+  //         "First Best For You Property:",
+  //         JSON.stringify(nearbyProperties[0], null, 2)
+  //       );
+  //     }
+  //     console.log("=====================================");
+  //   }
+  // }, [nearbyData, allProperties]);
+
+  // Log API call parameters
+  useEffect(() => {
+    if (userLocation && currentUser?.id) {
+      console.log("===== API CALL PARAMETERS =====");
+      console.log("User ID:", currentUser.id);
+      console.log("Latitude:", userLocation.latitude);
+      console.log("Longitude:", userLocation.longitude);
+      console.log("===============================");
+    }
+  }, [userLocation, currentUser?.id]);
+
+  // Log loading and error states
+  useEffect(() => {
+    console.log("===== COMPONENT STATE =====");
+    console.log("Is Loading Nearby:", isLoadingNearby);
+    console.log("Is Refreshing:", isRefreshing);
+    console.log("Location Loading:", locationLoading);
+    console.log("Error:", error);
+    console.log("User Location:", userLocation);
+    console.log("===========================");
+  }, [isLoadingNearby, isRefreshing, locationLoading, error, userLocation]);
+
   // Handle refresh from parent component
   useEffect(() => {
     if (refreshing && userLocation && currentUser?.id) {

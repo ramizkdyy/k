@@ -38,51 +38,12 @@ import PostsScreen from "../screens/PostsScreen";
 import CreatePostScreen from "../screens/CreatePostScreen";
 import ProfileExpectationScreen from "../screens/ProfileExpectationScreen";
 
-// Import edilen ikonlar
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-// Solid ikonlar (seçili durum için)
-import {
-  faHouse as faHouseSolid,
-  faBuilding as faBuildingSolid,
-  faEnvelope as faEnvelopeSolid,
-  faUser as faUserSolid,
-  faSearch as faSearchSolid,
-  faBars,
-  faMapMarkerAlt,
-  faGavel,
-  faBell,
-  faComments,
-  faCog,
-  faQuestionCircle,
-  faSignOutAlt,
-  faChevronLeft
-} from '@fortawesome/pro-solid-svg-icons';
-// Regular ikonlar (seçili olmayan durum için)
-import {
-  faHouse as faHouseRegular,
-  faBuilding as faBuildingRegular,
-  faEnvelope as faEnvelopeRegular,
-  faUser as faUserRegular,
-  faSearch as faSearchRegular,
-  faMapMarkerAlt as faMapMarkerAltRegular,
-  faGavel as faGavelRegular,
-  faBell as faBellRegular,
-  faComments as faCommentsRegular,
-  faCog as faCogRegular,
-  faQuestionCircle as faQuestionCircleRegular,
-  faSignOutAlt as faSignOutAltRegular
-} from '@fortawesome/pro-regular-svg-icons';
-const { width: screenWidth } = Dimensions.get('window');
+import OffersScreen from "../screens/OffersScreen"; // Import the actual OffersScreen
 
-// Placeholder screens
-import { View, Text, ActivityIndicator, TouchableOpacity, StatusBar, SafeAreaView } from "react-native";
-const OffersScreen = () => (
-  <View className="flex-1 justify-center items-center">
-    <Text>Offers Screen</Text>
-  </View>
-);
+import Icon from "react-native-vector-icons/MaterialIcons";
 
 // Loading screen to show while fetching profile
+import { View, Text, ActivityIndicator } from "react-native";
 const LoadingScreen = () => (
   <View className="flex-1 justify-center items-center bg-white">
     <ActivityIndicator size="large" color="#4A90E2" />
@@ -623,18 +584,70 @@ const TenantProfileStack = () => {
 // Tab Navigator - Ana arka plan yeşil
 const LandlordTabNavigator = () => {
   return (
-    <View style={{ flex: 1, backgroundColor: '#A0E79E' }}>
-      <Tab.Navigator
-        screenOptions={{
-          tabBarActiveTintColor: "#4A90E2",
-          tabBarInactiveTintColor: "#666",
-          tabBarStyle: {
-            backgroundColor: "#fff",
-            borderTopColor: "#e0e0e0",
-            paddingTop: 5,
-            paddingBottom: 5,
-          },
-          headerShown: false,
+
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: "#4A90E2",
+        tabBarInactiveTintColor: "#666",
+        tabBarStyle: {
+          backgroundColor: "#fff",
+          borderTopColor: "#e0e0e0",
+          paddingTop: 5,
+          paddingBottom: 5,
+        },
+        headerStyle: {
+          backgroundColor: "#4A90E2",
+        },
+        headerTintColor: "#fff",
+        headerTitleStyle: {
+          fontWeight: "bold",
+        },
+        headerShown: false,
+      }}
+    >
+      <Tab.Screen
+        name="LandlordHome"
+        component={LandlordHomeStack}
+        options={{
+          title: "Ana Sayfa",
+          tabBarLabel: "Ana Sayfa",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="home" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="MyProperties"
+        component={LandlordPropertiesStack}
+        options={{
+          title: "Mülklerim",
+          tabBarLabel: "Mülklerim",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="apartment" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="ReceivedOffers"
+        component={LandlordOffersStack}
+        options={{
+          title: "Teklifler",
+          tabBarLabel: "Teklifler",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="local-offer" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="LandlordProfile"
+        component={LandlordProfileStack}
+        options={{
+          title: "Profil",
+          tabBarLabel: "Profil",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="person" size={size} color={color} />
+          ),
+
         }}
       >
         <Tab.Screen
@@ -705,168 +718,69 @@ const LandlordTabNavigator = () => {
 // Tenant tab navigator - Ana arka plan yeşil
 const TenantTabNavigator = () => {
   return (
-    <View style={{ flex: 1, backgroundColor: '#A0E79E' }}>
-      <Tab.Navigator
-        screenOptions={{
-          tabBarActiveTintColor: "#45CC42",
-          tabBarInactiveTintColor: "#666",
-          tabBarStyle: {
-            backgroundColor: "#fff",
-            borderTopColor: "#e0e0e0",
-            paddingTop: 5,
-            paddingBottom: 5,
-          },
-          headerShown: false,
+
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: "#4A90E2",
+        tabBarInactiveTintColor: "#666",
+        tabBarStyle: {
+          backgroundColor: "#fff",
+          borderTopColor: "#e0e0e0",
+          paddingTop: 5,
+          paddingBottom: 5,
+        },
+        headerStyle: {
+          backgroundColor: "#4A90E2",
+        },
+        headerTintColor: "#fff",
+        headerTitleStyle: {
+          fontWeight: "bold",
+        },
+        headerShown: false,
+      }}
+    >
+      <Tab.Screen
+        name="TenantHome"
+        component={TenantHomeStack}
+        options={{
+          title: "Ana Sayfa",
+          tabBarLabel: "Ana Sayfa",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="home" size={size} color={color} />
+          ),
         }}
-      >
-        <Tab.Screen
-          name="TenantHome"
-          component={TenantHomeStack}
-          options={{
-            title: "Ana Sayfa",
-            tabBarLabel: "Ana Sayfa",
-            tabBarIcon: ({ focused }) => (
-              <FontAwesomeIcon
-                icon={focused ? faHouseSolid : faHouseRegular}
-                size={24}
-                color="#A0E79E"
-              />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="FindProperties"
-          component={TenantPropertiesStack}
-          options={{
-            title: "İlanlar",
-            tabBarLabel: "İlanlar",
-            tabBarIcon: ({ focused }) => (
-              <FontAwesomeIcon
-                icon={focused ? faSearchSolid : faSearchRegular}
-                size={24}
-                color="#A0E79E"
-              />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="MySentOffers"
-          component={TenantOffersStack}
-          options={{
-            title: "Tekliflerim",
-            tabBarLabel: "Tekliflerim",
-            tabBarIcon: ({ focused }) => (
-              <FontAwesomeIcon
-                icon={focused ? faEnvelopeSolid : faEnvelopeRegular}
-                size={24}
-                color="#A0E79E"
-              />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="TenantProfile"
-          component={TenantProfileStack}
-          options={{
-            title: "Profil",
-            tabBarLabel: "Profil",
-            tabBarIcon: ({ focused }) => (
-              <FontAwesomeIcon
-                icon={focused ? faUserSolid : faUserRegular}
-                size={24}
-                color="#A0E79E"
-              />
-            ),
-          }}
-        />
-      </Tab.Navigator>
-    </View>
-  );
-};
-
-// Tab Navigator'ları AnimatedScreen ile wrap et
-const LandlordTabNavigatorWrapped = () => {
-  return (
-    <AnimatedScreen>
-      <LandlordTabNavigator />
-    </AnimatedScreen>
-  );
-};
-
-const TenantTabNavigatorWrapped = () => {
-  return (
-    <AnimatedScreen>
-      <TenantTabNavigator />
-    </AnimatedScreen>
-  );
-};
-
-// Drawer Navigator'lar - HARDCORE yeşil arka plan
-const LandlordDrawerNavigator = () => {
-  return (
-    <View style={{
-      flex: 1,
-      backgroundColor: '#A0E79E', // Ana arka plan yeşil
-    }}>
-      <Drawer.Navigator
-        drawerContent={(props) => <CustomDrawerContent {...props} />}
-        screenOptions={{
-          headerShown: false,
-          drawerStyle: {
-            backgroundColor: '#A0E79E',
-            width: 250, // Drawer genişliğini azalt
-          },
-          drawerActiveTintColor: 'white',
-          drawerInactiveTintColor: 'rgba(255,255,255,0.8)',
-          swipeEnabled: true,
-          swipeEdgeWidth: screenWidth,
-          drawerType: 'slide', // 'back' yerine 'slide' kullan
-          overlayColor: 'transparent', // Overlay'i tamamen kaldır
-          sceneContainerStyle: {
-            backgroundColor: '#A0E79E', // Scene arka planı yeşil
-          }
+      />
+      <Tab.Screen
+        name="FindProperties"
+        component={TenantPropertiesStack}
+        options={{
+          title: "İlanlar",
+          tabBarLabel: "İlanlar",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="search" size={size} color={color} />
+          ),
         }}
-      >
-        <Drawer.Screen
-          name="MainTabs"
-          component={LandlordTabNavigatorWrapped}
-          options={{
-            title: 'Ana Sayfa',
-          }}
-        />
-      </Drawer.Navigator>
-    </View>
-  );
-};
-
-const TenantDrawerNavigator = () => {
-  return (
-    <View style={{
-      flex: 1,
-      backgroundColor: '#A0E79E', // Ana arka plan yeşil
-    }}>
-      <Drawer.Navigator
-        drawerContent={(props) => <CustomDrawerContent {...props} />}
-        screenOptions={{
-          headerShown: false,
-          drawerStyle: {
-            backgroundColor: '#A0E79E',
-            width: 250, // Drawer genişliğini azalt
-          },
-          drawerActiveTintColor: 'white',
-          drawerInactiveTintColor: 'rgba(255,255,255,0.8)',
-          swipeEnabled: true,
-          swipeEdgeWidth: screenWidth, // Tüm ekran genişliği kadar swipe alanı
-          swipeMinDistance: 10, // Minimum swipe mesafesi
-          drawerType: 'slide', // 'back' yerine 'slide' kullan
-          overlayColor: 'transparent', // Overlay'i tamamen kaldır
-          sceneContainerStyle: {
-            backgroundColor: '#A0E79E', // Scene arka planı yeşil
-          },
-          // Gesture responsiveness'i artır
-          gestureHandlerProps: {
-            enableTrackpadTwoFingerGesture: true,
-          }
+      />
+      <Tab.Screen
+        name="MySentOffers"
+        component={TenantOffersStack}
+        options={{
+          title: "Tekliflerim",
+          tabBarLabel: "Tekliflerim",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="send" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="TenantProfile"
+        component={TenantProfileStack}
+        options={{
+          title: "Profil",
+          tabBarLabel: "Profil",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="person" size={size} color={color} />
+          ),
         }}
       >
         <Drawer.Screen

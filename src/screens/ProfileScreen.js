@@ -101,7 +101,8 @@ const ProfileScreen = ({ navigation }) => {
     </View>
   );
 
-  console.log(currentUser);
+  console.log("CurrentUser:", currentUser);
+  console.log("userProfile:", userProfile);
 
   return (
     <ScrollView
@@ -247,7 +248,7 @@ const ProfileScreen = ({ navigation }) => {
               <Text className="text-2xl font-bold text-blue-500">
                 {userRole === "EVSAHIBI"
                   ? userProfile?.rentalPosts?.length || "0"
-                  : "0"}
+                  : userProfile?.favouriteProperties?.length}
               </Text>
               <Text className="text-sm text-gray-600">
                 {userRole === "EVSAHIBI" ? "İlanlar" : "Favoriler"}
