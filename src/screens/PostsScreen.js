@@ -345,15 +345,16 @@ const PostsScreen = ({ navigation }) => {
 
     return (
       <TouchableOpacity
-        className="bg-white rounded-xl overflow-hidden mb-4 border border-gray-200"
+        className="bg-white rounded-2xl overflow-hidden mb-4 shadow-lg border border-gray-100"
         onPress={() => handlePostNavigation(item.postId)}
+        activeOpacity={0.95}
       >
         <View className="relative">
           {/* Post image */}
           {item.postImages && item.postImages.length > 0 ? (
             <Image
               source={{ uri: item.postImages[0].postImageUrl }}
-              className="w-full h-48"
+              className="w-full h-52"
               resizeMode="cover"
               onError={() =>
                 Logger.error(COMPONENT_NAME, "Image load failed", {
@@ -363,67 +364,90 @@ const PostsScreen = ({ navigation }) => {
               }
             />
           ) : (
-            <View className="w-full h-48 bg-gray-200 justify-center items-center">
-              <Text className="text-gray-500">Resim yok</Text>
+            <View className="w-full h-52 bg-gradient-to-br from-gray-100 to-gray-200 justify-center items-center">
+              <MaterialIcons name="home" size={32} color="#9CA3AF" />
+              <Text className="text-gray-500 mt-2 font-medium">Resim yok</Text>
             </View>
           )}
 
-          {/* Status badge */}
-          <View
-            className={`absolute top-2 right-2 px-2 py-1 rounded-full ${
-              item.status === 0
-                ? "bg-green-500"
+          {/* Status badge - improved design */}
+          <View className="absolute top-3 right-3">
+            <View
+              className={`px-3 py-1.5 rounded-full backdrop-blur-sm ${item.status === 0
+                ? "bg-green-500/90"
                 : item.status === 1
-                ? "bg-blue-500"
-                : "bg-gray-500"
-            }`}
-          >
-            <Text className="text-white text-xs font-semibold">
-              {item.status === 0
-                ? "Aktif"
-                : item.status === 1
-                ? "Kiralandı"
-                : "Kapalı"}
-            </Text>
+                  ? "bg-blue-500/90"
+                  : "bg-gray-500/90"
+                }`}
+            >
+              <Text className="text-white text-xs font-semibold">
+                {item.status === 0
+                  ? "Aktif"
+                  : item.status === 1
+                    ? "Kiralandı"
+                    : "Kapalı"}
+              </Text>
+            </View>
           </View>
+
+          {/* Distance badge (if available) */}
+          {item.distance && (
+            <View className="absolute top-3 left-3">
+              <View className="bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full flex-row items-center">
+                <MaterialIcons name="location-on" size={12} color="white" />
+                <Text className="text-white text-xs font-medium ml-1">
+                  {item.distance}
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
 
-        <View className="p-4">
-          <View className="flex-row justify-between">
-            <Text className="text-lg font-bold text-gray-800 flex-1 mr-2">
+        <View className="p-5">
+          {/* Title and Price */}
+          <View className="flex-row justify-between items-start mb-2">
+            <Text className="text-lg font-bold text-gray-900 flex-1 mr-3" numberOfLines={2}>
               {item.ilanBasligi || "İlan başlığı yok"}
             </Text>
-            <Text className="text-lg font-bold text-blue-600">
-              {`${item.kiraFiyati} ₺`}
+            <View className="bg-blue-50 px-3 py-1 rounded-lg">
+              <Text className="text-lg font-bold text-blue-600">
+                {`${item.kiraFiyati} ₺`}
+              </Text>
+            </View>
+          </View>
+
+          {/* Location */}
+          <View className="flex-row items-center mb-3">
+            <MaterialIcons name="location-on" size={16} color="#6B7280" />
+            <Text className="text-sm text-gray-600 ml-1">
+              {item.il || "Konum belirtilmemiş"}
             </Text>
           </View>
 
-          <Text className="text-sm text-gray-500 mt-1 mb-2">
-            {item.il || "Konum belirtilmemiş"}
-          </Text>
-
-          <Text numberOfLines={2} className="text-gray-600 text-sm mb-3">
+          {/* Description */}
+          <Text numberOfLines={2} className="text-gray-600 text-sm mb-4 leading-5">
             {item.postDescription || "Açıklama yok"}
           </Text>
 
-          <View className="flex-row justify-between">
-            <View className="flex-row items-center">
+          {/* Property details */}
+          <View className="flex-row justify-between items-center mb-4">
+            <View className="flex-row items-center bg-gray-50 px-3 py-2 rounded-lg">
               <MaterialIcons name="king-bed" size={16} color="#6B7280" />
-              <Text className="text-xs text-gray-700 ml-1">
+              <Text className="text-xs text-gray-700 ml-1 font-medium">
                 {item.odaSayisi} Oda
               </Text>
             </View>
 
-            <View className="flex-row items-center">
+            <View className="flex-row items-center bg-gray-50 px-3 py-2 rounded-lg">
               <MaterialIcons name="bathtub" size={16} color="#6B7280" />
-              <Text className="text-xs text-gray-700 ml-1">
+              <Text className="text-xs text-gray-700 ml-1 font-medium">
                 {item.banyoSayisi} Banyo
               </Text>
             </View>
 
-            <View className="flex-row items-center">
+            <View className="flex-row items-center bg-gray-50 px-3 py-2 rounded-lg">
               <MaterialIcons name="square-foot" size={16} color="#6B7280" />
-              <Text className="text-xs text-gray-700 ml-1">
+              <Text className="text-xs text-gray-700 ml-1 font-medium">
                 {`${item.brutMetreKare} m²`}
               </Text>
             </View>
@@ -431,31 +455,44 @@ const PostsScreen = ({ navigation }) => {
 
           {/* Show action buttons for landlords */}
           {userRole === "EVSAHIBI" && item.userId === currentUser?.id && (
-            <View className="flex-row mt-3">
+            <View className="flex-row">
               <TouchableOpacity
-                className="flex-1 bg-blue-50 py-2 rounded-lg mr-2"
+                className="flex-1 bg-blue-50 py-3 rounded-lg mr-2 border border-blue-100"
                 onPress={() => handleEditPostNavigation(item.postId)}
+                activeOpacity={0.7}
               >
-                <Text className="text-blue-700 font-semibold text-center text-sm">
-                  Düzenle
-                </Text>
+                <View className="flex-row items-center justify-center">
+                  <MaterialIcons name="edit" size={16} color="#3B82F6" />
+                  <Text className="text-blue-700 font-semibold text-center text-sm ml-1">
+                    Düzenle
+                  </Text>
+                </View>
               </TouchableOpacity>
 
               <TouchableOpacity
-                className="flex-1 bg-blue-500 py-2 rounded-lg mr-2"
+                className="flex-1 bg-blue-500 py-3 rounded-lg mr-2 shadow-sm"
                 onPress={() => handleOffersNavigation(item.postId)}
+                activeOpacity={0.8}
               >
-                <Text className="text-white font-semibold text-center text-sm">
-                  Teklifler ({item.offerCount || 0})
-                </Text>
+                <View className="flex-row items-center justify-center">
+                  <MaterialIcons name="local-offer" size={16} color="white" />
+                  <Text className="text-white font-semibold text-center text-sm ml-1">
+                    Teklifler ({item.offerCount || 0})
+                  </Text>
+                </View>
               </TouchableOpacity>
 
               <TouchableOpacity
-                className="w-10 bg-red-50 py-2 rounded-lg justify-center items-center"
+                className="w-12 bg-red-50 py-3 rounded-lg justify-center items-center border border-red-100"
                 onPress={() => handleDeletePost(item.postId)}
                 disabled={isDeleting}
+                activeOpacity={0.7}
               >
-                <MaterialIcons name="delete" size={18} color="#EF4444" />
+                <MaterialIcons
+                  name="delete"
+                  size={18}
+                  color={isDeleting ? "#FCA5A5" : "#EF4444"}
+                />
               </TouchableOpacity>
             </View>
           )}
@@ -549,54 +586,48 @@ const PostsScreen = ({ navigation }) => {
             <Text className="text-gray-600 mb-1">Durum</Text>
             <View className="flex-row mt-1">
               <TouchableOpacity
-                className={`mr-2 px-3 py-1 rounded-full ${
-                  localFilters.status === 0 ? "bg-blue-500" : "bg-gray-200"
-                }`}
+                className={`mr-2 px-3 py-1 rounded-full ${localFilters.status === 0 ? "bg-blue-500" : "bg-gray-200"
+                  }`}
                 onPress={() => {
                   setLocalFilters({ ...localFilters, status: 0 });
                   Logger.event("filter_status_changed", { status: 0 });
                 }}
               >
                 <Text
-                  className={`${
-                    localFilters.status === 0 ? "text-white" : "text-gray-700"
-                  }`}
+                  className={`${localFilters.status === 0 ? "text-white" : "text-gray-700"
+                    }`}
                 >
                   Aktif
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                className={`mr-2 px-3 py-1 rounded-full ${
-                  localFilters.status === 1 ? "bg-blue-500" : "bg-gray-200"
-                }`}
+                className={`mr-2 px-3 py-1 rounded-full ${localFilters.status === 1 ? "bg-blue-500" : "bg-gray-200"
+                  }`}
                 onPress={() => {
                   setLocalFilters({ ...localFilters, status: 1 });
                   Logger.event("filter_status_changed", { status: 1 });
                 }}
               >
                 <Text
-                  className={`${
-                    localFilters.status === 1 ? "text-white" : "text-gray-700"
-                  }`}
+                  className={`${localFilters.status === 1 ? "text-white" : "text-gray-700"
+                    }`}
                 >
                   Kiralandı
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                className={`px-3 py-1 rounded-full ${
-                  localFilters.status === 2 ? "bg-blue-500" : "bg-gray-200"
-                }`}
+                className={`px-3 py-1 rounded-full ${localFilters.status === 2 ? "bg-blue-500" : "bg-gray-200"
+                  }`}
                 onPress={() => {
                   setLocalFilters({ ...localFilters, status: 2 });
                   Logger.event("filter_status_changed", { status: 2 });
                 }}
               >
                 <Text
-                  className={`${
-                    localFilters.status === 2 ? "text-white" : "text-gray-700"
-                  }`}
+                  className={`${localFilters.status === 2 ? "text-white" : "text-gray-700"
+                    }`}
                 >
                   Kapalı
                 </Text>
@@ -643,12 +674,11 @@ const PostsScreen = ({ navigation }) => {
         )}
 
         <TouchableOpacity
-          className={`p-2 rounded-full ${
-            isFilterVisible ||
+          className={`p-2 rounded-full ${isFilterVisible ||
             Object.values(filters).some((val) => val !== null)
-              ? "bg-blue-500"
-              : "bg-gray-200"
-          }`}
+            ? "bg-blue-500"
+            : "bg-gray-200"
+            }`}
           onPress={() => {
             Logger.event("toggle_filter_panel", { show: !isFilterVisible });
             setIsFilterVisible(!isFilterVisible);
@@ -659,7 +689,7 @@ const PostsScreen = ({ navigation }) => {
             size={22}
             color={
               isFilterVisible ||
-              Object.values(filters).some((val) => val !== null)
+                Object.values(filters).some((val) => val !== null)
                 ? "#FFFFFF"
                 : "#4B5563"
             }
@@ -735,8 +765,8 @@ const PostsScreen = ({ navigation }) => {
               {filters.status === 0
                 ? "Aktif"
                 : filters.status === 1
-                ? "Kiralandı"
-                : "Kapalı"}
+                  ? "Kiralandı"
+                  : "Kapalı"}
             </Text>
             <TouchableOpacity
               onPress={() => {

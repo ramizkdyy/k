@@ -7,6 +7,7 @@ import {
   FlatList,
   ActivityIndicator,
   Alert,
+  ImageBackground
 } from "react-native";
 import { useSelector } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
@@ -84,6 +85,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   // Combine both arrays for display, prioritizing nearFromYou
   const allProperties = [...nearFromYouProperties, ...nearbyProperties];
 
+
   // Log the response for debugging
   // useEffect(() => {
   //   if (nearbyData) {
@@ -154,7 +156,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   const handleRefresh = async () => {
     if (!userLocation || !currentUser?.id) return;
 
-    console.log("===== MANUAL REFRESH STARTED =====");
+    // console.log("===== MANUAL REFRESH STARTED =====");
     setIsRefreshing(true);
     try {
       const result = await refetch();
@@ -207,95 +209,55 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
 
   const renderPropertyCard = ({ item }) => (
     <TouchableOpacity
-      className="mr-4 bg-white rounded-xl overflow-hidden w-64 shadow-sm border border-gray-200"
+      className="mr-4 rounded-2xl overflow-hidden h-80 w-72 shadow-lg"
       onPress={() => {
-        // Navigate to property details
         navigation.navigate("PostDetail", { postId: item.postId });
       }}
     >
-      {/* Property Image */}
-      <View className="relative">
-        <Image
-          source={{
-            uri:
-              item.postImages && item.postImages.length > 0
-                ? item.postImages[0].postImageUrl
-                : "https://via.placeholder.com/300x200",
-          }}
-          className="w-full h-36"
-          resizeMode="cover"
-        />
-
-        {/* Price Badge */}
-        <View className="absolute top-2 right-2 bg-blue-500 rounded-lg px-2 py-1">
-          <Text className="text-white text-xs font-bold">
-            {item.kiraFiyati} {item.paraBirimi || "₺"}
-          </Text>
-        </View>
+      {/* Background Image */}
+      <ImageBackground
+        source={{
+          uri:
+            item.postImages && item.postImages.length > 0
+              ? item.postImages[0].postImageUrl
+              : "https://via.placeholder.com/300x200",
+        }}
+        className="w-full h-full"
+        resizeMode="cover"
+      >
+        {/* Dark Gradient Overlay */}
+        <View className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
 
         {/* Distance Badge for Near Properties */}
         {item.distanceInKM !== undefined && (
-          <View className="absolute top-2 left-2 bg-green-500 rounded-lg px-2 py-1">
-            <Text className="text-white text-xs font-bold">
+          <View className="absolute top-3 left-3 bg-white/20 backdrop-blur-md rounded-full px-3 py-1.5 flex-row items-center">
+            <View className="w-2 h-2 bg-green-400 rounded-full mr-1.5" />
+            <Text className="text-white text-xs font-semibold">
               {item.distanceInKM.toFixed(1)} km
             </Text>
           </View>
         )}
-      </View>
 
-      {/* Property Info */}
-      <View className="p-3">
-        <Text className="text-lg font-bold text-gray-800" numberOfLines={1}>
-          {item.ilanBasligi || "İlan Başlığı"}
-        </Text>
+        {/* Property Info - Bottom */}
+        <View className="absolute bottom-0  left-0 right-0 p-3">
+          {/* Title */}
+          <Text className="text-white text-lg font-bold mb-1" numberOfLines={1}>
+            {item.ilanBasligi || "İlan Başlığı"}
+          </Text>
 
-        <Text className="text-sm text-gray-500 mb-2" numberOfLines={1}>
-          {item.ilce && item.il
-            ? `${item.ilce}, ${item.il}`
-            : "Konum bilgisi yok"}
-        </Text>
+          {/* Location */}
+          <Text className="text-white/90 text-sm mb-2" numberOfLines={1}>
+            {item.ilce && item.il
+              ? `${item.ilce}, ${item.il}`
+              : "Konum bilgisi yok"}
+          </Text>
 
-        <Text className="text-base font-semibold text-blue-600 mb-2">
-          {item.kiraFiyati} {item.paraBirimi || "₺"}
-        </Text>
-
-        {/* Property Features */}
-        <View className="flex-row justify-between">
-          <View className="flex-row items-center">
-            <Text className="text-xs text-gray-700">
-              {item.odaSayisi || "N/A"} Oda
-            </Text>
-          </View>
-
-          <View className="flex-row items-center">
-            <Text className="text-xs text-gray-700">
-              {item.banyoSayisi || "N/A"} Banyo
-            </Text>
-          </View>
-
-          <View className="flex-row items-center">
-            <Text className="text-xs text-gray-700">
-              {item.brutMetreKare ? `${item.brutMetreKare}m²` : "N/A"}
-            </Text>
-          </View>
+          {/* Price */}
+          <Text className="text-white text-xl font-bold">
+            {item.kiraFiyati} {item.paraBirimi || "₺"}
+          </Text>
         </View>
-
-        {/* Additional Info */}
-        <View className="flex-row justify-between items-center mt-2">
-          {item.mahalle && (
-            <Text className="text-xs text-gray-400" numberOfLines={1}>
-              {item.mahalle}
-            </Text>
-          )}
-
-          {/* Property Type Indicator */}
-          {item.distanceInKM !== undefined ? (
-            <Text className="text-xs text-green-600 font-medium">Yakın</Text>
-          ) : (
-            <Text className="text-xs text-blue-600 font-medium">Önerilen</Text>
-          )}
-        </View>
-      </View>
+      </ImageBackground>
     </TouchableOpacity>
   );
 
@@ -318,7 +280,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
         </View>
 
         <View className="justify-center items-center py-8">
-          <ActivityIndicator size="large" color="#4A90E2" />
+          <ActivityIndicator size="large" color="#A0E79E" />
           <Text className="text-gray-500 mt-2">Konum alınıyor...</Text>
         </View>
       </View>
@@ -378,7 +340,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
 
         {allProperties.length > 0 && (
           <TouchableOpacity onPress={handleSeeAll}>
-            <Text className="text-blue-500">Tümünü Gör</Text>
+            <Text className="text-gray-400h font-normal">Tümünü Gör</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -390,21 +352,17 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
           disabled={isRefreshing || isLoadingNearby}
           className="flex-row items-center"
         >
-          <Text className="text-blue-500 text-sm mr-1">
+          <Text className="text-[#A0E79E] text-sm mr-1">
             {isRefreshing ? "Yenileniyor..." : "Yenile"}
           </Text>
-          {isRefreshing ? (
-            <ActivityIndicator size="small" color="#4A90E2" />
-          ) : (
-            <Text className="text-blue-500">🔄</Text>
-          )}
+
         </TouchableOpacity>
       </View>
 
       {/* Content */}
       {isLoadingNearby || isRefreshing ? (
         <View className="justify-center items-center py-8">
-          <ActivityIndicator size="large" color="#4A90E2" />
+          <ActivityIndicator size="large" color="#A0E79Ehh" />
           <Text className="text-gray-500 mt-2">
             {isRefreshing ? "Yenileniyor..." : "Yakındaki evler yükleniyor..."}
           </Text>
@@ -420,7 +378,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
           scrollEnabled={true}
           className="pt-2"
           contentContainerStyle={{ paddingRight: 20 }}
-          // Remove RefreshControl - only manual refresh button will work
+        // Remove RefreshControl - only manual refresh button will work
         />
       ) : (
         <View className="bg-gray-50 rounded-xl p-6 border border-gray-200">

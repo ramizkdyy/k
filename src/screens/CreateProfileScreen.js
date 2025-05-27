@@ -62,7 +62,7 @@ const CustomDropdown = ({
       <Modal
         visible={isOpen}
         transparent={true}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setIsOpen(false)}
       >
         <View className="flex-1 justify-end bg-black bg-opacity-50">
@@ -527,147 +527,148 @@ const CreateProfileScreen = (props) => {
   }
 
   return (
-    <SafeAreaView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-white"
-    >
-      <View className="px-5 py-6 flex-row items-center justify-between bg-white">
-        <Text className="text-xl font-bold text-gray-600">
-          Profil Oluştur
-        </Text>
-        <View className="flex-row gap-2 items-center">
-          <Text className="text-green-600 mr-2">
-            {userRole === "EVSAHIBI" ? "Ev Sahibi" : "Kiracı"}
+    <SafeAreaView className="flex-1 bg-white">
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+      >
+        {/* Header */}
+        <View className="px-5 py-6 flex-row items-center justify-between bg-white">
+          <Text className="text-xl font-bold text-gray-600">
+            Profil Oluştur
           </Text>
-          <TouchableOpacity
-            className="rounded-lg px-3 py-1 justify-center items-center bg-gray-500"
-            onPress={handleGoBack}
-          >
-            <Text className="text-white font-semibold">Geri Dön</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleLogout}
-            className="bg-red-500 px-3 py-1 rounded-md"
-          >
-            <Text className="text-white font-medium">Çıkış</Text>
-          </TouchableOpacity>
+          <View className="flex-row gap-2 items-center">
+            <Text className="text-green-600 mr-2">
+              {userRole === "EVSAHIBI" ? "Ev Sahibi" : "Kiracı"}
+            </Text>
+            <TouchableOpacity
+              className="rounded-lg px-3 py-1 justify-center items-center bg-gray-500"
+              onPress={handleGoBack}
+            >
+              <Text className="text-white font-semibold">Geri Dön</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleLogout}
+              className="bg-red-500 px-3 py-1 rounded-md"
+            >
+              <Text className="text-white font-medium">Çıkış</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-      </View>
-      <ScrollView className="flex-1">
-        {/* Header - Üst kısımda çıkış yapma tuşunu ekledik */}
-
-
-        {/* Profile image and cover photo section */}
-        <View className="relative mb-16">
-          {/* Cover photo */}
-          <TouchableOpacity
-            className="w-full h-40 bg-gray-200"
-            onPress={() => handleImageSelection("cover")}
-          >
-            {previewCoverImage ? (
-              <Image
-                source={{ uri: previewCoverImage }}
-                className="w-full h-full"
-                resizeMode="cover"
-              />
-            ) : (
-              <View className="w-full h-full justify-center items-center">
-                <Text className="text-gray-500">Kapak Fotoğrafı Ekle</Text>
-              </View>
-            )}
-            <View className="absolute right-4 bottom-4 bg-white p-2 rounded-full shadow-sm">
-              <Text className="text-green-600 font-bold">Düzenle</Text>
-            </View>
-          </TouchableOpacity>
-
-          {/* Profile picture */}
-          <TouchableOpacity
-            className="absolute bottom-[-50] left-5"
-            onPress={() => handleImageSelection("profile")}
-          >
-            <View className="w-24 h-24 rounded-full bg-white border-4 border-white shadow-md overflow-hidden">
-              {previewProfileImage ? (
+        {/* Scrollable Content */}
+        <ScrollView
+          className="flex-1"
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Profile image and cover photo section */}
+          <View className="relative mb-16">
+            {/* Cover photo */}
+            <TouchableOpacity
+              className="w-full h-40 bg-gray-200"
+              onPress={() => handleImageSelection("cover")}
+            >
+              {previewCoverImage ? (
                 <Image
-                  source={{ uri: previewProfileImage }}
+                  source={{ uri: previewCoverImage }}
                   className="w-full h-full"
                   resizeMode="cover"
                 />
               ) : (
-                <View className="w-full h-full bg-gray-200 justify-center items-center">
-                  <Text className="text-gray-500 text-3xl font-bold">
-                    {currentUser?.name?.charAt(0) || "P"}
-                  </Text>
+                <View className="w-full h-full justify-center items-center">
+                  <Text className="text-gray-500">Kapak Fotoğrafı Ekle</Text>
                 </View>
               )}
-            </View>
-            <View className="absolute right-0 bottom-0 bg-green-500 w-8 h-8 rounded-full justify-center items-center">
-              <FontAwesomeIcon icon={faPlus} size={16} color="#fff" />
-            </View>
-          </TouchableOpacity>
-        </View>
+              <View className="absolute right-4 bottom-4 bg-white p-2 rounded-full shadow-sm">
+                <Text className="text-green-600 font-bold">Düzenle</Text>
+              </View>
+            </TouchableOpacity>
 
-        {/* Form fields */}
-        <View className="px-5">
-
-
-          {/* Description field (keeping this to maintain UI, but only sending ProfileDescription) */}
-          <View className="rounded-xl p-5 mb-6">
-            <Text className="text-lg font-bold text-gray-800 mb-4">
-              {userRole === "EVSAHIBI"
-                ? "Ev Sahibi Bilgileri"
-                : "Kiracı Bilgileri"}
-            </Text>
-
-            <View className="mb-2">
-              <Text className="text-gray-600 mb-2">Açıklama</Text>
-              <TextInput
-                className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200 min-h-[100px]"
-                value={
-                  userRole === "EVSAHIBI" ? description : profileDescription
-                }
-                onChangeText={
-                  userRole === "EVSAHIBI"
-                    ? setDescription
-                    : setProfileDescription
-                }
-                placeholder={
-                  userRole === "EVSAHIBI"
-                    ? "Eklemek istediğiniz bilgileri yazınız"
-                    : "Kendinizi kısaca tanıtın"
-                }
-                multiline
-                textAlignVertical="top"
-              />
-            </View>
+            {/* Profile picture */}
+            <TouchableOpacity
+              className="absolute bottom-[-50] left-5"
+              onPress={() => handleImageSelection("profile")}
+            >
+              <View className="w-24 h-24 rounded-full bg-white border-4 border-white shadow-md overflow-hidden">
+                {previewProfileImage ? (
+                  <Image
+                    source={{ uri: previewProfileImage }}
+                    className="w-full h-full"
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View className="w-full h-full bg-gray-200 justify-center items-center">
+                    <Text className="text-gray-500 text-3xl font-bold">
+                      {currentUser?.name?.charAt(0) || "P"}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <View className="absolute right-0 bottom-0 bg-green-500 w-8 h-8 rounded-full justify-center items-center">
+                <FontAwesomeIcon icon={faPlus} size={16} color="#fff" />
+              </View>
+            </TouchableOpacity>
           </View>
 
-          {/* Buraya ekstra boşluk bırakıyoruz butonun aşağıya inmesi için */}
-          <View className="h-60" />
-
-          {/* Create button */}
-          <TouchableOpacity
-            className={`rounded-lg h-12 justify-center items-center mb-10 ${isLoading ? "bg-green-300" : "bg-green-600"
-              }`}
-            onPress={handleCreateProfile}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <Text className="text-white text-base font-semibold">
-                Profili Oluştur
+          {/* Form fields */}
+          <View className="px-5 pb-10">
+            {/* Description field */}
+            <View className="rounded-xl p-5 mb-6">
+              <Text className="text-lg font-bold text-gray-800 mb-4">
+                {userRole === "EVSAHIBI"
+                  ? "Ev Sahibi Bilgileri"
+                  : "Kiracı Bilgileri"}
               </Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
 
-      {/* Image picker modal - Without darkening the entire screen */}
+              <View className="mb-2">
+                <Text className="text-gray-600 mb-2">Açıklama</Text>
+                <TextInput
+                  className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200 min-h-[100px]"
+                  value={
+                    userRole === "EVSAHIBI" ? description : profileDescription
+                  }
+                  onChangeText={
+                    userRole === "EVSAHIBI"
+                      ? setDescription
+                      : setProfileDescription
+                  }
+                  placeholder={
+                    userRole === "EVSAHIBI"
+                      ? "Eklemek istediğiniz bilgileri yazınız"
+                      : "Kendinizi kısaca tanıtın"
+                  }
+                  multiline
+                  textAlignVertical="top"
+                />
+              </View>
+            </View>
+
+            {/* Create button */}
+            <TouchableOpacity
+              className={`rounded-lg h-12 justify-center items-center mt-48 ${isLoading ? "bg-green-300" : "bg-green-600"
+                }`}
+              onPress={handleCreateProfile}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <Text className="text-white text-base font-semibold">
+                  Profili Oluştur
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* Image picker modal */}
       <Modal
         visible={isImagePickerVisible}
         transparent={true}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setIsImagePickerVisible(false)}
       >
         <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>

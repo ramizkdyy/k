@@ -83,8 +83,7 @@ const CustomDropdown = ({
               keyExtractor={(item) => item.toString()}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  className={`p-4 border-b border-gray-100 ${value === item ? "bg-green-50" : ""
-                    }`}
+                  className={`p-4 border-b border-gray-100 ${value === item ? "bg-green-50" : ""}`}
                   onPress={() => {
                     setValue(item);
                     setIsOpen(false);
@@ -178,23 +177,20 @@ const EditProfileScreen = ({ navigation }) => {
   const [isImagePickerVisible, setIsImagePickerVisible] = useState(false);
   const [activeImageType, setActiveImageType] = useState(null); // 'profile' or 'cover'
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [activeTab, setActiveTab] = useState("expectations");
 
   // Landlord Expectations için state değişkenleri
   const [landlordCity, setLandlordCity] = useState("İstanbul");
   const [landlordDistrict, setLandlordDistrict] = useState("");
   const [rentAmount, setRentAmount] = useState("0");
-  const [isMaintenanceFeeIncluded, setIsMaintenanceFeeIncluded] =
-    useState(false);
+  const [isMaintenanceFeeIncluded, setIsMaintenanceFeeIncluded] = useState(false);
   const [maintenanceFee, setMaintenanceFee] = useState("0");
-  const [maintenanceFeeResponsibility, setMaintenanceFeeResponsibility] =
-    useState("1");
+  const [maintenanceFeeResponsibility, setMaintenanceFeeResponsibility] = useState("1");
   const [isDepositRequired, setIsDepositRequired] = useState(false);
   const [depositAmount, setDepositAmount] = useState("0");
   const [minimumRentalPeriod, setMinimumRentalPeriod] = useState("1");
-  const [isShortTermRentalAvailable, setIsShortTermRentalAvailable] =
-    useState(false);
-  const [isForeignCurrencyAccepted, setIsForeignCurrencyAccepted] =
-    useState(false);
+  const [isShortTermRentalAvailable, setIsShortTermRentalAvailable] = useState(false);
+  const [isForeignCurrencyAccepted, setIsForeignCurrencyAccepted] = useState(false);
   const [preferredCurrency, setPreferredCurrency] = useState("1");
   const [isBankTransferRequired, setIsBankTransferRequired] = useState(false);
   const [maximumOccupants, setMaximumOccupants] = useState("0");
@@ -203,8 +199,7 @@ const EditProfileScreen = ({ navigation }) => {
   const [studentPolicy, setStudentPolicy] = useState("1");
   const [familyOnly, setFamilyOnly] = useState(false);
   const [acceptChildrenFamily, setAcceptChildrenFamily] = useState(false);
-  const [preferGovernmentEmployee, setPreferGovernmentEmployee] =
-    useState(false);
+  const [preferGovernmentEmployee, setPreferGovernmentEmployee] = useState(false);
   const [isIncomeProofRequired, setIsIncomeProofRequired] = useState(false);
   const [minimumMonthlyIncome, setMinimumMonthlyIncome] = useState("0");
   const [isGuarantorRequired, setIsGuarantorRequired] = useState(false);
@@ -252,8 +247,7 @@ const EditProfileScreen = ({ navigation }) => {
   const [canProvideGuarantor, setCanProvideGuarantor] = useState(false);
   const [monthlyIncome, setMonthlyIncome] = useState("0");
   const [canProvideReference, setCanProvideReference] = useState(false);
-  const [neighborRelationPreference, setNeighborRelationPreference] =
-    useState("1");
+  const [neighborRelationPreference, setNeighborRelationPreference] = useState("1");
   const [noisePreference, setNoisePreference] = useState("1");
   const [securityPreferences, setSecurityPreferences] = useState("");
   const [requiresPublicTransport, setRequiresPublicTransport] = useState(false);
@@ -347,96 +341,19 @@ const EditProfileScreen = ({ navigation }) => {
     "Zonguldak",
   ];
 
-  // Aidat/Bakım ücreti sorumluluk listesi
-  const maintenanceFeeResponsibilityOptions = [
-    "1",
-    "2",
-    "3", // Bu değerler enum'a karşılık gelecek şekilde ayarlanmalı
-  ];
-
-  // Kira süresi listesi
-  const rentalPeriodOptions = [
-    "1",
-    "3",
-    "6",
-    "12",
-    "24",
-    "36+", // Ay cinsinden
-  ];
-
-  // Para birimi listesi
-  const currencyOptions = [
-    "1",
-    "2",
-    "3",
-    "4", // TL, USD, EUR, GBP gibi değerler
-  ];
-
-  // Evcil hayvan politikası
-  const petPolicyOptions = [
-    "1",
-    "2",
-    "3", // İzin Verilmez, Bazı Türlere İzin Verilir, Tümüne İzin Verilir
-  ];
-
-  // Öğrenci politikası
-  const studentPolicyOptions = [
-    "1",
-    "2",
-    "3", // İzin Verilmez, Tercih Edilmez, Tercih Edilir
-  ];
-
-  // Sigara politikası
-  const smokingPolicyOptions = [
-    "1",
-    "2",
-    "3", // İzin Verilmez, Sadece Balkonda, İzin Verilir
-  ];
-
-  // Bina yönetimi onay politikası
-  const buildingApprovalPolicyOptions = [
-    "1",
-    "2",
-    "3", // Gerekli Değil, Bilgilendirilecek, Onay Alınacak
-  ];
-
-  // Tercih edilen ödeme yöntemi
-  const paymentMethodOptions = [
-    "1",
-    "2",
-    "3",
-    "4", // Nakit, Banka Havalesi, Kredi Kartı, Diğer
-  ];
-
-  // Eşya durumu
-  const furnishedPreferenceOptions = [
-    "1",
-    "2",
-    "3", // Boş, Yarı Eşyalı, Tam Eşyalı
-  ];
-
-  // Isıtma tipi
-  const heatingTypeOptions = [
-    "1",
-    "2",
-    "3",
-    "4",
-    "5", // Doğalgaz Kombi, Merkezi Sistem, Klima, Soba, Diğer
-  ];
-
-  // Komşu ilişki tercihi
-  const neighborRelationOptions = [
-    "1",
-    "2",
-    "3", // Mesafeli, Normal, Sıcak ve Samimi
-  ];
-
-  // Gürültü tercihi
-  const noisePreferenceOptions = [
-    "1",
-    "2",
-    "3", // Sessiz, Orta, Önemli Değil
-  ];
+  // Options arrays
+  const maintenanceFeeResponsibilityOptions = ["1", "2", "3"];
+  const rentalPeriodOptions = ["1", "3", "6", "12", "24", "36+"];
+  const currencyOptions = ["1", "2", "3", "4"];
+  const petPolicyOptions = ["1", "2", "3"];
+  const studentPolicyOptions = ["1", "2", "3"];
+  const smokingPolicyOptions = ["1", "2", "3"];
+  const buildingApprovalPolicyOptions = ["1", "2", "3"];
+  const paymentMethodOptions = ["1", "2", "3", "4"];
+  const furnishedPreferenceOptions = ["1", "2", "3"];
+  const heatingTypeOptions = ["1", "2", "3", "4", "5"];
+  const neighborRelationOptions = ["1", "2", "3"];
+  const noisePreferenceOptions = ["1", "2", "3"];
 
   // Use appropriate queries and mutations based on user role
   const {
@@ -444,18 +361,18 @@ const EditProfileScreen = ({ navigation }) => {
     isLoading: profileLoading,
     isSuccess: profileSuccess,
   } = userRole === "EVSAHIBI"
-    ? useGetLandlordProfileQuery(currentUser?.id, { skip: !currentUser?.id })
-    : useGetTenantProfileQuery(currentUser?.id, { skip: !currentUser?.id });
+      ? useGetLandlordProfileQuery(currentUser?.id, { skip: !currentUser?.id })
+      : useGetTenantProfileQuery(currentUser?.id, { skip: !currentUser?.id });
 
   const {
     data: expectationsData,
     isLoading: expectationsLoading,
     isSuccess: expectationsSuccess,
   } = userRole === "EVSAHIBI"
-    ? useGetLandlordExpectationByIdQuery(currentUser?.id, {
+      ? useGetLandlordExpectationByIdQuery(currentUser?.id, {
         skip: !currentUser?.id,
       })
-    : useGetTenantExpectationByIdQuery(currentUser?.id, {
+      : useGetTenantExpectationByIdQuery(currentUser?.id, {
         skip: !currentUser?.id,
       });
 
@@ -527,17 +444,6 @@ const EditProfileScreen = ({ navigation }) => {
       }
     }
   }, [userProfile, userRole, profileLoading, expectationsLoading]);
-
-  if ((profileLoading || expectationsLoading) && !userProfile) {
-    return (
-      <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" color="#4A90E2" />
-        <Text className="mt-3 text-base text-gray-500">
-          Profil yükleniyor...
-        </Text>
-      </View>
-    );
-  }
 
   // Load expectations data - improved error handling
   useEffect(() => {
@@ -1172,7 +1078,7 @@ const EditProfileScreen = ({ navigation }) => {
     }
   };
 
-  if (isLoading && !userProfile) {
+  if ((profileLoading || expectationsLoading) && !userProfile) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
         <ActivityIndicator size="large" color="#4A90E2" />
@@ -1184,13 +1090,11 @@ const EditProfileScreen = ({ navigation }) => {
   }
 
   return (
-    <View
+    <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1 bg-gray-50"
     >
       <ScrollView className="flex-1">
-
-
         {/* Profile image and cover photo section */}
         <View className="relative mb-16">
           {/* Cover photo */}
@@ -1243,31 +1147,26 @@ const EditProfileScreen = ({ navigation }) => {
         {/* Tabs */}
         <View className="flex-row bg-white border-b border-gray-200 mb-4">
           <TouchableOpacity
-            className={`flex-1 py-3 ${activeTab === "basicInfo" ? "border-b-2 border-green-600" : ""
-              }`}
+            className={`flex-1 py-3 ${activeTab === "basicInfo" ? "border-b-2 border-green-600" : ""}`}
             onPress={() => setActiveTab("basicInfo")}
           >
             <Text
-              className={`text-center font-medium ${activeTab === "basicInfo" ? "text-green-600" : "text-gray-600"
-                }`}
+              className={`text-center font-medium ${activeTab === "basicInfo" ? "text-green-600" : "text-gray-600"}`}
             >
               Temel Bilgiler
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            className={`flex-1 py-3 ${activeTab === "expectations" ? "border-b-2 border-green-600" : ""
-              }`}
+            className={`flex-1 py-3 ${activeTab === "expectations" ? "border-b-2 border-green-600" : ""}`}
             onPress={() => setActiveTab("expectations")}
           >
             <Text
-              className={`text-center font-medium ${activeTab === "expectations" ? "text-green-600" : "text-gray-600"
-                }`}
+              className={`text-center font-medium ${activeTab === "expectations" ? "text-green-600" : "text-gray-600"}`}
             >
               Beklentiler
             </Text>
           </TouchableOpacity>
         </View>
-
 
         {/* Form fields */}
         <View className="px-5">
@@ -1507,26 +1406,11 @@ const EditProfileScreen = ({ navigation }) => {
                   />
                 </View>
 
-              <TouchableOpacity
-                className={`rounded-lg h-12 justify-center items-center mb-10 ${isLoading ? "bg-green-300" : "bg-green-600"
-                  }`}
-                onPress={handleSaveProfile}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <Text className="text-white text-base font-semibold">
-                    {activeTab === "basicInfo"
-                      ? "Bilgileri Kaydet ve Devam Et"
-                      : "Değişiklikleri Kaydet"}
-
                 <SectionHeader title="Güvence ve Doğrulama" />
 
                 <View className="flex-row justify-between items-center mb-4">
                   <Text className="text-gray-600">
                     Gelir Belgesi İsteniyor mu?
-
                   </Text>
                   <Switch
                     value={isIncomeProofRequired}
@@ -1597,6 +1481,20 @@ const EditProfileScreen = ({ navigation }) => {
                     placeholder="Bina yönetimi onay politikasını seçiniz"
                   />
                 </View>
+
+                <TouchableOpacity
+                  className={`rounded-lg h-12 justify-center items-center mb-10 ${isLoading ? "bg-green-300" : "bg-green-600"}`}
+                  onPress={handleSaveProfile}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <Text className="text-white text-base font-semibold">
+                      Değişiklikleri Kaydet
+                    </Text>
+                  )}
+                </TouchableOpacity>
               </View>
             </>
           ) : (
@@ -1963,291 +1861,6 @@ const EditProfileScreen = ({ navigation }) => {
                   </>
                 )}
 
-                    <View className="mb-4">
-                      <CustomDropdown
-                        label="Tercih Edilen Ödeme Yöntemi"
-                        value={preferredPaymentMethod}
-                        setValue={setPreferredPaymentMethod}
-                        options={paymentMethodOptions}
-                        placeholder="Ödeme yöntemini seçiniz"
-                      />
-                    </View>
-
-                    <SectionHeader title="Ev Özellikleri" />
-
-                    <NumberInput
-                      label="Minimum Oda Sayısı"
-                      value={minRoomCount}
-                      setValue={setMinRoomCount}
-                      placeholder="Minimum oda sayısını giriniz"
-                      min={0}
-                    />
-
-                    <NumberInput
-                      label="Minimum Metrekare"
-                      value={minSquareMeters}
-                      setValue={setMinSquareMeters}
-                      placeholder="Minimum metrekareyi giriniz"
-                      min={0}
-                    />
-
-                    <View className="mb-4">
-                      <CustomDropdown
-                        label="Eşya Durumu Tercihi"
-                        value={furnishedPreference}
-                        setValue={setFurnishedPreference}
-                        options={furnishedPreferenceOptions}
-                        placeholder="Eşya durumu tercihini seçiniz"
-                      />
-                    </View>
-
-                    <View className="mb-4">
-                      <CustomDropdown
-                        label="Tercih Edilen Isıtma Tipi"
-                        value={preferredHeatingType}
-                        setValue={setPreferredHeatingType}
-                        options={heatingTypeOptions}
-                        placeholder="Isıtma tipi tercihini seçiniz"
-                      />
-                    </View>
-
-                    <NumberInput
-                      label="Maksimum Bina Yaşı"
-                      value={maxBuildingAge}
-                      setValue={setMaxBuildingAge}
-                      placeholder="Maksimum bina yaşını giriniz"
-                      min={0}
-                    />
-
-                    <View className="mb-4">
-                      <Text className="text-gray-600 mb-2">
-                        Tercih Edilen Kat Aralığı
-                      </Text>
-                      <TextInput
-                        className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-                        value={preferredFloorRange}
-                        onChangeText={setPreferredFloorRange}
-                        placeholder="Örn: 2-5"
-                      />
-                    </View>
-
-                    <View className="flex-row justify-between items-center mb-4">
-                      <Text className="text-gray-600">Asansör Şart mı?</Text>
-                      <Switch
-                        value={requiresElevator}
-                        onValueChange={setRequiresElevator}
-                        trackColor={{ false: "#767577", true: "#4A90E2" }}
-                        thumbColor={requiresElevator ? "#f4f3f4" : "#f4f3f4"}
-                      />
-                    </View>
-
-                    <View className="flex-row justify-between items-center mb-4">
-                      <Text className="text-gray-600">Balkon Şart mı?</Text>
-                      <Switch
-                        value={requiresBalcony}
-                        onValueChange={setRequiresBalcony}
-                        trackColor={{ false: "#767577", true: "#4A90E2" }}
-                        thumbColor={requiresBalcony ? "#f4f3f4" : "#f4f3f4"}
-                      />
-                    </View>
-
-                    <View className="flex-row justify-between items-center mb-4">
-                      <Text className="text-gray-600">Otopark Şart mı?</Text>
-                      <Switch
-                        value={requiresParking}
-                        onValueChange={setRequiresParking}
-                        trackColor={{ false: "#767577", true: "#4A90E2" }}
-                        thumbColor={requiresParking ? "#f4f3f4" : "#f4f3f4"}
-                      />
-                    </View>
-
-                    <View className="flex-row justify-between items-center mb-4">
-                      <Text className="text-gray-600">İnternet Şart mı?</Text>
-                      <Switch
-                        value={requiresInternet}
-                        onValueChange={setRequiresInternet}
-                        trackColor={{ false: "#767577", true: "#4A90E2" }}
-                        thumbColor={requiresInternet ? "#f4f3f4" : "#f4f3f4"}
-                      />
-                    </View>
-
-                    <View className="flex-row justify-between items-center mb-4">
-                      <Text className="text-gray-600">Bahçe Şart mı?</Text>
-                      <Switch
-                        value={requiresGarden}
-                        onValueChange={setRequiresGarden}
-                        trackColor={{ false: "#767577", true: "#4A90E2" }}
-                        thumbColor={requiresGarden ? "#f4f3f4" : "#f4f3f4"}
-                      />
-                    </View>
-
-                    <SectionHeader title="Kiralama Bilgileri" />
-
-                    <View className="mb-4">
-                      <CustomDropdown
-                        label="Tercih Edilen Kiralama Süresi (Ay)"
-                        value={preferredRentalPeriod}
-                        setValue={setPreferredRentalPeriod}
-                        options={rentalPeriodOptions}
-                        placeholder="Kiralama süresini seçiniz"
-                      />
-                    </View>
-
-                    <TouchableOpacity
-                      className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200 mb-4"
-                      onPress={() => setShowDatePicker(true)}
-                    >
-                      <Text
-                        className={
-                          earliestMoveInDate ? "text-black" : "text-gray-600"
-                        }
-                      >
-                        {earliestMoveInDate
-                          ? earliestMoveInDate.toLocaleDateString()
-                          : "Taşınma tarihi seçiniz"}
-                      </Text>
-                    </TouchableOpacity>
-
-                    {showDatePicker && (
-                      <DateTimePicker
-                        value={earliestMoveInDate}
-                        mode="date"
-                        display="default"
-                        onChange={onDateChange}
-                        minimumDate={new Date()}
-                      />
-                    )}
-
-                    <View className="flex-row justify-between items-center mb-4">
-                      <Text className="text-gray-600">
-                        Kısa Dönem Kiralama Tercih Edilir mi?
-                      </Text>
-                      <Switch
-                        value={preferShortTerm}
-                        onValueChange={setPreferShortTerm}
-                        trackColor={{ false: "#767577", true: "#4A90E2" }}
-                        thumbColor={preferShortTerm ? "#f4f3f4" : "#f4f3f4"}
-                      />
-                    </View>
-
-                    <SectionHeader title="Kişisel Bilgiler" />
-
-                    <NumberInput
-                      label="Kişi Sayısı"
-                      value={occupantCount}
-                      setValue={setOccupantCount}
-                      placeholder="Kişi sayısını giriniz"
-                      min={0}
-                    />
-
-                    <View className="flex-row justify-between items-center mb-4">
-                      <Text className="text-gray-600">
-                        Evcil Hayvanınız Var mı?
-                      </Text>
-                      <Switch
-                        value={hasPets}
-                        onValueChange={setHasPets}
-                        trackColor={{ false: "#767577", true: "#4A90E2" }}
-                        thumbColor={hasPets ? "#f4f3f4" : "#f4f3f4"}
-                      />
-                    </View>
-
-                    {hasPets && (
-                      <View className="mb-4">
-                        <Text className="text-gray-600 mb-2">
-                          Evcil Hayvan Türleri
-                        </Text>
-                        <TextInput
-                          className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-                          value={petTypes}
-                          onChangeText={setPetTypes}
-                          placeholder="Örn: Kedi, küçük köpek"
-                        />
-                      </View>
-                    )}
-
-                    <View className="flex-row justify-between items-center mb-4">
-                      <Text className="text-gray-600">Öğrenci misiniz?</Text>
-                      <Switch
-                        value={isStudent}
-                        onValueChange={setIsStudent}
-                        trackColor={{ false: "#767577", true: "#4A90E2" }}
-                        thumbColor={isStudent ? "#f4f3f4" : "#f4f3f4"}
-                      />
-                    </View>
-
-                    <View className="mb-4">
-                      <Text className="text-gray-600 mb-2">Meslek</Text>
-                      <TextInput
-                        className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200"
-                        value={occupation}
-                        onChangeText={setOccupation}
-                        placeholder="Mesleğinizi giriniz"
-                      />
-                    </View>
-
-                    <View className="flex-row justify-between items-center mb-4">
-                      <Text className="text-gray-600">Aile misiniz?</Text>
-                      <Switch
-                        value={isFamily}
-                        onValueChange={setIsFamily}
-                        trackColor={{ false: "#767577", true: "#4A90E2" }}
-                        thumbColor={isFamily ? "#f4f3f4" : "#f4f3f4"}
-                      />
-                    </View>
-
-                    {isFamily && (
-                      <>
-                        <View className="flex-row justify-between items-center mb-4">
-                          <Text className="text-gray-600">
-                            Çocuğunuz Var mı?
-                          </Text>
-                          <Switch
-                            value={hasChildren}
-                            onValueChange={setHasChildren}
-                            trackColor={{ false: "#767577", true: "#4A90E2" }}
-                            thumbColor={hasChildren ? "#f4f3f4" : "#f4f3f4"}
-                          />
-                        </View>
-
-                        {hasChildren && (
-                          <NumberInput
-                            label="Çocuk Sayısı"
-                            value={childrenCount}
-                            setValue={setChildrenCount}
-                            placeholder="Çocuk sayısını giriniz"
-                            min={0}
-                          />
-                        )}
-                      </>
-                    )}
-
-                    <View className="flex-row justify-between items-center mb-4">
-                      <Text className="text-gray-600">
-                        Sigara Kullanıyor musunuz?
-                      </Text>
-                      <Switch
-                        value={isSmoker}
-                        onValueChange={setIsSmoker}
-                        trackColor={{ false: "#767577", true: "#4A90E2" }}
-                        thumbColor={isSmoker ? "#f4f3f4" : "#f4f3f4"}
-                      />
-                    </View>
-
-                    <SectionHeader title="Güvence ve Doğrulama" />
-
-                    <View className="flex-row justify-between items-center mb-4">
-                      <Text className="text-gray-600">
-                        Sigortalı İşiniz Var mı?
-                      </Text>
-                      <Switch
-                        value={hasInsuredJob}
-                        onValueChange={setHasInsuredJob}
-                        trackColor={{ false: "#767577", true: "#4A90E2" }}
-                        thumbColor={hasInsuredJob ? "#f4f3f4" : "#f4f3f4"}
-                      />
-                    </View>
-
                 <View className="flex-row justify-between items-center mb-4">
                   <Text className="text-gray-600">
                     Sigara Kullanıyor musunuz?
@@ -2259,7 +1872,6 @@ const EditProfileScreen = ({ navigation }) => {
                     thumbColor={isSmoker ? "#f4f3f4" : "#f4f3f4"}
                   />
                 </View>
-
 
                 <SectionHeader title="Güvence ve Doğrulama" />
 
@@ -2379,20 +1991,6 @@ const EditProfileScreen = ({ navigation }) => {
                   />
                 </View>
 
-              <TouchableOpacity
-                className={`rounded-lg h-12 justify-center items-center mb-10 ${isLoading ? "bg-green-300" : "bg-green-600"
-                  }`}
-                onPress={handleSaveProfile}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <Text className="text-white text-base font-semibold">
-                    {activeTab === "basicInfo"
-                      ? "Bilgileri Kaydet ve Devam Et"
-                      : "Değişiklikleri Kaydet"}
-
                 <View className="flex-row justify-between items-center mb-4">
                   <Text className="text-gray-600">
                     Hastane Yakınlığı Önemli mi?
@@ -2416,25 +2014,23 @@ const EditProfileScreen = ({ navigation }) => {
                     textAlignVertical="top"
                   />
                 </View>
+
+                <TouchableOpacity
+                  className={`rounded-lg h-12 justify-center items-center mb-10 ${isLoading ? "bg-green-300" : "bg-green-600"}`}
+                  onPress={handleSaveProfile}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <Text className="text-white text-base font-semibold">
+                      Değişiklikleri Kaydet
+                    </Text>
+                  )}
+                </TouchableOpacity>
               </View>
             </>
           )}
-
-          <TouchableOpacity
-            className={`rounded-lg h-12 justify-center items-center mb-10 ${
-              isLoading ? "bg-blue-300" : "bg-blue-500"
-            }`}
-            onPress={handleSaveProfile}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <Text className="text-white text-base font-semibold">
-                Değişiklikleri Kaydet
-              </Text>
-            )}
-          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -2482,7 +2078,7 @@ const EditProfileScreen = ({ navigation }) => {
           </View>
         </View>
       </Modal>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 
