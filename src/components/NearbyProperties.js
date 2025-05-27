@@ -85,41 +85,41 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   const allProperties = [...nearFromYouProperties, ...nearbyProperties];
 
   // Log the response for debugging
-  useEffect(() => {
-    if (nearbyData) {
-      console.log("===== NEARBY PROPERTIES RESPONSE =====");
-      console.log("Full Response:", JSON.stringify(nearbyData, null, 2));
-      console.log("Best For You Array:", nearbyData?.result?.bestForYou);
-      console.log(
-        "Best For You Length:",
-        nearbyData?.result?.bestForYou?.length || 0
-      );
-      console.log("Near From You Array:", nearbyData?.result?.nearFromYou);
-      console.log(
-        "Near From You Length:",
-        nearbyData?.result?.nearFromYou?.length || 0
-      );
-      console.log("Combined Properties Length:", allProperties.length);
-      console.log("Is Success:", nearbyData?.isSuccess);
-      console.log("Message:", nearbyData?.message);
-      console.log("Status Code:", nearbyData?.statusCode);
+  // useEffect(() => {
+  //   if (nearbyData) {
+  //     console.log("===== NEARBY PROPERTIES RESPONSE =====");
+  //     console.log("Full Response:", JSON.stringify(nearbyData, null, 2));
+  //     console.log("Best For You Array:", nearbyData?.result?.bestForYou);
+  //     console.log(
+  //       "Best For You Length:",
+  //       nearbyData?.result?.bestForYou?.length || 0
+  //     );
+  //     console.log("Near From You Array:", nearbyData?.result?.nearFromYou);
+  //     console.log(
+  //       "Near From You Length:",
+  //       nearbyData?.result?.nearFromYou?.length || 0
+  //     );
+  //     console.log("Combined Properties Length:", allProperties.length);
+  //     console.log("Is Success:", nearbyData?.isSuccess);
+  //     console.log("Message:", nearbyData?.message);
+  //     console.log("Status Code:", nearbyData?.statusCode);
 
-      if (nearFromYouProperties.length > 0) {
-        console.log(
-          "First Near Property:",
-          JSON.stringify(nearFromYouProperties[0], null, 2)
-        );
-        console.log("Distance:", nearFromYouProperties[0].distanceInKM, "km");
-      }
-      if (nearbyProperties.length > 0) {
-        console.log(
-          "First Best For You Property:",
-          JSON.stringify(nearbyProperties[0], null, 2)
-        );
-      }
-      console.log("=====================================");
-    }
-  }, [nearbyData, allProperties]);
+  //     if (nearFromYouProperties.length > 0) {
+  //       console.log(
+  //         "First Near Property:",
+  //         JSON.stringify(nearFromYouProperties[0], null, 2)
+  //       );
+  //       console.log("Distance:", nearFromYouProperties[0].distanceInKM, "km");
+  //     }
+  //     if (nearbyProperties.length > 0) {
+  //       console.log(
+  //         "First Best For You Property:",
+  //         JSON.stringify(nearbyProperties[0], null, 2)
+  //       );
+  //     }
+  //     console.log("=====================================");
+  //   }
+  // }, [nearbyData, allProperties]);
 
   // Log API call parameters
   useEffect(() => {

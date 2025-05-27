@@ -566,37 +566,44 @@ const profileSlice = createSlice({
       }
     );
 
-    // Handle adding a favorite property
+    // Handle toggle favorite property (replaces add/remove favorite)
     builder.addMatcher(
-      apiSlice.endpoints.addFavoriteProperty.matchFulfilled,
-      (state, { payload }) => {
+      apiSlice.endpoints.toggleFavoriteProperty.matchFulfilled,
+      (state, { payload, meta }) => {
         if (payload && payload.isSuccess && payload.result) {
-          const newFavorite = payload.result;
+          const result = payload.result;
+          const originalArgs = meta.arg.originalArgs || meta.arg;
 
-          // Add to favoriteProperties if not already present
-          const exists = state.favoriteProperties.some(
-            (fav) => fav.id === newFavorite.id
-          );
-
-          if (!exists) {
-            state.favoriteProperties.push(newFavorite);
+          if (originalArgs.actionType === 0) {
+            // Adding to favorites
+            const exists = state.favoriteProperties.some(
+              (fav) => fav.id === result.id
+            );
+            if (!exists) {
+              state.favoriteProperties.push(result);
+            }
+          } else if (originalArgs.actionType === 1) {
+            // Removing from favorites
+            state.favoriteProperties = state.favoriteProperties.filter(
+              (fav) => fav.postId !== originalArgs.postId
+            );
           }
         }
       }
     );
 
-    // Handle removing a favorite property
     builder.addMatcher(
-      apiSlice.endpoints.removeFavoriteProperty.matchFulfilled,
-      (state, { payload }) => {
-        if (payload && payload.isSuccess && payload.result) {
-          const removedId = payload.result.id;
+      apiSlice.endpoints.toggleFavoriteProperty.matchPending,
+      (state) => {
+        // Optional: You can add loading state here if needed
+      }
+    );
 
-          // Remove from favoriteProperties array
-          state.favoriteProperties = state.favoriteProperties.filter(
-            (fav) => fav.id !== removedId
-          );
-        }
+    builder.addMatcher(
+      apiSlice.endpoints.toggleFavoriteProperty.matchRejected,
+      (state, { payload, error }) => {
+        // Error handling is done in the component, but you can add state updates here if needed
+        console.error("Toggle favorite failed:", error);
       }
     );
   },

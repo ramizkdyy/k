@@ -341,7 +341,7 @@ const PostsScreen = ({ navigation }) => {
   // Render post item
   const renderPostItem = ({ item }) => {
     // Log the item data for debugging
-    console.log("Post Item Data:", JSON.stringify(item, null, 2));
+    // console.log("Post Item Data:", JSON.stringify(item, null, 2));
 
     return (
       <TouchableOpacity
