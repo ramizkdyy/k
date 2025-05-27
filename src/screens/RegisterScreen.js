@@ -34,9 +34,16 @@ import {
   faArrowLeft,
   faCheck,
   faTimes,
+  faChevronLeft,
+  faChevronRight,
+  faChevronDown
 } from "@fortawesome/pro-solid-svg-icons";
 import DateTimePicker from '@react-native-community/datetimepicker';
 const { width } = Dimensions.get("window");
+
+
+// Custom Calendar Modal Component
+
 
 const RegisterScreen = ({ navigation }) => {
   // State for form inputs
@@ -48,10 +55,11 @@ const RegisterScreen = ({ navigation }) => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [gender, setGender] = useState(""); // Optional
+  const [showGenderModal, setShowGenderModal] = useState(false);
 
   // Date picker states
   const [birthDate, setBirthDate] = useState("");
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [dateValue, setDateValue] = useState(new Date(2000, 0, 1)); // Varsayılan olarak 1 Ocak 2000
 
@@ -87,23 +95,283 @@ const RegisterScreen = ({ navigation }) => {
   const isPhoneValid = (phone) => {
     return /^\d{10,11}$/.test(phone.replace(/[\s()-]/g, ""));
   };
-
-  // Date picker handlers
-  const handleOpenDatePicker = () => {
-    setShowDatePicker(true);
+  // Date selection handler
+  const handleDateSelect = (formattedDate, dateObject) => {
+    setBirthDate(formattedDate);
+    setDateValue(dateObject);
   };
 
-  const handleDateChange = (event, selectedDate) => {
-    const currentDate = selectedDate || dateValue;
-    // setShowDatePicker(false); // Bu satırı kaldırıyoruz böylece takvim açık kalacak
-    setDateValue(currentDate);
-
-    // Görüntüleme için tarihi formatla (GG/AA/YYYY)
-    const day = String(currentDate.getDate()).padStart(2, '0');
-    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-    const year = currentDate.getFullYear();
-    setBirthDate(`${day}/${month}/${year}`);
+  // Gender selection handler
+  const handleGenderSelect = (selectedGender) => {
+    setGender(selectedGender);
   };
+
+  // Gender label getter
+  const getGenderLabel = (genderValue) => {
+    const genderOptions = [
+      { value: 'female', label: 'Kadın' },
+      { value: 'male', label: 'Erkek' },
+      { value: 'other', label: 'Diğer' },
+    ];
+    return genderOptions.find(option => option.value === genderValue)?.label || '';
+  };
+
+
+
+  const CalendarModal = ({ visible, onClose, onDateSelect, selectedDate }) => {
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [selectedDay, setSelectedDay] = useState(selectedDate ? new Date(selectedDate) : null);
+
+    const months = [
+      'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+      'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+    ];
+
+    const weekDays = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+
+    const getDaysInMonth = (date) => {
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const daysInMonth = lastDay.getDate();
+      const startingDayOfWeek = (firstDay.getDay() + 6) % 7; // Monday = 0
+
+      const days = [];
+
+      // Add empty cells for days before the first day of month
+      for (let i = 0; i < startingDayOfWeek; i++) {
+        days.push(null);
+      }
+
+      // Add days of the month
+      for (let day = 1; day <= daysInMonth; day++) {
+        days.push(new Date(year, month, day));
+      }
+
+      return days;
+    };
+
+    const navigateMonth = (direction) => {
+      const newDate = new Date(currentDate);
+      newDate.setMonth(currentDate.getMonth() + direction);
+      setCurrentDate(newDate);
+    };
+
+    const navigateYear = (direction) => {
+      const newDate = new Date(currentDate);
+      newDate.setFullYear(currentDate.getFullYear() + direction);
+      setCurrentDate(newDate);
+    };
+
+    const handleDateSelect = (date) => {
+      if (!date || isFutureDate(date)) return;
+
+      setSelectedDay(date);
+      // Tarih formatını ayarla (GG/MM/YYYY)
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      const formattedDate = `${day}/${month}/${year}`;
+
+      // Parent component'e tarihi gönder
+      onDateSelect(formattedDate, date);
+      onClose();
+    };
+    const formatDisplayDate = (dateString) => {
+      if (!dateString) return '';
+      const date = new Date(dateString.split('/').reverse().join('-'));
+      return date.toLocaleDateString('tr-TR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    };
+    const isSelectedDate = (date) => {
+      if (!selectedDay || !date) return false;
+      return date.toDateString() === selectedDay.toDateString();
+    };
+
+    const isToday = (date) => {
+      if (!date) return false;
+      return date.toDateString() === new Date().toDateString();
+    };
+
+    const isFutureDate = (date) => {
+      if (!date) return false;
+      return date > new Date();
+    };
+
+    const days = getDaysInMonth(currentDate);
+
+    return (
+      <Modal visible={visible} transparent animationType="fade">
+        <View className="flex-1 bg-black/50 justify-center items-center">
+          <View className="bg-white rounded-2xl mx-4 p-6 shadow-lg" style={{ width: width - 32 }}>
+            {/* Header */}
+            <View className="flex-row justify-between items-center mb-4">
+              <Text className="text-lg font-semibold text-gray-800">Doğum Tarihi Seçin</Text>
+              <TouchableOpacity onPress={onClose}>
+                <FontAwesomeIcon icon={faTimes} size={20} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Month/Year Navigation */}
+            <View className="flex-row justify-between items-center mb-4">
+              <TouchableOpacity onPress={() => navigateYear(-1)} className="p-2">
+                <Text className="text-blue-600 font-medium">‹‹</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => navigateMonth(-1)} className="p-2">
+                <FontAwesomeIcon icon={faChevronLeft} size={16} color="#3b82f6" />
+              </TouchableOpacity>
+
+              <Text className="text-lg font-semibold text-gray-800">
+                {months[currentDate.getMonth()]} {currentDate.getFullYear()}
+              </Text>
+
+              <TouchableOpacity onPress={() => navigateMonth(1)} className="p-2">
+                <FontAwesomeIcon icon={faChevronRight} size={16} color="#3b82f6" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => navigateYear(1)} className="p-2">
+                <Text className="text-blue-600 font-medium">››</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Week Days Header */}
+            <View className="flex-row mb-2">
+              {weekDays.map((day) => (
+                <View key={day} className="flex-1 items-center py-2">
+                  <Text className="text-sm font-medium text-gray-500">{day}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Calendar Grid */}
+            <View className="flex-row flex-wrap">
+              {days.map((date, index) => (
+                <TouchableOpacity
+                  key={index}
+                  className={`w-[14.28%] h-12 justify-center items-center ${date && !isFutureDate(date) ? '' : 'opacity-30'
+                    }`}
+                  onPress={() => handleDateSelect(date)}
+                  disabled={!date || isFutureDate(date)}
+                >
+                  <View
+                    className={`w-10 h-10 rounded-full justify-center items-center ${isSelectedDate(date)
+                      ? 'bg-blue-600'
+                      : isToday(date)
+                        ? 'bg-blue-100'
+                        : ''
+                      }`}
+                  >
+                    <Text
+                      className={`text-sm ${isSelectedDate(date)
+                        ? 'text-white font-semibold'
+                        : isToday(date)
+                          ? 'text-blue-600 font-semibold'
+                          : 'text-gray-700'
+                        }`}
+                    >
+                      {date ? date.getDate() : ''}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Footer */}
+            <View className="flex-row justify-end mt-4 pt-4 border-t border-gray-200">
+              <TouchableOpacity onPress={onClose} className="px-4 py-2 mr-2">
+                <Text className="text-gray-600">İptal</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+
+  // Gender Selector Modal Component
+  const GenderModal = ({ visible, onClose, onGenderSelect, selectedGender }) => {
+    const slideAnim = useRef(new Animated.Value(300)).current;
+
+    const genderOptions = [
+      { value: 'female', label: 'Kadın', icon: '♀' },
+      { value: 'male', label: 'Erkek', icon: '♂' },
+      { value: 'other', label: 'Diğer', icon: '⚥' },
+    ];
+
+    useEffect(() => {
+      if (visible) {
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 100,
+          friction: 8,
+        }).start();
+      } else {
+        Animated.timing(slideAnim, {
+          toValue: 300,
+          duration: 250,
+          useNativeDriver: true,
+        }).start();
+      }
+    }, [visible]);
+
+    const handleGenderSelect = (gender) => {
+      onGenderSelect(gender);
+      onClose();
+    };
+
+    return (
+      <Modal visible={visible} transparent animationType="fade">
+        <View className="flex-1 bg-black/50 justify-end">
+          <Animated.View
+            className="bg-white rounded-t-3xl p-6"
+            style={{
+              transform: [{ translateY: slideAnim }],
+            }}
+          >
+            {/* Header */}
+            <View className="flex-row justify-between items-center mb-6">
+              <Text className="text-xl font-semibold text-gray-800">Cinsiyet Seçin</Text>
+              <TouchableOpacity onPress={onClose}>
+                <FontAwesomeIcon icon={faTimes} size={20} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Gender Options */}
+            <View className="space-y-2">
+              {genderOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  className="flex-row items-center p-4 bg-gray-50 rounded-xl border border-gray-200"
+                  onPress={() => handleGenderSelect(option.value)}
+                >
+                  <Text className="text-2xl mr-4">{option.icon}</Text>
+                  <Text className="flex-1 text-lg text-gray-700 font-medium">{option.label}</Text>
+                  {selectedGender === option.value && (
+                    <FontAwesomeIcon icon={faCheck} size={20} color="#2C8700" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Cancel Button */}
+            <TouchableOpacity
+              onPress={onClose}
+              className="mt-6 p-4 bg-gray-100 rounded-xl items-center"
+            >
+              <Text className="text-gray-700 font-medium text-lg">İptal</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </Modal>
+    );
+  };
+
+
 
   // Validate current step
   const validateCurrentStep = () => {
@@ -519,41 +787,20 @@ const RegisterScreen = ({ navigation }) => {
           <>
             <View className="gap-1">
               <Text className="text-gray-600 ml-1">Doğum tarihiniz</Text>
-              <View className="shadow-custom bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full">
+              <TouchableOpacity
+                className="shadow-custom bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full"
+                onPress={() => setShowCalendar(true)}
+              >
                 <FontAwesomeIcon icon={faCalendar} size={20} color="#6b7280" />
-                <TouchableOpacity
-                  className="flex-1 flex-row items-center"
-                  onPress={handleOpenDatePicker}
-                >
+                <View className="flex-1 flex-row items-center justify-between ml-4">
                   <Text
-                    className={`ml-4 flex-1 ${birthDate ? 'text-gray-700' : 'text-gray-400'}`}
+                    className={`${birthDate ? 'text-gray-700' : 'text-gray-400'}`}
                   >
                     {birthDate || "Doğum tarihi seçin (isteğe bağlı)"}
                   </Text>
-                </TouchableOpacity>
-                {showDatePicker ? (
-                  <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                    <FontAwesomeIcon icon={faTimes} size={18} color="#6b7280" />
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity onPress={handleOpenDatePicker}>
-                    <FontAwesomeIcon icon={faCalendar} size={18} color="#6b7280" />
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {/* DateTimePicker (only showing when activated) */}
-              {showDatePicker && (
-                <DateTimePicker
-                  value={dateValue}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={handleDateChange}
-                  maximumDate={new Date()} // Bugünden sonraki tarihleri seçmeyi engelle
-                  minimumDate={new Date(1920, 0, 1)} // Çok eski tarihleri engelle
-                />
-              )}
-
+                  <FontAwesomeIcon icon={faChevronDown} size={16} color="#6b7280" />
+                </View>
+              </TouchableOpacity>
               {/* Added a small note to indicate birthDate is optional */}
               <Text className="text-xs text-gray-500 ml-1 mt-1">
                 Not: Doğum tarihi şu an zorunlu değildir.
@@ -564,19 +811,20 @@ const RegisterScreen = ({ navigation }) => {
               <Text className="text-gray-600 ml-1">
                 Cinsiyetiniz (İsteğe bağlı)
               </Text>
-              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4  w-full">
+              <TouchableOpacity
+                className="shadow-custom bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full"
+                onPress={() => setShowGenderModal(true)}
+              >
                 <FontAwesomeIcon icon={faVenusMars} size={20} color="#6b7280" />
-                <TextInput
-                  className="text-gray-600 flex-1 py-3 font-normal"
-                  placeholderTextColor={"#4b5563"}
-                  placeholder="Cinsiyetinizi giriniz"
-                  value={gender}
-                  onChangeText={setGender}
-                  ref={genderInputRef}
-                  returnKeyType="done"
-                  onSubmitEditing={handleNextStep}
-                />
-              </View>
+                <View className="flex-1 flex-row items-center justify-between ml-4">
+                  <Text
+                    className={`${gender ? 'text-gray-700' : 'text-gray-400'}`}
+                  >
+                    {gender ? getGenderLabel(gender) : "Cinsiyetinizi seçin (isteğe bağlı)"}
+                  </Text>
+                  <FontAwesomeIcon icon={faChevronDown} size={16} color="#6b7280" />
+                </View>
+              </TouchableOpacity>
             </View>
           </>
         );
@@ -745,7 +993,22 @@ const RegisterScreen = ({ navigation }) => {
           )}
         </View>
       </KeyboardAvoidingView>
+      <CalendarModal
+        visible={showCalendar}
+        onClose={() => setShowCalendar(false)}
+        onDateSelect={handleDateSelect}
+        selectedDate={dateValue}
+      />
+
+      {/* Gender Modal */}
+      <GenderModal
+        visible={showGenderModal}
+        onClose={() => setShowGenderModal(false)}
+        onGenderSelect={handleGenderSelect}
+        selectedGender={gender}
+      />
     </SafeAreaView>
+
   );
 };
 
