@@ -2,24 +2,19 @@ import React, { useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { createDrawerNavigator } from '@react-navigation/drawer';
-import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
-import { useDrawerProgress } from '@react-navigation/drawer';
-import Animated, { interpolate, useAnimatedStyle } from 'react-native-reanimated';
 import { useSelector, useDispatch } from "react-redux";
 import {
   selectIsAuthenticated,
   selectUserRole,
   selectCurrentUser,
   selectHasUserProfile,
-  logout,
 } from "../redux/slices/authSlice";
 
 import {
   selectUserProfile,
   setUserProfile,
 } from "../redux/slices/profileSlice";
-import { Image, Dimensions } from "react-native";
+import { Image } from "react-native";
 import {
   useGetLandlordProfileQuery,
   useGetTenantProfileQuery,
@@ -37,7 +32,6 @@ import PostDetailScreen from "../screens/PostDetailScreen";
 import PostsScreen from "../screens/PostsScreen";
 import CreatePostScreen from "../screens/CreatePostScreen";
 import ProfileExpectationScreen from "../screens/ProfileExpectationScreen";
-
 import OffersScreen from "../screens/OffersScreen"; // Import the actual OffersScreen
 
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -57,205 +51,6 @@ const MainStack = createStackNavigator();
 const LandlordStack = createStackNavigator();
 const TenantStack = createStackNavigator();
 const Tab = createBottomTabNavigator();
-const Drawer = createDrawerNavigator();
-
-// Custom Drawer Content - Arka planı da yeşil
-const CustomDrawerContent = (props) => {
-  const userProfile = useSelector(selectUserProfile);
-  const dispatch = useDispatch();
-
-  const handleLogout = () => {
-    dispatch(logout());
-  };
-
-  return (
-    <View style={{ flex: 1, backgroundColor: '#A0E79E' }}>
-      {/* Header kısmı */}
-      <View style={{
-        backgroundColor: '#A0E79E',
-        padding: 20,
-        paddingTop: 50
-      }}>
-        <Text style={{
-          color: 'white',
-          fontSize: 18,
-          fontWeight: 'bold'
-        }}>
-          Merhaba, {userProfile?.firstName || 'Kullanıcı'}
-        </Text>
-      </View>
-
-      {/* Drawer menü öğeleri */}
-      <DrawerContentScrollView
-        {...props}
-        style={{ backgroundColor: '#A0E79E' }}
-        contentContainerStyle={{ backgroundColor: '#A0E79E', flex: 1 }}
-      >
-        <DrawerItem
-          label="Home"
-          onPress={() => props.navigation.navigate('MainTabs')}
-          labelStyle={{ color: 'white', fontSize: 16 }}
-          icon={({ focused, size }) => (
-            <FontAwesomeIcon
-              icon={faHouseRegular}
-              size={20}
-              color="white"
-            />
-          )}
-        />
-
-        <DrawerItem
-          label="Profile"
-          onPress={() => props.navigation.navigate('MainTabs', {
-            screen: 'LandlordProfile'
-          })}
-          labelStyle={{ color: 'white', fontSize: 16 }}
-          icon={({ focused, size }) => (
-            <FontAwesomeIcon
-              icon={faUserRegular}
-              size={20}
-              color="white"
-            />
-          )}
-        />
-
-        <DrawerItem
-          label="Nearby"
-          onPress={() => {/* Nearby sayfasına git */ }}
-          labelStyle={{ color: 'white', fontSize: 16 }}
-          icon={({ focused, size }) => (
-            <FontAwesomeIcon
-              icon={faMapMarkerAltRegular}
-              size={20}
-              color="white"
-            />
-          )}
-        />
-
-        <View style={{
-          borderTopWidth: 1,
-          borderTopColor: 'rgba(255,255,255,0.3)',
-          marginTop: 10,
-          paddingTop: 10
-        }}>
-          <DrawerItem
-            label="Get law support"
-            onPress={() => {/* Hukuki destek sayfasına git */ }}
-            labelStyle={{ color: 'white', fontSize: 16 }}
-            icon={({ focused, size }) => (
-              <FontAwesomeIcon
-                icon={faGavelRegular}
-                size={20}
-                color="white"
-              />
-            )}
-          />
-
-          <DrawerItem
-            label="Notification"
-            onPress={() => {/* Bildirimler sayfasına git */ }}
-            labelStyle={{ color: 'white', fontSize: 16 }}
-            icon={({ focused, size }) => (
-              <FontAwesomeIcon
-                icon={faBellRegular}
-                size={20}
-                color="white"
-              />
-            )}
-          />
-
-          <DrawerItem
-            label="Message"
-            onPress={() => {/* Mesajlar sayfasına git */ }}
-            labelStyle={{ color: 'white', fontSize: 16 }}
-            icon={({ focused, size }) => (
-              <FontAwesomeIcon
-                icon={faCommentsRegular}
-                size={20}
-                color="white"
-              />
-            )}
-          />
-        </View>
-
-        <View style={{
-          borderTopWidth: 1,
-          borderTopColor: 'rgba(255,255,255,0.3)',
-          marginTop: 10,
-          paddingTop: 10
-        }}>
-          <DrawerItem
-            label="Setting"
-            onPress={() => {/* Ayarlar sayfasına git */ }}
-            labelStyle={{ color: 'white', fontSize: 16 }}
-            icon={({ focused, size }) => (
-              <FontAwesomeIcon
-                icon={faCogRegular}
-                size={20}
-                color="white"
-              />
-            )}
-          />
-
-          <DrawerItem
-            label="Help"
-            onPress={() => {/* Yardım sayfasına git */ }}
-            labelStyle={{ color: 'white', fontSize: 16 }}
-            icon={({ focused, size }) => (
-              <FontAwesomeIcon
-                icon={faQuestionCircleRegular}
-                size={20}
-                color="white"
-              />
-            )}
-          />
-
-          <DrawerItem
-            label="Logout"
-            onPress={handleLogout}
-            labelStyle={{ color: 'white', fontSize: 16 }}
-            icon={({ focused, size }) => (
-              <FontAwesomeIcon
-                icon={faSignOutAltRegular}
-                size={20}
-                color="white"
-              />
-            )}
-          />
-        </View>
-      </DrawerContentScrollView>
-
-      {/* Alt boşluğu da yeşil yapalım */}
-      <View style={{ backgroundColor: '#A0E79E', height: 50 }} />
-    </View>
-  );
-};
-
-// Ana ekranı wrap eden animated view - Yeşil arka plan eklendi
-const AnimatedScreen = ({ children }) => {
-  const progress = useDrawerProgress();
-
-  const animatedStyle = useAnimatedStyle(() => {
-    const scale = interpolate(progress.value, [0, 1], [1, 1]); // %85'e küçült (daha az)
-    const translateX = interpolate(progress.value, [0, 1], [0, 20]); // Sadece 60px sağa kaydir
-    const borderRadius = interpolate(progress.value, [0, 1], [0, 15]); // Köşeleri yuvarla
-
-    return {
-      transform: [{ scale }, { translateX }],
-      borderRadius,
-      overflow: 'hidden',
-      backgroundColor: '#A0E79E', // Yeşil arka plan
-    };
-  });
-
-  return (
-    <View style={{ flex: 1, backgroundColor: '#A0E79E' }}>
-      <Animated.View style={[{ flex: 1, backgroundColor: '#A0E79E' }, animatedStyle]}>
-        {children}
-      </Animated.View>
-    </View>
-  );
-};
 
 // Auth navigator for non-authenticated users
 const AuthNavigator = () => {
@@ -434,15 +229,16 @@ const LandlordProfileStack = () => {
   return (
     <LandlordStack.Navigator
       screenOptions={{
-        headerTintColor: '#fff',
+        headerTintColor: "#fff",
         headerStyle: {
-          backgroundColor: '#15803d',
+          backgroundColor: "#15803d",
           borderBottomWidth: 0,
           shadowOpacity: 0,
           shadowOffset: { height: 0, width: 0 },
           shadowRadius: 0,
-          elevation: 0
+          elevation: 0,
         },
+        // iOS back title'ı gizleme
         headerBackTitle: null,
       }}
     >
@@ -450,25 +246,27 @@ const LandlordProfileStack = () => {
         name="LandlordProfileScreen"
         component={ProfileScreen}
         options={{
-          headerTitle: 'Profil',
-          headerShown: true
+          headerTitle: "Profil",
+          headerShown: true,
         }}
       />
       <LandlordStack.Screen
         name="EditProfile"
         component={EditProfileScreen}
         options={({ navigation }) => ({
-          headerTitle: 'Profili Düzenle',
+          headerTitle: "Profili Düzenle",
+          // Completely custom back button
           headerLeft: () => (
             <TouchableOpacity
               onPress={() => navigation.goBack()}
               style={{ paddingHorizontal: 15 }}
             >
-              <FontAwesomeIcon icon={faChevronLeft} size={24} color="#fff" />
+              <FontAwesomeIcon icon={faChevronLeft} size={20} color="#fff" />
             </TouchableOpacity>
           ),
-          headerBackTitle: '',
-          headerBackTitleVisible: false
+          // Back title'ı tamamen kaldır
+          headerBackTitle: "",
+          headerBackTitleVisible: false,
         })}
       />
       <LandlordStack.Screen
@@ -490,7 +288,6 @@ const LandlordProfileStack = () => {
     </LandlordStack.Navigator>
   );
 };
-
 // Tenant Stack Navigators for each tab
 const TenantHomeStack = () => {
   return (
@@ -581,10 +378,9 @@ const TenantProfileStack = () => {
   );
 };
 
-// Tab Navigator - Ana arka plan yeşil
+// Landlord tab navigator
 const LandlordTabNavigator = () => {
   return (
-
     <Tab.Navigator
       screenOptions={{
         tabBarActiveTintColor: "#4A90E2",
@@ -647,78 +443,15 @@ const LandlordTabNavigator = () => {
           tabBarIcon: ({ color, size }) => (
             <Icon name="person" size={size} color={color} />
           ),
-
         }}
-      >
-        <Tab.Screen
-          name="LandlordHome"
-          component={LandlordHomeStack}
-          options={{
-            title: "Ana Sayfa",
-            tabBarLabel: "Ana Sayfa",
-            tabBarIcon: ({ focused }) => (
-              <FontAwesomeIcon
-                icon={focused ? faHouseSolid : faHouseRegular}
-                size={24}
-                color="#A0E79E"
-              />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="MyProperties"
-          component={LandlordPropertiesStack}
-          options={{
-            title: "Mülklerim",
-            tabBarLabel: "Mülklerim",
-            tabBarIcon: ({ focused }) => (
-              <FontAwesomeIcon
-                icon={focused ? faBuildingSolid : faBuildingRegular}
-                size={24}
-                color="#A0E79E"
-              />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="ReceivedOffers"
-          component={LandlordOffersStack}
-          options={{
-            title: "Teklifler",
-            tabBarLabel: "Teklifler",
-            tabBarIcon: ({ focused }) => (
-              <FontAwesomeIcon
-                icon={focused ? faEnvelopeSolid : faEnvelopeRegular}
-                size={24}
-                color="#A0E79E"
-              />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="LandlordProfile"
-          component={LandlordProfileStack}
-          options={{
-            title: "Profil",
-            tabBarLabel: "Profil",
-            tabBarIcon: ({ focused }) => (
-              <FontAwesomeIcon
-                icon={focused ? faUserSolid : faUserRegular}
-                size={24}
-                color="#A0E79E"
-              />
-            ),
-          }}
-        />
-      </Tab.Navigator>
-    </View>
+      />
+    </Tab.Navigator>
   );
 };
 
-// Tenant tab navigator - Ana arka plan yeşil
+// Tenant tab navigator
 const TenantTabNavigator = () => {
   return (
-
     <Tab.Navigator
       screenOptions={{
         tabBarActiveTintColor: "#4A90E2",
@@ -782,16 +515,8 @@ const TenantTabNavigator = () => {
             <Icon name="person" size={size} color={color} />
           ),
         }}
-      >
-        <Drawer.Screen
-          name="MainTabs"
-          component={TenantTabNavigatorWrapped}
-          options={{
-            title: 'Ana Sayfa',
-          }}
-        />
-      </Drawer.Navigator>
-    </View>
+      />
+    </Tab.Navigator>
   );
 };
 
@@ -810,10 +535,10 @@ const ProfileLoader = ({ children }) => {
     isLoading,
     error,
   } = userRole === "EVSAHIBI"
-      ? useGetLandlordProfileQuery(currentUser?.id, {
+    ? useGetLandlordProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       })
-      : useGetTenantProfileQuery(currentUser?.id, {
+    : useGetTenantProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       });
 
@@ -832,7 +557,7 @@ const ProfileLoader = ({ children }) => {
   return children;
 };
 
-// Main navigator - Tüm ekranı yeşil yap
+// Main navigator that determines which navigator to show based on auth and profile state
 const AppNavigator = () => {
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const userRole = useSelector(selectUserRole);
@@ -855,35 +580,29 @@ const AppNavigator = () => {
   const shouldShowRoleSelection = isAuthenticated && !userRole;
 
   return (
-    <View className="flex-1 bg-white">
-      <SafeAreaView style={{ flex: 0 }} />
-      <NavigationContainer>
-        <View style={{ flex: 1 }}>
-          <ProfileLoader>
-            {!isAuthenticated ? (
-              <AuthNavigator />
-            ) : shouldShowRoleSelection ? (
-              <OnboardingNavigator />
-            ) : shouldShowCreateProfile ? (
-              <MainStack.Navigator>
-                <MainStack.Screen
-                  name="CreateProfile"
-                  component={CreateProfileScreen}
-                  options={{ headerShown: false }}
-                />
-              </MainStack.Navigator>
-            ) : userRole === "EVSAHIBI" ? (
-              <LandlordDrawerNavigator />
-            ) : userRole === "KIRACI" ? (
-              <TenantDrawerNavigator />
-            ) : (
-              <OnboardingNavigator />
-            )}
-          </ProfileLoader>
-        </View>
-      </NavigationContainer>
-      <SafeAreaView style={{ flex: 0 }} />
-    </View>
+    <NavigationContainer>
+      <ProfileLoader>
+        {!isAuthenticated ? (
+          <AuthNavigator />
+        ) : shouldShowRoleSelection ? (
+          <OnboardingNavigator />
+        ) : shouldShowCreateProfile ? (
+          <MainStack.Navigator>
+            <MainStack.Screen
+              name="CreateProfile"
+              component={CreateProfileScreen}
+              options={{ headerShown: false }}
+            />
+          </MainStack.Navigator>
+        ) : userRole === "EVSAHIBI" ? (
+          <LandlordTabNavigator />
+        ) : userRole === "KIRACI" ? (
+          <TenantTabNavigator />
+        ) : (
+          <OnboardingNavigator />
+        )}
+      </ProfileLoader>
+    </NavigationContainer>
   );
 };
 
