@@ -26,6 +26,8 @@ import {
 } from "../redux/api/apiSlice";
 
 // Import screens
+import AllNearbyPropertiesScreen from "../screens/AllNearbyPropertiesScreen";
+
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import RoleSelectionScreen from "../screens/RoleSelectionScreen";
@@ -37,13 +39,54 @@ import PostDetailScreen from "../screens/PostDetailScreen";
 import PostsScreen from "../screens/PostsScreen";
 import CreatePostScreen from "../screens/CreatePostScreen";
 import ProfileExpectationScreen from "../screens/ProfileExpectationScreen";
+import OffersScreen from "../screens/OffersScreen";
 
-import OffersScreen from "../screens/OffersScreen"; // Import the actual OffersScreen
+// Import icons
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+// Solid icons (for selected state)
+import {
+  faHouse as faHouseSolid,
+  faBuilding as faBuildingSolid,
+  faEnvelope as faEnvelopeSolid,
+  faUser as faUserSolid,
+  faSearch as faSearchSolid,
+  faBars,
+  faMapMarkerAlt,
+  faGavel,
+  faBell,
+  faComments,
+  faCog,
+  faQuestionCircle,
+  faSignOutAlt,
+  faChevronLeft
+} from '@fortawesome/pro-solid-svg-icons';
+// Regular icons (for unselected state)
+import {
+  faHouse as faHouseRegular,
+  faBuilding as faBuildingRegular,
+  faEnvelope as faEnvelopeRegular,
+  faUser as faUserRegular,
+  faSearch as faSearchRegular,
+  faMapMarkerAlt as faMapMarkerAltRegular,
+  faGavel as faGavelRegular,
+  faBell as faBellRegular,
+  faComments as faCommentsRegular,
+  faCog as faCogRegular,
+  faQuestionCircle as faQuestionCircleRegular,
+  faSignOutAlt as faSignOutAltRegular
+} from '@fortawesome/pro-regular-svg-icons';
 
-import Icon from "react-native-vector-icons/MaterialIcons";
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  TouchableOpacity,
+  SafeAreaView
+} from "react-native";
+
+const { width: screenWidth } = Dimensions.get('window');
 
 // Loading screen to show while fetching profile
-import { View, Text, ActivityIndicator } from "react-native";
 const LoadingScreen = () => (
   <View className="flex-1 justify-center items-center bg-white">
     <ActivityIndicator size="large" color="#4A90E2" />
@@ -59,7 +102,7 @@ const TenantStack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
 
-// Custom Drawer Content - Arka planı da yeşil
+// Custom Drawer Content
 const CustomDrawerContent = (props) => {
   const userProfile = useSelector(selectUserProfile);
   const dispatch = useDispatch();
@@ -70,7 +113,7 @@ const CustomDrawerContent = (props) => {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#A0E79E' }}>
-      {/* Header kısmı */}
+      {/* Header section */}
       <View style={{
         backgroundColor: '#A0E79E',
         padding: 20,
@@ -85,7 +128,7 @@ const CustomDrawerContent = (props) => {
         </Text>
       </View>
 
-      {/* Drawer menü öğeleri */}
+      {/* Drawer menu items */}
       <DrawerContentScrollView
         {...props}
         style={{ backgroundColor: '#A0E79E' }}
@@ -121,7 +164,7 @@ const CustomDrawerContent = (props) => {
 
         <DrawerItem
           label="Nearby"
-          onPress={() => {/* Nearby sayfasına git */ }}
+          onPress={() => {/* Navigate to Nearby page */ }}
           labelStyle={{ color: 'white', fontSize: 16 }}
           icon={({ focused, size }) => (
             <FontAwesomeIcon
@@ -140,7 +183,7 @@ const CustomDrawerContent = (props) => {
         }}>
           <DrawerItem
             label="Get law support"
-            onPress={() => {/* Hukuki destek sayfasına git */ }}
+            onPress={() => {/* Navigate to legal support page */ }}
             labelStyle={{ color: 'white', fontSize: 16 }}
             icon={({ focused, size }) => (
               <FontAwesomeIcon
@@ -153,7 +196,7 @@ const CustomDrawerContent = (props) => {
 
           <DrawerItem
             label="Notification"
-            onPress={() => {/* Bildirimler sayfasına git */ }}
+            onPress={() => {/* Navigate to notifications page */ }}
             labelStyle={{ color: 'white', fontSize: 16 }}
             icon={({ focused, size }) => (
               <FontAwesomeIcon
@@ -166,7 +209,7 @@ const CustomDrawerContent = (props) => {
 
           <DrawerItem
             label="Message"
-            onPress={() => {/* Mesajlar sayfasına git */ }}
+            onPress={() => {/* Navigate to messages page */ }}
             labelStyle={{ color: 'white', fontSize: 16 }}
             icon={({ focused, size }) => (
               <FontAwesomeIcon
@@ -186,7 +229,7 @@ const CustomDrawerContent = (props) => {
         }}>
           <DrawerItem
             label="Setting"
-            onPress={() => {/* Ayarlar sayfasına git */ }}
+            onPress={() => {/* Navigate to settings page */ }}
             labelStyle={{ color: 'white', fontSize: 16 }}
             icon={({ focused, size }) => (
               <FontAwesomeIcon
@@ -199,7 +242,7 @@ const CustomDrawerContent = (props) => {
 
           <DrawerItem
             label="Help"
-            onPress={() => {/* Yardım sayfasına git */ }}
+            onPress={() => {/* Navigate to help page */ }}
             labelStyle={{ color: 'white', fontSize: 16 }}
             icon={({ focused, size }) => (
               <FontAwesomeIcon
@@ -225,26 +268,26 @@ const CustomDrawerContent = (props) => {
         </View>
       </DrawerContentScrollView>
 
-      {/* Alt boşluğu da yeşil yapalım */}
+      {/* Bottom spacer */}
       <View style={{ backgroundColor: '#A0E79E', height: 50 }} />
     </View>
   );
 };
 
-// Ana ekranı wrap eden animated view - Yeşil arka plan eklendi
+// Animated screen wrapper for main content
 const AnimatedScreen = ({ children }) => {
   const progress = useDrawerProgress();
 
   const animatedStyle = useAnimatedStyle(() => {
-    const scale = interpolate(progress.value, [0, 1], [1, 1]); // %85'e küçült (daha az)
-    const translateX = interpolate(progress.value, [0, 1], [0, 20]); // Sadece 60px sağa kaydir
-    const borderRadius = interpolate(progress.value, [0, 1], [0, 15]); // Köşeleri yuvarla
+    const scale = interpolate(progress.value, [0, 1], [1, 1]);
+    const translateX = interpolate(progress.value, [0, 1], [0, 20]);
+    const borderRadius = interpolate(progress.value, [0, 1], [0, 15]);
 
     return {
       transform: [{ scale }, { translateX }],
       borderRadius,
       overflow: 'hidden',
-      backgroundColor: '#A0E79E', // Yeşil arka plan
+      backgroundColor: '#A0E79E',
     };
   });
 
@@ -307,7 +350,7 @@ const AuthNavigator = () => {
   );
 };
 
-// Rol seçimi ve profil oluşturma için navigator
+// Role selection and profile creation navigator
 const OnboardingNavigator = () => {
   return (
     <MainStack.Navigator
@@ -363,6 +406,22 @@ const LandlordHomeStack = () => {
           headerShown: false,
         }}
       />
+      <TenantStack.Screen
+        name="AllNearbyProperties"
+        component={AllNearbyPropertiesScreen}
+        options={{
+          title: "Yakındaki Evler",
+          headerStyle: {
+            backgroundColor: "#A0E79E",
+          },
+          headerTintColor: "#fff",
+          headerTitleStyle: {
+            fontWeight: "bold",
+          },
+          headerBackTitle: '',
+          headerShadowVisible: false
+        }}
+      />
       <LandlordStack.Screen
         name="ProfileExpectation"
         component={ProfileExpectationScreen}
@@ -381,7 +440,15 @@ const LandlordPropertiesStack = () => {
       <LandlordStack.Screen
         name="MyPropertiesList"
         component={PostsScreen}
-        options={{ title: "Mülklerim" }}
+        options={{
+          title: "Mülklerim",
+          headerStyle: {
+            backgroundColor: '#A0E79E',
+            headerShownVisible: false,
+
+          },
+          headerTintColor: '#fff',
+        }}
       />
       <LandlordStack.Screen
         name="PostDetail"
@@ -451,7 +518,12 @@ const LandlordProfileStack = () => {
         component={ProfileScreen}
         options={{
           headerTitle: 'Profil',
-          headerShown: true
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: '#A0E79E',
+          },
+          headerShadowVisible: false,
+
         }}
       />
       <LandlordStack.Screen
@@ -491,7 +563,6 @@ const LandlordProfileStack = () => {
   );
 };
 
-// Tenant Stack Navigators for each tab
 const TenantHomeStack = () => {
   return (
     <TenantStack.Navigator>
@@ -506,6 +577,20 @@ const TenantHomeStack = () => {
         options={{ title: "İlan Detayı" }}
       />
       <TenantStack.Screen
+        name="AllNearbyProperties"
+        component={AllNearbyPropertiesScreen}
+        options={{
+          title: "Yakındaki Evler",
+          headerStyle: {
+            backgroundColor: "#4A90E2",
+          },
+          headerTintColor: "#fff",
+          headerTitleStyle: {
+            fontWeight: "bold",
+          },
+        }}
+      />
+      <TenantStack.Screen
         name="ProfileExpectation"
         component={ProfileExpectationScreen}
         options={{
@@ -516,7 +601,6 @@ const TenantHomeStack = () => {
     </TenantStack.Navigator>
   );
 };
-
 const TenantPropertiesStack = () => {
   return (
     <TenantStack.Navigator>
@@ -581,73 +665,21 @@ const TenantProfileStack = () => {
   );
 };
 
-// Tab Navigator - Ana arka plan yeşil
+// Tab Navigator
 const LandlordTabNavigator = () => {
   return (
-
-    <Tab.Navigator
-      screenOptions={{
-        tabBarActiveTintColor: "#4A90E2",
-        tabBarInactiveTintColor: "#666",
-        tabBarStyle: {
-          backgroundColor: "#fff",
-          borderTopColor: "#e0e0e0",
-          paddingTop: 5,
-          paddingBottom: 5,
-        },
-        headerStyle: {
-          backgroundColor: "#4A90E2",
-        },
-        headerTintColor: "#fff",
-        headerTitleStyle: {
-          fontWeight: "bold",
-        },
-        headerShown: false,
-      }}
-    >
-      <Tab.Screen
-        name="LandlordHome"
-        component={LandlordHomeStack}
-        options={{
-          title: "Ana Sayfa",
-          tabBarLabel: "Ana Sayfa",
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="home" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="MyProperties"
-        component={LandlordPropertiesStack}
-        options={{
-          title: "Mülklerim",
-          tabBarLabel: "Mülklerim",
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="apartment" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="ReceivedOffers"
-        component={LandlordOffersStack}
-        options={{
-          title: "Teklifler",
-          tabBarLabel: "Teklifler",
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="local-offer" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="LandlordProfile"
-        component={LandlordProfileStack}
-        options={{
-          title: "Profil",
-          tabBarLabel: "Profil",
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="person" size={size} color={color} />
-          ),
-
+    <View style={{ flex: 1, backgroundColor: '#A0E79E' }}>
+      <Tab.Navigator
+        screenOptions={{
+          tabBarActiveTintColor: "#15803d",
+          tabBarInactiveTintColor: "#666",
+          tabBarStyle: {
+            backgroundColor: "#fff",
+            borderTopColor: "#e0e0e0",
+            paddingTop: 5,
+            paddingBottom: 5,
+          },
+          headerShown: false,
         }}
       >
         <Tab.Screen
@@ -678,6 +710,9 @@ const LandlordTabNavigator = () => {
                 color="#A0E79E"
               />
             ),
+            headerStyle: {
+              backgroundColor: '#A0E79E',
+            }
           }}
         />
         <Tab.Screen
@@ -715,72 +750,170 @@ const LandlordTabNavigator = () => {
   );
 };
 
-// Tenant tab navigator - Ana arka plan yeşil
+// Tenant tab navigator
 const TenantTabNavigator = () => {
   return (
+    <View style={{ flex: 1, backgroundColor: '#A0E79E' }}>
+      <Tab.Navigator
+        screenOptions={{
+          tabBarActiveTintColor: "#45CC42",
+          tabBarInactiveTintColor: "#666",
+          tabBarStyle: {
+            backgroundColor: "#fff",
+            borderTopColor: "#e0e0e0",
+            paddingTop: 5,
+            paddingBottom: 5,
+          },
+          headerShown: false,
+        }}
+      >
+        <Tab.Screen
+          name="TenantHome"
+          component={TenantHomeStack}
+          options={{
+            title: "Ana Sayfa",
+            tabBarLabel: "Ana Sayfa",
+            tabBarIcon: ({ focused }) => (
+              <FontAwesomeIcon
+                icon={focused ? faHouseSolid : faHouseRegular}
+                size={24}
+                color="#A0E79E"
+              />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="FindProperties"
+          component={TenantPropertiesStack}
+          options={{
+            title: "İlanlar",
+            tabBarLabel: "İlanlar",
+            tabBarIcon: ({ focused }) => (
+              <FontAwesomeIcon
+                icon={focused ? faSearchSolid : faSearchRegular}
+                size={24}
+                color="#A0E79E"
+              />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="MySentOffers"
+          component={TenantOffersStack}
+          options={{
+            title: "Tekliflerim",
+            tabBarLabel: "Tekliflerim",
+            tabBarIcon: ({ focused }) => (
+              <FontAwesomeIcon
+                icon={focused ? faEnvelopeSolid : faEnvelopeRegular}
+                size={24}
+                color="#A0E79E"
+              />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="TenantProfile"
+          component={TenantProfileStack}
+          options={{
+            title: "Profil",
+            tabBarLabel: "Profil",
+            tabBarIcon: ({ focused }) => (
+              <FontAwesomeIcon
+                icon={focused ? faUserSolid : faUserRegular}
+                size={24}
+                color="#A0E79E"
+              />
+            ),
+          }}
+        />
+      </Tab.Navigator>
+    </View>
+  );
+};
 
-    <Tab.Navigator
-      screenOptions={{
-        tabBarActiveTintColor: "#4A90E2",
-        tabBarInactiveTintColor: "#666",
-        tabBarStyle: {
-          backgroundColor: "#fff",
-          borderTopColor: "#e0e0e0",
-          paddingTop: 5,
-          paddingBottom: 5,
-        },
-        headerStyle: {
-          backgroundColor: "#4A90E2",
-        },
-        headerTintColor: "#fff",
-        headerTitleStyle: {
-          fontWeight: "bold",
-        },
-        headerShown: false,
-      }}
-    >
-      <Tab.Screen
-        name="TenantHome"
-        component={TenantHomeStack}
-        options={{
-          title: "Ana Sayfa",
-          tabBarLabel: "Ana Sayfa",
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="home" size={size} color={color} />
-          ),
+// Wrapped Tab Navigators with Animation
+const LandlordTabNavigatorWrapped = () => {
+  return (
+    <AnimatedScreen>
+      <LandlordTabNavigator />
+    </AnimatedScreen>
+  );
+};
+
+const TenantTabNavigatorWrapped = () => {
+  return (
+    <AnimatedScreen>
+      <TenantTabNavigator />
+    </AnimatedScreen>
+  );
+};
+
+// Drawer Navigators
+const LandlordDrawerNavigator = () => {
+  return (
+    <View style={{
+      flex: 1,
+      backgroundColor: '#A0E79E',
+    }}>
+      <Drawer.Navigator
+        drawerContent={(props) => <CustomDrawerContent {...props} />}
+        screenOptions={{
+          headerShown: false,
+          drawerStyle: {
+            backgroundColor: '#A0E79E',
+            width: 250,
+          },
+          drawerActiveTintColor: 'white',
+          drawerInactiveTintColor: 'rgba(255,255,255,0.8)',
+          swipeEnabled: true,
+          swipeEdgeWidth: screenWidth,
+          drawerType: 'slide',
+          overlayColor: 'transparent',
+          sceneContainerStyle: {
+            backgroundColor: '#A0E79E',
+          }
         }}
-      />
-      <Tab.Screen
-        name="FindProperties"
-        component={TenantPropertiesStack}
-        options={{
-          title: "İlanlar",
-          tabBarLabel: "İlanlar",
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="search" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="MySentOffers"
-        component={TenantOffersStack}
-        options={{
-          title: "Tekliflerim",
-          tabBarLabel: "Tekliflerim",
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="send" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="TenantProfile"
-        component={TenantProfileStack}
-        options={{
-          title: "Profil",
-          tabBarLabel: "Profil",
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="person" size={size} color={color} />
-          ),
+      >
+        <Drawer.Screen
+          name="MainTabs"
+          component={LandlordTabNavigatorWrapped}
+          options={{
+            title: 'Ana Sayfa',
+          }}
+        />
+      </Drawer.Navigator>
+    </View>
+  );
+};
+
+const TenantDrawerNavigator = () => {
+  return (
+    <View style={{
+      flex: 1,
+      backgroundColor: '#A0E79E',
+    }}>
+      <Drawer.Navigator
+        drawerContent={(props) => <CustomDrawerContent {...props} />}
+        screenOptions={{
+          headerShown: false,
+          drawerStyle: {
+            backgroundColor: '#A0E79E',
+            width: 250,
+          },
+          drawerActiveTintColor: 'white',
+          drawerInactiveTintColor: 'rgba(255,255,255,0.8)',
+          swipeEnabled: true,
+          swipeEdgeWidth: screenWidth,
+          swipeMinDistance: 10,
+          drawerType: 'slide',
+          overlayColor: 'transparent',
+          sceneContainerStyle: {
+            backgroundColor: '#A0E79E',
+          },
+          gestureHandlerProps: {
+            enableTrackpadTwoFingerGesture: true,
+          }
         }}
       >
         <Drawer.Screen
@@ -795,7 +928,7 @@ const TenantTabNavigator = () => {
   );
 };
 
-// ProfileLoader bileşeni - Uygulama başlatıldığında profili yükler
+// ProfileLoader component - Loads profile when app starts
 const ProfileLoader = ({ children }) => {
   const dispatch = useDispatch();
   const isAuthenticated = useSelector(selectIsAuthenticated);
@@ -804,7 +937,7 @@ const ProfileLoader = ({ children }) => {
   const hasUserProfile = useSelector(selectHasUserProfile);
   const userProfile = useSelector(selectUserProfile);
 
-  // Role göre doğru profil sorgusunu kullan
+  // Use correct profile query based on role
   const {
     data: profileData,
     isLoading,
@@ -817,14 +950,14 @@ const ProfileLoader = ({ children }) => {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       });
 
-  // Profil bilgileri yüklendiğinde Redux'a kaydet
+  // Save profile info to Redux when loaded
   useEffect(() => {
     if (profileData && profileData.isSuccess && profileData.result) {
       dispatch(setUserProfile(profileData.result));
     }
   }, [profileData, dispatch]);
 
-  // Kimlik doğrulaması var ve profil var olarak işaretlenmişse, ama profil verisi yoksa ve yükleme işlemi devam ediyorsa
+  // If authenticated and profile is marked as existing, but no profile data and loading
   if (isAuthenticated && hasUserProfile && !userProfile && isLoading) {
     return <LoadingScreen />;
   }
@@ -832,7 +965,7 @@ const ProfileLoader = ({ children }) => {
   return children;
 };
 
-// Main navigator - Tüm ekranı yeşil yap
+// Main navigator
 const AppNavigator = () => {
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const userRole = useSelector(selectUserRole);
@@ -848,7 +981,7 @@ const AppNavigator = () => {
     hasUserProfile,
   });
 
-  // Daha güvenilir profil kontrolü
+  // More reliable profile check
   const profileExists = userProfile && Object.keys(userProfile).length > 0;
   const shouldShowCreateProfile =
     isAuthenticated && userRole && (!hasUserProfile || !profileExists);

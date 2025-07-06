@@ -112,7 +112,7 @@ const ProfileScreen = ({ navigation }) => {
       }
     >
       {/* Profile Header */}
-      <View className="bg-green-700 pt-12 pb-20 items-center">
+      <View className="bg-[#A0E79E] pt-12 pb-20 items-center">
         <View className="w-24 h-24 rounded-full bg-white justify-center items-center mb-3 border-4 border-white">
           {userProfile?.profileImageUrl ? (
             <Image
@@ -121,7 +121,7 @@ const ProfileScreen = ({ navigation }) => {
               resizeMode="cover"
             />
           ) : (
-            <Text className="text-3xl font-bold text-blue-500">
+            <Text className="text-3xl font-bold text-green-500">
               {currentUser?.name?.charAt(0) || "K"}
             </Text>
           )}
@@ -158,10 +158,10 @@ const ProfileScreen = ({ navigation }) => {
           {currentUser?.isTenantExpectationCompleted ||
             currentUser?.isLandlordExpectationCompleted ? (
             <TouchableOpacity
-              className="mt-5 bg-blue-50 py-3 rounded-lg"
+              className="mt-5 bg-green-50 py-3 rounded-lg"
               onPress={handleEditProfile}
             >
-              <Text className="text-blue-600 font-semibold text-center">
+              <Text className="text-green-600 font-semibold text-center">
                 Profili Düzenle
               </Text>
             </TouchableOpacity>
@@ -245,7 +245,7 @@ const ProfileScreen = ({ navigation }) => {
 
           <View className="flex-row justify-between mb-2">
             <View>
-              <Text className="text-2xl font-bold text-blue-500">
+              <Text className="text-2xl font-bold text-green-500">
                 {userRole === "EVSAHIBI"
                   ? userProfile?.rentalPosts?.length || "0"
                   : userProfile?.favouriteProperties?.length}
@@ -289,7 +289,7 @@ const ProfileScreen = ({ navigation }) => {
               );
             }}
           >
-            <View className="w-8 h-8 rounded-full bg-blue-100 justify-center items-center mr-3">
+            <View className="w-8 h-8 rounded-full bg-green-100 justify-center items-center mr-3">
               <Image
                 source={require("../../assets/logo-kirax.png")} // Replace with appropriate icon
                 className="w-4 h-4"

@@ -109,7 +109,7 @@ const PostDetailScreen = ({ route, navigation }) => {
       Alert.alert(
         "Hata",
         error.data?.message ||
-          "Teklif gönderilirken bir hata oluştu. Lütfen tekrar deneyin."
+        "Teklif gönderilirken bir hata oluştu. Lütfen tekrar deneyin."
       );
     }
   };
@@ -257,7 +257,7 @@ const PostDetailScreen = ({ route, navigation }) => {
       <View className="flex-1 justify-center items-center bg-white">
         <Text className="text-lg text-gray-700">İlan bulunamadı</Text>
         <TouchableOpacity
-          className="mt-4 bg-blue-500 px-6 py-2 rounded-lg"
+          className="mt-4 bg-green-500 px-6 py-2 rounded-lg"
           onPress={() => navigation.goBack()}
         >
           <Text className="text-white font-semibold">Geri Dön</Text>
@@ -343,11 +343,10 @@ const PostDetailScreen = ({ route, navigation }) => {
                   {images.map((_, index) => (
                     <TouchableOpacity
                       key={`dot-${index}`}
-                      className={`mx-1 h-2 w-2 rounded-full ${
-                        index === currentImageIndex
-                          ? "bg-white"
-                          : "bg-white bg-opacity-50"
-                      }`}
+                      className={`mx-1 h-2 w-2 rounded-full ${index === currentImageIndex
+                        ? "bg-white"
+                        : "bg-white bg-opacity-50"
+                        }`}
                       onPress={() => goToImage(index)}
                     />
                   ))}
@@ -367,7 +366,7 @@ const PostDetailScreen = ({ route, navigation }) => {
             <Text className="text-2xl font-bold text-gray-800">
               {post.ilanBasligi}
             </Text>
-            <Text className="text-xl font-bold text-blue-600">
+            <Text className="text-xl font-bold text-green-600">
               {post.kiraFiyati} {post.paraBirimi || "₺"}
             </Text>
           </View>
@@ -424,8 +423,8 @@ const PostDetailScreen = ({ route, navigation }) => {
                   {post.status === 0
                     ? "Aktif"
                     : post.status === 1
-                    ? "Kiralandı"
-                    : "Kapalı"}
+                      ? "Kiralandı"
+                      : "Kapalı"}
                 </Text>
               </View>
 
@@ -595,9 +594,9 @@ const PostDetailScreen = ({ route, navigation }) => {
                   .map((feature) => (
                     <View
                       key={`feature-${feature.key}`}
-                      className="bg-blue-50 rounded-lg px-3 py-2 mr-2 mb-2"
+                      className="bg-green-50 rounded-lg px-3 py-2 mr-2 mb-2"
                     >
-                      <Text className="text-blue-700">{feature.label}</Text>
+                      <Text className="text-green-700">{feature.label}</Text>
                     </View>
                   ));
               })()}
@@ -618,14 +617,14 @@ const PostDetailScreen = ({ route, navigation }) => {
                 })
               }
             >
-              <View className="w-12 h-12 rounded-full bg-blue-100 justify-center items-center mr-3">
+              <View className="w-12 h-12 rounded-full bg-green-100 justify-center items-center mr-3">
                 {post.user?.profileImageUrl ? (
                   <Image
                     source={{ uri: post.user.profileImageUrl }}
                     className="w-full h-full rounded-full"
                   />
                 ) : (
-                  <Text className="text-xl font-bold text-blue-500">
+                  <Text className="text-xl font-bold text-green-500">
                     {post.user?.name?.charAt(0) || "E"}
                   </Text>
                 )}
@@ -638,7 +637,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                 <Text className="text-sm text-gray-500">Ev sahibi</Text>
               </View>
 
-              <View className="bg-blue-500 px-3 py-1 rounded">
+              <View className="bg-green-500 px-3 py-1 rounded">
                 <Text className="text-white">Profili Gör</Text>
               </View>
             </TouchableOpacity>
@@ -663,7 +662,7 @@ const PostDetailScreen = ({ route, navigation }) => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              className="flex-1 bg-blue-500 py-3 rounded-lg"
+              className="flex-1 bg-green-500 py-3 rounded-lg"
               onPress={() => setIsOfferModalVisible(true)}
               disabled={post.status !== 0} // Only allow offers for active listings
             >
@@ -677,18 +676,18 @@ const PostDetailScreen = ({ route, navigation }) => {
         {userRole === "EVSAHIBI" && post.landlordId === currentUser?.id && (
           <>
             <TouchableOpacity
-              className="flex-1 bg-blue-50 py-3 rounded-lg mr-2"
+              className="flex-1 bg-green-50 py-3 rounded-lg mr-2"
               onPress={() =>
                 navigation.navigate("EditPost", { postId: post.id })
               }
             >
-              <Text className="text-blue-700 font-semibold text-center">
+              <Text className="text-green-700 font-semibold text-center">
                 Düzenle
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              className="flex-1 bg-blue-500 py-3 rounded-lg"
+              className="flex-1 bg-green-500 py-3 rounded-lg"
               onPress={() => navigation.navigate("Offers", { postId: post.id })}
             >
               <Text className="text-white font-semibold text-center">
@@ -748,9 +747,8 @@ const PostDetailScreen = ({ route, navigation }) => {
               </View>
 
               <TouchableOpacity
-                className={`py-3 rounded-lg mb-3 ${
-                  isCreatingOffer ? "bg-blue-300" : "bg-blue-500"
-                }`}
+                className={`py-3 rounded-lg mb-3 ${isCreatingOffer ? "bg-green-300" : "bg-green-500"
+                  }`}
                 onPress={handleCreateOffer}
                 disabled={isCreatingOffer}
               >
