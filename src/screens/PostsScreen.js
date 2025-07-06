@@ -4,12 +4,12 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
-  Image,
   TextInput,
   ActivityIndicator,
   RefreshControl,
   Alert,
 } from "react-native";
+import { Image } from 'expo-image'; // Expo Image import
 import { useSelector, useDispatch } from "react-redux";
 import { selectUserRole, selectCurrentUser } from "../redux/slices/authSlice";
 import {
@@ -30,21 +30,12 @@ import { MaterialIcons } from "@expo/vector-icons";
 const Logger = {
   info: (component, action, data = {}) => {
     console.log(`[${component}] ${action}`, data);
-
-    // You could send this to a remote logging service
-    // sendToRemoteLogger('info', component, action, data);
   },
   error: (component, action, error) => {
     console.error(`[${component}] ERROR: ${action}`, error);
-
-    // You could send errors to a remote error tracking service
-    // sendToErrorTracker(component, action, error);
   },
   event: (eventName, properties = {}) => {
     console.log(`[EVENT] ${eventName}`, properties);
-
-    // You could send this to an analytics service
-    // trackEvent(eventName, properties);
   },
 };
 
@@ -284,7 +275,8 @@ const PostsScreen = ({ navigation }) => {
 
     // Get the appropriate posts based on user role
     if (userRole === "EVSAHIBI") {
-      filteredPosts = userPosts || [];
+      // Use API data for landlords, NOT Redux store
+      filteredPosts = landlordListingsData?.result || [];
     } else {
       // For tenants, use data from all posts query
       filteredPosts = allPostsData?.result || [];
@@ -295,9 +287,9 @@ const PostsScreen = ({ navigation }) => {
       const query = searchQuery.toLowerCase();
       filteredPosts = filteredPosts.filter(
         (post) =>
-          (post.title && post.title.toLowerCase().includes(query)) ||
-          (post.location && post.location.toLowerCase().includes(query)) ||
-          (post.description && post.description.toLowerCase().includes(query))
+          (post.ilanBasligi && post.ilanBasligi.toLowerCase().includes(query)) ||
+          (post.il && post.il.toLowerCase().includes(query)) ||
+          (post.postDescription && post.postDescription.toLowerCase().includes(query))
       );
     }
 
@@ -305,20 +297,20 @@ const PostsScreen = ({ navigation }) => {
     if (filters.location) {
       filteredPosts = filteredPosts.filter(
         (post) =>
-          post.location &&
-          post.location.toLowerCase().includes(filters.location.toLowerCase())
+          post.il &&
+          post.il.toLowerCase().includes(filters.location.toLowerCase())
       );
     }
 
     if (filters.priceMin !== null) {
       filteredPosts = filteredPosts.filter(
-        (post) => post.price && post.price >= filters.priceMin
+        (post) => post.kiraFiyati && post.kiraFiyati >= filters.priceMin
       );
     }
 
     if (filters.priceMax !== null) {
       filteredPosts = filteredPosts.filter(
-        (post) => post.price && post.price <= filters.priceMax
+        (post) => post.kiraFiyati && post.kiraFiyati <= filters.priceMax
       );
     }
 
@@ -328,21 +320,28 @@ const PostsScreen = ({ navigation }) => {
       );
     }
 
+    // Remove duplicates based on postId (extra safety)
+    const uniquePosts = filteredPosts.reduce((acc, current) => {
+      const isDuplicate = acc.find(item => item.postId === current.postId);
+      if (!isDuplicate) {
+        acc.push(current);
+      }
+      return acc;
+    }, []);
+
     // Log filtered results count
     Logger.info(COMPONENT_NAME, "Posts filtered", {
-      totalCount: filteredPosts.length,
+      totalCount: uniquePosts.length,
+      originalCount: filteredPosts.length,
       hasSearchQuery: !!searchQuery.trim(),
       hasFilters: Object.values(filters).some((val) => val !== null),
     });
 
-    return filteredPosts;
+    return uniquePosts;
   };
 
   // Render post item
   const renderPostItem = ({ item }) => {
-    // Log the item data for debugging
-    // console.log("Post Item Data:", JSON.stringify(item, null, 2));
-
     return (
       <TouchableOpacity
         className="bg-white rounded-2xl overflow-hidden mb-4 shadow-lg border border-gray-100"
@@ -350,12 +349,17 @@ const PostsScreen = ({ navigation }) => {
         activeOpacity={0.95}
       >
         <View className="relative">
-          {/* Post image */}
+          {/* Post image with Expo Image */}
           {item.postImages && item.postImages.length > 0 ? (
             <Image
               source={{ uri: item.postImages[0].postImageUrl }}
-              className="w-full h-52"
-              resizeMode="cover"
+              style={{ width: '100%', height: 208 }} // h-52 = 208px
+              contentFit="cover"
+              transition={200} // Smooth transition
+              placeholder={{
+                uri: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y5ZmFmYiIvPjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Yw7xrbGVuaXlvcjwvdGV4dD48L3N2Zz4='
+              }}
+              cachePolicy="memory-disk" // Aggressive caching
               onError={() =>
                 Logger.error(COMPONENT_NAME, "Image load failed", {
                   postId: item.postId,
@@ -376,7 +380,7 @@ const PostsScreen = ({ navigation }) => {
               className={`px-3 py-1.5 rounded-full backdrop-blur-sm ${item.status === 0
                 ? "bg-green-500/90"
                 : item.status === 1
-                  ? "bg-blue-500/90"
+                  ? "bg-green-500/90"
                   : "bg-gray-500/90"
                 }`}
             >
@@ -409,8 +413,8 @@ const PostsScreen = ({ navigation }) => {
             <Text className="text-lg font-bold text-gray-900 flex-1 mr-3" numberOfLines={2}>
               {item.ilanBasligi || "İlan başlığı yok"}
             </Text>
-            <View className="bg-blue-50 px-3 py-1 rounded-lg">
-              <Text className="text-lg font-bold text-blue-600">
+            <View className="bg-green-50 px-3 py-1 rounded-lg">
+              <Text className="text-lg font-bold text-green-600">
                 {`${item.kiraFiyati} ₺`}
               </Text>
             </View>
@@ -457,20 +461,20 @@ const PostsScreen = ({ navigation }) => {
           {userRole === "EVSAHIBI" && item.userId === currentUser?.id && (
             <View className="flex-row">
               <TouchableOpacity
-                className="flex-1 bg-blue-50 py-3 rounded-lg mr-2 border border-blue-100"
+                className="flex-1 bg-green-50 py-3 rounded-lg mr-2 border border-green-100"
                 onPress={() => handleEditPostNavigation(item.postId)}
                 activeOpacity={0.7}
               >
                 <View className="flex-row items-center justify-center">
-                  <MaterialIcons name="edit" size={16} color="#3B82F6" />
-                  <Text className="text-blue-700 font-semibold text-center text-sm ml-1">
+                  <MaterialIcons name="edit" size={16} color="#538d22" />
+                  <Text className="text-green-700 font-semibold text-center text-sm ml-1">
                     Düzenle
                   </Text>
                 </View>
               </TouchableOpacity>
 
               <TouchableOpacity
-                className="flex-1 bg-blue-500 py-3 rounded-lg mr-2 shadow-sm"
+                className="flex-1 bg-green-500 py-3 rounded-lg mr-2 shadow-sm"
                 onPress={() => handleOffersNavigation(item.postId)}
                 activeOpacity={0.8}
               >
@@ -525,7 +529,7 @@ const PostsScreen = ({ navigation }) => {
         </Text>
         {userRole === "EVSAHIBI" && (
           <TouchableOpacity
-            className="bg-blue-500 px-6 py-3 rounded-lg"
+            className="bg-green-500 px-6 py-3 rounded-lg"
             onPress={handleCreatePostNavigation}
           >
             <Text className="text-white font-semibold">Yeni İlan Oluştur</Text>
@@ -586,7 +590,7 @@ const PostsScreen = ({ navigation }) => {
             <Text className="text-gray-600 mb-1">Durum</Text>
             <View className="flex-row mt-1">
               <TouchableOpacity
-                className={`mr-2 px-3 py-1 rounded-full ${localFilters.status === 0 ? "bg-blue-500" : "bg-gray-200"
+                className={`mr-2 px-3 py-1 rounded-full ${localFilters.status === 0 ? "bg-green-500" : "bg-gray-200"
                   }`}
                 onPress={() => {
                   setLocalFilters({ ...localFilters, status: 0 });
@@ -602,7 +606,7 @@ const PostsScreen = ({ navigation }) => {
               </TouchableOpacity>
 
               <TouchableOpacity
-                className={`mr-2 px-3 py-1 rounded-full ${localFilters.status === 1 ? "bg-blue-500" : "bg-gray-200"
+                className={`mr-2 px-3 py-1 rounded-full ${localFilters.status === 1 ? "bg-green-500" : "bg-gray-200"
                   }`}
                 onPress={() => {
                   setLocalFilters({ ...localFilters, status: 1 });
@@ -618,7 +622,7 @@ const PostsScreen = ({ navigation }) => {
               </TouchableOpacity>
 
               <TouchableOpacity
-                className={`px-3 py-1 rounded-full ${localFilters.status === 2 ? "bg-blue-500" : "bg-gray-200"
+                className={`px-3 py-1 rounded-full ${localFilters.status === 2 ? "bg-green-500" : "bg-gray-200"
                   }`}
                 onPress={() => {
                   setLocalFilters({ ...localFilters, status: 2 });
@@ -647,7 +651,7 @@ const PostsScreen = ({ navigation }) => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="flex-1 bg-blue-500 py-2 rounded-lg"
+            className="flex-1 bg-green-500 py-2 rounded-lg"
             onPress={applyFilters}
           >
             <Text className="text-white font-semibold text-center">Uygula</Text>
@@ -666,7 +670,7 @@ const PostsScreen = ({ navigation }) => {
       <View className="flex-row">
         {userRole === "EVSAHIBI" && (
           <TouchableOpacity
-            className="bg-blue-500 p-2 rounded-full mr-2"
+            className="bg-green-500 p-2 rounded-full mr-2"
             onPress={handleCreatePostNavigation}
           >
             <MaterialIcons name="add" size={22} color="#FFFFFF" />
@@ -676,7 +680,7 @@ const PostsScreen = ({ navigation }) => {
         <TouchableOpacity
           className={`p-2 rounded-full ${isFilterVisible ||
             Object.values(filters).some((val) => val !== null)
-            ? "bg-blue-500"
+            ? "bg-green-500"
             : "bg-gray-200"
             }`}
           onPress={() => {
@@ -708,8 +712,8 @@ const PostsScreen = ({ navigation }) => {
     return (
       <View className="flex-row flex-wrap mb-4">
         {filters.location && (
-          <View className="bg-blue-100 rounded-full px-3 py-1 mr-2 mb-1 flex-row items-center">
-            <Text className="text-blue-800 text-sm mr-1">
+          <View className="bg-green-100 rounded-full px-3 py-1 mr-2 mb-1 flex-row items-center">
+            <Text className="text-green-800 text-sm mr-1">
               Konum: {filters.location}
             </Text>
             <TouchableOpacity
@@ -725,8 +729,8 @@ const PostsScreen = ({ navigation }) => {
         )}
 
         {filters.priceMin !== null && (
-          <View className="bg-blue-100 rounded-full px-3 py-1 mr-2 mb-1 flex-row items-center">
-            <Text className="text-blue-800 text-sm mr-1">
+          <View className="bg-green-100 rounded-full px-3 py-1 mr-2 mb-1 flex-row items-center">
+            <Text className="text-green-800 text-sm mr-1">
               Min: {filters.priceMin} ₺
             </Text>
             <TouchableOpacity
@@ -742,8 +746,8 @@ const PostsScreen = ({ navigation }) => {
         )}
 
         {filters.priceMax !== null && (
-          <View className="bg-blue-100 rounded-full px-3 py-1 mr-2 mb-1 flex-row items-center">
-            <Text className="text-blue-800 text-sm mr-1">
+          <View className="bg-green-100 rounded-full px-3 py-1 mr-2 mb-1 flex-row items-center">
+            <Text className="text-green-800 text-sm mr-1">
               Max: {filters.priceMax} ₺
             </Text>
             <TouchableOpacity
@@ -759,8 +763,8 @@ const PostsScreen = ({ navigation }) => {
         )}
 
         {filters.status !== null && (
-          <View className="bg-blue-100 rounded-full px-3 py-1 mr-2 mb-1 flex-row items-center">
-            <Text className="text-blue-800 text-sm mr-1">
+          <View className="bg-green-100 rounded-full px-3 py-1 mr-2 mb-1 flex-row items-center">
+            <Text className="text-green-800 text-sm mr-1">
               Durum:{" "}
               {filters.status === 0
                 ? "Aktif"
@@ -841,7 +845,7 @@ const PostsScreen = ({ navigation }) => {
         <FlatList
           data={filteredPosts}
           renderItem={renderPostItem}
-          keyExtractor={(item) => item.postId.toString()}
+          keyExtractor={(item, index) => `post_${item.postId}_${index}`}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }}
           ListEmptyComponent={renderEmptyState}
@@ -852,6 +856,12 @@ const PostsScreen = ({ navigation }) => {
             Logger.event("end_of_list_reached");
           }}
           onEndReachedThreshold={0.5}
+          // Performance optimizations for image loading
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          updateCellsBatchingPeriod={100}
+          initialNumToRender={5}
+          windowSize={10}
         />
       )}
     </View>

@@ -70,7 +70,7 @@ const CustomDropdown = ({
             <View className="p-4 border-b border-gray-200 flex-row justify-between items-center">
               <Text className="text-lg font-bold text-gray-800">{label}</Text>
               <TouchableOpacity onPress={() => setIsOpen(false)}>
-                <Text className="text-blue-500 font-bold">Kapat</Text>
+                <Text className="text-green-500 font-bold">Kapat</Text>
               </TouchableOpacity>
             </View>
 
@@ -79,7 +79,7 @@ const CustomDropdown = ({
               keyExtractor={(item) => item.toString()}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  className={`p-4 border-b border-gray-100 ${value === item ? "bg-blue-50" : ""
+                  className={`p-4 border-b border-gray-100 ${value === item ? "bg-green-50" : ""
                     }`}
                   onPress={() => {
                     setValue(item);
@@ -88,7 +88,7 @@ const CustomDropdown = ({
                 >
                   <Text
                     className={`text-base ${value === item
-                      ? "text-blue-500 font-semibold"
+                      ? "text-green-500 font-semibold"
                       : "text-gray-700"
                       }`}
                   >
@@ -685,7 +685,7 @@ const CreateProfileScreen = (props) => {
               className="p-4 border-b border-gray-200"
               onPress={pickImageFromGallery}
             >
-              <Text className="text-lg text-blue-500 text-center">
+              <Text className="text-lg text-green-500 text-center">
                 Galeriden Seç
               </Text>
             </TouchableOpacity>
@@ -694,7 +694,7 @@ const CreateProfileScreen = (props) => {
               className="p-4 border-b border-gray-200"
               onPress={takePhoto}
             >
-              <Text className="text-lg text-blue-500 text-center">
+              <Text className="text-lg text-green-500 text-center">
                 Fotoğraf Çek
               </Text>
             </TouchableOpacity>

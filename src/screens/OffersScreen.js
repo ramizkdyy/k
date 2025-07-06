@@ -38,10 +38,10 @@ const OffersScreen = () => {
     refetch,
     error,
   } = isTenant
-    ? useGetSentOffersQuery(currentUser?.id, {
+      ? useGetSentOffersQuery(currentUser?.id, {
         skip: !currentUser?.id,
       })
-    : useGetReceivedOffersQuery(currentUser?.id, {
+      : useGetReceivedOffersQuery(currentUser?.id, {
         skip: !currentUser?.id,
       });
 
@@ -105,8 +105,7 @@ const OffersScreen = () => {
 
       offersData.result.rentalPosts.forEach((post, postIndex) => {
         console.log(
-          `Post ${postIndex}: ${post.ilanBasligi}, has ${
-            post.offers?.length || 0
+          `Post ${postIndex}: ${post.ilanBasligi}, has ${post.offers?.length || 0
           } offers`
         );
 
@@ -206,7 +205,7 @@ const OffersScreen = () => {
               Alert.alert(
                 "Hata",
                 error?.data?.message ||
-                  "Teklif kabul edilirken bir hata oluştu."
+                "Teklif kabul edilirken bir hata oluştu."
               );
             }
           },
@@ -330,12 +329,12 @@ const OffersScreen = () => {
             </View>
 
             <View className="flex-row items-center mb-2">
-              <Text className="font-bold text-lg text-blue-600">
+              <Text className="font-bold text-lg text-green-600">
                 {post.paraBirimi === "USD"
                   ? "$"
                   : post.paraBirimi === "EUR"
-                  ? "€"
-                  : "₺"}
+                    ? "€"
+                    : "₺"}
                 {item.offerAmount?.toLocaleString() || "0"}
               </Text>
               {post.kiraFiyati && (
@@ -344,8 +343,8 @@ const OffersScreen = () => {
                   {post.paraBirimi === "USD"
                     ? "$"
                     : post.paraBirimi === "EUR"
-                    ? "€"
-                    : "₺"}
+                      ? "€"
+                      : "₺"}
                   {post.kiraFiyati.toLocaleString()})
                 </Text>
               )}
@@ -440,20 +439,18 @@ const OffersScreen = () => {
         {tabs.map((tab) => (
           <TouchableOpacity
             key={tab.key}
-            className={`flex-1 py-3 relative ${
-              selectedTab === tab.key ? "border-b-2 border-blue-500" : ""
-            }`}
+            className={`flex-1 py-3 relative ${selectedTab === tab.key ? "border-b-2 border-green-500" : ""
+              }`}
             onPress={() => setSelectedTab(tab.key)}
           >
             <Text
-              className={`text-center font-semibold ${
-                selectedTab === tab.key ? "text-blue-500" : "text-gray-600"
-              }`}
+              className={`text-center font-semibold ${selectedTab === tab.key ? "text-green-500" : "text-gray-600"
+                }`}
             >
               {tab.label}
             </Text>
             {tab.count > 0 && (
-              <View className="absolute -top-1 right-4 bg-blue-500 rounded-full px-2 py-0.5 min-w-[20px]">
+              <View className="absolute -top-1 right-4 bg-green-500 rounded-full px-2 py-0.5 min-w-[20px]">
                 <Text className="text-white text-xs text-center">
                   {tab.count}
                 </Text>
@@ -508,7 +505,7 @@ const OffersScreen = () => {
           deneyin.{" "}
         </Text>{" "}
         <TouchableOpacity
-          className="mt-4 bg-blue-500 px-6 py-3 rounded-lg"
+          className="mt-4 bg-green-500 px-6 py-3 rounded-lg"
           onPress={handleRefresh}
         >
           {" "}

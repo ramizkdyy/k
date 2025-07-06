@@ -83,9 +83,28 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   const nearFromYouProperties = nearbyData?.result?.nearFromYou || [];
 
   // Combine both arrays for display, prioritizing nearFromYou
-  const allProperties = [...nearFromYouProperties, ...nearbyProperties];
+  // const allProperties = [...nearFromYouProperties, ...nearbyProperties];
 
+  const allProperties = React.useMemo(() => {
+    const combined = [...nearFromYouProperties, ...nearbyProperties];
 
+    // postId'ye göre duplicate'ları kaldır
+    const uniqueProperties = combined.reduce((acc, current) => {
+      const isDuplicate = acc.find(item => item.postId === current.postId);
+      if (!isDuplicate) {
+        acc.push(current);
+      }
+      return acc;
+    }, []);
+
+    console.log("===== PROPERTY DEDUPLICATION =====");
+    console.log("Combined count:", combined.length);
+    console.log("Unique count:", uniqueProperties.length);
+    console.log("Removed duplicates:", combined.length - uniqueProperties.length);
+    console.log("=================================");
+
+    return uniqueProperties;
+  }, [nearFromYouProperties, nearbyProperties]);
   // Log the response for debugging
   // useEffect(() => {
   //   if (nearbyData) {
@@ -262,8 +281,8 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   );
 
   const handleSeeAll = () => {
-    // Navigate to a full list screen with location-based results
-    navigation.navigate("PropertySearch", {
+    // Navigate to AllNearbyPropertiesScreen with location data
+    navigation.navigate("AllNearbyProperties", {
       initialLocation: userLocation,
       searchType: "nearby",
     });
@@ -332,15 +351,15 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
           </Text>
           {allProperties.length > 0 && (
             <Text className="text-sm text-gray-500">
-              {nearFromYouProperties.length} yakın • {nearbyProperties.length}{" "}
-              önerilen
+              {nearFromYouProperties.length} yakın • {nearbyProperties.length} önerilen
             </Text>
           )}
         </View>
 
+        {/* Tümünü Gör butonu - sadece veri varsa göster */}
         {allProperties.length > 0 && (
           <TouchableOpacity onPress={handleSeeAll}>
-            <Text className="text-gray-400h font-normal">Tümünü Gör</Text>
+            <Text className="text-green-500 font-medium text-sm">Tümünü Gör</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -355,7 +374,6 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
           <Text className="text-[#A0E79E] text-sm mr-1">
             {isRefreshing ? "Yenileniyor..." : "Yenile"}
           </Text>
-
         </TouchableOpacity>
       </View>
 
@@ -371,7 +389,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
         <FlatList
           data={allProperties}
           renderItem={renderPropertyCard}
-          keyExtractor={(item) => item.postId.toString()}
+          keyExtractor={(item, index) => `property_${item.postId}_${index}`} // Unique key için index ekle
           horizontal
           showsHorizontalScrollIndicator={false}
           showsVerticalScrollIndicator={false}

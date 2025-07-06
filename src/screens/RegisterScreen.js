@@ -219,10 +219,10 @@ const RegisterScreen = ({ navigation }) => {
             {/* Month/Year Navigation */}
             <View className="flex-row justify-between items-center mb-4">
               <TouchableOpacity onPress={() => navigateYear(-1)} className="p-2">
-                <Text className="text-blue-600 font-medium">‹‹</Text>
+                <Text className="text-green-500 font-medium">‹‹</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => navigateMonth(-1)} className="p-2">
-                <FontAwesomeIcon icon={faChevronLeft} size={16} color="#3b82f6" />
+                <FontAwesomeIcon icon={faChevronLeft} size={16} color="#22c55e" />
               </TouchableOpacity>
 
               <Text className="text-lg font-semibold text-gray-800">
@@ -230,10 +230,10 @@ const RegisterScreen = ({ navigation }) => {
               </Text>
 
               <TouchableOpacity onPress={() => navigateMonth(1)} className="p-2">
-                <FontAwesomeIcon icon={faChevronRight} size={16} color="#3b82f6" />
+                <FontAwesomeIcon icon={faChevronRight} size={16} color="#22c55e" />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => navigateYear(1)} className="p-2">
-                <Text className="text-blue-600 font-medium">››</Text>
+                <Text className="text-green-500 font-medium">››</Text>
               </TouchableOpacity>
             </View>
 
@@ -258,9 +258,9 @@ const RegisterScreen = ({ navigation }) => {
                 >
                   <View
                     className={`w-10 h-10 rounded-full justify-center items-center ${isSelectedDate(date)
-                      ? 'bg-blue-600'
+                      ? 'bg-green-600'
                       : isToday(date)
-                        ? 'bg-blue-100'
+                        ? 'bg-green-100'
                         : ''
                       }`}
                   >
@@ -268,7 +268,7 @@ const RegisterScreen = ({ navigation }) => {
                       className={`text-sm ${isSelectedDate(date)
                         ? 'text-white font-semibold'
                         : isToday(date)
-                          ? 'text-blue-600 font-semibold'
+                          ? 'text-green-600 font-semibold'
                           : 'text-gray-700'
                         }`}
                     >
@@ -346,7 +346,7 @@ const RegisterScreen = ({ navigation }) => {
               {genderOptions.map((option) => (
                 <TouchableOpacity
                   key={option.value}
-                  className="flex-row items-center p-4 bg-gray-50 rounded-xl border border-gray-200"
+                  className="flex-row items-center p-4"
                   onPress={() => handleGenderSelect(option.value)}
                 >
                   <Text className="text-2xl mr-4">{option.icon}</Text>
@@ -361,9 +361,9 @@ const RegisterScreen = ({ navigation }) => {
             {/* Cancel Button */}
             <TouchableOpacity
               onPress={onClose}
-              className="mt-6 p-4 bg-gray-100 rounded-xl items-center"
+              className="mt-6 p-4 rounded-xl items-center"
             >
-              <Text className="text-gray-700 font-medium text-lg">İptal</Text>
+              <Text className="text-green-600 font-medium text-lg">İptal</Text>
             </TouchableOpacity>
           </Animated.View>
         </View>

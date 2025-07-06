@@ -134,7 +134,7 @@ const RoleSelectionScreen = ({ navigation }) => {
         <View className="mb-8">
           <TouchableOpacity
             className={`bg-white p-5 rounded-xl mb-4 border-2 ${selectedRole === "EVSAHIBI"
-              ? "border-[#2C8700] bg-blue-50"
+              ? "border-[#2C8700] bg-green-50"
               : "border-gray-200"
               }`}
             onPress={() => setSelectedRole("EVSAHIBI")}
@@ -158,7 +158,7 @@ const RoleSelectionScreen = ({ navigation }) => {
 
           <TouchableOpacity
             className={`bg-white p-5 rounded-xl border-2 ${selectedRole === "KIRACI"
-              ? "border-[#2C8700] bg-blue-50"
+              ? "border-[#2C8700] bg-green-50"
               : "border-gray-200"
               }`}
             onPress={() => setSelectedRole("KIRACI")}

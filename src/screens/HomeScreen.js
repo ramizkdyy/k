@@ -232,7 +232,7 @@ const HomeScreen = ({ navigation }) => {
 
               <View className="flex-row flex-wrap justify-between">
                 <View className="w-[48%] bg-white rounded-xl p-4 mb-3 border border-gray-200">
-                  <Text className="text-2xl font-bold text-blue-500">3</Text>
+                  <Text className="text-2xl font-bold text-green-500">3</Text>
                   <Text className="text-sm text-gray-600">Aktif İlanlar</Text>
                 </View>
 
@@ -314,7 +314,7 @@ const HomeScreen = ({ navigation }) => {
                   >
                     <View
                       className={`w-10 h-10 rounded-full ${item === 1
-                        ? "bg-blue-100"
+                        ? "bg-green-100"
                         : item === 2
                           ? "bg-green-100"
                           : "bg-yellow-100"
@@ -322,7 +322,7 @@ const HomeScreen = ({ navigation }) => {
                     >
                       <Text
                         className={`${item === 1
-                          ? "text-blue-600"
+                          ? "text-green-600"
                           : item === 2
                             ? "text-green-600"
                             : "text-yellow-600"
@@ -361,7 +361,7 @@ const HomeScreen = ({ navigation }) => {
 
             <View className="flex-row flex-wrap justify-between">
               <TouchableOpacity
-                className="w-[48%] bg-blue-50 rounded-xl p-4 mb-3 border border-blue-100"
+                className="w-[48%] bg-green-50 rounded-xl p-4 mb-3 border border-green-100"
                 onPress={() => {
                   /* Navigate based on role */
                   userRole === "EVSAHIBI"
@@ -369,7 +369,7 @@ const HomeScreen = ({ navigation }) => {
                     : navigation.navigate("FindProperties");
                 }}
               >
-                <Text className="text-blue-800 font-semibold text-center">
+                <Text className="text-green-800 font-semibold text-center">
                   {userRole === "EVSAHIBI" ? "Yeni İlan Oluştur" : "İlan Ara"}
                 </Text>
               </TouchableOpacity>

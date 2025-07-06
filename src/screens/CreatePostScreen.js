@@ -470,7 +470,7 @@ const CreatePostScreen = ({ navigation, route }) => {
       Alert.alert(
         "Hata",
         error.data?.message ||
-          "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin."
+        "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin."
       );
     }
   };
@@ -578,7 +578,7 @@ const CreatePostScreen = ({ navigation, route }) => {
                 editable={false}
               />
               <TouchableOpacity
-                className="bg-blue-500 rounded-lg p-3"
+                className="bg-green-500 rounded-lg p-3"
                 onPress={() => setShowLocationPicker(true)}
               >
                 <MaterialIcons name="location-on" size={24} color="white" />
@@ -711,15 +711,13 @@ const CreatePostScreen = ({ navigation, route }) => {
               {propertyTypes.map((type) => (
                 <TouchableOpacity
                   key={type}
-                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${
-                    propertyType === type ? "bg-blue-500" : "bg-gray-200"
-                  }`}
+                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${propertyType === type ? "bg-green-500" : "bg-gray-200"
+                    }`}
                   onPress={() => setPropertyType(type)}
                 >
                   <Text
-                    className={`${
-                      propertyType === type ? "text-white" : "text-gray-700"
-                    }`}
+                    className={`${propertyType === type ? "text-white" : "text-gray-700"
+                      }`}
                   >
                     {type}
                   </Text>
@@ -737,15 +735,13 @@ const CreatePostScreen = ({ navigation, route }) => {
               {heatingTypes.map((type) => (
                 <TouchableOpacity
                   key={type}
-                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${
-                    isitmaTipi === type ? "bg-blue-500" : "bg-gray-200"
-                  }`}
+                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${isitmaTipi === type ? "bg-green-500" : "bg-gray-200"
+                    }`}
                   onPress={() => setIsitmaTipi(type)}
                 >
                   <Text
-                    className={`${
-                      isitmaTipi === type ? "text-white" : "text-gray-700"
-                    }`}
+                    className={`${isitmaTipi === type ? "text-white" : "text-gray-700"
+                      }`}
                   >
                     {type}
                   </Text>
@@ -763,15 +759,13 @@ const CreatePostScreen = ({ navigation, route }) => {
               {usageStatusOptions.map((status) => (
                 <TouchableOpacity
                   key={status}
-                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${
-                    kullanimDurumu === status ? "bg-blue-500" : "bg-gray-200"
-                  }`}
+                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${kullanimDurumu === status ? "bg-green-500" : "bg-gray-200"
+                    }`}
                   onPress={() => setKullanimDurumu(status)}
                 >
                   <Text
-                    className={`${
-                      kullanimDurumu === status ? "text-white" : "text-gray-700"
-                    }`}
+                    className={`${kullanimDurumu === status ? "text-white" : "text-gray-700"
+                      }`}
                   >
                     {status}
                   </Text>
@@ -787,15 +781,13 @@ const CreatePostScreen = ({ navigation, route }) => {
               {["Sahibinden", "Emlakçıdan"].map((type) => (
                 <TouchableOpacity
                   key={type}
-                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${
-                    kimden === type ? "bg-blue-500" : "bg-gray-200"
-                  }`}
+                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${kimden === type ? "bg-green-500" : "bg-gray-200"
+                    }`}
                   onPress={() => setKimden(type)}
                 >
                   <Text
-                    className={`${
-                      kimden === type ? "text-white" : "text-gray-700"
-                    }`}
+                    className={`${kimden === type ? "text-white" : "text-gray-700"
+                      }`}
                   >
                     {type}
                   </Text>
@@ -940,17 +932,15 @@ const CreatePostScreen = ({ navigation, route }) => {
             ].map((option) => (
               <TouchableOpacity
                 key={option.label}
-                className={`mr-2 mb-2 px-3 py-2 rounded-full ${
-                  option.state === "true" ? "bg-blue-500" : "bg-gray-200"
-                }`}
+                className={`mr-2 mb-2 px-3 py-2 rounded-full ${option.state === "true" ? "bg-green-500" : "bg-gray-200"
+                  }`}
                 onPress={() =>
                   option.setState(option.state === "true" ? "false" : "true")
                 }
               >
                 <Text
-                  className={`${
-                    option.state === "true" ? "text-white" : "text-gray-700"
-                  }`}
+                  className={`${option.state === "true" ? "text-white" : "text-gray-700"
+                    }`}
                 >
                   {option.label}
                 </Text>
@@ -966,15 +956,13 @@ const CreatePostScreen = ({ navigation, route }) => {
             {["TL", "USD", "EUR"].map((currency) => (
               <TouchableOpacity
                 key={currency}
-                className={`mr-2 mb-2 px-3 py-2 rounded-full ${
-                  paraBirimi === currency ? "bg-blue-500" : "bg-gray-200"
-                }`}
+                className={`mr-2 mb-2 px-3 py-2 rounded-full ${paraBirimi === currency ? "bg-green-500" : "bg-gray-200"
+                  }`}
                 onPress={() => setParaBirimi(currency)}
               >
                 <Text
-                  className={`${
-                    paraBirimi === currency ? "text-white" : "text-gray-700"
-                  }`}
+                  className={`${paraBirimi === currency ? "text-white" : "text-gray-700"
+                    }`}
                 >
                   {currency}
                 </Text>
@@ -985,11 +973,10 @@ const CreatePostScreen = ({ navigation, route }) => {
 
         {/* Submit Button */}
         <TouchableOpacity
-          className={`py-3 rounded-lg mb-10 ${
-            isCreating || uploadStatus === "uploading"
-              ? "bg-blue-300"
-              : "bg-blue-500"
-          }`}
+          className={`py-3 rounded-lg mb-10 ${isCreating || uploadStatus === "uploading"
+              ? "bg-green-300"
+              : "bg-green-500"
+            }`}
           onPress={handleSubmit}
           disabled={isCreating || uploadStatus === "uploading"}
         >

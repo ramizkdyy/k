@@ -1285,7 +1285,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
                 Beklenti Profili Oluştur
               </Text>
               <TouchableOpacity onPress={() => navigation.goBack()}>
-                <Text className="text-blue-500">İptal</Text>
+                <Text className="text-green-500">İptal</Text>
               </TouchableOpacity>
             </View>
 
@@ -1301,7 +1301,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
               : renderTenantForm()}
 
             <TouchableOpacity
-              className="bg-blue-500 py-3 rounded-lg mb-10 mt-6"
+              className="bg-green-500 py-3 rounded-lg mb-10 mt-6"
               onPress={handleSubmit}
               disabled={isLoading}
             >
