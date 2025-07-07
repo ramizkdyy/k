@@ -10,10 +10,10 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
-  Modal,
   FlatList,
   Switch,
   SafeAreaView,
+  ActionSheetIOS,
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -79,18 +79,20 @@ const CustomDropdown = ({
               keyExtractor={(item) => item.toString()}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  className={`p-4 border-b border-gray-100 ${value === item ? "bg-green-50" : ""
-                    }`}
+                  className={`p-4 border-b border-gray-100 ${
+                    value === item ? "bg-green-50" : ""
+                  }`}
                   onPress={() => {
                     setValue(item);
                     setIsOpen(false);
                   }}
                 >
                   <Text
-                    className={`text-base ${value === item
-                      ? "text-green-500 font-semibold"
-                      : "text-gray-700"
-                      }`}
+                    className={`text-base ${
+                      value === item
+                        ? "text-green-500 font-semibold"
+                        : "text-gray-700"
+                    }`}
                   >
                     {item}
                   </Text>
@@ -103,7 +105,8 @@ const CustomDropdown = ({
     </View>
   );
 };
-import { useNavigation } from '@react-navigation/native';
+
+import { useNavigation } from "@react-navigation/native";
 
 const CreateProfileScreen = (props) => {
   const navigation = useNavigation();
@@ -116,7 +119,6 @@ const CreateProfileScreen = (props) => {
   const [coverImage, setCoverImage] = useState(null);
   const [previewProfileImage, setPreviewProfileImage] = useState(null);
   const [previewCoverImage, setPreviewCoverImage] = useState(null);
-  const [isImagePickerVisible, setIsImagePickerVisible] = useState(false);
   const [activeImageType, setActiveImageType] = useState(null); // 'profile' or 'cover'
 
   // Ev Sahibi (Landlord) için state değişkenleri
@@ -281,22 +283,96 @@ const CreateProfileScreen = (props) => {
     if (currentUser && userRole) {
       if (userRole === "EVSAHIBI") {
         setDescription(
-          `Merhaba, ben ${currentUser.name || ""} ${currentUser.surname || ""
+          `Merhaba, ben ${currentUser.name || ""} ${
+            currentUser.surname || ""
           }. Kiralayanlar için buradayım.`
         );
       } else {
         setProfileDescription(
-          `Merhaba, ben ${currentUser.name || ""} ${currentUser.surname || ""
+          `Merhaba, ben ${currentUser.name || ""} ${
+            currentUser.surname || ""
           }. Kiralık ev arıyorum.`
         );
       }
     }
   }, [currentUser, userRole]);
 
-  // Image picker functions
+  // Image picker functions - Native Action Sheet kullan
   const handleImageSelection = async (type) => {
     setActiveImageType(type);
-    setIsImagePickerVisible(true);
+
+    // Mevcut fotoğraf var mı kontrol et
+    const hasCurrentImage =
+      type === "profile" ? previewProfileImage : previewCoverImage;
+
+    if (Platform.OS === "ios") {
+      // iOS Native Action Sheet (alttan çıkar)
+      const options = hasCurrentImage
+        ? ["İptal", "Galeriden Seç", "Fotoğraf Çek", "Fotoğrafı Kaldır"]
+        : ["İptal", "Galeriden Seç", "Fotoğraf Çek"];
+
+      const destructiveButtonIndex = hasCurrentImage ? 3 : undefined;
+
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          title: type === "profile" ? "Profil Fotoğrafı" : "Kapak Fotoğrafı",
+          options: options,
+          cancelButtonIndex: 0,
+          destructiveButtonIndex: destructiveButtonIndex,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            pickImageFromGallery();
+          } else if (buttonIndex === 2) {
+            takePhoto();
+          } else if (buttonIndex === 3 && hasCurrentImage) {
+            removeImage();
+          }
+        }
+      );
+    } else {
+      // Android için Alert dialog (alttan çıkar)
+      const buttons = [
+        {
+          text: "Galeriden Seç",
+          onPress: () => pickImageFromGallery(),
+        },
+        {
+          text: "Fotoğraf Çek",
+          onPress: () => takePhoto(),
+        },
+      ];
+
+      if (hasCurrentImage) {
+        buttons.push({
+          text: "Fotoğrafı Kaldır",
+          onPress: () => removeImage(),
+          style: "destructive",
+        });
+      }
+
+      buttons.push({
+        text: "İptal",
+        style: "cancel",
+      });
+
+      Alert.alert(
+        type === "profile" ? "Profil Fotoğrafı" : "Kapak Fotoğrafı",
+        "Fotoğraf seçin",
+        buttons,
+        { cancelable: true }
+      );
+    }
+  };
+
+  const removeImage = () => {
+    if (activeImageType === "profile") {
+      setProfileImage(null);
+      setPreviewProfileImage(null);
+    } else {
+      setCoverImage(null);
+      setPreviewCoverImage(null);
+    }
   };
 
   const pickImageFromGallery = async () => {
@@ -325,12 +401,9 @@ const CreateProfileScreen = (props) => {
           setPreviewCoverImage(result.assets[0].uri);
         }
       }
-
-      setIsImagePickerVisible(false);
     } catch (error) {
       console.error("Image picker error:", error);
       Alert.alert("Hata", "Fotoğraf seçilirken bir hata oluştu.");
-      setIsImagePickerVisible(false);
     }
   };
 
@@ -360,12 +433,9 @@ const CreateProfileScreen = (props) => {
           setPreviewCoverImage(result.assets[0].uri);
         }
       }
-
-      setIsImagePickerVisible(false);
     } catch (error) {
       console.error("Camera error:", error);
       Alert.alert("Hata", "Fotoğraf çekilirken bir hata oluştu.");
-      setIsImagePickerVisible(false);
     }
   };
 
@@ -505,7 +575,7 @@ const CreateProfileScreen = (props) => {
         Alert.alert(
           "Oluşturma Hatası",
           (error && error.data && error.data.message) ||
-          "Profil oluşturulurken bir hata oluştu. Lütfen tekrar deneyin."
+            "Profil oluşturulurken bir hata oluştu. Lütfen tekrar deneyin."
         );
       }
 
@@ -518,7 +588,7 @@ const CreateProfileScreen = (props) => {
   if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="small" color="#000" />
         <Text className="mt-3 text-base text-gray-500">
           Profil oluşturuluyor...
         </Text>
@@ -535,25 +605,13 @@ const CreateProfileScreen = (props) => {
       >
         {/* Header */}
         <View className="px-5 py-6 flex-row items-center justify-between bg-white">
-          <Text className="text-xl font-bold text-gray-600">
-            Profil Oluştur
+          <Text style={{ fontSize: 20 }} className="font-bold text-gray-900">
+            Profil oluştur
           </Text>
           <View className="flex-row gap-2 items-center">
-            <Text className="text-green-600 mr-2">
-              {userRole === "EVSAHIBI" ? "Ev Sahibi" : "Kiracı"}
+            <Text className="text-gray-900 mr-2">
+              {userRole === "EVSAHIBI" ? "Ev sahibi" : "Kiracı"}
             </Text>
-            <TouchableOpacity
-              className="rounded-lg px-3 py-1 justify-center items-center bg-gray-500"
-              onPress={handleGoBack}
-            >
-              <Text className="text-white font-semibold">Geri Dön</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleLogout}
-              className="bg-red-500 px-3 py-1 rounded-md"
-            >
-              <Text className="text-white font-medium">Çıkış</Text>
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -564,68 +622,96 @@ const CreateProfileScreen = (props) => {
           keyboardShouldPersistTaps="handled"
         >
           {/* Profile image and cover photo section */}
-          <View className="relative mb-16">
+          <View className="relative mb-6 mt-4 px-5">
             {/* Cover photo */}
             <TouchableOpacity
-              className="w-full h-40 bg-gray-200"
+              activeOpacity={1}
+              style={{ boxShadow: "0px 0px 12px #00000014" }}
+              className="w-full h-40 bg-white rounded-3xl overflow-hidden"
               onPress={() => handleImageSelection("cover")}
             >
               {previewCoverImage ? (
-                <Image
-                  source={{ uri: previewCoverImage }}
-                  className="w-full h-full"
-                  resizeMode="cover"
-                />
-              ) : (
-                <View className="w-full h-full justify-center items-center">
-                  <Text className="text-gray-500">Kapak Fotoğrafı Ekle</Text>
-                </View>
-              )}
-              <View className="absolute right-4 bottom-4 bg-white p-2 rounded-full shadow-sm">
-                <Text className="text-green-600 font-bold">Düzenle</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Profile picture */}
-            <TouchableOpacity
-              className="absolute bottom-[-50] left-5"
-              onPress={() => handleImageSelection("profile")}
-            >
-              <View className="w-24 h-24 rounded-full bg-white border-4 border-white shadow-md overflow-hidden">
-                {previewProfileImage ? (
+                <View className="w-full h-full relative">
                   <Image
-                    source={{ uri: previewProfileImage }}
+                    source={{ uri: previewCoverImage }}
                     className="w-full h-full"
                     resizeMode="cover"
                   />
-                ) : (
-                  <View className="w-full h-full bg-gray-200 justify-center items-center">
-                    <Text className="text-gray-500 text-3xl font-bold">
-                      {currentUser?.name?.charAt(0) || "P"}
-                    </Text>
+                  {/* Cover photo edit button */}
+                  <View
+                    style={{ boxShadow: "0px 0px 12px #00000014" }}
+                    className="absolute right-4 bottom-4 bg-white p-2 rounded-full"
+                  >
+                    <FontAwesomeIcon icon={faPlus} size={16} color="#000" />
                   </View>
-                )}
-              </View>
-              <View className="absolute right-0 bottom-0 bg-green-500 w-8 h-8 rounded-full justify-center items-center">
-                <FontAwesomeIcon icon={faPlus} size={16} color="#fff" />
-              </View>
+                </View>
+              ) : (
+                <View className="w-full h-full justify-center items-center bg-white">
+                  {/* Add cover photo placeholder */}
+                  <View
+                    style={{ boxShadow: "0px 0px 12px #00000014" }}
+                    className="absolute right-4 bottom-4 bg-white p-2 rounded-full"
+                  >
+                    <FontAwesomeIcon icon={faPlus} size={16} color="#000" />
+                  </View>
+                </View>
+              )}
             </TouchableOpacity>
+
+            {/* Profile picture - positioned over cover photo */}
+            <View className="absolute inset-0 justify-center items-center">
+              <TouchableOpacity onPress={() => handleImageSelection("profile")}>
+                <View className="w-24 h-24 rounded-full bg-white border-4 border-white shadow-md overflow-hidden">
+                  {previewProfileImage ? (
+                    <Image
+                      source={{ uri: previewProfileImage }}
+                      className="w-full h-full"
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View className="w-full h-full bg-gray-100 justify-center items-center">
+                      <Text
+                        style={{ fontSize: 40 }}
+                        className="text-gray-900 font-bold"
+                      >
+                        {currentUser?.name?.charAt(0) || "P"}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <View
+                  style={{ boxShadow: "0px 0px 12px #00000014" }}
+                  className="absolute right-0 bottom-0 bg-white w-8 h-8 rounded-full justify-center items-center"
+                >
+                  <FontAwesomeIcon icon={faPlus} size={16} color="#000" />
+                </View>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Form fields */}
           <View className="px-5 pb-10">
             {/* Description field */}
-            <View className="rounded-xl p-5 mb-6">
-              <Text className="text-lg font-bold text-gray-800 mb-4">
-                {userRole === "EVSAHIBI"
-                  ? "Ev Sahibi Bilgileri"
-                  : "Kiracı Bilgileri"}
-              </Text>
-
+            <View className="rounded-xl mb-6">
               <View className="mb-2">
-                <Text className="text-gray-600 mb-2">Açıklama</Text>
+                <Text
+                  style={{ fontSize: 20 }}
+                  className="font-bold text-gray-800 mb-2"
+                >
+                  Açıklama
+                </Text>
+                <Text className="mb-4">
+                  {
+                    <Text style={{ fontSize: 12 }} className="text-gray-500">
+                      {userRole === "EVSAHIBI"
+                        ? "Kendinizi kısaca tanıtın ve ev sahibi olarak kiracınızdan beklentilerinizi paylaşın. (Örn: Evi uzun süreli ve sorumluluk sahibi bir kiracıya vermek istiyorum.)"
+                        : "Lütfen kendinizi tanıtın: kim olduğunuzu, mesleğinizi ve ev arama amacınızı yazın. (Örn: 25 yaşında bir yazılım mühendisiyim, işe yakın ve sessiz bir ev arıyorum.)"}
+                    </Text>
+                  }
+                </Text>
                 <TextInput
-                  className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200 min-h-[100px]"
+                  style={{ fontSize: 16 }}
+                  className=" p-3 rounded-lg border border-gray-900 min-h-[100px]"
                   value={
                     userRole === "EVSAHIBI" ? description : profileDescription
                   }
@@ -647,67 +733,26 @@ const CreateProfileScreen = (props) => {
 
             {/* Create button */}
             <TouchableOpacity
-              className={`rounded-lg h-12 justify-center items-center mt-48 ${isLoading ? "bg-green-300" : "bg-green-600"
-                }`}
+              activeOpacity={0.7}
+              className={`rounded-lg h-12 justify-center items-center
+bg-green-300`}
               onPress={handleCreateProfile}
               disabled={isLoading}
             >
               {isLoading ? (
                 <ActivityIndicator color="#ffffff" />
               ) : (
-                <Text className="text-white text-base font-semibold">
-                  Profili Oluştur
+                <Text
+                  style={{ fontSize: 16 }}
+                  className="text-white font-semibold"
+                >
+                  Devam et
                 </Text>
               )}
             </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {/* Image picker modal */}
-      <Modal
-        visible={isImagePickerVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setIsImagePickerVisible(false)}
-      >
-        <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <View className="bg-white rounded-t-xl shadow-lg">
-            <View className="p-4 border-b border-gray-200">
-              <Text className="text-xl font-bold text-gray-800 text-center">
-                {activeImageType === "profile"
-                  ? "Profil Fotoğrafı"
-                  : "Kapak Fotoğrafı"}
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              className="p-4 border-b border-gray-200"
-              onPress={pickImageFromGallery}
-            >
-              <Text className="text-lg text-green-500 text-center">
-                Galeriden Seç
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="p-4 border-b border-gray-200"
-              onPress={takePhoto}
-            >
-              <Text className="text-lg text-green-500 text-center">
-                Fotoğraf Çek
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="p-4 mb-6"
-              onPress={() => setIsImagePickerVisible(false)}
-            >
-              <Text className="text-lg text-red-500 text-center">İptal</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 };

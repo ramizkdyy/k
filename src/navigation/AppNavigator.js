@@ -2,10 +2,13 @@ import React, { useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { createDrawerNavigator } from '@react-navigation/drawer';
-import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
-import { useDrawerProgress } from '@react-navigation/drawer';
-import Animated, { interpolate, useAnimatedStyle } from 'react-native-reanimated';
+import { createDrawerNavigator } from "@react-navigation/drawer";
+import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
+import { useDrawerProgress } from "@react-navigation/drawer";
+import Animated, {
+  interpolate,
+  useAnimatedStyle,
+} from "react-native-reanimated";
 import { useSelector, useDispatch } from "react-redux";
 import {
   selectIsAuthenticated,
@@ -42,7 +45,7 @@ import ProfileExpectationScreen from "../screens/ProfileExpectationScreen";
 import OffersScreen from "../screens/OffersScreen";
 
 // Import icons
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 // Solid icons (for selected state)
 import {
   faHouse as faHouseSolid,
@@ -58,8 +61,8 @@ import {
   faCog,
   faQuestionCircle,
   faSignOutAlt,
-  faChevronLeft
-} from '@fortawesome/pro-solid-svg-icons';
+  faChevronLeft,
+} from "@fortawesome/pro-solid-svg-icons";
 // Regular icons (for unselected state)
 import {
   faHouse as faHouseRegular,
@@ -73,18 +76,18 @@ import {
   faComments as faCommentsRegular,
   faCog as faCogRegular,
   faQuestionCircle as faQuestionCircleRegular,
-  faSignOutAlt as faSignOutAltRegular
-} from '@fortawesome/pro-regular-svg-icons';
+  faSignOutAlt as faSignOutAltRegular,
+} from "@fortawesome/pro-regular-svg-icons";
 
 import {
   View,
   Text,
   ActivityIndicator,
   TouchableOpacity,
-  SafeAreaView
+  SafeAreaView,
 } from "react-native";
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get("window");
 
 // Loading screen to show while fetching profile
 const LoadingScreen = () => (
@@ -112,60 +115,60 @@ const CustomDrawerContent = (props) => {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#A0E79E' }}>
+    <View style={{ flex: 1, backgroundColor: "#A0E79E" }}>
       {/* Header section */}
-      <View style={{
-        backgroundColor: '#A0E79E',
-        padding: 20,
-        paddingTop: 50
-      }}>
-        <Text style={{
-          color: 'white',
-          fontSize: 18,
-          fontWeight: 'bold'
-        }}>
-          Merhaba, {userProfile?.firstName || 'Kullanıcı'}
+      <View
+        style={{
+          backgroundColor: "#A0E79E",
+          padding: 20,
+          paddingTop: 50,
+        }}
+      >
+        <Text
+          style={{
+            color: "white",
+            fontSize: 18,
+            fontWeight: "bold",
+          }}
+        >
+          Merhaba, {userProfile?.firstName || "Kullanıcı"}
         </Text>
       </View>
 
       {/* Drawer menu items */}
       <DrawerContentScrollView
         {...props}
-        style={{ backgroundColor: '#A0E79E' }}
-        contentContainerStyle={{ backgroundColor: '#A0E79E', flex: 1 }}
+        style={{ backgroundColor: "#A0E79E" }}
+        contentContainerStyle={{ backgroundColor: "#A0E79E", flex: 1 }}
       >
         <DrawerItem
           label="Home"
-          onPress={() => props.navigation.navigate('MainTabs')}
-          labelStyle={{ color: 'white', fontSize: 16 }}
+          onPress={() => props.navigation.navigate("MainTabs")}
+          labelStyle={{ color: "white", fontSize: 16 }}
           icon={({ focused, size }) => (
-            <FontAwesomeIcon
-              icon={faHouseRegular}
-              size={20}
-              color="white"
-            />
+            <FontAwesomeIcon icon={faHouseRegular} size={20} color="white" />
           )}
         />
 
         <DrawerItem
           label="Profile"
-          onPress={() => props.navigation.navigate('MainTabs', {
-            screen: 'LandlordProfile'
-          })}
-          labelStyle={{ color: 'white', fontSize: 16 }}
+          onPress={() =>
+            props.navigation.navigate("MainTabs", {
+              screen: "LandlordProfile",
+            })
+          }
+          labelStyle={{ color: "white", fontSize: 16 }}
           icon={({ focused, size }) => (
-            <FontAwesomeIcon
-              icon={faUserRegular}
-              size={20}
-              color="white"
-            />
+            <FontAwesomeIcon icon={faUserRegular} size={20} color="white" />
           )}
         />
 
         <DrawerItem
           label="Nearby"
-          onPress={() => {/* Navigate to Nearby page */ }}
-          labelStyle={{ color: 'white', fontSize: 16 }}
+          onPress={() => {
+            /* Navigate to Nearby page */
+          }}
+          labelStyle={{ color: "white", fontSize: 16 }}
           icon={({ focused, size }) => (
             <FontAwesomeIcon
               icon={faMapMarkerAltRegular}
@@ -175,42 +178,42 @@ const CustomDrawerContent = (props) => {
           )}
         />
 
-        <View style={{
-          borderTopWidth: 1,
-          borderTopColor: 'rgba(255,255,255,0.3)',
-          marginTop: 10,
-          paddingTop: 10
-        }}>
+        <View
+          style={{
+            borderTopWidth: 1,
+            borderTopColor: "rgba(255,255,255,0.3)",
+            marginTop: 10,
+            paddingTop: 10,
+          }}
+        >
           <DrawerItem
             label="Get law support"
-            onPress={() => {/* Navigate to legal support page */ }}
-            labelStyle={{ color: 'white', fontSize: 16 }}
+            onPress={() => {
+              /* Navigate to legal support page */
+            }}
+            labelStyle={{ color: "white", fontSize: 16 }}
             icon={({ focused, size }) => (
-              <FontAwesomeIcon
-                icon={faGavelRegular}
-                size={20}
-                color="white"
-              />
+              <FontAwesomeIcon icon={faGavelRegular} size={20} color="white" />
             )}
           />
 
           <DrawerItem
             label="Notification"
-            onPress={() => {/* Navigate to notifications page */ }}
-            labelStyle={{ color: 'white', fontSize: 16 }}
+            onPress={() => {
+              /* Navigate to notifications page */
+            }}
+            labelStyle={{ color: "white", fontSize: 16 }}
             icon={({ focused, size }) => (
-              <FontAwesomeIcon
-                icon={faBellRegular}
-                size={20}
-                color="white"
-              />
+              <FontAwesomeIcon icon={faBellRegular} size={20} color="white" />
             )}
           />
 
           <DrawerItem
             label="Message"
-            onPress={() => {/* Navigate to messages page */ }}
-            labelStyle={{ color: 'white', fontSize: 16 }}
+            onPress={() => {
+              /* Navigate to messages page */
+            }}
+            labelStyle={{ color: "white", fontSize: 16 }}
             icon={({ focused, size }) => (
               <FontAwesomeIcon
                 icon={faCommentsRegular}
@@ -221,29 +224,31 @@ const CustomDrawerContent = (props) => {
           />
         </View>
 
-        <View style={{
-          borderTopWidth: 1,
-          borderTopColor: 'rgba(255,255,255,0.3)',
-          marginTop: 10,
-          paddingTop: 10
-        }}>
+        <View
+          style={{
+            borderTopWidth: 1,
+            borderTopColor: "rgba(255,255,255,0.3)",
+            marginTop: 10,
+            paddingTop: 10,
+          }}
+        >
           <DrawerItem
             label="Setting"
-            onPress={() => {/* Navigate to settings page */ }}
-            labelStyle={{ color: 'white', fontSize: 16 }}
+            onPress={() => {
+              /* Navigate to settings page */
+            }}
+            labelStyle={{ color: "white", fontSize: 16 }}
             icon={({ focused, size }) => (
-              <FontAwesomeIcon
-                icon={faCogRegular}
-                size={20}
-                color="white"
-              />
+              <FontAwesomeIcon icon={faCogRegular} size={20} color="white" />
             )}
           />
 
           <DrawerItem
             label="Help"
-            onPress={() => {/* Navigate to help page */ }}
-            labelStyle={{ color: 'white', fontSize: 16 }}
+            onPress={() => {
+              /* Navigate to help page */
+            }}
+            labelStyle={{ color: "white", fontSize: 16 }}
             icon={({ focused, size }) => (
               <FontAwesomeIcon
                 icon={faQuestionCircleRegular}
@@ -256,7 +261,7 @@ const CustomDrawerContent = (props) => {
           <DrawerItem
             label="Logout"
             onPress={handleLogout}
-            labelStyle={{ color: 'white', fontSize: 16 }}
+            labelStyle={{ color: "white", fontSize: 16 }}
             icon={({ focused, size }) => (
               <FontAwesomeIcon
                 icon={faSignOutAltRegular}
@@ -269,7 +274,7 @@ const CustomDrawerContent = (props) => {
       </DrawerContentScrollView>
 
       {/* Bottom spacer */}
-      <View style={{ backgroundColor: '#A0E79E', height: 50 }} />
+      <View style={{ backgroundColor: "#A0E79E", height: 50 }} />
     </View>
   );
 };
@@ -286,14 +291,16 @@ const AnimatedScreen = ({ children }) => {
     return {
       transform: [{ scale }, { translateX }],
       borderRadius,
-      overflow: 'hidden',
-      backgroundColor: '#A0E79E',
+      overflow: "hidden",
+      backgroundColor: "#A0E79E",
     };
   });
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#A0E79E' }}>
-      <Animated.View style={[{ flex: 1, backgroundColor: '#A0E79E' }, animatedStyle]}>
+    <View style={{ flex: 1, backgroundColor: "#A0E79E" }}>
+      <Animated.View
+        style={[{ flex: 1, backgroundColor: "#A0E79E" }, animatedStyle]}
+      >
         {children}
       </Animated.View>
     </View>
@@ -418,8 +425,8 @@ const LandlordHomeStack = () => {
           headerTitleStyle: {
             fontWeight: "bold",
           },
-          headerBackTitle: '',
-          headerShadowVisible: false
+          headerBackTitle: "",
+          headerShadowVisible: false,
         }}
       />
       <LandlordStack.Screen
@@ -443,11 +450,10 @@ const LandlordPropertiesStack = () => {
         options={{
           title: "Mülklerim",
           headerStyle: {
-            backgroundColor: '#A0E79E',
+            backgroundColor: "#A0E79E",
             headerShownVisible: false,
-
           },
-          headerTintColor: '#fff',
+          headerTintColor: "#fff",
         }}
       />
       <LandlordStack.Screen
@@ -501,14 +507,14 @@ const LandlordProfileStack = () => {
   return (
     <LandlordStack.Navigator
       screenOptions={{
-        headerTintColor: '#fff',
+        headerTintColor: "#fff",
         headerStyle: {
-          backgroundColor: '#15803d',
+          backgroundColor: "#15803d",
           borderBottomWidth: 0,
           shadowOpacity: 0,
           shadowOffset: { height: 0, width: 0 },
           shadowRadius: 0,
-          elevation: 0
+          elevation: 0,
         },
         headerBackTitle: null,
       }}
@@ -517,20 +523,20 @@ const LandlordProfileStack = () => {
         name="LandlordProfileScreen"
         component={ProfileScreen}
         options={{
-          headerTitle: 'Profil',
+          headerTitle: "Profil",
+          headerTitleStyle: { fontSize: 20, color: "black" },
           headerShown: true,
           headerStyle: {
-            backgroundColor: '#A0E79E',
+            backgroundColor: "#fff",
           },
           headerShadowVisible: false,
-
         }}
       />
       <LandlordStack.Screen
         name="EditProfile"
         component={EditProfileScreen}
         options={({ navigation }) => ({
-          headerTitle: 'Profili Düzenle',
+          headerTitle: "Profili Düzenle",
           headerLeft: () => (
             <TouchableOpacity
               onPress={() => navigation.goBack()}
@@ -539,8 +545,8 @@ const LandlordProfileStack = () => {
               <FontAwesomeIcon icon={faChevronLeft} size={24} color="#fff" />
             </TouchableOpacity>
           ),
-          headerBackTitle: '',
-          headerBackTitleVisible: false
+          headerBackTitle: "",
+          headerBackTitleVisible: false,
         })}
       />
       <LandlordStack.Screen
@@ -644,9 +650,19 @@ const TenantProfileStack = () => {
   return (
     <TenantStack.Navigator>
       <TenantStack.Screen
-        name="TenantProfileScreen"
+        name="Profil"
         component={ProfileScreen}
-        options={{ headerShown: false }}
+        options={{
+          headerShown: true,
+          headerStyle: {
+            display: "flex",
+          },
+          headerTitleStyle: {
+            fontSize: 20,
+            fontWeight: 700,
+          },
+          headerTitleAlign: "left",
+        }}
       />
       <TenantStack.Screen
         name="EditProfile"
@@ -668,7 +684,7 @@ const TenantProfileStack = () => {
 // Tab Navigator
 const LandlordTabNavigator = () => {
   return (
-    <View style={{ flex: 1, backgroundColor: '#A0E79E' }}>
+    <View style={{ flex: 1, backgroundColor: "#A0E79E" }}>
       <Tab.Navigator
         screenOptions={{
           tabBarActiveTintColor: "#15803d",
@@ -711,8 +727,8 @@ const LandlordTabNavigator = () => {
               />
             ),
             headerStyle: {
-              backgroundColor: '#A0E79E',
-            }
+              backgroundColor: "#A0E79E",
+            },
           }}
         />
         <Tab.Screen
@@ -753,7 +769,7 @@ const LandlordTabNavigator = () => {
 // Tenant tab navigator
 const TenantTabNavigator = () => {
   return (
-    <View style={{ flex: 1, backgroundColor: '#A0E79E' }}>
+    <View style={{ flex: 1, backgroundColor: "#A0E79E" }}>
       <Tab.Navigator
         screenOptions={{
           tabBarActiveTintColor: "#45CC42",
@@ -852,34 +868,36 @@ const TenantTabNavigatorWrapped = () => {
 // Drawer Navigators
 const LandlordDrawerNavigator = () => {
   return (
-    <View style={{
-      flex: 1,
-      backgroundColor: '#A0E79E',
-    }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: "#A0E79E",
+      }}
+    >
       <Drawer.Navigator
         drawerContent={(props) => <CustomDrawerContent {...props} />}
         screenOptions={{
           headerShown: false,
           drawerStyle: {
-            backgroundColor: '#A0E79E',
+            backgroundColor: "#A0E79E",
             width: 250,
           },
-          drawerActiveTintColor: 'white',
-          drawerInactiveTintColor: 'rgba(255,255,255,0.8)',
+          drawerActiveTintColor: "white",
+          drawerInactiveTintColor: "rgba(255,255,255,0.8)",
           swipeEnabled: true,
           swipeEdgeWidth: screenWidth,
-          drawerType: 'slide',
-          overlayColor: 'transparent',
+          drawerType: "slide",
+          overlayColor: "transparent",
           sceneContainerStyle: {
-            backgroundColor: '#A0E79E',
-          }
+            backgroundColor: "#A0E79E",
+          },
         }}
       >
         <Drawer.Screen
           name="MainTabs"
           component={LandlordTabNavigatorWrapped}
           options={{
-            title: 'Ana Sayfa',
+            title: "Ana Sayfa",
           }}
         />
       </Drawer.Navigator>
@@ -889,38 +907,40 @@ const LandlordDrawerNavigator = () => {
 
 const TenantDrawerNavigator = () => {
   return (
-    <View style={{
-      flex: 1,
-      backgroundColor: '#A0E79E',
-    }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: "#A0E79E",
+      }}
+    >
       <Drawer.Navigator
         drawerContent={(props) => <CustomDrawerContent {...props} />}
         screenOptions={{
           headerShown: false,
           drawerStyle: {
-            backgroundColor: '#A0E79E',
+            backgroundColor: "#A0E79E",
             width: 250,
           },
-          drawerActiveTintColor: 'white',
-          drawerInactiveTintColor: 'rgba(255,255,255,0.8)',
+          drawerActiveTintColor: "white",
+          drawerInactiveTintColor: "rgba(255,255,255,0.8)",
           swipeEnabled: true,
           swipeEdgeWidth: screenWidth,
           swipeMinDistance: 10,
-          drawerType: 'slide',
-          overlayColor: 'transparent',
+          drawerType: "slide",
+          overlayColor: "transparent",
           sceneContainerStyle: {
-            backgroundColor: '#A0E79E',
+            backgroundColor: "#A0E79E",
           },
           gestureHandlerProps: {
             enableTrackpadTwoFingerGesture: true,
-          }
+          },
         }}
       >
         <Drawer.Screen
           name="MainTabs"
           component={TenantTabNavigatorWrapped}
           options={{
-            title: 'Ana Sayfa',
+            title: "Ana Sayfa",
           }}
         />
       </Drawer.Navigator>
@@ -943,10 +963,10 @@ const ProfileLoader = ({ children }) => {
     isLoading,
     error,
   } = userRole === "EVSAHIBI"
-      ? useGetLandlordProfileQuery(currentUser?.id, {
+    ? useGetLandlordProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       })
-      : useGetTenantProfileQuery(currentUser?.id, {
+    : useGetTenantProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       });
 

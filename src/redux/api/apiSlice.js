@@ -2,7 +2,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 // Define the base URL for the API
-const BASE_URL = "https://92f5-176-220-117-128.ngrok-free.app";
+const BASE_URL = "https://kiraxapi.justkey.online/";
 
 export const apiSlice = createApi({
   reducerPath: "api",

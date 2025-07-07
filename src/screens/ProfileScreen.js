@@ -23,6 +23,9 @@ import {
   selectUserProfile,
   setUserProfile,
 } from "../redux/slices/profileSlice";
+import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
+import { faChevronRight } from "@fortawesome/pro-solid-svg-icons";
+import { faEdit } from "@fortawesome/pro-light-svg-icons";
 
 const ProfileScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -37,8 +40,8 @@ const ProfileScreen = ({ navigation }) => {
     isLoading,
     refetch,
   } = userRole === "EVSAHIBI"
-      ? useGetLandlordProfileQuery(currentUser?.id)
-      : useGetTenantProfileQuery(currentUser?.id);
+    ? useGetLandlordProfileQuery(currentUser?.id)
+    : useGetTenantProfileQuery(currentUser?.id);
 
   useEffect(() => {
     if (profileData && profileData.isSuccess && profileData.result) {
@@ -82,7 +85,7 @@ const ProfileScreen = ({ navigation }) => {
   // Render loading state
   if (isLoading && !userProfile) {
     return (
-      <View className="flex-1 justify-center items-center bg-gray-50">
+      <View className="flex-1 justify-center items-center bg-white">
         <ActivityIndicator size="large" color="#4A90E2" />
         <Text className="mt-3 text-base text-gray-500">
           Profil yükleniyor...
@@ -95,9 +98,7 @@ const ProfileScreen = ({ navigation }) => {
   const renderField = (label, value, isLast = false) => (
     <View className={`mb-4 ${isLast ? "mb-0" : ""}`}>
       <Text className="text-gray-500 text-sm mb-1">{label}</Text>
-      <Text className="text-gray-800 text-base">
-        {value || "Belirtilmemiş"}
-      </Text>
+      <Text className="text-gray-800 text-lg">{value || "Belirtilmemiş"}</Text>
     </View>
   );
 
@@ -106,64 +107,57 @@ const ProfileScreen = ({ navigation }) => {
 
   return (
     <ScrollView
-      className="flex-1 bg-gray-50"
+      className="flex-1 bg-white px-5"
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
       {/* Profile Header */}
-      <View className="bg-[#A0E79E] pt-12 pb-20 items-center">
+      <View
+        style={{ boxShadow: "0px 0px 12px #00000014" }}
+        className="items-center border rounded-3xl py-4 border-gray-200"
+      >
         <View className="w-24 h-24 rounded-full bg-white justify-center items-center mb-3 border-4 border-white">
           {userProfile?.profileImageUrl ? (
             <Image
               source={{ uri: userProfile.profileImageUrl }}
-              className="w-full h-full rounded-full"
+              className="w-full h-full rounded-full border"
               resizeMode="cover"
             />
           ) : (
-            <Text className="text-3xl font-bold text-green-500">
+            <Text className="text-3xl font-bold text-gray-900">
               {currentUser?.name?.charAt(0) || "K"}
             </Text>
           )}
         </View>
-        <Text className="text-xl font-bold text-white mb-1">
+        <Text className="text-xl font-bold text-gray-900 mb-1">
           {userProfile?.user?.name || currentUser?.name || ""}{" "}
           {userProfile?.user?.surname || currentUser?.surname || ""}
         </Text>
-        <Text className="text-white text-base opacity-80">
+        <Text className="text-gray-500 text-base opacity-80">
           {userRole === "EVSAHIBI" ? "Ev Sahibi" : "Kiracı"}
         </Text>
       </View>
 
       {/* Profile Content */}
-      <View className="px-5 mt-[-50px]">
+      <View className="">
         {/* User Profile Card */}
-        <View className="bg-white rounded-xl shadow-sm p-5 mb-6 border border-gray-100">
-          <Text className="text-lg font-bold text-gray-800 mb-4">
-            Kullanıcı Bilgileri
-          </Text>
-
-          {renderField("Kullanıcı ID", currentUser?.id)}
-          {renderField("E-posta", currentUser?.email)}
-          {renderField("Ad", currentUser?.name)}
-          {renderField(
-            "Soyad",
-            userProfile?.user?.surname || currentUser?.surname || ""
-          )}
-          {renderField("Telefon", currentUser?.phoneNumber)}
-          {renderField("Cinsiyet", currentUser?.gender)}
-          {renderField("Rol", currentUser?.role || userRole)}
-
+        <View className="bg-white rounded-xl mb-6">
           {/* Fix the condition check - use proper property names */}
           {currentUser?.isTenantExpectationCompleted ||
-            currentUser?.isLandlordExpectationCompleted ? (
+          currentUser?.isLandlordExpectationCompleted ? (
             <TouchableOpacity
-              className="mt-5 bg-green-50 py-3 rounded-lg"
+              className="py-4 rounded-lg flex flex-row justify-between items-center"
               onPress={handleEditProfile}
             >
-              <Text className="text-green-600 font-semibold text-center">
-                Profili Düzenle
-              </Text>
+              <View className="flex-row items-center gap-4">
+                {" "}
+                <FontAwesomeIcon icon={faEdit} size={25} />
+                <Text className="text-gray-900 text-lg font-normal">
+                  Profili düzenle
+                </Text>
+              </View>
+              <FontAwesomeIcon icon={faChevronRight} size={20} />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
@@ -177,8 +171,7 @@ const ProfileScreen = ({ navigation }) => {
           )}
         </View>
 
-        {/* Landlord Profile Details */}
-        {userRole === "EVSAHIBI" && userProfile && (
+        {/* {userRole === "EVSAHIBI" && userProfile && (
           <View className="bg-white rounded-xl shadow-sm p-5 mb-6 border border-gray-100">
             <Text className="text-lg font-bold text-gray-800 mb-4">
               Ev Sahibi Profil Detayları
@@ -223,19 +216,15 @@ const ProfileScreen = ({ navigation }) => {
               </View>
             </View>
           </View>
-        )}
+        )} */}
 
-        {/* Tenant Profile Details - Add this if you have tenant-specific fields */}
-        {userRole === "KIRACI" && userProfile && (
+        {/* {userRole === "KIRACI" && userProfile && (
           <View className="bg-white rounded-xl shadow-sm p-5 mb-6 border border-gray-100">
             <Text className="text-lg font-bold text-gray-800 mb-4">
               Kiracı Profil Detayları
             </Text>
-
-            {/* Add tenant-specific fields here */}
-            {/* Similar structure to landlord profile */}
           </View>
-        )}
+        )} */}
 
         {/* Stats Card */}
         <View className="bg-white rounded-xl shadow-sm p-5 mb-6 border border-gray-100">

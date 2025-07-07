@@ -13,6 +13,8 @@ import { setRole } from "../redux/slices/authSlice";
 import { useAssignRoleMutation, apiSlice } from "../redux/api/apiSlice";
 import { selectCurrentUser } from "../redux/slices/authSlice";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
+import { faHome, faKey } from "@fortawesome/pro-regular-svg-icons";
 
 const { width } = Dimensions.get("window");
 
@@ -106,73 +108,62 @@ const RoleSelectionScreen = ({ navigation }) => {
           {
             text: "Devam Et",
             onPress: () => navigation.navigate("CreateProfile"),
-          }, className = "w-20 h-20"
-
+          },
+          (className = "w-20 h-20"),
         ]
       );
     }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 px-5">
-      <View className="items-center mt-12 mb-6">
-        <Image
-          source={require("../../assets/logo-kirax.png")}
-          resizeMode="contain"
-          style={{ width: width * 0.5, height: width * 0.3 }}
-        />
-      </View>
-
-      <View className="flex-1 justify-center pb-12">
-        <Text className="text-2xl font-bold text-gray-800 text-center mb-2">
+    <SafeAreaView className="flex-1 bg-white px-5">
+      <View style={{ paddingTop: 30 }} className="flex-1 justify-start">
+        <Text
+          style={{ fontSize: 20 }}
+          className="text-2xl font-bold text-gray-900 mb-1"
+        >
           Hoş Geldin, {user?.name || "Kullanıcı"}
         </Text>
-        <Text className="text-base text-gray-600 text-center mb-8">
+        <Text style={{ fontSize: 12 }} className=" text-gray-500 mb-8">
           Devam etmek için lütfen bir rol seç:
         </Text>
 
         <View className="mb-8">
           <TouchableOpacity
-            className={`bg-white p-5 rounded-xl mb-4 border-2 ${selectedRole === "EVSAHIBI"
-              ? "border-[#2C8700] bg-green-50"
-              : "border-gray-200"
-              }`}
+            activeOpacity={1}
+            style={{ boxShadow: "0px 0px 12px #00000014" }}
+            className={`bg-white p-5 py-10  rounded-3xl flex flex-col gap-2 justify-center items-center mb-4 border transition duration-300 ${
+              selectedRole === "EVSAHIBI"
+                ? "border-gray-400"
+                : "border-gray-100"
+            }`}
             onPress={() => setSelectedRole("EVSAHIBI")}
           >
-            <View className="w-14 h-14 rounded-full bg-green-50 justify-center items-center mb-4">
-              <Image
-                source={require("../../assets/ev-sahibi.png")}
-                className="w-16 h-16"
-                resizeMode="contain"
-                style={{ tintColor: "#2C8700" }}
-              />
-            </View>
-            <Text className="text-xl font-bold text-gray-800 mb-2">
-              Ev Sahibi
-            </Text>
-            <Text className="text-sm text-gray-600 leading-5">
+            <FontAwesomeIcon size={50} icon={faHome} />
+            <Text className="text-xl font-bold text-gray-800">Ev Sahibi</Text>
+            <Text
+              style={{ fontSize: 12 }}
+              className="text-gray-600 text-center leading-5"
+            >
               Mülk sahipleri için - ilan oluşturabilir ve kiralık mülklerinizi
-              yönetebilirsiniz
+              yönetebilirsiniz.
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            className={`bg-white p-5 rounded-xl border-2 ${selectedRole === "KIRACI"
-              ? "border-[#2C8700] bg-green-50"
-              : "border-gray-200"
-              }`}
+            activeOpacity={1}
+            style={{ boxShadow: "0px 0px 12px #00000014" }}
+            className={`bg-white p-5 py-10  rounded-3xl flex flex-col gap-2 justify-center items-center mb-4 border transition duration-300 ${
+              selectedRole === "KIRACI" ? "border-gray-400" : "border-gray-100"
+            }`}
             onPress={() => setSelectedRole("KIRACI")}
           >
-            <View className="w-14 h-14 rounded-full  bg-green-50 justify-center items-center mb-4">
-              <Image
-                source={require("../../assets/kiraci.png")}
-                className="w-8 h-8"
-                resizeMode="contain"
-                style={{ tintColor: "#2C8700" }}
-              />
-            </View>
-            <Text className="text-xl font-bold text-gray-800 mb-2">Kiracı</Text>
-            <Text className="text-sm text-gray-600 leading-5">
+            <FontAwesomeIcon size={50} icon={faKey} />
+            <Text className="text-xl font-bold text-gray-800">Kiracı</Text>
+            <Text
+              style={{ fontSize: 12 }}
+              className="text-gray-600 text-center leading-5"
+            >
               Kiracılar için - mülk arayabilir, ilanlara göz atabilir ve
               teklifler gönderebilirsiniz
             </Text>
@@ -180,15 +171,21 @@ const RoleSelectionScreen = ({ navigation }) => {
         </View>
 
         <TouchableOpacity
-          className={`h-14 rounded-lg justify-center items-center ${!selectedRole || isLoading ? "bg-[#39a802]" : "bg-[#2C8700]"
-            }`}
+          className={`h-14 rounded-lg justify-center items-center ${
+            !selectedRole || isLoading ? "bg-[#dee0ea]" : "bg-green-300"
+          }`}
           onPress={handleRoleSelection}
           disabled={!selectedRole || isLoading}
         >
           {isLoading ? (
             <ActivityIndicator color="#ffffff" />
           ) : (
-            <Text className="text-white text-lg font-semibold">Devam Et</Text>
+            <Text
+              style={{ fontSize: 16, fontWeight: 500 }}
+              className="text-white"
+            >
+              Devam Et
+            </Text>
           )}
         </TouchableOpacity>
       </View>
