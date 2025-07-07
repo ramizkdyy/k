@@ -15,6 +15,8 @@ import {
   Pressable,
   Animated,
   Modal,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { useDispatch } from "react-redux";
 import { useRegisterMutation, useLoginMutation } from "../redux/api/apiSlice";
@@ -36,14 +38,11 @@ import {
   faTimes,
   faChevronLeft,
   faChevronRight,
-  faChevronDown
+  faChevronDown,
 } from "@fortawesome/pro-solid-svg-icons";
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { Picker } from "@react-native-picker/picker";
 const { width } = Dimensions.get("window");
-
-
-// Custom Calendar Modal Component
-
 
 const RegisterScreen = ({ navigation }) => {
   // State for form inputs
@@ -55,21 +54,28 @@ const RegisterScreen = ({ navigation }) => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [gender, setGender] = useState(""); // Optional
-  const [showGenderModal, setShowGenderModal] = useState(false);
-
+  const [showGenderPicker, setShowGenderPicker] = useState(false);
+  const [tempGenderValue, setTempGenderValue] = useState(gender || "");
   // Date picker states
   const [birthDate, setBirthDate] = useState("");
   const [showCalendar, setShowCalendar] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [dateValue, setDateValue] = useState(new Date(2000, 0, 1)); // Varsayılan olarak 1 Ocak 2000
+  const [dateValue, setDateValue] = useState(new Date(2000, 0, 1));
+
+  // Animation for date picker modal
+  const modalBackgroundOpacity = useRef(new Animated.Value(0)).current;
+  const modalSlideAnim = useRef(new Animated.Value(300)).current;
 
   // Step handling
   const [currentStep, setCurrentStep] = useState(0);
-  const totalSteps = 4;
+  const totalSteps = 3;
 
-  // Animation values
+  // Enhanced animation values for smooth step transitions
   const slideAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
 
   // Redux hooks
   const dispatch = useDispatch();
@@ -86,16 +92,76 @@ const RegisterScreen = ({ navigation }) => {
   const passwordInputRef = useRef(null);
   const confirmPasswordInputRef = useRef(null);
 
+  // Function to dismiss keyboard
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
+
+  const formatPhoneNumber = (text) => {
+    // Sadece rakamları al
+    const cleaned = text.replace(/\D/g, "");
+
+    // 0 ile başlıyorsa kaldır
+    const withoutLeadingZero = cleaned.startsWith("0")
+      ? cleaned.slice(1)
+      : cleaned;
+
+    // Maksimum 10 rakam
+    const truncated = withoutLeadingZero.slice(0, 10);
+
+    // Format: XXX XXX XX XX
+    let formatted = "";
+    for (let i = 0; i < truncated.length; i++) {
+      if (i === 3 || i === 6 || i === 8) {
+        formatted += " ";
+      }
+      formatted += truncated[i];
+    }
+
+    return formatted;
+  };
+
+  // Telefon numarası değişiklik handler'ı
+  const handlePhoneNumberChange = (text) => {
+    const formatted = formatPhoneNumber(text);
+    setPhoneNumber(formatted);
+  };
+
   // Basic email validation
   const isEmailValid = (email) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
-  // Basic phone number validation (simple format check)
   const isPhoneValid = (phone) => {
-    return /^\d{10,11}$/.test(phone.replace(/[\s()-]/g, ""));
+    // Boşlukları kaldır ve sadece rakamları kontrol et
+    const cleaned = phone.replace(/\D/g, "");
+    return cleaned.length === 10; // Türkiye için 10 haneli numara
   };
-  // Date selection handler
+
+  const handleDatePickerChange = (event, selectedDate) => {
+    if (Platform.OS === "android") {
+      setShowCalendar(false);
+
+      if (event.type === "set" && selectedDate) {
+        // Timezone offset'ini göz önünde bulundurarak tarihi düzelt
+        const adjustedDate = new Date(
+          selectedDate.getTime() + selectedDate.getTimezoneOffset() * 60000
+        );
+
+        const day = String(adjustedDate.getDate()).padStart(2, "0");
+        const month = String(adjustedDate.getMonth() + 1).padStart(2, "0");
+        const year = adjustedDate.getFullYear();
+        const formattedDate = `${day}/${month}/${year}`;
+
+        setBirthDate(formattedDate);
+        setDateValue(selectedDate);
+      }
+    } else if (selectedDate && Platform.OS === "ios") {
+      setDateValue(selectedDate);
+    }
+  };
+
+  // Date selection handler - Updated for native picker
   const handleDateSelect = (formattedDate, dateObject) => {
     setBirthDate(formattedDate);
     setDateValue(dateObject);
@@ -109,197 +175,28 @@ const RegisterScreen = ({ navigation }) => {
   // Gender label getter
   const getGenderLabel = (genderValue) => {
     const genderOptions = [
-      { value: 'female', label: 'Kadın' },
-      { value: 'male', label: 'Erkek' },
-      { value: 'other', label: 'Diğer' },
+      { value: "female", label: "Kadın" },
+      { value: "male", label: "Erkek" },
+      { value: "other", label: "Diğer" },
     ];
-    return genderOptions.find(option => option.value === genderValue)?.label || '';
-  };
-
-
-
-  const CalendarModal = ({ visible, onClose, onDateSelect, selectedDate }) => {
-    const [currentDate, setCurrentDate] = useState(new Date());
-    const [selectedDay, setSelectedDay] = useState(selectedDate ? new Date(selectedDate) : null);
-
-    const months = [
-      'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-      'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
-    ];
-
-    const weekDays = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
-
-    const getDaysInMonth = (date) => {
-      const year = date.getFullYear();
-      const month = date.getMonth();
-      const firstDay = new Date(year, month, 1);
-      const lastDay = new Date(year, month + 1, 0);
-      const daysInMonth = lastDay.getDate();
-      const startingDayOfWeek = (firstDay.getDay() + 6) % 7; // Monday = 0
-
-      const days = [];
-
-      // Add empty cells for days before the first day of month
-      for (let i = 0; i < startingDayOfWeek; i++) {
-        days.push(null);
-      }
-
-      // Add days of the month
-      for (let day = 1; day <= daysInMonth; day++) {
-        days.push(new Date(year, month, day));
-      }
-
-      return days;
-    };
-
-    const navigateMonth = (direction) => {
-      const newDate = new Date(currentDate);
-      newDate.setMonth(currentDate.getMonth() + direction);
-      setCurrentDate(newDate);
-    };
-
-    const navigateYear = (direction) => {
-      const newDate = new Date(currentDate);
-      newDate.setFullYear(currentDate.getFullYear() + direction);
-      setCurrentDate(newDate);
-    };
-
-    const handleDateSelect = (date) => {
-      if (!date || isFutureDate(date)) return;
-
-      setSelectedDay(date);
-      // Tarih formatını ayarla (GG/MM/YYYY)
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const year = date.getFullYear();
-      const formattedDate = `${day}/${month}/${year}`;
-
-      // Parent component'e tarihi gönder
-      onDateSelect(formattedDate, date);
-      onClose();
-    };
-    const formatDisplayDate = (dateString) => {
-      if (!dateString) return '';
-      const date = new Date(dateString.split('/').reverse().join('-'));
-      return date.toLocaleDateString('tr-TR', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      });
-    };
-    const isSelectedDate = (date) => {
-      if (!selectedDay || !date) return false;
-      return date.toDateString() === selectedDay.toDateString();
-    };
-
-    const isToday = (date) => {
-      if (!date) return false;
-      return date.toDateString() === new Date().toDateString();
-    };
-
-    const isFutureDate = (date) => {
-      if (!date) return false;
-      return date > new Date();
-    };
-
-    const days = getDaysInMonth(currentDate);
-
     return (
-      <Modal visible={visible} transparent animationType="fade">
-        <View className="flex-1 bg-black/50 justify-center items-center">
-          <View className="bg-white rounded-2xl mx-4 p-6 shadow-lg" style={{ width: width - 32 }}>
-            {/* Header */}
-            <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-lg font-semibold text-gray-800">Doğum Tarihi Seçin</Text>
-              <TouchableOpacity onPress={onClose}>
-                <FontAwesomeIcon icon={faTimes} size={20} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Month/Year Navigation */}
-            <View className="flex-row justify-between items-center mb-4">
-              <TouchableOpacity onPress={() => navigateYear(-1)} className="p-2">
-                <Text className="text-green-500 font-medium">‹‹</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigateMonth(-1)} className="p-2">
-                <FontAwesomeIcon icon={faChevronLeft} size={16} color="#22c55e" />
-              </TouchableOpacity>
-
-              <Text className="text-lg font-semibold text-gray-800">
-                {months[currentDate.getMonth()]} {currentDate.getFullYear()}
-              </Text>
-
-              <TouchableOpacity onPress={() => navigateMonth(1)} className="p-2">
-                <FontAwesomeIcon icon={faChevronRight} size={16} color="#22c55e" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigateYear(1)} className="p-2">
-                <Text className="text-green-500 font-medium">››</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Week Days Header */}
-            <View className="flex-row mb-2">
-              {weekDays.map((day) => (
-                <View key={day} className="flex-1 items-center py-2">
-                  <Text className="text-sm font-medium text-gray-500">{day}</Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Calendar Grid */}
-            <View className="flex-row flex-wrap">
-              {days.map((date, index) => (
-                <TouchableOpacity
-                  key={index}
-                  className={`w-[14.28%] h-12 justify-center items-center ${date && !isFutureDate(date) ? '' : 'opacity-30'
-                    }`}
-                  onPress={() => handleDateSelect(date)}
-                  disabled={!date || isFutureDate(date)}
-                >
-                  <View
-                    className={`w-10 h-10 rounded-full justify-center items-center ${isSelectedDate(date)
-                      ? 'bg-green-600'
-                      : isToday(date)
-                        ? 'bg-green-100'
-                        : ''
-                      }`}
-                  >
-                    <Text
-                      className={`text-sm ${isSelectedDate(date)
-                        ? 'text-white font-semibold'
-                        : isToday(date)
-                          ? 'text-green-600 font-semibold'
-                          : 'text-gray-700'
-                        }`}
-                    >
-                      {date ? date.getDate() : ''}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Footer */}
-            <View className="flex-row justify-end mt-4 pt-4 border-t border-gray-200">
-              <TouchableOpacity onPress={onClose} className="px-4 py-2 mr-2">
-                <Text className="text-gray-600">İptal</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      genderOptions.find((option) => option.value === genderValue)?.label || ""
     );
   };
 
-
   // Gender Selector Modal Component
-  const GenderModal = ({ visible, onClose, onGenderSelect, selectedGender }) => {
+  const GenderModal = ({
+    visible,
+    onClose,
+    onGenderSelect,
+    selectedGender,
+  }) => {
     const slideAnim = useRef(new Animated.Value(300)).current;
 
     const genderOptions = [
-      { value: 'female', label: 'Kadın', icon: '♀' },
-      { value: 'male', label: 'Erkek', icon: '♂' },
-      { value: 'other', label: 'Diğer', icon: '⚥' },
+      { value: "female", label: "Kadın", icon: "♀" },
+      { value: "male", label: "Erkek", icon: "♂" },
+      { value: "other", label: "Diğer", icon: "⚥" },
     ];
 
     useEffect(() => {
@@ -335,7 +232,9 @@ const RegisterScreen = ({ navigation }) => {
           >
             {/* Header */}
             <View className="flex-row justify-between items-center mb-6">
-              <Text className="text-xl font-semibold text-gray-800">Cinsiyet Seçin</Text>
+              <Text className="text-xl font-semibold text-gray-800">
+                Cinsiyet Seçin
+              </Text>
               <TouchableOpacity onPress={onClose}>
                 <FontAwesomeIcon icon={faTimes} size={20} color="#6b7280" />
               </TouchableOpacity>
@@ -350,7 +249,9 @@ const RegisterScreen = ({ navigation }) => {
                   onPress={() => handleGenderSelect(option.value)}
                 >
                   <Text className="text-2xl mr-4">{option.icon}</Text>
-                  <Text className="flex-1 text-lg text-gray-700 font-medium">{option.label}</Text>
+                  <Text className="flex-1 text-lg text-gray-700 font-medium">
+                    {option.label}
+                  </Text>
                   {selectedGender === option.value && (
                     <FontAwesomeIcon icon={faCheck} size={20} color="#2C8700" />
                   )}
@@ -370,8 +271,6 @@ const RegisterScreen = ({ navigation }) => {
       </Modal>
     );
   };
-
-
 
   // Validate current step
   const validateCurrentStep = () => {
@@ -410,18 +309,21 @@ const RegisterScreen = ({ navigation }) => {
         }
         return true;
 
-      case 2: // Doğum tarihi ve cinsiyet
-        return true; // Bu alanlar opsiyonel
-
-      case 3: // Şifre ve şifre tekrarı
+      case 2: // Şifre step'i
         if (!password.trim()) {
           Alert.alert("Hata", "Lütfen şifre giriniz.");
           return false;
         }
-        if (password.length < 6) {
-          Alert.alert("Hata", "Şifre en az 6 karakter olmalıdır.");
+
+        const { score } = getPasswordStrength(password);
+        if (score < 3) {
+          Alert.alert(
+            "Hata",
+            "Şifreniz çok zayıf. Lütfen daha güçlü bir şifre seçin."
+          );
           return false;
         }
+
         if (password !== confirmPassword) {
           Alert.alert("Hata", "Şifreler eşleşmiyor.");
           return false;
@@ -439,31 +341,73 @@ const RegisterScreen = ({ navigation }) => {
     progressAnim.setValue(0);
     Animated.timing(progressAnim, {
       toValue: 1,
-      duration: 300, // Daha hızlı bir animasyon (300ms)
+      duration: 300,
       useNativeDriver: false,
     }).start();
   }, [currentStep]);
+
+  // Enhanced animation function for step transitions
+  const animateStepTransition = (direction, callback) => {
+    // Keyboard'u kapat
+    Keyboard.dismiss();
+
+    // Step 1: Fade out and scale down current content
+    Animated.parallel([
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 0.95,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: direction === "next" ? -50 : 50,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Step 2: Execute callback (change step)
+      callback();
+
+      // Step 3: Prepare next content position
+      slideAnim.setValue(direction === "next" ? 50 : -50);
+      scaleAnim.setValue(0.95);
+      opacityAnim.setValue(0);
+
+      // Step 4: Animate in new content with bounce effect
+      setTimeout(() => {
+        Animated.parallel([
+          Animated.spring(slideAnim, {
+            toValue: 0,
+            tension: 80,
+            friction: 8,
+            useNativeDriver: true,
+          }),
+          Animated.spring(scaleAnim, {
+            toValue: 1,
+            tension: 80,
+            friction: 8,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacityAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }, 50);
+    });
+  };
 
   // Handle next step button
   const handleNextStep = () => {
     if (validateCurrentStep()) {
       if (currentStep < totalSteps - 1) {
-        // Start slide animation
-        Animated.timing(slideAnim, {
-          toValue: -1, // Slide to left
-          duration: 300,
-          useNativeDriver: true,
-        }).start(() => {
-          // Reset position and update step after animation completes
-          slideAnim.setValue(1); // Position next content off screen to right
+        animateStepTransition("next", () => {
           setCurrentStep(currentStep + 1);
-
-          // Slide in from right
-          Animated.timing(slideAnim, {
-            toValue: 0, // Slide to center
-            duration: 300,
-            useNativeDriver: true,
-          }).start();
         });
       } else {
         handleRegister();
@@ -471,10 +415,151 @@ const RegisterScreen = ({ navigation }) => {
     }
   };
 
+  // Handle previous step
+  const handlePreviousStep = () => {
+    if (currentStep > 0) {
+      animateStepTransition("prev", () => {
+        setCurrentStep(currentStep - 1);
+      });
+    }
+  };
+
+  // Şifre güçlülük kontrolü
+  const getPasswordStrength = (password) => {
+    let score = 0;
+    const checks = {
+      length: password.length >= 8,
+      lowercase: /[a-z]/.test(password),
+      uppercase: /[A-Z]/.test(password),
+      number: /\d/.test(password),
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    };
+
+    // Her kriter için puan ekle
+    if (checks.length) score++;
+    if (checks.lowercase) score++;
+    if (checks.uppercase) score++;
+    if (checks.number) score++;
+    if (checks.special) score++;
+
+    return { score, checks };
+  };
+
+  // Şifre güçlülük seviyesi ve rengi
+  const getPasswordStrengthInfo = (password) => {
+    if (!password) return { level: "empty", color: "#e5e7eb", text: "" };
+
+    const { score } = getPasswordStrength(password);
+
+    if (score <= 2) return { level: "weak", color: "#ef4444", text: "Zayıf" };
+    if (score === 3) return { level: "medium", color: "#f7ea59", text: "Orta" };
+    if (score === 4) return { level: "good", color: "#9cf0ba", text: "İyi" };
+    if (score === 5)
+      return { level: "strong", color: "#86efac", text: "Güçlü" };
+  };
+
+  // Şifre Güçlülük İndikatörü Component
+  const PasswordStrengthIndicator = ({ password }) => {
+    const { score, checks } = getPasswordStrength(password);
+    const strengthInfo = getPasswordStrengthInfo(password);
+
+    // Animasyon için useRef
+    const progressAnim = useRef(new Animated.Value(0)).current;
+    const timeoutRef = useRef(null);
+
+    // Score değiştiğinde debounce ile animasyonu başlat
+    useEffect(() => {
+      // Önceki timeout'u temizle
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      // Yeni timeout ayarla
+      timeoutRef.current = setTimeout(() => {
+        Animated.timing(progressAnim, {
+          toValue: score,
+          duration: 400,
+          useNativeDriver: false,
+        }).start();
+      }, 800);
+
+      // Cleanup function
+      return () => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+      };
+    }, [score]);
+
+    if (!password) {
+      // Şifre yoksa animasyonu hemen sıfırla
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      progressAnim.setValue(0);
+      return null;
+    }
+
+    return (
+      <View className="mt-3">
+        {/* Güçlülük Barı */}
+        <View className="flex-row items-center mb-3">
+          <View className="flex-1 bg-gray-100 h-2 rounded-full overflow-hidden">
+            <Animated.View
+              style={{
+                width: progressAnim.interpolate({
+                  inputRange: [0, 5],
+                  outputRange: ["0%", "100%"],
+                  extrapolate: "clamp",
+                }),
+                backgroundColor: strengthInfo.color,
+                height: "100%",
+                borderRadius: 4,
+              }}
+            />
+          </View>
+          <Text
+            className="text-sm font-medium ml-2"
+            style={{ color: strengthInfo.color }}
+          >
+            {strengthInfo.text}
+          </Text>
+        </View>
+
+        {/* Şifre Kuralları */}
+        <View className="flex flex-col gap-2">
+          <PasswordRule met={checks.length} text="En az 8 karakter" />
+          <PasswordRule met={checks.lowercase} text="Küçük harf (a-z)" />
+          <PasswordRule met={checks.uppercase} text="Büyük harf (A-Z)" />
+          <PasswordRule met={checks.number} text="Rakam (0-9)" />
+          <PasswordRule met={checks.special} text="Özel karakter (!@#$%^&*)" />
+        </View>
+      </View>
+    );
+  };
+
+  // Şifre Kuralı Component
+  const PasswordRule = ({ met, text }) => (
+    <View className="flex-row items-center">
+      <View
+        className="w-4 h-4 rounded-full mr-2 items-center justify-center"
+        style={{ backgroundColor: met ? "black" : "#dee0ea" }}
+      >
+        {met && <FontAwesomeIcon icon={faCheck} size={10} color="white" />}
+      </View>
+      <Text style={{ fontSize: 14, color: met ? "black" : "#b8b8b8" }}>
+        {text}
+      </Text>
+    </View>
+  );
+
   // Handle register button press (final step)
   const handleRegister = async () => {
     try {
       console.log("Kayıt işlemi başlatılıyor...");
+
+      const cleanedPhone = phoneNumber.replace(/\D/g, "");
+      const finalPhone = "0" + cleanedPhone;
 
       // Prepare the birthDate in ISO format for API if it exists
       const formattedBirthDate = dateValue ? dateValue.toISOString() : null;
@@ -486,7 +571,7 @@ const RegisterScreen = ({ navigation }) => {
         gender: gender.trim() || null,
         userName: username.trim(),
         email: email.trim(),
-        phoneNumber: phoneNumber.trim(),
+        phoneNumber: finalPhone,
         password: password.trim(),
         birthDate: formattedBirthDate,
       }).unwrap();
@@ -586,17 +671,33 @@ const RegisterScreen = ({ navigation }) => {
       Alert.alert(
         "Kayıt Hatası",
         error.data?.message ||
-        "Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin."
+          "Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin."
       );
     }
   };
 
-  // Düzeltilmiş Progress Indicators fonksiyonu - Soldan sağa dolum
+  // Progress Indicators fonksiyonu - Yuvarlak steplar
   const renderProgressIndicators = () => {
     return (
-      <View className="mb-6 px-5">
-        {/* Step indicators - separate rectangles */}
-        <View className="flex-row justify-center items-center w-full space-x-2">
+      <View className="mb-6 px-5 relative">
+        <View className="absolute left-5 top-1/2 -translate-y-1/2 z-10">
+          <TouchableOpacity
+            onPress={() => {
+              // Eğer ilk adımdaysak navigation.goBack() yap
+              // Değilse bir önceki adıma geri dön
+              if (currentStep === 0) {
+                navigation.goBack();
+              } else {
+                handlePreviousStep();
+              }
+            }}
+            className="flex-row items-center"
+          >
+            <FontAwesomeIcon icon={faChevronLeft} size={22} color="#0d0d0d" />
+          </TouchableOpacity>
+        </View>
+        {/* Step indicators - circular steps */}
+        <View className="flex-row justify-center items-center w-full">
           {Array(totalSteps)
             .fill(0)
             .map((_, index) => {
@@ -604,41 +705,43 @@ const RegisterScreen = ({ navigation }) => {
               const isCurrentStep = index === currentStep;
 
               return (
-                <View
-                  key={index}
-                  style={{
-                    flex: 1,
-                    height: 4,
-                    backgroundColor: "#E5E7EB",
-                    borderRadius: 6,
-                    overflow: "hidden", // Animasyonu kırpmak için önemli
-                  }}
-                >
-                  {isCompleted ? (
-                    // Tamamlanmış adımlar - tamamen dolu
+                <React.Fragment key={index}>
+                  {/* Step Circle */}
+                  <View
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 16,
+                      backgroundColor:
+                        isCompleted || isCurrentStep ? "#000000" : "#ededed",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color:
+                          isCompleted || isCurrentStep ? "#FFFFFF" : "#9CA3AF",
+                        fontSize: 14,
+                        fontWeight: "600",
+                      }}
+                    >
+                      {index + 1}
+                    </Text>
+                  </View>
+
+                  {/* Connection Line */}
+                  {index < totalSteps - 1 && (
                     <View
                       style={{
-                        height: "100%",
-                        width: "100%",
-                        backgroundColor: "#2C8700",
-                        borderRadius: 6,
+                        width: 40,
+                        height: 2,
+                        backgroundColor: isCompleted ? "#000000" : "#ededed",
+                        marginHorizontal: 8,
                       }}
                     />
-                  ) : isCurrentStep ? (
-                    // Mevcut adım - soldan sağa animasyonlu dolum
-                    <Animated.View
-                      style={{
-                        height: "100%",
-                        width: progressAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: ["0%", "100%"],
-                        }),
-                        backgroundColor: "#2C8700",
-                        borderRadius: 6,
-                      }}
-                    />
-                  ) : null}
-                </View>
+                  )}
+                </React.Fragment>
               );
             })}
         </View>
@@ -648,253 +751,421 @@ const RegisterScreen = ({ navigation }) => {
 
   // Initialize animation on first render
   useEffect(() => {
-    // Animate in the first screen
-    slideAnim.setValue(1);
-    Animated.timing(slideAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    // İlk render'da fade in animasyonu
+    opacityAnim.setValue(0);
+    scaleAnim.setValue(0.95);
+    slideAnim.setValue(30);
+
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 80,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          tension: 80,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, 100);
   }, []);
 
-  const handlePreviousStep = () => {
-    if (currentStep > 0) {
-      // Start slide animation (to right direction)
-      Animated.timing(slideAnim, {
-        toValue: 1, // Slide to right
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => {
-        // Reset position and update step after animation completes
-        slideAnim.setValue(-1); // Position next content off screen to left
-        setCurrentStep(currentStep - 1);
-
-        // Slide in from left
-        Animated.timing(slideAnim, {
-          toValue: 0, // Slide to center
-          duration: 300,
-          useNativeDriver: true,
-        }).start();
-      });
-    }
-  };
-
-  // Render step content
+  // Render step content with animations
   const renderStepContent = () => {
-    switch (currentStep) {
-      case 0: // Step 1: Kişisel Bilgiler (Ad, Soyad, Email)
-        return (
-          <>
-            <View className="gap-1">
-              <Text className="text-gray-600 ml-1">Adınız</Text>
-              <View className="flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 w-full">
-                <FontAwesomeIcon icon={faSignature} size={20} color="#6b7280" />
-                <TextInput
-                  className="text-gray-600 flex-1 w-full h-full py-3 font-normal"
-                  placeholder="Adınızı giriniz"
-                  placeholderTextColor={"#484848"}
-                  value={name}
-                  onChangeText={setName}
-                  ref={nameInputRef}
-                  returnKeyType="next"
-                  onSubmitEditing={() => surnameInputRef.current?.focus()}
-                  blurOnSubmit={false}
-                />
-              </View>
-            </View>
-
-            <View className="gap-1 mt-4">
-              <Text className="text-gray-600 ml-1">Soyadınız</Text>
-              <View className="flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4  w-full">
-                <FontAwesomeIcon icon={faSignature} size={20} color="#6b7280" />
-                <TextInput
-                  className="text-gray-600 flex-1 py-3 font-normal"
-                  placeholderTextColor={"#484848"}
-                  placeholder="Soyadınızı giriniz"
-                  value={surname}
-                  onChangeText={setSurname}
-                  ref={surnameInputRef}
-                  returnKeyType="next"
-                  onSubmitEditing={() => emailInputRef.current?.focus()}
-                  blurOnSubmit={false}
-                />
-              </View>
-            </View>
-
-            <View className="gap-1 mt-4">
-              <Text className="text-gray-600 ml-1">E-posta adresiniz</Text>
-              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4  w-full">
-                <FontAwesomeIcon icon={faEnvelope} size={20} color="#6b7280" />
-                <TextInput
-                  className="text-gray-600 flex-1 py-3 font-normal"
-                  placeholder="E-posta adresinizi giriniz"
-                  value={email}
-                  placeholderTextColor={"#4b5563"}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  ref={emailInputRef}
-                  returnKeyType="done"
-                  onSubmitEditing={handleNextStep}
-                />
-              </View>
-            </View>
-          </>
-        );
-      case 1: // Step 2: Kullanıcı adı, telefon
-        return (
-          <>
-            <View className="gap-1">
-              <Text className="text-gray-600 ml-1">Kullanıcı adınız</Text>
-              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4  w-full">
-                <FontAwesomeIcon icon={faUser} size={20} color="#6b7280" />
-                <TextInput
-                  className="text-gray-600 flex-1 py-3 font-normal"
-                  placeholderTextColor={"#4b5563"}
-                  placeholder="Kullanıcı adınızı giriniz"
-                  value={username}
-                  onChangeText={setUsername}
-                  autoCapitalize="none"
-                  ref={usernameInputRef}
-                  returnKeyType="next"
-                  onSubmitEditing={() => phoneInputRef.current?.focus()}
-                  blurOnSubmit={false}
-                />
-              </View>
-            </View>
-
-            <View className="gap-1 mt-4">
-              <Text className="text-gray-600 ml-1">Telefon numaranız</Text>
-              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4  w-full">
-                <FontAwesomeIcon icon={faPhone} size={20} color="#6b7280" />
-                <TextInput
-                  className="text-gray-600 flex-1 py-3 font-normal"
-                  placeholder="Telefon numaranızı giriniz"
-                  placeholderTextColor={"#4b5563"}
-                  value={phoneNumber}
-                  onChangeText={setPhoneNumber}
-                  keyboardType="phone-pad"
-                  ref={phoneInputRef}
-                  returnKeyType="done"
-                  onSubmitEditing={handleNextStep}
-                />
-              </View>
-            </View>
-          </>
-        );
-      case 2: // Step 3: Doğum tarihi, cinsiyet
-        return (
-          <>
-            <View className="gap-1">
-              <Text className="text-gray-600 ml-1">Doğum tarihiniz</Text>
-              <TouchableOpacity
-                className="shadow-custom bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full"
-                onPress={() => setShowCalendar(true)}
+    const content = (() => {
+      switch (currentStep) {
+        case 0: // Step 1: Kişisel Bilgiler (Ad, Soyad, Email)
+          return (
+            <View style={{ marginTop: 15 }}>
+              <Text
+                className="mb-4"
+                style={{
+                  fontWeight: 600,
+                  fontSize: 20,
+                }}
               >
-                <FontAwesomeIcon icon={faCalendar} size={20} color="#6b7280" />
-                <View className="flex-1 flex-row items-center justify-between ml-4">
-                  <Text
-                    className={`${birthDate ? 'text-gray-700' : 'text-gray-400'}`}
-                  >
-                    {birthDate || "Doğum tarihi seçin (isteğe bağlı)"}
-                  </Text>
-                  <FontAwesomeIcon icon={faChevronDown} size={16} color="#6b7280" />
-                </View>
-              </TouchableOpacity>
-              {/* Added a small note to indicate birthDate is optional */}
-              <Text className="text-xs text-gray-500 ml-1 mt-1">
-                Not: Doğum tarihi şu an zorunlu değildir.
+                Kişisel Bilgiler
               </Text>
-            </View>
-
-            <View className="gap-1 mt-4">
-              <Text className="text-gray-600 ml-1">
-                Cinsiyetiniz (İsteğe bağlı)
-              </Text>
-              <TouchableOpacity
-                className="shadow-custom bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4 py-3 w-full"
-                onPress={() => setShowGenderModal(true)}
-              >
-                <FontAwesomeIcon icon={faVenusMars} size={20} color="#6b7280" />
-                <View className="flex-1 flex-row items-center justify-between ml-4">
-                  <Text
-                    className={`${gender ? 'text-gray-700' : 'text-gray-400'}`}
-                  >
-                    {gender ? getGenderLabel(gender) : "Cinsiyetinizi seçin (isteğe bağlı)"}
-                  </Text>
-                  <FontAwesomeIcon icon={faChevronDown} size={16} color="#6b7280" />
-                </View>
-              </TouchableOpacity>
-            </View>
-          </>
-        );
-      case 3: // Step 4: Şifre, şifre tekrarı
-        return (
-          <>
-            <View className="gap-1">
-              <Text className="text-gray-600 ml-1">Şifreniz</Text>
-              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4  w-full">
-                <FontAwesomeIcon icon={faLock} size={20} color="#6b7280" />
-                <TextInput
-                  className="text-gray-600 flex-1 py-3 font-normal"
-                  placeholderTextColor={"#4b5563"}
-                  placeholder="Şifrenizi giriniz"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  ref={passwordInputRef}
-                  returnKeyType="next"
-                  onSubmitEditing={() => confirmPasswordInputRef.current?.focus()}
-                  blurOnSubmit={false}
-                />
-                <Pressable onPress={() => setShowPassword(!showPassword)}>
-                  <FontAwesomeIcon
-                    color="#595959"
-                    icon={showPassword ? faEye : faEyeSlash}
-                    size={20}
+              <View className="border rounded-xl">
+                <View className="flex gap-4 flex-row items-center border-b px-4 w-full">
+                  <TextInput
+                    className="text-gray-900 flex-1 w-full h-full py-4 font-normal"
+                    placeholder="Adınızı giriniz"
+                    style={{
+                      fontSize: 16,
+                    }}
+                    placeholderTextColor="#b0b0b0"
+                    value={name}
+                    onChangeText={setName}
+                    ref={nameInputRef}
+                    returnKeyType="next"
+                    onSubmitEditing={() => surnameInputRef.current?.focus()}
+                    blurOnSubmit={false}
                   />
-                </Pressable>
+                </View>
+
+                <View className="flex gap-4 flex-row items-center  px-4 w-full">
+                  <TextInput
+                    style={{
+                      fontSize: 16,
+                    }}
+                    className="text-gray-900 flex-1 py-4 font-normal"
+                    placeholderTextColor="#b0b0b0"
+                    placeholder="Soyadınızı giriniz"
+                    value={surname}
+                    onChangeText={setSurname}
+                    ref={surnameInputRef}
+                    returnKeyType="next"
+                    onSubmitEditing={() => emailInputRef.current?.focus()}
+                    blurOnSubmit={false}
+                  />
+                </View>
+              </View>
+              <Text style={{ fontSize: 12 }} className="py-3 text-gray-600">
+                Lütfen gerçek isminizi ve soy isminizi girin.
+              </Text>
+              <View className="mt-5">
+                <Text
+                  className="mb-4"
+                  style={{
+                    fontWeight: 600,
+                    fontSize: 20,
+                  }}
+                >
+                  E-mail
+                </Text>
+                <View className="flex gap-4 flex-row items-center py-1  px-4 w-full border border-gray-900 rounded-xl">
+                  <TextInput
+                    style={{
+                      fontSize: 16,
+                    }}
+                    className="text-gray-900 flex-1 py-3 font-normal"
+                    placeholder="E-posta adresinizi giriniz"
+                    value={email}
+                    placeholderTextColor="#b0b0b0"
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    ref={emailInputRef}
+                    returnKeyType="done"
+                    onSubmitEditing={dismissKeyboard}
+                  />
+                </View>
+                <Text style={{ fontSize: 12 }} className="py-3 text-gray-600">
+                  Lütfen geçerli bir e-posta adresi giriniz; bilgilendirme ve
+                  doğrulama bu adres üzerinden yapılacaktır.
+                </Text>
+              </View>
+
+              <View style={{ marginTop: 15 }}>
+                <Text
+                  className="mb-4"
+                  style={{
+                    fontWeight: 600,
+                    fontSize: 20,
+                  }}
+                >
+                  Doğum tarihi
+                </Text>
+                <TouchableOpacity
+                  className="shadow-custom bg-white flex-row items-center rounded-xl border-[1px] border-gray-900 px-4 py-4 w-full"
+                  onPress={() => {
+                    setShowCalendar(true);
+                    // Start open animation
+                    Animated.parallel([
+                      Animated.timing(modalBackgroundOpacity, {
+                        toValue: 1,
+                        duration: 250,
+                        useNativeDriver: false,
+                      }),
+                      Animated.timing(modalSlideAnim, {
+                        toValue: 0,
+                        duration: 250,
+                        useNativeDriver: true,
+                      }),
+                    ]).start();
+                  }}
+                >
+                  <FontAwesomeIcon
+                    icon={faCalendar}
+                    size={20}
+                    color="#0d0d0d"
+                  />
+                  <View className="flex-1 flex-row items-center justify-between ml-4">
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        color: birthDate ? "#0d0d0d" : "#b0b0b0",
+                      }}
+                    >
+                      {birthDate || "Doğum tarihi seçin (isteğe bağlı)"}
+                    </Text>
+                    <FontAwesomeIcon
+                      icon={faChevronDown}
+                      size={16}
+                      color="#6b7280"
+                    />
+                  </View>
+                </TouchableOpacity>
+                <Text style={{ fontSize: 12 }} className="py-3 text-gray-600">
+                  Doğum tarihi bilgisi opsiyoneldir; ancak sizin için daha
+                  kişiselleştirilmiş bir deneyim sunmamıza yardımcı olur.
+                </Text>
               </View>
             </View>
+          );
+        case 1: // Step 2: Kullanıcı adı, telefon
+          return (
+            <>
+              <View className="gap-1">
+                <Text
+                  className="mb-3"
+                  style={{
+                    fontWeight: 600,
+                    fontSize: 20,
+                  }}
+                >
+                  Kullanıcı adı
+                </Text>
+                <View className="flex gap-4 flex-row items-center py-1  px-4 w-full border border-gray-900 rounded-xl">
+                  <TextInput
+                    style={{
+                      fontSize: 16,
+                    }}
+                    className="text-gray-900 flex-1 py-3 font-normal"
+                    placeholderTextColor="#b0b0b0"
+                    placeholder="Kullanıcı adını gir"
+                    value={username}
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
+                    ref={usernameInputRef}
+                    returnKeyType="next"
+                    onSubmitEditing={() => phoneInputRef.current?.focus()}
+                    blurOnSubmit={false}
+                  />
+                </View>
+                <Text style={{ fontSize: 12 }} className="py-3 text-gray-600">
+                  Kullanıcı adınız, profilinizde görünecek ve diğer kullanıcılar
+                  tarafından sizi tanımak için kullanılacaktır.
+                </Text>
+              </View>
 
-            <View className="gap-1 mt-4">
-              <Text className="text-gray-600 ml-1">Şifre tekrarı</Text>
-              <View className="shadow-custom flex gap-4 bg-white flex-row items-center rounded-xl border-[1px] border-gray-200 px-4  w-full">
-                <FontAwesomeIcon icon={faLock} size={20} color="#6b7280" />
-                <TextInput
-                  className="text-gray-600 font-normal flex-1 py-3"
-                  placeholderTextColor={"#4b5563"}
-                  placeholder="Şifrenizi tekrar giriniz"
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry={!showPassword}
-                  ref={confirmPasswordInputRef}
-                  returnKeyType="done"
-                  onSubmitEditing={handleNextStep}
-                />
+              <View className="gap-1 mt-6">
+                <Text
+                  className="mb-4"
+                  style={{
+                    fontWeight: 600,
+                    fontSize: 20,
+                  }}
+                >
+                  Telefon numarası
+                </Text>
+                <View className="flex gap-4 flex-row items-center py-1 px-4 w-full border border-gray-900 rounded-xl">
+                  <Text style={{ fontSize: 16, color: "#b0b0b0" }}>+90</Text>
+                  <TextInput
+                    style={{
+                      fontSize: 16,
+                    }}
+                    className="text-gray-900 flex-1 py-3 font-normal"
+                    placeholder="___ ___ __ __"
+                    placeholderTextColor="#b0b0b0"
+                    value={phoneNumber}
+                    onChangeText={handlePhoneNumberChange}
+                    keyboardType="phone-pad"
+                    ref={phoneInputRef}
+                    returnKeyType="done"
+                    onSubmitEditing={dismissKeyboard}
+                    maxLength={13}
+                  />
+                </View>
+                <Text style={{ fontSize: 12 }} className="py-3 text-gray-600">
+                  Telefon numaranız yalnızca güvenlik ve hesap doğrulama
+                  amacıyla kullanılacaktır; asla üçüncü kişilerle paylaşılmaz.
+                </Text>
+              </View>
+
+              <View style={{ marginTop: 15 }}>
+                <Text
+                  className="mb-4"
+                  style={{
+                    fontWeight: 600,
+                    fontSize: 20,
+                  }}
+                >
+                  Cinsiyet
+                </Text>
+                <TouchableOpacity
+                  className="shadow-custom bg-white flex-row items-center rounded-xl border-[1px] border-gray-900 px-4 py-4 w-full"
+                  onPress={() => {
+                    setShowGenderPicker(true);
+                    setTempGenderValue(gender);
+                    // Start open animation
+                    Animated.parallel([
+                      Animated.timing(modalBackgroundOpacity, {
+                        toValue: 1,
+                        duration: 250,
+                        useNativeDriver: false,
+                      }),
+                      Animated.timing(modalSlideAnim, {
+                        toValue: 0,
+                        duration: 250,
+                        useNativeDriver: true,
+                      }),
+                    ]).start();
+                  }}
+                >
+                  <FontAwesomeIcon
+                    icon={faVenusMars}
+                    size={20}
+                    color="#0d0d0d"
+                  />
+                  <View className="flex-1 flex-row items-center justify-between ml-4">
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        color: gender ? "#0d0d0d" : "#b0b0b0",
+                      }}
+                    >
+                      {getGenderLabel(gender) ||
+                        "Cinsiyet seçin (isteğe bağlı)"}
+                    </Text>
+                    <FontAwesomeIcon
+                      icon={faChevronDown}
+                      size={16}
+                      color="#6b7280"
+                    />
+                  </View>
+                </TouchableOpacity>
+                <Text style={{ fontSize: 12 }} className="py-3 text-gray-600">
+                  Cinsiyet bilgisi opsiyoneldir ve sadece size daha uygun içerik
+                  sunabilmemiz için kullanılır.
+                </Text>
+              </View>
+            </>
+          );
+
+        case 2:
+          return (
+            <View>
+              <View className="gap-1 mt-6">
+                <Text
+                  className="mb-4"
+                  style={{
+                    fontWeight: 600,
+                    fontSize: 20,
+                  }}
+                >
+                  Şifre
+                </Text>
+                <View className="flex gap-4 flex-row items-center py-1 px-4 w-full border border-gray-900 rounded-xl">
+                  <TextInput
+                    className="text-gray-900 flex-1 py-3 font-normal"
+                    placeholderTextColor="#4b5563"
+                    placeholder="Şifrenizi giriniz"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    ref={passwordInputRef}
+                    returnKeyType="next"
+                    onSubmitEditing={() =>
+                      confirmPasswordInputRef.current?.focus()
+                    }
+                    blurOnSubmit={false}
+                  />
+                  <Pressable onPress={() => setShowPassword(!showPassword)}>
+                    <FontAwesomeIcon
+                      color="#0d0d0d"
+                      icon={showPassword ? faEye : faEyeSlash}
+                      size={20}
+                    />
+                  </Pressable>
+                </View>
+
+                {/* Şifre Güçlülük İndikatörü */}
+                <PasswordStrengthIndicator password={password} />
+              </View>
+
+              <View className="gap-1 mt-6 mb-6">
+                <Text
+                  className="mb-4"
+                  style={{
+                    fontWeight: 600,
+                    fontSize: 20,
+                  }}
+                >
+                  Şifre tekrarı
+                </Text>
+                <View className="flex gap-4 flex-row items-center py-1 px-4 w-full border border-gray-900 rounded-xl">
+                  <TextInput
+                    className="text-gray-900 flex-1 py-3 font-normal"
+                    placeholderTextColor="#4b5563"
+                    placeholder="Şifrenizi tekrar giriniz"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry={!showPassword}
+                    ref={confirmPasswordInputRef}
+                    returnKeyType="done"
+                    onSubmitEditing={dismissKeyboard}
+                  />
+                </View>
+
+                {/* Şifre Eşleşme Kontrolü */}
+                {confirmPassword && (
+                  <View className="flex-row items-center mt-2">
+                    <View
+                      className="w-4 h-4 rounded-full mr-2 items-center justify-center"
+                      style={{
+                        backgroundColor:
+                          password === confirmPassword ? "#10b981" : "#ef4444",
+                      }}
+                    >
+                      <FontAwesomeIcon
+                        icon={password === confirmPassword ? faCheck : faTimes}
+                        size={10}
+                        color="white"
+                      />
+                    </View>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        color:
+                          password === confirmPassword ? "#10b981" : "#ef4444",
+                      }}
+                    >
+                      {password === confirmPassword
+                        ? "Şifreler eşleşiyor"
+                        : "Şifreler eşleşmiyor"}
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
-          </>
-        );
-      default:
-        return null;
-    }
-  };
+          );
+        default:
+          return null;
+      }
+    })();
 
-  // Get step title
-  const getStepTitle = () => {
-    switch (currentStep) {
-      case 0:
-        return "Adınız";
-      case 1:
-        return "Kullanıcı adınız";
-      case 2:
-        return "Doğum tarihiniz";
-      case 3:
-        return "Şifreniz";
-      default:
-        return "";
-    }
+    // Wrap content with animation
+    return (
+      <Animated.View
+        style={{
+          opacity: opacityAnim,
+          transform: [{ translateX: slideAnim }, { scale: scaleAnim }],
+        }}
+      >
+        {content}
+      </Animated.View>
+    );
   };
 
   // While API call in progress
@@ -911,104 +1182,285 @@ const RegisterScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Header with logo and back button */}
-      <View className="flex-row items-center justify-center relative pt-6 pb-2">
-        {/* Back Button - Always reserve the space but only visible after first step */}
-        <View className="absolute left-5 top-6 z-10">
-          {currentStep > 0 && (
-            <TouchableOpacity
-              onPress={handlePreviousStep}
-              className="flex-row items-center"
+      <TouchableWithoutFeedback onPress={dismissKeyboard}>
+        <View className="flex-1">
+          {/* Header with logo and back button */}
+          <View className="flex-row items-center justify-center relative pt-6 pb-2">
+            {/* Back Button - Always reserve the space but only visible after first step */}
+          </View>
+
+          {/* Progress Bar */}
+          {renderProgressIndicators()}
+
+          {/* Main content with keyboard avoiding behavior */}
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            className="flex-1 bg-white"
+            keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
+          >
+            {/* Scrollable Content Area */}
+            <View
+              className=" px-4"
+              contentContainerStyle={{ paddingBottom: 120 }}
             >
-              <FontAwesomeIcon icon={faArrowLeft} size={18} color="#2C8700" />
-              <Text className="text-[#2C8700] ml-2 font-medium">Geri</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+              {/* Current Step Content */}
+              {renderStepContent()}
+            </View>
 
-        {/* Logo */}
-        <Image
-          source={require("../../assets/logo-kirax.png")}
-          style={{ width: width * 0.5, height: width * 0.3 }}
-          resizeMode="contain"
-        />
-      </View>
-
-      {/* Progress Bar */}
-      {renderProgressIndicators()}
-
-      {/* Main content with keyboard avoiding behavior */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1 bg-white"
-        keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
-      >
-        {/* Scrollable Content Area */}
-        <View
-          className="flex-grow px-5"
-          contentContainerStyle={{ paddingBottom: 120 }} // Add enough padding to ensure content is visible
-        >
-          <Animated.View
-            className="flex"
-            style={{
-              transform: [
-                {
-                  translateX: slideAnim.interpolate({
-                    inputRange: [-1, 0, 1],
-                    outputRange: [-(width * 0.8), 0, width * 0.8], // Slide animation values
-                  }),
-                },
-              ],
-            }}
-          >
-            {/* Current Step Content */}
-            {renderStepContent()}
-          </Animated.View>
-        </View>
-
-        {/* Button Area that moves with keyboard */}
-        <View className="bg-white px-5 py-4 border-t border-gray-200">
-          {/* Continue Button */}
-          <TouchableOpacity
-            className="rounded-xl bg-[#2C8700] items-center justify-center py-3 w-full"
-            onPress={handleNextStep}
-          >
-            <Text className="text-[15px] text-white font-semibold">
-              {currentStep === totalSteps - 1 ? "Kaydol" : "Devam et"}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Login Link - Only show on first step */}
-          {currentStep === 0 && (
-            <View className="flex-row justify-center mt-4">
-              <Text className="text-base text-gray-600">
-                Zaten hesabınız var mı?{" "}
-              </Text>
-              <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-                <Text className="text-base text-[#2C8700] font-semibold">
-                  Giriş Yap
+            {/* Button Area that moves with keyboard */}
+            <View className="bg-white px-5 py-4 border-gray-200">
+              {/* Continue Button */}
+              <TouchableOpacity
+                className="rounded-xl bg-green-300 items-center justify-center py-4 w-full"
+                onPress={handleNextStep}
+              >
+                <Text
+                  style={{
+                    fontSize: 16,
+                  }}
+                  className=" text-white font-semibold"
+                >
+                  {currentStep === totalSteps - 1 ? "Kaydol" : "Devam et"}
                 </Text>
               </TouchableOpacity>
+
+              {/* Login Link - Only show on first step */}
+              {currentStep === 0 && (
+                <View className="flex-row justify-center mt-4 items-center">
+                  <Text className="text-base text-gray-600">
+                    Zaten hesabınız var mı?{" "}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate("Login")}
+                  >
+                    <Text className="text-lg text-gray-900 font-semibold">
+                      Giriş Yap
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
-          )}
+          </KeyboardAvoidingView>
         </View>
-      </KeyboardAvoidingView>
-      <CalendarModal
-        visible={showCalendar}
-        onClose={() => setShowCalendar(false)}
-        onDateSelect={handleDateSelect}
-        selectedDate={dateValue}
-      />
+      </TouchableWithoutFeedback>
 
-      {/* Gender Modal */}
-      <GenderModal
-        visible={showGenderModal}
-        onClose={() => setShowGenderModal(false)}
-        onGenderSelect={handleGenderSelect}
-        selectedGender={gender}
-      />
+      {/* Native Date Picker */}
+      {showCalendar && (
+        <>
+          {Platform.OS === "ios" ? (
+            <Modal visible={showCalendar} transparent animationType="none">
+              <Animated.View
+                className="flex-1 justify-end"
+                style={{
+                  backgroundColor: modalBackgroundOpacity.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.5)"],
+                  }),
+                }}
+              >
+                <Animated.View
+                  className="bg-white rounded-t-3xl"
+                  style={{
+                    transform: [{ translateY: modalSlideAnim }],
+                  }}
+                >
+                  {/* Header with Apple-style done button */}
+                  <View
+                    style={{ borderRadius: 100 }}
+                    className="flex-row justify-between items-center px-6 py-4
+                   bg-white"
+                  >
+                    <Text style={{ fontWeight: 600, fontSize: 18 }}>
+                      Doğum tarihi seç
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        // Close animation
+                        Animated.parallel([
+                          Animated.timing(modalBackgroundOpacity, {
+                            toValue: 0,
+                            duration: 250,
+                            useNativeDriver: false,
+                          }),
+                          Animated.timing(modalSlideAnim, {
+                            toValue: 300,
+                            duration: 250,
+                            useNativeDriver: true,
+                          }),
+                        ]).start(() => {
+                          // Seçilen tarihi timezone offset'i ile düzelt
+                          const adjustedDate = new Date(
+                            dateValue.getTime() +
+                              dateValue.getTimezoneOffset() * 60000
+                          );
+
+                          const day = String(adjustedDate.getDate()).padStart(
+                            2,
+                            "0"
+                          );
+                          const month = String(
+                            adjustedDate.getMonth() + 1
+                          ).padStart(2, "0");
+                          const year = adjustedDate.getFullYear();
+                          const formattedDate = `${day}/${month}/${year}`;
+
+                          setBirthDate(formattedDate);
+                          setShowCalendar(false);
+                        });
+                      }}
+                      className="px-2 py-2"
+                    >
+                      <Text
+                        style={{
+                          fontSize: 17,
+                          color: "#007AFF",
+                          fontWeight: "500",
+                        }}
+                      >
+                        Tamam
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Date Picker Container */}
+                  <View className="bg-white px-4 py-2">
+                    <DateTimePicker
+                      value={dateValue}
+                      mode="date"
+                      display="spinner"
+                      onChange={(event, selectedDate) => {
+                        if (selectedDate) {
+                          setDateValue(selectedDate);
+                        }
+                      }}
+                      maximumDate={new Date()}
+                      minimumDate={new Date(1900, 0, 1)}
+                      locale="tr-TR"
+                      textColor="#000000"
+                      style={{
+                        backgroundColor: "#FFFFFF",
+                        width: "100%",
+                        height: 216,
+                      }}
+                    />
+                  </View>
+
+                  {/* Safe area for bottom */}
+                  <View style={{ height: 34, backgroundColor: "#FFFFFF" }} />
+                </Animated.View>
+              </Animated.View>
+            </Modal>
+          ) : (
+            <DateTimePicker
+              value={dateValue}
+              mode="date"
+              display="default"
+              onChange={handleDatePickerChange}
+              maximumDate={new Date()}
+              minimumDate={new Date(1900, 0, 1)}
+              locale="tr-TR"
+            />
+          )}
+        </>
+      )}
+
+      {/* Gender Picker */}
+
+      {showGenderPicker && Platform.OS === "ios" && (
+        <Modal
+          visible={showGenderPicker}
+          transparent
+          animationType="none"
+          presentationStyle="overFullScreen"
+        >
+          <Animated.View
+            className="flex-1 justify-end"
+            style={{
+              backgroundColor: modalBackgroundOpacity.interpolate({
+                inputRange: [0, 1],
+                outputRange: ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.5)"],
+              }),
+            }}
+          >
+            <Animated.View
+              className="rounded-t-3xl bg-white"
+              style={{
+                transform: [{ translateY: modalSlideAnim }],
+              }}
+            >
+              {/* Header */}
+              <View className="flex-row justify-between items-center px-6 py-4 bg-white rounded-t-3xl">
+                <Text style={{ fontWeight: 600, fontSize: 18 }}>
+                  Cinsiyet seç
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    // Close animation
+                    Animated.parallel([
+                      Animated.timing(modalBackgroundOpacity, {
+                        toValue: 0,
+                        duration: 250,
+                        useNativeDriver: false,
+                      }),
+                      Animated.timing(modalSlideAnim, {
+                        toValue: 300,
+                        duration: 250,
+                        useNativeDriver: true,
+                      }),
+                    ]).start(() => {
+                      setGender(tempGenderValue);
+                      setShowGenderPicker(false);
+                    });
+                  }}
+                  className="px-2 py-2"
+                >
+                  <Text
+                    style={{
+                      fontSize: 17,
+                      color: "#007AFF",
+                      fontWeight: "500",
+                    }}
+                  >
+                    Tamam
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Picker Container - Styling düzeltildi */}
+              <View className="px-4 py-2 bg-white">
+                <Picker
+                  selectedValue={tempGenderValue}
+                  onValueChange={(itemValue) => setTempGenderValue(itemValue)}
+                  style={{
+                    width: "100%",
+                    height: 216,
+                    backgroundColor: "white", // Arka plan beyaz
+                  }}
+                  itemStyle={{
+                    fontSize: 18, // Font boyutu
+                    color: "#000000", // Siyah metin rengi
+                    height: 216, // Item yüksekliği
+                    backgroundColor: "transparent", // Şeffaf arka plan
+                  }}
+                >
+                  <Picker.Item
+                    label="Seçiniz"
+                    value=""
+                    color="#000000" // Explicit renk
+                  />
+                  <Picker.Item label="Kadın" value="female" color="#000000" />
+                  <Picker.Item label="Erkek" value="male" color="#000000" />
+                  <Picker.Item label="Diğer" value="other" color="#000000" />
+                </Picker>
+              </View>
+
+              {/* Safe area for bottom */}
+              <View style={{ height: 34, backgroundColor: "#FFFFFF" }} />
+            </Animated.View>
+          </Animated.View>
+        </Modal>
+      )}
     </SafeAreaView>
-
   );
 };
 
