@@ -27,6 +27,7 @@ import {
   useGetLandlordProfileQuery,
   useGetTenantProfileQuery,
 } from "../redux/api/apiSlice";
+import { BlurView } from "expo-blur";
 
 // Import screens
 import AllNearbyPropertiesScreen from "../screens/AllNearbyPropertiesScreen";
@@ -684,17 +685,38 @@ const TenantProfileStack = () => {
 // Tab Navigator
 const LandlordTabNavigator = () => {
   return (
-    <View style={{ flex: 1, backgroundColor: "#A0E79E" }}>
+    <View style={{ flex: 1 }}>
       <Tab.Navigator
         screenOptions={{
-          tabBarActiveTintColor: "#15803d",
-          tabBarInactiveTintColor: "#666",
+          headerBackgroundContainerStyle: "",
+          tabBarActiveTintColor: "#000",
+          tabBarInactiveTintColor: "#999999",
           tabBarStyle: {
-            backgroundColor: "#fff",
-            borderTopColor: "#e0e0e0",
+            backgroundColor: "rgba(255, 255, 255, 0.05)", // Daha yüksek opacity
+            borderTopColor: "rgba(224, 224, 224, 0.2)",
             paddingTop: 5,
             paddingBottom: 5,
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            elevation: 8,
           },
+          tabBarBackground: () => (
+            <BlurView
+              intensity={100}
+              tint="light"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderTopWidth: 0.5,
+                borderTopColor: "rgba(0, 0, 0, 0.13)",
+              }}
+            />
+          ),
           headerShown: false,
         }}
       >
@@ -706,9 +728,9 @@ const LandlordTabNavigator = () => {
             tabBarLabel: "Ana Sayfa",
             tabBarIcon: ({ focused }) => (
               <FontAwesomeIcon
-                icon={focused ? faHouseSolid : faHouseRegular}
+                icon={faHouseRegular}
                 size={24}
-                color="#A0E79E"
+                color={focused ? "#000" : "#999999"}
               />
             ),
           }}
@@ -721,9 +743,9 @@ const LandlordTabNavigator = () => {
             tabBarLabel: "Mülklerim",
             tabBarIcon: ({ focused }) => (
               <FontAwesomeIcon
-                icon={focused ? faBuildingSolid : faBuildingRegular}
+                icon={faBuildingRegular}
                 size={24}
-                color="#A0E79E"
+                color={focused ? "#000" : "#999999"}
               />
             ),
             headerStyle: {
@@ -739,9 +761,9 @@ const LandlordTabNavigator = () => {
             tabBarLabel: "Teklifler",
             tabBarIcon: ({ focused }) => (
               <FontAwesomeIcon
-                icon={focused ? faEnvelopeSolid : faEnvelopeRegular}
+                icon={faEnvelopeRegular}
                 size={24}
-                color="#A0E79E"
+                color={focused ? "#000" : "#999999"}
               />
             ),
           }}
@@ -754,9 +776,9 @@ const LandlordTabNavigator = () => {
             tabBarLabel: "Profil",
             tabBarIcon: ({ focused }) => (
               <FontAwesomeIcon
-                icon={focused ? faUserSolid : faUserRegular}
+                icon={faUserRegular}
                 size={24}
-                color="#A0E79E"
+                color={focused ? "#000" : "#999999"}
               />
             ),
           }}
