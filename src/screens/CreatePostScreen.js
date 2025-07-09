@@ -59,6 +59,7 @@ const CreatePostScreen = ({ navigation, route }) => {
   const [minimumKiralamaSuresi, setMinimumKiralamaSuresi] = useState("");
   const [uploadStatus, setUploadStatus] = useState("idle");
   const [il, setIl] = useState("");
+  const [RentalPeriod, setRentalPeriod] = useState("");
   const [ilce, setIlce] = useState("");
   const [kimden, setKimden] = useState("Sahibinden");
   const [mutfak, setMutfak] = useState("");
@@ -93,6 +94,14 @@ const CreatePostScreen = ({ navigation, route }) => {
 
   // Usage status options
   const usageStatusOptions = ["Boş", "Kiracılı", "Mülk Sahibi Oturuyor"];
+
+  // Rental Period options matching the enum
+  const rentalPeriodOptions = [
+    { value: "1", label: "6 Ay" },
+    { value: "2", label: "1 Yıl" },
+    { value: "3", label: "Uzun Vadeli (1+ Yıl)" },
+    { value: "4", label: "Kısa Dönem Olabilir" },
+  ];
 
   // Parse location string to extract il, ilce, and mahalle if available
   const parseLocation = (locationString) => {
@@ -148,6 +157,7 @@ const CreatePostScreen = ({ navigation, route }) => {
       setMinimumKiralamaSuresi(
         propertyData.minimumKiralamaSuresi?.toString() || ""
       );
+      setRentalPeriod(propertyData.rentalPeriod?.toString() || "");
       setIl(propertyData.il || "");
       setIlce(propertyData.ilce || "");
       setKimden(propertyData.kimden || "Sahibinden");
@@ -188,6 +198,7 @@ const CreatePostScreen = ({ navigation, route }) => {
       setPropertyType(savedFormData.propertyType || "");
       setIsitmaTipi(savedFormData.isitmaTipi || "");
       setDepozito(savedFormData.depozito || "");
+      setRentalPeriod(savedFormData.rentalPeriod || "");
 
       // Load saved data for new fields if available
       setIl(savedFormData.il || "");
@@ -336,6 +347,10 @@ const CreatePostScreen = ({ navigation, route }) => {
       Alert.alert("Hata", "Lütfen kullanım durumu seçiniz.");
       return false;
     }
+    if (!RentalPeriod.trim()) {
+      Alert.alert("Hata", "Lütfen kiralama süresi seçiniz.");
+      return false;
+    }
     return true;
   };
 
@@ -377,6 +392,7 @@ const CreatePostScreen = ({ navigation, route }) => {
       formData.append("IsitmaTipi", isitmaTipi);
       formData.append("ParaBirimi", paraBirimi);
       formData.append("KullanimDurumu", kullanimDurumu);
+      formData.append("RentalPeriod", RentalPeriod);
 
       // Optional fields
       if (banyoSayisi) formData.append("BanyoSayisi", banyoSayisi);
@@ -424,6 +440,7 @@ const CreatePostScreen = ({ navigation, route }) => {
       // Log the form data being sent
       console.log("===== SENDING POST DATA =====");
       console.log("UserId:", currentUser.id);
+      console.log("RentalPeriod:", RentalPeriod);
       console.log("Total images being sent:", newImages.length);
       console.log("Selected coordinates:", selectedCoordinates);
       console.log("=============================");
@@ -470,7 +487,7 @@ const CreatePostScreen = ({ navigation, route }) => {
       Alert.alert(
         "Hata",
         error.data?.message ||
-        "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin."
+          "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin."
       );
     }
   };
@@ -491,6 +508,7 @@ const CreatePostScreen = ({ navigation, route }) => {
         propertyType,
         isitmaTipi,
         depozito,
+        rentalPeriod: RentalPeriod,
         // Save new fields
         il,
         ilce,
@@ -509,7 +527,10 @@ const CreatePostScreen = ({ navigation, route }) => {
   };
 
   return (
-    <ScrollView className="flex-1 bg-gray-50">
+    <ScrollView
+      className="flex-1 bg-gray-50"
+      contentContainerStyle={{ paddingBottom: 100 }}
+    >
       <View className="p-5">
         <View className="flex-row justify-between items-center mb-6">
           <TouchableOpacity className="p-2" onPress={() => navigation.goBack()}>
@@ -562,6 +583,36 @@ const CreatePostScreen = ({ navigation, route }) => {
               value={depozito}
               onChangeText={setDepozito}
             />
+          </View>
+
+          {/* Rental Period Section */}
+          <View className="mb-4">
+            <Text className="text-gray-700 mb-1 font-medium">
+              Kiralama Süresi *
+            </Text>
+            <View className="flex-row flex-wrap mt-1">
+              {rentalPeriodOptions.map((period) => (
+                <TouchableOpacity
+                  key={period.value}
+                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${
+                    RentalPeriod === period.value
+                      ? "bg-green-500"
+                      : "bg-gray-200"
+                  }`}
+                  onPress={() => setRentalPeriod(period.value)}
+                >
+                  <Text
+                    className={`${
+                      RentalPeriod === period.value
+                        ? "text-white"
+                        : "text-gray-700"
+                    }`}
+                  >
+                    {period.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
 
           {/* Location with Map Integration */}
@@ -711,13 +762,15 @@ const CreatePostScreen = ({ navigation, route }) => {
               {propertyTypes.map((type) => (
                 <TouchableOpacity
                   key={type}
-                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${propertyType === type ? "bg-green-500" : "bg-gray-200"
-                    }`}
+                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${
+                    propertyType === type ? "bg-green-500" : "bg-gray-200"
+                  }`}
                   onPress={() => setPropertyType(type)}
                 >
                   <Text
-                    className={`${propertyType === type ? "text-white" : "text-gray-700"
-                      }`}
+                    className={`${
+                      propertyType === type ? "text-white" : "text-gray-700"
+                    }`}
                   >
                     {type}
                   </Text>
@@ -735,13 +788,15 @@ const CreatePostScreen = ({ navigation, route }) => {
               {heatingTypes.map((type) => (
                 <TouchableOpacity
                   key={type}
-                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${isitmaTipi === type ? "bg-green-500" : "bg-gray-200"
-                    }`}
+                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${
+                    isitmaTipi === type ? "bg-green-500" : "bg-gray-200"
+                  }`}
                   onPress={() => setIsitmaTipi(type)}
                 >
                   <Text
-                    className={`${isitmaTipi === type ? "text-white" : "text-gray-700"
-                      }`}
+                    className={`${
+                      isitmaTipi === type ? "text-white" : "text-gray-700"
+                    }`}
                   >
                     {type}
                   </Text>
@@ -759,13 +814,15 @@ const CreatePostScreen = ({ navigation, route }) => {
               {usageStatusOptions.map((status) => (
                 <TouchableOpacity
                   key={status}
-                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${kullanimDurumu === status ? "bg-green-500" : "bg-gray-200"
-                    }`}
+                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${
+                    kullanimDurumu === status ? "bg-green-500" : "bg-gray-200"
+                  }`}
                   onPress={() => setKullanimDurumu(status)}
                 >
                   <Text
-                    className={`${kullanimDurumu === status ? "text-white" : "text-gray-700"
-                      }`}
+                    className={`${
+                      kullanimDurumu === status ? "text-white" : "text-gray-700"
+                    }`}
                   >
                     {status}
                   </Text>
@@ -781,13 +838,15 @@ const CreatePostScreen = ({ navigation, route }) => {
               {["Sahibinden", "Emlakçıdan"].map((type) => (
                 <TouchableOpacity
                   key={type}
-                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${kimden === type ? "bg-green-500" : "bg-gray-200"
-                    }`}
+                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${
+                    kimden === type ? "bg-green-500" : "bg-gray-200"
+                  }`}
                   onPress={() => setKimden(type)}
                 >
                   <Text
-                    className={`${kimden === type ? "text-white" : "text-gray-700"
-                      }`}
+                    className={`${
+                      kimden === type ? "text-white" : "text-gray-700"
+                    }`}
                   >
                     {type}
                   </Text>
@@ -932,15 +991,17 @@ const CreatePostScreen = ({ navigation, route }) => {
             ].map((option) => (
               <TouchableOpacity
                 key={option.label}
-                className={`mr-2 mb-2 px-3 py-2 rounded-full ${option.state === "true" ? "bg-green-500" : "bg-gray-200"
-                  }`}
+                className={`mr-2 mb-2 px-3 py-2 rounded-full ${
+                  option.state === "true" ? "bg-green-500" : "bg-gray-200"
+                }`}
                 onPress={() =>
                   option.setState(option.state === "true" ? "false" : "true")
                 }
               >
                 <Text
-                  className={`${option.state === "true" ? "text-white" : "text-gray-700"
-                    }`}
+                  className={`${
+                    option.state === "true" ? "text-white" : "text-gray-700"
+                  }`}
                 >
                   {option.label}
                 </Text>
@@ -956,13 +1017,15 @@ const CreatePostScreen = ({ navigation, route }) => {
             {["TL", "USD", "EUR"].map((currency) => (
               <TouchableOpacity
                 key={currency}
-                className={`mr-2 mb-2 px-3 py-2 rounded-full ${paraBirimi === currency ? "bg-green-500" : "bg-gray-200"
-                  }`}
+                className={`mr-2 mb-2 px-3 py-2 rounded-full ${
+                  paraBirimi === currency ? "bg-green-500" : "bg-gray-200"
+                }`}
                 onPress={() => setParaBirimi(currency)}
               >
                 <Text
-                  className={`${paraBirimi === currency ? "text-white" : "text-gray-700"
-                    }`}
+                  className={`${
+                    paraBirimi === currency ? "text-white" : "text-gray-700"
+                  }`}
                 >
                   {currency}
                 </Text>
@@ -973,10 +1036,11 @@ const CreatePostScreen = ({ navigation, route }) => {
 
         {/* Submit Button */}
         <TouchableOpacity
-          className={`py-3 rounded-lg mb-10 ${isCreating || uploadStatus === "uploading"
+          className={`py-3 rounded-lg mb-10 ${
+            isCreating || uploadStatus === "uploading"
               ? "bg-green-300"
               : "bg-green-500"
-            }`}
+          }`}
           onPress={handleSubmit}
           disabled={isCreating || uploadStatus === "uploading"}
         >

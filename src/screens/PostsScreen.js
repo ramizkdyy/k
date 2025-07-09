@@ -9,7 +9,7 @@ import {
   RefreshControl,
   Alert,
 } from "react-native";
-import { Image } from 'expo-image'; // Expo Image import
+import { Image } from "expo-image"; // Expo Image import
 import { useSelector, useDispatch } from "react-redux";
 import { selectUserRole, selectCurrentUser } from "../redux/slices/authSlice";
 import {
@@ -287,9 +287,11 @@ const PostsScreen = ({ navigation }) => {
       const query = searchQuery.toLowerCase();
       filteredPosts = filteredPosts.filter(
         (post) =>
-          (post.ilanBasligi && post.ilanBasligi.toLowerCase().includes(query)) ||
+          (post.ilanBasligi &&
+            post.ilanBasligi.toLowerCase().includes(query)) ||
           (post.il && post.il.toLowerCase().includes(query)) ||
-          (post.postDescription && post.postDescription.toLowerCase().includes(query))
+          (post.postDescription &&
+            post.postDescription.toLowerCase().includes(query))
       );
     }
 
@@ -322,7 +324,7 @@ const PostsScreen = ({ navigation }) => {
 
     // Remove duplicates based on postId (extra safety)
     const uniquePosts = filteredPosts.reduce((acc, current) => {
-      const isDuplicate = acc.find(item => item.postId === current.postId);
+      const isDuplicate = acc.find((item) => item.postId === current.postId);
       if (!isDuplicate) {
         acc.push(current);
       }
@@ -353,11 +355,11 @@ const PostsScreen = ({ navigation }) => {
           {item.postImages && item.postImages.length > 0 ? (
             <Image
               source={{ uri: item.postImages[0].postImageUrl }}
-              style={{ width: '100%', height: 208 }} // h-52 = 208px
+              style={{ width: "100%", height: 208 }} // h-52 = 208px
               contentFit="cover"
               transition={200} // Smooth transition
               placeholder={{
-                uri: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y5ZmFmYiIvPjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Yw7xrbGVuaXlvcjwvdGV4dD48L3N2Zz4='
+                uri: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y5ZmFmYiIvPjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Yw7xrbGVuaXlvcjwvdGV4dD48L3N2Zz4=",
               }}
               cachePolicy="memory-disk" // Aggressive caching
               onError={() =>
@@ -377,19 +379,20 @@ const PostsScreen = ({ navigation }) => {
           {/* Status badge - improved design */}
           <View className="absolute top-3 right-3">
             <View
-              className={`px-3 py-1.5 rounded-full backdrop-blur-sm ${item.status === 0
-                ? "bg-green-500/90"
-                : item.status === 1
+              className={`px-3 py-1.5 rounded-full backdrop-blur-sm ${
+                item.status === 0
+                  ? "bg-green-500/90"
+                  : item.status === 1
                   ? "bg-green-500/90"
                   : "bg-gray-500/90"
-                }`}
+              }`}
             >
               <Text className="text-white text-xs font-semibold">
                 {item.status === 0
                   ? "Aktif"
                   : item.status === 1
-                    ? "Kiralandı"
-                    : "Kapalı"}
+                  ? "Kiralandı"
+                  : "Kapalı"}
               </Text>
             </View>
           </View>
@@ -410,7 +413,10 @@ const PostsScreen = ({ navigation }) => {
         <View className="p-5">
           {/* Title and Price */}
           <View className="flex-row justify-between items-start mb-2">
-            <Text className="text-lg font-bold text-gray-900 flex-1 mr-3" numberOfLines={2}>
+            <Text
+              className="text-lg font-bold text-gray-900 flex-1 mr-3"
+              numberOfLines={2}
+            >
               {item.ilanBasligi || "İlan başlığı yok"}
             </Text>
             <View className="bg-green-50 px-3 py-1 rounded-lg">
@@ -429,7 +435,10 @@ const PostsScreen = ({ navigation }) => {
           </View>
 
           {/* Description */}
-          <Text numberOfLines={2} className="text-gray-600 text-sm mb-4 leading-5">
+          <Text
+            numberOfLines={2}
+            className="text-gray-600 text-sm mb-4 leading-5"
+          >
             {item.postDescription || "Açıklama yok"}
           </Text>
 
@@ -590,48 +599,54 @@ const PostsScreen = ({ navigation }) => {
             <Text className="text-gray-600 mb-1">Durum</Text>
             <View className="flex-row mt-1">
               <TouchableOpacity
-                className={`mr-2 px-3 py-1 rounded-full ${localFilters.status === 0 ? "bg-green-500" : "bg-gray-200"
-                  }`}
+                className={`mr-2 px-3 py-1 rounded-full ${
+                  localFilters.status === 0 ? "bg-green-500" : "bg-gray-200"
+                }`}
                 onPress={() => {
                   setLocalFilters({ ...localFilters, status: 0 });
                   Logger.event("filter_status_changed", { status: 0 });
                 }}
               >
                 <Text
-                  className={`${localFilters.status === 0 ? "text-white" : "text-gray-700"
-                    }`}
+                  className={`${
+                    localFilters.status === 0 ? "text-white" : "text-gray-700"
+                  }`}
                 >
                   Aktif
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                className={`mr-2 px-3 py-1 rounded-full ${localFilters.status === 1 ? "bg-green-500" : "bg-gray-200"
-                  }`}
+                className={`mr-2 px-3 py-1 rounded-full ${
+                  localFilters.status === 1 ? "bg-green-500" : "bg-gray-200"
+                }`}
                 onPress={() => {
                   setLocalFilters({ ...localFilters, status: 1 });
                   Logger.event("filter_status_changed", { status: 1 });
                 }}
               >
                 <Text
-                  className={`${localFilters.status === 1 ? "text-white" : "text-gray-700"
-                    }`}
+                  className={`${
+                    localFilters.status === 1 ? "text-white" : "text-gray-700"
+                  }`}
                 >
                   Kiralandı
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                className={`px-3 py-1 rounded-full ${localFilters.status === 2 ? "bg-green-500" : "bg-gray-200"
-                  }`}
+                className={`px-3 py-1 rounded-full ${
+                  localFilters.status === 2 ? "bg-green-500" : "bg-gray-200"
+                }`}
                 onPress={() => {
                   setLocalFilters({ ...localFilters, status: 2 });
                   Logger.event("filter_status_changed", { status: 2 });
                 }}
               >
                 <Text
-                  className={`${localFilters.status === 2 ? "text-white" : "text-gray-700"
-                    }`}
+                  className={`${
+                    localFilters.status === 2 ? "text-white" : "text-gray-700"
+                  }`}
                 >
                   Kapalı
                 </Text>
@@ -678,11 +693,12 @@ const PostsScreen = ({ navigation }) => {
         )}
 
         <TouchableOpacity
-          className={`p-2 rounded-full ${isFilterVisible ||
+          className={`p-2 rounded-full ${
+            isFilterVisible ||
             Object.values(filters).some((val) => val !== null)
-            ? "bg-green-500"
-            : "bg-gray-200"
-            }`}
+              ? "bg-green-500"
+              : "bg-gray-200"
+          }`}
           onPress={() => {
             Logger.event("toggle_filter_panel", { show: !isFilterVisible });
             setIsFilterVisible(!isFilterVisible);
@@ -693,7 +709,7 @@ const PostsScreen = ({ navigation }) => {
             size={22}
             color={
               isFilterVisible ||
-                Object.values(filters).some((val) => val !== null)
+              Object.values(filters).some((val) => val !== null)
                 ? "#FFFFFF"
                 : "#4B5563"
             }
@@ -769,8 +785,8 @@ const PostsScreen = ({ navigation }) => {
               {filters.status === 0
                 ? "Aktif"
                 : filters.status === 1
-                  ? "Kiralandı"
-                  : "Kapalı"}
+                ? "Kiralandı"
+                : "Kapalı"}
             </Text>
             <TouchableOpacity
               onPress={() => {
