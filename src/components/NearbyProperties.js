@@ -365,12 +365,12 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
         {/* Üst kısım - Başlık */}
         <View>
           <Text
-            style={{ fontSize: 15, fontWeight: 700 }}
-            className="text-gray-800 mb-1"
+            style={{ fontSize: 16, fontWeight: 600 }}
+            className="text-gray-800 mb-2"
             numberOfLines={1}
             ellipsizeMode="tail"
           >
-            {item.ilanBasligi || item.title || "İlan Başlığı"}
+            {item.il}, {item.ilanBasligi || item.title || "İlan Başlığı"}
           </Text>
         </View>
 
@@ -378,8 +378,8 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
         <View>
           {/* Fiyat */}
           <Text
-            style={{ fontSize: 16, fontWeight: 700 }}
-            className="text-gray-900 mb-2"
+            style={{ fontSize: 14, fontWeight: 600 }}
+            className="text-gray-400 mb-2"
             numberOfLines={1}
             ellipsizeMode="tail"
           >
@@ -416,11 +416,13 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
         <View className="flex flex-row gap-4 items-center">
           <View className="flex flex-row gap-2 items-center">
             <FontAwesomeIcon color="#6B7280" icon={faBath} />
-            <Text className="text-gray-500">{item.banyoSayisi} Banyo</Text>
+            <Text style={{ fontSize: 12 }} className="text-gray-500">
+              {item.banyoSayisi} Banyo
+            </Text>
           </View>
           <View className="flex flex-row gap-2 items-center">
             <FontAwesomeIcon color="#6B7280" icon={faBed} />
-            <Text className="text-gray-500">
+            <Text style={{ fontSize: 12 }} className="text-gray-500">
               {item.banyoSayisi} Yatak odası
             </Text>
           </View>
