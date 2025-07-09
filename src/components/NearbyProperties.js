@@ -339,7 +339,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   const renderSimilarPostCard = ({ item }) => (
     <TouchableOpacity
       activeOpacity={1}
-      className="overflow-hidden w-full flex flex-row items-center gap-5 py-2"
+      className="overflow-hidden w-full flex flex-row items-center gap-4 py-2"
       onPress={() => {
         navigation.navigate("PostDetail", { postId: item.postId });
       }}
@@ -355,7 +355,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
                 : item.firstPostİmageURL ||
                   "https://via.placeholder.com/120x120",
           }}
-          className="rounded-2xl"
+          className="rounded-2xl border border-gray-100"
           resizeMode="cover"
         />
       </View>
@@ -370,7 +370,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
             numberOfLines={1}
             ellipsizeMode="tail"
           >
-            {item.il}, {item.odaSayisi} daire
+            {item.ilanBasligi || item.title || "İlan Başlığı"}
           </Text>
         </View>
 
