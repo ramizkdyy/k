@@ -339,7 +339,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   const renderSimilarPostCard = ({ item }) => (
     <TouchableOpacity
       activeOpacity={1}
-      className="overflow-hidden w-full flex flex-row items-center gap-4 py-2"
+      className="overflow-hidden w-full flex flex-row items-center gap-5 py-2"
       onPress={() => {
         navigation.navigate("PostDetail", { postId: item.postId });
       }}
@@ -370,7 +370,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
             numberOfLines={1}
             ellipsizeMode="tail"
           >
-            {item.il}, {item.ilanBasligi || item.title || "İlan Başlığı"}
+            {item.il}, {item.odaSayisi} daire
           </Text>
         </View>
 
