@@ -462,7 +462,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
           <BlurView
             intensity={50}
             tint="dark"
-            className="absolute top-3 right-3 rounded-full overflow-hidden"
+            className="absolute top-3 left-3 rounded-full overflow-hidden"
           >
             <View className="px-2 py-1.5 flex-row items-center gap-1">
               <FontAwesomeIcon color="white" icon={faRoad} size={14} />
@@ -479,7 +479,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
         )}
         {/* Blur Overlay - Bottom Half */}
         <BlurView
-          intensity={20}
+          intensity={30}
           tint="dark"
           className="absolute bottom-0 left-0 right-0"
           style={{ height: 65 }} // Resmin alt yarısı
@@ -778,31 +778,12 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   // Show error state
   if (error) {
     return (
-      <View className="mb-4">
-        <View className="flex-row justify-between items-center mb-4">
-          <Text
-            style={{ fontSize: 20 }}
-            className=" font-semibold text-gray-900"
-          >
-            {userRole === "KIRACI" ? "Yakındaki Evler" : "Potansiyel Kiracılar"}
-          </Text>
+      <View className="flex flex-col">
+        <View className="">
+          <LoadingSkeleton count={3} />
         </View>
-
-        <View className=" border-red-200">
-          <Text className="text-red-600 text-center mb-2">
-            {userRole === "KIRACI"
-              ? "Yakındaki evler yüklenirken bir hata oluştu"
-              : "Potansiyel kiracılar yüklenirken bir hata oluştu"}
-          </Text>
-          <TouchableOpacity
-            className="bg-red-500 rounded-lg py-2 px-4 self-center"
-            onPress={handleRefresh}
-            disabled={isRefreshing}
-          >
-            <Text className="text-white text-sm font-medium">
-              {isRefreshing ? "Yenileniyor..." : "Tekrar Dene"}
-            </Text>
-          </TouchableOpacity>
+        <View className="mb-6">
+          <LoadingSkeleton count={3} />
         </View>
       </View>
     );

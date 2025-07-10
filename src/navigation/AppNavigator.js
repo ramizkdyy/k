@@ -404,7 +404,9 @@ const LandlordHomeStack = () => {
       <LandlordStack.Screen
         name="PostDetail"
         component={PostDetailScreen}
-        options={{ title: "İlan Detayı" }}
+        options={{
+          headerShown: false,
+        }}
       />
       <LandlordStack.Screen
         name="CreatePost"
@@ -460,7 +462,7 @@ const LandlordPropertiesStack = () => {
       <LandlordStack.Screen
         name="PostDetail"
         component={PostDetailScreen}
-        options={{ title: "İlan Detayı" }}
+        options={{ title: "İlan Detayı", headerShown: false }}
       />
       <LandlordStack.Screen
         name="CreatePost"
@@ -906,7 +908,7 @@ const LandlordDrawerNavigator = () => {
           },
           drawerActiveTintColor: "white",
           drawerInactiveTintColor: "rgba(255,255,255,0.8)",
-          swipeEnabled: true,
+          swipeEnabled: false,
           swipeEdgeWidth: screenWidth,
           drawerType: "slide",
           overlayColor: "transparent",
