@@ -12,6 +12,7 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
@@ -47,7 +48,7 @@ import { faChevronRight } from "@fortawesome/pro-regular-svg-icons";
 import * as Haptics from "expo-haptics";
 import Carousel from "react-native-reanimated-carousel";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 const PostDetailScreen = ({ route, navigation }) => {
   const { postId } = route.params;
@@ -62,6 +63,7 @@ const PostDetailScreen = ({ route, navigation }) => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isProcessingFavorite, setIsProcessingFavorite] = useState(false);
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const mainCarouselRef = useRef(null);
   const thumbnailCarouselRef = useRef(null);
@@ -81,6 +83,27 @@ const PostDetailScreen = ({ route, navigation }) => {
   // Extract post and images safely
   const post = data?.result;
   const images = Array.isArray(post?.postImages) ? post.postImages : [];
+
+  // Calculate dynamic image height based on scroll position
+  const imageHeight = scrollY.interpolate({
+    inputRange: [-200, 0], // When scrolling up (negative values)
+    outputRange: [height * 0.8, height * 0.6], // Expand from 60% to 80% of screen height
+    extrapolate: "clamp",
+  });
+
+  // Calculate content padding top based on scroll position
+  const contentPaddingTop = scrollY.interpolate({
+    inputRange: [-200, 0],
+    outputRange: [height * 0.75, height * 0.55], // Adjust content position accordingly
+    extrapolate: "clamp",
+  });
+
+  // Calculate thumbnail margin top to reduce spacing when scrolled up
+  const thumbnailMarginTop = scrollY.interpolate({
+    inputRange: [-200, 0],
+    outputRange: [0, 24], // Remove top margin completely when scrolled up
+    extrapolate: "clamp",
+  });
 
   useEffect(() => {
     if (data && data.isSuccess && data.result) {
@@ -120,15 +143,17 @@ const PostDetailScreen = ({ route, navigation }) => {
   };
 
   // Render main image item
-  const renderMainImageItem = ({ item, index }) => (
-    <View style={{ width, height: 450 }}>
-      <Image
-        source={{ uri: item.postImageUrl }}
-        style={{ width: "100%", height: "100%" }}
-        resizeMode="cover"
-      />
-    </View>
-  );
+  const renderMainImageItem = ({ item, index }) => {
+    return (
+      <View style={{ width, height: "100%" }}>
+        <Image
+          source={{ uri: item.postImageUrl }}
+          style={{ width: "100%", height: "100%" }}
+          resizeMode="cover"
+        />
+      </View>
+    );
+  };
 
   // Render thumbnail item
   const renderThumbnailItem = ({ item, index }) => (
@@ -320,570 +345,609 @@ const PostDetailScreen = ({ route, navigation }) => {
 
   return (
     <View className="flex-1 bg-white">
-      <ScrollView className="flex-1">
-        {/* Main Image Carousel */}
-        <View className="w-full relative">
-          {images.length > 0 ? (
-            <View>
-              <Carousel
-                ref={mainCarouselRef}
-                width={width}
-                height={450}
-                data={images}
-                renderItem={renderMainImageItem}
-                onSnapToItem={handleMainCarouselChange}
-                mode="parallax"
-                modeConfig={{
-                  parallaxScrollingScale: 1,
-                  parallaxScrollingOffset: 0,
-                }}
-                pagingEnabled={true}
-                snapEnabled={true}
-                enabled={images.length > 1}
-                style={{ width: width }}
-              />
-
-              {/* Pagination Dots */}
-              {images.length > 1 && (
-                <View
-                  className="absolute left-0 right-0 flex-row justify-center"
-                  style={{ bottom: 15 }}
-                >
-                  <BlurView
-                    intensity={60}
-                    tint="dark"
-                    className="rounded-full overflow-hidden"
-                  >
-                    <View className="flex-row justify-center px-3 py-2">
-                      {images.map((_, index) => (
-                        <TouchableOpacity
-                          key={`dot-${index}`}
-                          className={`mx-1 h-2 w-2 rounded-full ${
-                            index === currentImageIndex
-                              ? "bg-white"
-                              : "bg-gray-400"
-                          }`}
-                          onPress={() => handleThumbnailPress(index)}
-                        />
-                      ))}
-                    </View>
-                  </BlurView>
-                </View>
-              )}
-            </View>
-          ) : (
-            <View className="w-full h-96 justify-center items-center bg-gray-100">
-              <Text className="text-gray-500">Resim bulunamadı</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Thumbnail Carousel */}
-        {images.length > 1 && (
-          <View className="mt-4 mb-2">
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{
-                paddingLeft: 20,
-                paddingRight: 20,
+      {/* Dynamic Background Image Carousel */}
+      <Animated.View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: imageHeight, // Dynamic height based on scroll
+          zIndex: 0,
+        }}
+      >
+        {images.length > 0 ? (
+          <View style={{ flex: 1 }}>
+            <Carousel
+              ref={mainCarouselRef}
+              width={width}
+              height="100%"
+              data={images}
+              renderItem={renderMainImageItem}
+              onSnapToItem={handleMainCarouselChange}
+              mode="parallax"
+              modeConfig={{
+                parallaxScrollingScale: 1,
+                parallaxScrollingOffset: 0,
               }}
+              pagingEnabled={true}
+              snapEnabled={true}
+              enabled={images.length > 1}
               style={{
                 width: width,
-                height: 55,
+                height: "100%",
               }}
-            >
-              {images.map((item, index) => (
-                <TouchableOpacity
-                  key={`thumbnail-${index}`}
-                  activeOpacity={0.8}
-                  onPress={() => handleThumbnailPress(index)}
-                  style={{
-                    width: 70,
-                    height: 55,
-                    marginRight: 10,
-                    borderRadius: 15,
-                    opacity: index === currentImageIndex ? 1 : 0.7,
-                    borderWidth: index === currentImageIndex ? 0 : 0,
-                    borderColor:
-                      index === currentImageIndex ? "#000" : "transparent",
-                  }}
+            />
+
+            {/* Pagination Dots */}
+            {images.length > 1 && (
+              <View
+                className="absolute left-0 right-0 flex-row justify-center"
+                style={{ bottom: 70 }}
+              >
+                <BlurView
+                  intensity={60}
+                  tint="dark"
+                  className="rounded-full overflow-hidden"
                 >
-                  <Image
-                    source={{ uri: item.postImageUrl }}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      borderRadius: 13,
-                    }}
-                    resizeMode="cover"
-                  />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+                  {" "}
+                  <View className="flex-row justify-center px-3 py-2">
+                    {images.map((_, index) => (
+                      <TouchableOpacity
+                        key={`dot-${index}`}
+                        className={`mx-1 h-2 w-2 rounded-full ${
+                          index === currentImageIndex
+                            ? "bg-white"
+                            : "bg-gray-400"
+                        }`}
+                        onPress={() => handleThumbnailPress(index)}
+                      />
+                    ))}
+                  </View>
+                </BlurView>
+              </View>
+            )}
+          </View>
+        ) : (
+          <View className="w-full h-full justify-center items-center bg-gray-100">
+            <Text className="text-gray-500">Resim bulunamadı</Text>
           </View>
         )}
+      </Animated.View>
 
-        {/* Post Details */}
-        <View className="p-6 pt-2">
-          <View className="flex-col">
-            <Text style={{ fontSize: 25 }} className="font-bold text-gray-900">
-              {post.ilanBasligi}
-            </Text>
-          </View>
-          <View className="flex flex-row justify-between items-center">
-            <View className="flex flex-row items-center">
-              <Text style={{ fontSize: 12 }} className="text-gray-500">
-                {post.il}, {post.ilce}, {post.mahalle}
-              </Text>
-            </View>
-            <Text style={{ fontSize: 14 }} className="text-gray-500">
-              <Text
-                className="underline text-gray-900 font-semibold"
-                style={{ fontSize: 22 }}
-              >
-                {post.kiraFiyati} <Text>{post.paraBirimi || "₺"}</Text>
-              </Text>{" "}
-              /ay
-            </Text>
-          </View>
-
-          {/* Property Features */}
-          <View
-            style={{ paddingLeft: 30, paddingRight: 30 }}
-            className="flex-row justify-between p-4 mb-6 mt-6"
-          >
-            <View className="items-center gap-2">
-              <FontAwesomeIcon size={30} icon={faGrid2} />
-              <Text
-                style={{ fontSize: 14 }}
-                className="font-medium text-center text-gray-500"
-              >
-                {post.odaSayisi || "N/A"} Oda
-              </Text>
-            </View>
-
-            <View className="items-center gap-2">
-              <FontAwesomeIcon size={30} icon={faShower} />
-              <Text
-                style={{ fontSize: 14 }}
-                className="font-medium text-center text-gray-500"
-              >
-                {post.banyoSayisi || "N/A"} Banyo
-              </Text>
-            </View>
-            <View className="items-center gap-2">
-              <FontAwesomeIcon size={30} icon={faRuler} />
-              <Text
-                style={{ fontSize: 14 }}
-                className="font-medium text-center text-gray-500"
-              >
-                {post.brutMetreKare ? `${post.brutMetreKare} m²` : "N/A"}
-              </Text>
-            </View>
-            <View className="items-center gap-2">
-              <FontAwesomeIcon size={30} icon={faMoneyBills} />
-              <Text
-                style={{ fontSize: 14 }}
-                className="font-medium text-center text-gray-500"
-              >
-                {post.aidat ? `${post.aidat} ₺` : "Belirtilmemiş"}
-              </Text>
-            </View>
-          </View>
-
-          {/* Landlord Information */}
-          <View
-            style={{
-              borderBottomWidth: 0.4,
-              borderTopWidth: 0.4,
-              borderTopColor: "#dee0ea",
-              borderBottomColor: "#dee0ea",
-            }}
-            className="mb-5 py-4"
-          >
-            <TouchableOpacity
-              className="flex-row items-center"
-              onPress={() =>
-                navigation.navigate("LandlordProfile", {
-                  userId: post.landlordId,
-                })
-              }
-            >
-              <View
-                style={{ boxShadow: "0px 0px 12px #00000020" }}
-                className="w-14 h-14 rounded-full bg-gray-100 justify-center items-center mr-3 border-gray-200 border"
-              >
-                {post.user?.profileImageUrl ? (
-                  <Image
-                    source={{ uri: post.user.profileImageUrl }}
-                    className="w-full h-full rounded-full"
-                  />
-                ) : (
-                  <View>
-                    <Text className="text-xl font-bold text-gray-900">
-                      {post.user?.name?.charAt(0) || "E"}
-                    </Text>
-                  </View>
-                )}
-              </View>
-
-              <View className="flex-1 flex-col gap-1">
-                <Text
-                  style={{ fontSize: 16 }}
-                  className="font-semibold text-gray-800"
-                >
-                  {post.user?.name} {post.user?.surname}
-                </Text>
-                <View className="flex flex-row items-center gap-1">
-                  <Text style={{ fontSize: 12 }} className="text-gray-500">
-                    Ev Sahibi
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          {/* Description */}
-          <View
-            style={{
-              borderBottomWidth: 0.4,
-              borderBottomColor: "#dee0ea",
-            }}
-            className="mb-5 pb-6"
-          >
-            <Text
-              style={{ fontSize: 20 }}
-              className="font-semibold text-gray-900 mb-4 text-center"
-            >
-              Ev sahibinin mesajı
-            </Text>
-            <Text className="text-gray-500 leading-6">
-              {post.postDescription || "Bu ilan için açıklama bulunmamaktadır."}
-            </Text>
-          </View>
-
-          {/* Property Details */}
-          <View className="mb-5">
-            <Text
-              style={{ fontSize: 14 }}
-              className="font-medium text-center text-gray-500 mb-4 mt-1"
-            >
-              İlan Detayları
-            </Text>
-
-            <View className="">
-              <View className="flex-row justify-between py-2 border-gray-200 items-center">
-                <Text
-                  style={{ fontSize: 16 }}
-                  className="font-semibold text-gray-900"
-                >
-                  İlan Durumu
-                </Text>
-                <Text style={{ fontSize: 14 }} className="text-gray-500">
-                  {post.status === 0
-                    ? "Aktif"
-                    : post.status === 1
-                    ? "Kiralandı"
-                    : "Kapalı"}
-                </Text>
-              </View>
-
-              <View className="flex-row justify-between py-2 border-gray-200 items-center">
-                <Text
-                  style={{ fontSize: 16 }}
-                  className="font-semibold text-gray-900"
-                >
-                  İlan Tipi
-                </Text>
-                <Text style={{ fontSize: 14 }} className="text-gray-500">
-                  {post.propertyType || "Belirtilmemiş"}
-                </Text>
-              </View>
-
-              <View
-                style={{
-                  borderBottomWidth: 0.4,
-                  borderBottomColor: "#dee0ea",
+      {/* Scrollable Content */}
+      <Animated.ScrollView
+        className="flex-1"
+        style={{
+          zIndex: 1,
+        }}
+        contentContainerStyle={{
+          paddingTop: 450,
+        }}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
+        bounces={true}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Content Container with rounded top corners */}
+        <View
+          className="bg-white flex-1"
+          style={{
+            minHeight: height * 0.7, // Ensure content covers remaining space
+          }}
+        >
+          {/* Thumbnail Carousel - now inside the white content area */}
+          {images.length > 1 && (
+            <Animated.View style={{ marginTop: 20, marginBottom: 16 }}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{
+                  paddingLeft: 20,
+                  paddingRight: 20,
                 }}
-                className="flex-row justify-between py-2 pb-6 items-center"
+                style={{
+                  width: width,
+                  height: 55,
+                }}
               >
-                <Text
-                  style={{ fontSize: 16 }}
-                  className="font-semibold text-gray-900"
-                >
-                  İlan Tarihi
-                </Text>
-                <Text className="text-gray-500">
-                  {post.createdDate
-                    ? new Date(post.createdDate).toLocaleDateString("tr-TR")
-                    : "Belirtilmemiş"}
-                </Text>
-              </View>
-
-              <View className="flex flex-col items-center mt-8">
-                <Text
-                  style={{ fontSize: 14 }}
-                  className="font-medium text-center text-gray-500 mb-2 mt-1"
-                >
-                  Ev içi
-                </Text>
-              </View>
-
-              <View className="flex-row justify-between py-2 border-gray-200 mt-4 items-center">
-                <View className="flex flex-row gap-1 items-center">
-                  <FontAwesomeIcon icon={faFireFlameCurved} />
-                  <Text
-                    style={{ fontSize: 16 }}
-                    className="text-gray-900 font-semibold"
+                {images.map((item, index) => (
+                  <TouchableOpacity
+                    key={`thumbnail-${index}`}
+                    activeOpacity={0.8}
+                    onPress={() => handleThumbnailPress(index)}
+                    style={{
+                      width: 70,
+                      height: 55,
+                      marginRight: 10,
+                      borderRadius: 15,
+                      padding: 0,
+                      opacity: index === currentImageIndex ? 1 : 0.7,
+                    }}
                   >
-                    Isınma
-                  </Text>
-                </View>
-                <Text className="text-gray-500">
-                  {post.isitmaTipi || "Belirtilmemiş"}
-                </Text>
-              </View>
+                    <Image
+                      source={{ uri: item.postImageUrl }}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        borderRadius: 15,
+                      }}
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </Animated.View>
+          )}
 
-              <View className="flex-row justify-between py-2 border-gray-200 items-center">
-                <View className="flex flex-row gap-1 items-center">
-                  <FontAwesomeIcon icon={faOven} />
-                  <Text
-                    style={{ fontSize: 16 }}
-                    className="text-gray-900 font-semibold"
-                  >
-                    Mutfak türü
-                  </Text>
-                </View>
-                <Text className="text-gray-500">
-                  {post.mutfak || "Belirtilmemiş"}
-                </Text>
-              </View>
-
-              <View className="flex-row justify-between py-2 border-gray-200">
-                <Text
-                  style={{ fontSize: 16 }}
-                  className="text-gray-900 font-semibold"
-                >
-                  Brüt Metrekare
-                </Text>
-                <Text className="text-gray-500">
-                  {post.brutMetreKare
-                    ? `${post.brutMetreKare} m²`
-                    : "Belirtilmemiş"}
-                </Text>
-              </View>
-
-              <View className="flex-row justify-between py-2 border-gray-200">
-                <Text
-                  style={{ fontSize: 16 }}
-                  className="text-gray-900 font-semibold"
-                >
-                  Net Metrekare
-                </Text>
-                <Text className="text-gray-500">
-                  {post.netMetreKare
-                    ? `${post.netMetreKare} m²`
-                    : "Belirtilmemiş"}
-                </Text>
-              </View>
-
-              <View
-                style={{
-                  borderTopWidth: 0.4,
-                  borderTopColor: "#dee0ea",
-                }}
-                className="flex flex-col items-center mt-4 pt-4"
+          {/* Post Details */}
+          <View className="p-6 pt-2">
+            <View className="flex-col">
+              <Text
+                style={{ fontSize: 25 }}
+                className="font-bold text-gray-900"
               >
+                {post.ilanBasligi}
+              </Text>
+            </View>
+            <View className="flex flex-row justify-between items-center">
+              <View className="flex flex-row items-center">
+                <Text style={{ fontSize: 12 }} className="text-gray-500">
+                  {post.il}, {post.ilce}, {post.mahalle}
+                </Text>
+              </View>
+              <Text style={{ fontSize: 14 }} className="text-gray-500">
+                <Text
+                  className="underline text-gray-900 font-semibold"
+                  style={{ fontSize: 22 }}
+                >
+                  {post.kiraFiyati} <Text>{post.paraBirimi || "₺"}</Text>
+                </Text>{" "}
+                /ay
+              </Text>
+            </View>
+
+            {/* Property Features */}
+            <View
+              style={{ paddingLeft: 30, paddingRight: 30 }}
+              className="flex-row justify-between p-4 mb-6 mt-6"
+            >
+              <View className="items-center gap-2">
+                <FontAwesomeIcon size={30} icon={faGrid2} />
                 <Text
                   style={{ fontSize: 14 }}
-                  className="font-medium text-center text-gray-500 mb-4 mt-1"
+                  className="font-medium text-center text-gray-500"
                 >
-                  Apartman / Bina
+                  {post.odaSayisi || "N/A"} Oda
                 </Text>
               </View>
 
-              <View className="flex-row justify-between py-2 border-gray-200">
-                <Text
-                  style={{ fontSize: 16 }}
-                  className="text-gray-900 font-semibold"
-                >
-                  Bina Yaşı
-                </Text>
-                <Text className="text-gray-500">
-                  {post.binaYasi || "Belirtilmemiş"}
-                </Text>
-              </View>
-
-              <View
-                style={{
-                  borderBottomWidth: 0.4,
-                  borderBottomColor: "#dee0ea",
-                }}
-                className="flex-row justify-between py-2 pb-6 border-gray-200"
-              >
-                <Text
-                  style={{ fontSize: 16 }}
-                  className="text-gray-900 font-semibold"
-                >
-                  Otopark
-                </Text>
-                <Text className="text-gray-500">
-                  {post.otopark === true ? "Var" : "Yok"}
-                </Text>
-              </View>
-
-              <View className="flex flex-col items-center mt-4">
+              <View className="items-center gap-2">
+                <FontAwesomeIcon size={30} icon={faShower} />
                 <Text
                   style={{ fontSize: 14 }}
-                  className="font-medium text-center text-gray-500 mb-4 mt-1"
+                  className="font-medium text-center text-gray-500"
                 >
-                  Ödenekler
+                  {post.banyoSayisi || "N/A"} Banyo
                 </Text>
               </View>
-
-              <View className="flex-row justify-between py-2 border-gray-200">
+              <View className="items-center gap-2">
+                <FontAwesomeIcon size={30} icon={faRuler} />
                 <Text
-                  style={{ fontSize: 16 }}
-                  className="text-gray-900 font-semibold"
+                  style={{ fontSize: 14 }}
+                  className="font-medium text-center text-gray-500"
                 >
-                  Aidat
+                  {post.brutMetreKare ? `${post.brutMetreKare} m²` : "N/A"}
                 </Text>
-                <Text className="text-gray-500">
+              </View>
+              <View className="items-center gap-2">
+                <FontAwesomeIcon size={30} icon={faMoneyBills} />
+                <Text
+                  style={{ fontSize: 14 }}
+                  className="font-medium text-center text-gray-500"
+                >
                   {post.aidat ? `${post.aidat} ₺` : "Belirtilmemiş"}
                 </Text>
               </View>
+            </View>
 
-              <View className="flex-row justify-between py-2 border-gray-200">
-                <Text
-                  style={{ fontSize: 16 }}
-                  className="text-gray-900 font-semibold"
-                >
-                  Depozito
-                </Text>
-                <Text className="text-gray-500">
-                  {post.depozito
-                    ? `${post.depozito} ${post.paraBirimi || "₺"}`
-                    : "Belirtilmemiş"}
-                </Text>
-              </View>
-
-              <View className="flex-row justify-between py-2 border-gray-200">
-                <Text
-                  style={{ fontSize: 16 }}
-                  className="text-gray-900 font-semibold"
-                >
-                  Min. Kiralama Süresi
-                </Text>
-                <Text className="text-gray-500">
-                  {post.minimumKiralamaSuresi
-                    ? `${post.minimumKiralamaSuresi} Ay`
-                    : "Belirtilmemiş"}
-                </Text>
-              </View>
-
-              <View
-                style={{
-                  borderTopWidth: 0.4,
-                  borderTopColor: "#dee0ea",
-                }}
-                className="flex flex-col items-center mt-6 pt-4"
+            {/* Landlord Information */}
+            <View
+              style={{
+                borderBottomWidth: 0.4,
+                borderTopWidth: 0.4,
+                borderTopColor: "#dee0ea",
+                borderBottomColor: "#dee0ea",
+              }}
+              className="mb-5 py-4"
+            >
+              <TouchableOpacity
+                className="flex-row items-center"
+                onPress={() =>
+                  navigation.navigate("LandlordProfile", {
+                    userId: post.landlordId,
+                  })
+                }
               >
-                <Text
-                  style={{ fontSize: 14 }}
-                  className="font-medium text-center text-gray-500 mb-4 mt-1"
+                <View
+                  style={{ boxShadow: "0px 0px 12px #00000020" }}
+                  className="w-14 h-14 rounded-full bg-gray-100 justify-center items-center mr-3 border-gray-200 border"
                 >
-                  Diğer
-                </Text>
-              </View>
+                  {post.user?.profileImageUrl ? (
+                    <Image
+                      source={{ uri: post.user.profileImageUrl }}
+                      className="w-full h-full rounded-full"
+                    />
+                  ) : (
+                    <View>
+                      <Text className="text-xl font-bold text-gray-900">
+                        {post.user?.name?.charAt(0) || "E"}
+                      </Text>
+                    </View>
+                  )}
+                </View>
 
-              <View className="flex-row justify-between py-2 items-center border-gray-200">
-                <View className="flex flex-col gap-1">
+                <View className="flex-1 flex-col gap-1">
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="font-semibold text-gray-800"
+                  >
+                    {post.user?.name} {post.user?.surname}
+                  </Text>
+                  <View className="flex flex-row items-center gap-1">
+                    <Text style={{ fontSize: 12 }} className="text-gray-500">
+                      Ev Sahibi
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {/* Description */}
+            <View
+              style={{
+                borderBottomWidth: 0.4,
+                borderBottomColor: "#dee0ea",
+              }}
+              className="mb-5 pb-6"
+            >
+              <Text
+                style={{ fontSize: 20 }}
+                className="font-semibold text-gray-900 mb-4 text-center"
+              >
+                Ev sahibinin mesajı
+              </Text>
+              <Text className="text-gray-500 leading-6">
+                {post.postDescription ||
+                  "Bu ilan için açıklama bulunmamaktadır."}
+              </Text>
+            </View>
+
+            {/* Property Details */}
+            <View className="mb-5">
+              <Text
+                style={{ fontSize: 14 }}
+                className="font-medium text-center text-gray-500 mb-4 mt-1"
+              >
+                İlan Detayları
+              </Text>
+
+              <View className="">
+                <View className="flex-row justify-between py-2 border-gray-200 items-center">
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="font-semibold text-gray-900"
+                  >
+                    İlan Durumu
+                  </Text>
+                  <Text style={{ fontSize: 14 }} className="text-gray-500">
+                    {post.status === 0
+                      ? "Aktif"
+                      : post.status === 1
+                      ? "Kiralandı"
+                      : "Kapalı"}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between py-2 border-gray-200 items-center">
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="font-semibold text-gray-900"
+                  >
+                    İlan Tipi
+                  </Text>
+                  <Text style={{ fontSize: 14 }} className="text-gray-500">
+                    {post.propertyType || "Belirtilmemiş"}
+                  </Text>
+                </View>
+
+                <View
+                  style={{
+                    borderBottomWidth: 0.4,
+                    borderBottomColor: "#dee0ea",
+                  }}
+                  className="flex-row justify-between py-2 pb-6 items-center"
+                >
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="font-semibold text-gray-900"
+                  >
+                    İlan Tarihi
+                  </Text>
+                  <Text className="text-gray-500">
+                    {post.createdDate
+                      ? new Date(post.createdDate).toLocaleDateString("tr-TR")
+                      : "Belirtilmemiş"}
+                  </Text>
+                </View>
+
+                <View className="flex flex-col items-center mt-8">
+                  <Text
+                    style={{ fontSize: 14 }}
+                    className="font-medium text-center text-gray-500 mb-2 mt-1"
+                  >
+                    Ev içi
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between py-2 border-gray-200 mt-4 items-center">
+                  <View className="flex flex-row gap-1 items-center">
+                    <FontAwesomeIcon icon={faFireFlameCurved} />
+                    <Text
+                      style={{ fontSize: 16 }}
+                      className="text-gray-900 font-semibold"
+                    >
+                      Isınma
+                    </Text>
+                  </View>
+                  <Text className="text-gray-500">
+                    {post.isitmaTipi || "Belirtilmemiş"}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between py-2 border-gray-200 items-center">
+                  <View className="flex flex-row gap-1 items-center">
+                    <FontAwesomeIcon icon={faOven} />
+                    <Text
+                      style={{ fontSize: 16 }}
+                      className="text-gray-900 font-semibold"
+                    >
+                      Mutfak türü
+                    </Text>
+                  </View>
+                  <Text className="text-gray-500">
+                    {post.mutfak || "Belirtilmemiş"}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between py-2 border-gray-200">
                   <Text
                     style={{ fontSize: 16 }}
                     className="text-gray-900 font-semibold"
                   >
-                    Kimden
+                    Brüt Metrekare
                   </Text>
-                  <Text style={{ fontSize: 12 }} className="text-gray-500">
-                    Mülkün kimin tarafından kiralandığı
+                  <Text className="text-gray-500">
+                    {post.brutMetreKare
+                      ? `${post.brutMetreKare} m²`
+                      : "Belirtilmemiş"}
                   </Text>
                 </View>
-                <Text className="text-gray-500">
-                  {post.kimden || "Sahibinden"}
-                </Text>
-              </View>
 
-              <View className="flex-row justify-between py-2 border-gray-200">
-                <Text
-                  style={{ fontSize: 16 }}
-                  className="text-gray-900 font-semibold"
-                >
-                  Site adı
-                </Text>
-                <Text className="text-gray-500">
-                  {post.siteAdi || "Belirtilmemiş"}
-                </Text>
-              </View>
+                <View className="flex-row justify-between py-2 border-gray-200">
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="text-gray-900 font-semibold"
+                  >
+                    Net Metrekare
+                  </Text>
+                  <Text className="text-gray-500">
+                    {post.netMetreKare
+                      ? `${post.netMetreKare} m²`
+                      : "Belirtilmemiş"}
+                  </Text>
+                </View>
 
-              <View className="flex-row justify-between py-2 border-gray-200">
-                <Text
-                  style={{ fontSize: 16 }}
-                  className="text-gray-900 font-semibold"
+                <View
+                  style={{
+                    borderTopWidth: 0.4,
+                    borderTopColor: "#dee0ea",
+                  }}
+                  className="flex flex-col items-center mt-4 pt-4"
                 >
-                  Kullanım Durumu
-                </Text>
-                <Text className="text-gray-500">
-                  {post.kullanimDurumu || "Belirtilmemiş"}
-                </Text>
+                  <Text
+                    style={{ fontSize: 14 }}
+                    className="font-medium text-center text-gray-500 mb-4 mt-1"
+                  >
+                    Apartman / Bina
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between py-2 border-gray-200">
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="text-gray-900 font-semibold"
+                  >
+                    Bina Yaşı
+                  </Text>
+                  <Text className="text-gray-500">
+                    {post.binaYasi || "Belirtilmemiş"}
+                  </Text>
+                </View>
+
+                <View
+                  style={{
+                    borderBottomWidth: 0.4,
+                    borderBottomColor: "#dee0ea",
+                  }}
+                  className="flex-row justify-between py-2 pb-6 border-gray-200"
+                >
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="text-gray-900 font-semibold"
+                  >
+                    Otopark
+                  </Text>
+                  <Text className="text-gray-500">
+                    {post.otopark === true ? "Var" : "Yok"}
+                  </Text>
+                </View>
+
+                <View className="flex flex-col items-center mt-4">
+                  <Text
+                    style={{ fontSize: 14 }}
+                    className="font-medium text-center text-gray-500 mb-4 mt-1"
+                  >
+                    Ödenekler
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between py-2 border-gray-200">
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="text-gray-900 font-semibold"
+                  >
+                    Aidat
+                  </Text>
+                  <Text className="text-gray-500">
+                    {post.aidat ? `${post.aidat} ₺` : "Belirtilmemiş"}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between py-2 border-gray-200">
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="text-gray-900 font-semibold"
+                  >
+                    Depozito
+                  </Text>
+                  <Text className="text-gray-500">
+                    {post.depozito
+                      ? `${post.depozito} ${post.paraBirimi || "₺"}`
+                      : "Belirtilmemiş"}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between py-2 border-gray-200">
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="text-gray-900 font-semibold"
+                  >
+                    Min. Kiralama Süresi
+                  </Text>
+                  <Text className="text-gray-500">
+                    {post.minimumKiralamaSuresi
+                      ? `${post.minimumKiralamaSuresi} Ay`
+                      : "Belirtilmemiş"}
+                  </Text>
+                </View>
+
+                <View
+                  style={{
+                    borderTopWidth: 0.4,
+                    borderTopColor: "#dee0ea",
+                  }}
+                  className="flex flex-col items-center mt-6 pt-4"
+                >
+                  <Text
+                    style={{ fontSize: 14 }}
+                    className="font-medium text-center text-gray-500 mb-4 mt-1"
+                  >
+                    Diğer
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between py-2 items-center border-gray-200">
+                  <View className="flex flex-col gap-1">
+                    <Text
+                      style={{ fontSize: 16 }}
+                      className="text-gray-900 font-semibold"
+                    >
+                      Kimden
+                    </Text>
+                    <Text style={{ fontSize: 12 }} className="text-gray-500">
+                      Mülkün kimin tarafından kiralandığı
+                    </Text>
+                  </View>
+                  <Text className="text-gray-500">
+                    {post.kimden || "Sahibinden"}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between py-2 border-gray-200">
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="text-gray-900 font-semibold"
+                  >
+                    Site adı
+                  </Text>
+                  <Text className="text-gray-500">
+                    {post.siteAdi || "Belirtilmemiş"}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between py-2 border-gray-200">
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="text-gray-900 font-semibold"
+                  >
+                    Kullanım Durumu
+                  </Text>
+                  <Text className="text-gray-500">
+                    {post.kullanimDurumu || "Belirtilmemiş"}
+                  </Text>
+                </View>
               </View>
             </View>
-          </View>
 
-          {/* Property Features */}
-          <View className="mb-5">
-            <Text
-              style={{ fontSize: 20 }}
-              className="font-semibold text-gray-900 mb-4"
-            >
-              Özellikler
-            </Text>
+            {/* Property Features */}
+            <View className="mb-5">
+              <Text
+                style={{ fontSize: 20 }}
+                className="font-semibold text-gray-900 mb-4"
+              >
+                Özellikler
+              </Text>
 
-            <View className="flex-row flex-wrap">
-              {(() => {
-                const features = [
-                  { key: "balkon", value: post.balkon, label: "Balkon" },
-                  { key: "asansor", value: post.asansor, label: "Asansör" },
-                  { key: "otopark", value: post.otopark, label: "Otopark" },
-                  { key: "esyali", value: post.esyali, label: "Eşyalı" },
-                  {
-                    key: "siteIcerisinde",
-                    value: post.siteIcerisinde,
-                    label: "Site İçerisinde",
-                  },
-                  { key: "takas", value: post.takas, label: "Takas" },
-                ];
+              <View className="flex-row flex-wrap">
+                {(() => {
+                  const features = [
+                    { key: "balkon", value: post.balkon, label: "Balkon" },
+                    { key: "asansor", value: post.asansor, label: "Asansör" },
+                    { key: "otopark", value: post.otopark, label: "Otopark" },
+                    { key: "esyali", value: post.esyali, label: "Eşyalı" },
+                    {
+                      key: "siteIcerisinde",
+                      value: post.siteIcerisinde,
+                      label: "Site İçerisinde",
+                    },
+                    { key: "takas", value: post.takas, label: "Takas" },
+                  ];
 
-                return features
-                  .filter((feature) => feature.value === true)
-                  .map((feature) => (
-                    <View
-                      key={`feature-${feature.key}`}
-                      className="bg-white rounded-full border border-gray-900 px-3 py-2 mr-2 mb-2"
-                    >
-                      <Text
-                        style={{ fontSize: 12 }}
-                        className="text-gray-900 font-bold"
+                  return features
+                    .filter((feature) => feature.value === true)
+                    .map((feature) => (
+                      <View
+                        key={`feature-${feature.key}`}
+                        className="bg-white rounded-full border border-gray-900 px-3 py-2 mr-2 mb-2"
                       >
-                        {feature.label}
-                      </Text>
-                    </View>
-                  ));
-              })()}
+                        <Text
+                          style={{ fontSize: 12 }}
+                          className="text-gray-900 font-bold"
+                        >
+                          {feature.label}
+                        </Text>
+                      </View>
+                    ));
+                })()}
+              </View>
             </View>
           </View>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Bottom Action Bar */}
       <View className="flex-row justify-between items-center p-4 bg-white border-t border-gray-200">
