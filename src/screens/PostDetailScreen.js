@@ -10,10 +10,8 @@ import {
   Modal,
   TextInput,
   Dimensions,
-  FlatList,
   KeyboardAvoidingView,
   Platform,
-  Animated,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
@@ -47,6 +45,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import { faChevronRight } from "@fortawesome/pro-regular-svg-icons";
 import * as Haptics from "expo-haptics";
+import Carousel from "react-native-reanimated-carousel";
 
 const { width } = Dimensions.get("window");
 
@@ -64,14 +63,12 @@ const PostDetailScreen = ({ route, navigation }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isProcessingFavorite, setIsProcessingFavorite] = useState(false);
 
-  // Initialize as empty array, will be populated when images are available
-  const [thumbnailScales, setThumbnailScales] = useState([]);
+  const mainCarouselRef = useRef(null);
+  const thumbnailCarouselRef = useRef(null);
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
-
-  const flatListRef = useRef(null);
 
   // Get post details
   const { data, isLoading, refetch } = useGetPostQuery(postId);
@@ -81,7 +78,7 @@ const PostDetailScreen = ({ route, navigation }) => {
     useCreateOfferMutation();
   const [toggleFavoriteProperty] = useToggleFavoritePropertyMutation();
 
-  // Extract post and images safely at the top level
+  // Extract post and images safely
   const post = data?.result;
   const images = Array.isArray(post?.postImages) ? post.postImages : [];
 
@@ -91,23 +88,6 @@ const PostDetailScreen = ({ route, navigation }) => {
     }
   }, [data, dispatch]);
 
-  // Initialize animation values when images are available - DÜZELTME
-  useEffect(() => {
-    if (images.length > 0) {
-      // Thumbnail'lar için gereken toplam sayı (ilk 3 + "+X more" butonu)
-      const totalThumbnails =
-        Math.min(images.length, 3) + (images.length > 3 ? 1 : 0);
-
-      // Only initialize if not already initialized or if count changed
-      if (thumbnailScales.length !== totalThumbnails) {
-        const newScales = Array(totalThumbnails)
-          .fill(null)
-          .map(() => new Animated.Value(1));
-        setThumbnailScales(newScales);
-      }
-    }
-  }, [images.length]);
-
   // Check if post is favorited
   useEffect(() => {
     if (favoriteProperties?.length > 0 && postId) {
@@ -116,6 +96,67 @@ const PostDetailScreen = ({ route, navigation }) => {
     }
   }, [favoriteProperties, postId]);
 
+  // Handle main carousel change
+  const handleMainCarouselChange = (index) => {
+    setCurrentImageIndex(index);
+
+    // Sync thumbnail carousel if needed
+    if (thumbnailCarouselRef.current && images.length > 4) {
+      const targetIndex = Math.max(0, Math.min(index, images.length - 4));
+      thumbnailCarouselRef.current.scrollTo({
+        index: targetIndex,
+        animated: true,
+      });
+    }
+  };
+
+  // Handle thumbnail press
+  const handleThumbnailPress = (index) => {
+    handlePress();
+    setCurrentImageIndex(index);
+    if (mainCarouselRef.current) {
+      mainCarouselRef.current.scrollTo({ index, animated: true });
+    }
+  };
+
+  // Render main image item
+  const renderMainImageItem = ({ item, index }) => (
+    <View style={{ width, height: 450 }}>
+      <Image
+        source={{ uri: item.postImageUrl }}
+        style={{ width: "100%", height: "100%" }}
+        resizeMode="cover"
+      />
+    </View>
+  );
+
+  // Render thumbnail item
+  const renderThumbnailItem = ({ item, index }) => (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={() => handleThumbnailPress(index)}
+      style={{
+        width: 70,
+        height: 55,
+        marginRight: 10,
+        borderRadius: 15,
+        opacity: index === currentImageIndex ? 1 : 0.7,
+        borderWidth: index === currentImageIndex ? 2 : 0,
+        borderColor: index === currentImageIndex ? "#22c55e" : "transparent",
+      }}
+    >
+      <Image
+        source={{ uri: item.postImageUrl }}
+        style={{
+          width: "100%",
+          height: "100%",
+          borderRadius: 13,
+        }}
+        resizeMode="cover"
+      />
+    </TouchableOpacity>
+  );
+
   const handleCreateOffer = async () => {
     if (!offerAmount.trim()) {
       Alert.alert("Hata", "Lütfen bir teklif tutarı giriniz.");
@@ -123,7 +164,6 @@ const PostDetailScreen = ({ route, navigation }) => {
     }
 
     try {
-      // Validate amount is a number
       const amount = parseFloat(offerAmount.replace(/[^0-9.]/g, ""));
       if (isNaN(amount)) {
         Alert.alert("Hata", "Geçerli bir tutar giriniz.");
@@ -161,22 +201,17 @@ const PostDetailScreen = ({ route, navigation }) => {
   };
 
   const handleToggleFavorite = async () => {
-    // Prevent multiple rapid clicks
     if (isProcessingFavorite) return;
 
     setIsProcessingFavorite(true);
-
-    // Store the previous state for rollback
     const previousIsFavorite = isFavorite;
     const previousFavorites = [...favoriteProperties];
 
     try {
-      // Determine action type: 0 for like (add to favorites), 1 for unlike (remove from favorites)
       const actionType = isFavorite ? 1 : 0;
 
       // Optimistic update
       if (isFavorite) {
-        // Remove from favorites immediately
         setIsFavorite(false);
         const favoriteProperty = favoriteProperties.find(
           (fav) => fav.postId === postId
@@ -185,32 +220,28 @@ const PostDetailScreen = ({ route, navigation }) => {
           dispatch(removeFavoriteProperty(favoriteProperty.id));
         }
       } else {
-        // Add to favorites immediately
         setIsFavorite(true);
         const tempFavorite = {
-          id: `temp-${Date.now()}`, // Temporary ID
+          id: `temp-${Date.now()}`,
           userId: currentUser.id,
           actionType: 0,
           postId: postId,
-          post: data?.result || {}, // Include post data if available
+          post: data?.result || {},
           createdDate: new Date().toISOString(),
         };
         dispatch(addFavoriteProperty(tempFavorite));
       }
 
-      // Make API call with the toggle endpoint
       const favoriteData = {
         userId: currentUser.id,
         postId: postId,
-        actionType: actionType, // 0 = like, 1 = unlike
+        actionType: actionType,
       };
 
       const response = await toggleFavoriteProperty(favoriteData).unwrap();
 
       if (response && response.isSuccess) {
-        // Handle successful response
         if (actionType === 0) {
-          // Was adding to favorites - replace temp with real data
           const tempFavorites = favoriteProperties.filter(
             (fav) => !fav.id.toString().startsWith("temp-")
           );
@@ -220,7 +251,6 @@ const PostDetailScreen = ({ route, navigation }) => {
             dispatch(addFavoriteProperty(response.result));
           }
         }
-        // For remove action (actionType === 1), optimistic update already handled it
       } else {
         throw new Error(response?.message || "İşlem başarısız");
       }
@@ -230,9 +260,7 @@ const PostDetailScreen = ({ route, navigation }) => {
       // Rollback on error
       setIsFavorite(previousIsFavorite);
 
-      // Rollback Redux store
       if (previousIsFavorite) {
-        // Was favorited, tried to remove but failed - restore it
         const favoriteToRestore = previousFavorites.find(
           (fav) => fav.postId === postId
         );
@@ -240,12 +268,6 @@ const PostDetailScreen = ({ route, navigation }) => {
           dispatch(addFavoriteProperty(favoriteToRestore));
         }
       } else {
-        // Wasn't favorited, tried to add but failed - remove the temp one
-        const tempFavorites = favoriteProperties.filter(
-          (fav) =>
-            fav.postId !== postId || !fav.id.toString().startsWith("temp-")
-        );
-        // Reset to previous state
         favoriteProperties.forEach((fav) => {
           if (fav.id.toString().startsWith("temp-")) {
             dispatch(removeFavoriteProperty(fav.id));
@@ -253,12 +275,10 @@ const PostDetailScreen = ({ route, navigation }) => {
         });
       }
 
-      // Show error message
       let errorMessage =
         "Favorilere ekleme/çıkarma işlemi sırasında bir hata oluştu.";
 
       if (error?.data?.errors) {
-        // Handle validation errors
         const validationErrors = Object.values(error.data.errors).flat();
         errorMessage = validationErrors.join(", ");
       } else if (error?.data?.message) {
@@ -270,72 +290,6 @@ const PostDetailScreen = ({ route, navigation }) => {
       Alert.alert("Hata", errorMessage);
     } finally {
       setIsProcessingFavorite(false);
-    }
-  };
-
-  const goToImage = (index) => {
-    if (flatListRef.current && index >= 0 && index < images.length) {
-      try {
-        // Update state immediately for responsive UI
-        setCurrentImageIndex(index);
-
-        flatListRef.current.scrollToIndex({
-          index,
-          animated: true,
-          viewPosition: 0, // Changed from 0.5 to 0 for better alignment
-        });
-      } catch (error) {
-        console.warn("Error scrolling to image:", error);
-        // Fallback: try scrolling to offset
-        try {
-          setCurrentImageIndex(index);
-          flatListRef.current.scrollToOffset({
-            offset: index * width,
-            animated: true,
-          });
-        } catch (offsetError) {
-          console.warn("Error scrolling to offset:", offsetError);
-        }
-      }
-    }
-  };
-
-  const viewabilityConfig = useRef({
-    itemVisiblePercentThreshold: 50, // Reduced from 80 to 50 for better detection
-    minimumViewTime: 50, // Reduced from 100 to 50 for faster response
-  }).current;
-
-  // Enhanced handleViewableItemsChanged
-  const handleViewableItemsChanged = useRef(({ viewableItems }) => {
-    if (viewableItems && viewableItems.length > 0) {
-      const visibleItem = viewableItems[0];
-      if (
-        visibleItem?.index !== null &&
-        visibleItem.index !== currentImageIndex
-      ) {
-        setCurrentImageIndex(visibleItem.index);
-      }
-    }
-  }).current;
-
-  // Enhanced animatePress function with safety check - DÜZELTME
-  const animatePress = (index) => {
-    if (thumbnailScales[index]) {
-      Animated.timing(thumbnailScales[index], {
-        toValue: 0.95,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-    }
-  };
-
-  const animateRelease = (index) => {
-    if (thumbnailScales[index]) {
-      Animated.timing(thumbnailScales[index], {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }).start();
     }
   };
 
@@ -364,84 +318,43 @@ const PostDetailScreen = ({ route, navigation }) => {
     );
   }
 
-  // Render image item for slider
-  const renderImageItem = ({ item, index }) => (
-    <View style={{ width, height: 350 }}>
-      <Image
-        source={{ uri: item.postImageUrl }}
-        style={{ width: "100%", height: "100%" }}
-        resizeMode="cover"
-      />
-    </View>
-  );
-
   return (
     <View className="flex-1 bg-white">
       <ScrollView className="flex-1">
-        {/* Image Gallery Slider */}
+        {/* Main Image Carousel */}
         <View className="w-full relative">
           {images.length > 0 ? (
-            <View className="p-6 bg-transparent">
-              {/* Main Image Slider */}
-              <View
-                style={{
-                  borderRadius: 30,
-                  overflow: "hidden",
-                  boxShadow: "0px 0px 12px #00000050",
+            <View>
+              <Carousel
+                ref={mainCarouselRef}
+                width={width}
+                height={450}
+                data={images}
+                renderItem={renderMainImageItem}
+                onSnapToItem={handleMainCarouselChange}
+                mode="parallax"
+                modeConfig={{
+                  parallaxScrollingScale: 1,
+                  parallaxScrollingOffset: 0,
                 }}
-              >
-                <FlatList
-                  ref={flatListRef}
-                  data={images}
-                  renderItem={renderImageItem}
-                  keyExtractor={(item, index) => `image-${index}`}
-                  horizontal
-                  pagingEnabled
-                  snapToAlignment="center"
-                  snapToInterval={width}
-                  decelerationRate="fast"
-                  showsHorizontalScrollIndicator={false}
-                  onViewableItemsChanged={handleViewableItemsChanged}
-                  viewabilityConfig={viewabilityConfig}
-                  getItemLayout={(data, index) => ({
-                    length: width,
-                    offset: width * index,
-                    index,
-                  })}
-                  removeClippedSubviews={false}
-                  initialNumToRender={Math.min(images.length, 3)}
-                  maxToRenderPerBatch={2}
-                  windowSize={5}
-                  bounces={false}
-                  scrollEventThrottle={16}
-                  onMomentumScrollEnd={(event) => {
-                    // Additional scroll end detection
-                    const newIndex = Math.round(
-                      event.nativeEvent.contentOffset.x / width
-                    );
-                    if (
-                      newIndex !== currentImageIndex &&
-                      newIndex >= 0 &&
-                      newIndex < images.length
-                    ) {
-                      setCurrentImageIndex(newIndex);
-                    }
-                  }}
-                />
-              </View>
+                pagingEnabled={true}
+                snapEnabled={true}
+                enabled={images.length > 1}
+                style={{ width: width }}
+              />
 
-              {/* Fixed Pagination Dots */}
+              {/* Pagination Dots */}
               {images.length > 1 && (
                 <View
                   className="absolute left-0 right-0 flex-row justify-center"
-                  style={{ bottom: 110 }}
+                  style={{ bottom: 15 }}
                 >
                   <BlurView
                     intensity={60}
                     tint="dark"
                     className="rounded-full overflow-hidden"
                   >
-                    <View className="flex-row justify-center px-2 py-2">
+                    <View className="flex-row justify-center px-3 py-2">
                       {images.map((_, index) => (
                         <TouchableOpacity
                           key={`dot-${index}`}
@@ -450,116 +363,66 @@ const PostDetailScreen = ({ route, navigation }) => {
                               ? "bg-white"
                               : "bg-gray-400"
                           }`}
-                          onPress={() => goToImage(index)}
+                          onPress={() => handleThumbnailPress(index)}
                         />
                       ))}
                     </View>
                   </BlurView>
                 </View>
               )}
-
-              {/* Image Thumbnails with Animation - DÜZELTME */}
-              {images.length > 1 && (
-                <View className="flex-row mt-4 gap-2">
-                  {images.slice(0, 3).map((image, index) => (
-                    <Animated.View
-                      key={`thumbnail-${index}`}
-                      style={{
-                        transform: [
-                          {
-                            scale: thumbnailScales[index] || 1, // Fallback to 1
-                          },
-                        ],
-                      }}
-                    >
-                      <TouchableOpacity
-                        activeOpacity={1}
-                        onPressIn={() => {
-                          handlePress(); // titreşim
-                          animatePress(index); // küçülme başla
-                        }}
-                        onPressOut={() => {
-                          animateRelease(index); // küçülmeyi bitir
-                        }}
-                        onPress={() => {
-                          goToImage(index); // resmi aç
-                        }}
-                        className={`overflow-hidden ${
-                          index === currentImageIndex ? "" : ""
-                        }`}
-                        style={{
-                          boxShadow: "0px 0px 12px #00000030",
-                          width: (width - 80) / 4,
-                          height: 60,
-                          borderRadius: 17,
-                          opacity: index === currentImageIndex ? 1 : 0.7,
-                        }}
-                      >
-                        <Image
-                          source={{ uri: image.postImageUrl }}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                          }}
-                          resizeMode="cover"
-                        />
-                      </TouchableOpacity>
-                    </Animated.View>
-                  ))}
-
-                  {/* "+X more" butonu için de düzeltme */}
-                  {images.length > 3 && (
-                    <Animated.View
-                      style={{
-                        transform: [
-                          {
-                            scale: thumbnailScales[3] || 1, // Fallback to 1
-                          },
-                        ],
-                      }}
-                    >
-                      <TouchableOpacity
-                        activeOpacity={1}
-                        onPressIn={() => {
-                          handlePress();
-                          animatePress(3);
-                        }}
-                        onPressOut={() => {
-                          animateRelease(3);
-                        }}
-                        onPress={() => {
-                          goToImage(3);
-                        }}
-                        className={`rounded-lg overflow-hidden justify-center items-center ${
-                          currentImageIndex >= 3 ? "" : ""
-                        }`}
-                        style={{
-                          boxShadow:
-                            currentImageIndex >= 3 && "0px 0px 12px #00000020",
-                          width: (width - 80) / 4,
-                          height: 60,
-                          borderRadius: 17,
-                        }}
-                      >
-                        <Text
-                          className={`font-semibold text-xl ${
-                            currentImageIndex >= 3 ? "" : "text-gray-900"
-                          }`}
-                        >
-                          +{images.length - 3}
-                        </Text>
-                      </TouchableOpacity>
-                    </Animated.View>
-                  )}
-                </View>
-              )}
             </View>
           ) : (
-            <View className="w-full h-96 justify-center items-center">
+            <View className="w-full h-96 justify-center items-center bg-gray-100">
               <Text className="text-gray-500">Resim bulunamadı</Text>
             </View>
           )}
         </View>
+
+        {/* Thumbnail Carousel */}
+        {images.length > 1 && (
+          <View className="mt-4 mb-2">
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{
+                paddingLeft: 20,
+                paddingRight: 20,
+              }}
+              style={{
+                width: width,
+                height: 55,
+              }}
+            >
+              {images.map((item, index) => (
+                <TouchableOpacity
+                  key={`thumbnail-${index}`}
+                  activeOpacity={0.8}
+                  onPress={() => handleThumbnailPress(index)}
+                  style={{
+                    width: 70,
+                    height: 55,
+                    marginRight: 10,
+                    borderRadius: 15,
+                    opacity: index === currentImageIndex ? 1 : 0.7,
+                    borderWidth: index === currentImageIndex ? 0 : 0,
+                    borderColor:
+                      index === currentImageIndex ? "#000" : "transparent",
+                  }}
+                >
+                  <Image
+                    source={{ uri: item.postImageUrl }}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      borderRadius: 13,
+                    }}
+                    resizeMode="cover"
+                  />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Post Details */}
         <View className="p-6 pt-2">
@@ -574,7 +437,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                 {post.il}, {post.ilce}, {post.mahalle}
               </Text>
             </View>
-            <Text style={{ fontSize: 14 }} className=" text-gray-500">
+            <Text style={{ fontSize: 14 }} className="text-gray-500">
               <Text
                 className="underline text-gray-900 font-semibold"
                 style={{ fontSize: 22 }}
@@ -586,24 +449,45 @@ const PostDetailScreen = ({ route, navigation }) => {
           </View>
 
           {/* Property Features */}
-          <View className="flex-row justify-between p-3 px-6 mb-5 mt-5">
+          <View
+            style={{ paddingLeft: 30, paddingRight: 30 }}
+            className="flex-row justify-between p-4 mb-6 mt-6"
+          >
             <View className="items-center gap-2">
               <FontAwesomeIcon size={30} icon={faGrid2} />
-              <Text className="text-base font-bold text-gray-800 text-center">
+              <Text
+                style={{ fontSize: 14 }}
+                className="font-medium text-center text-gray-500"
+              >
                 {post.odaSayisi || "N/A"} Oda
               </Text>
             </View>
 
             <View className="items-center gap-2">
               <FontAwesomeIcon size={30} icon={faShower} />
-              <Text className="text-base font-bold text-gray-800">
+              <Text
+                style={{ fontSize: 14 }}
+                className="font-medium text-center text-gray-500"
+              >
                 {post.banyoSayisi || "N/A"} Banyo
               </Text>
             </View>
             <View className="items-center gap-2">
               <FontAwesomeIcon size={30} icon={faRuler} />
-              <Text className="text-base font-bold text-gray-800">
+              <Text
+                style={{ fontSize: 14 }}
+                className="font-medium text-center text-gray-500"
+              >
                 {post.brutMetreKare ? `${post.brutMetreKare} m²` : "N/A"}
+              </Text>
+            </View>
+            <View className="items-center gap-2">
+              <FontAwesomeIcon size={30} icon={faMoneyBills} />
+              <Text
+                style={{ fontSize: 14 }}
+                className="font-medium text-center text-gray-500"
+              >
+                {post.aidat ? `${post.aidat} ₺` : "Belirtilmemiş"}
               </Text>
             </View>
           </View>
@@ -633,7 +517,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                 {post.user?.profileImageUrl ? (
                   <Image
                     source={{ uri: post.user.profileImageUrl }}
-                    className="w-full h-full rounded-full "
+                    className="w-full h-full rounded-full"
                   />
                 ) : (
                   <View>
@@ -644,7 +528,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                 )}
               </View>
 
-              <View className="flex-1 flex-col gap-1 ">
+              <View className="flex-1 flex-col gap-1">
                 <Text
                   style={{ fontSize: 16 }}
                   className="font-semibold text-gray-800"
@@ -652,7 +536,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                   {post.user?.name} {post.user?.surname}
                 </Text>
                 <View className="flex flex-row items-center gap-1">
-                  <Text style={{ fontSize: 12 }} className=" text-gray-500">
+                  <Text style={{ fontSize: 12 }} className="text-gray-500">
                     Ev Sahibi
                   </Text>
                 </View>
@@ -674,7 +558,7 @@ const PostDetailScreen = ({ route, navigation }) => {
             >
               Ev sahibinin mesajı
             </Text>
-            <Text style={{}} className=" text-gray-500 leading-6">
+            <Text className="text-gray-500 leading-6">
               {post.postDescription || "Bu ilan için açıklama bulunmamaktadır."}
             </Text>
           </View>
@@ -689,17 +573,14 @@ const PostDetailScreen = ({ route, navigation }) => {
             </Text>
 
             <View className="">
-              <View
-                key="detail-status"
-                className="flex-row justify-between py-2  border-gray-200 items-center"
-              >
+              <View className="flex-row justify-between py-2 border-gray-200 items-center">
                 <Text
                   style={{ fontSize: 16 }}
                   className="font-semibold text-gray-900"
                 >
                   İlan Durumu
                 </Text>
-                <Text style={{ fontSize: 14 }} className=" text-gray-500">
+                <Text style={{ fontSize: 14 }} className="text-gray-500">
                   {post.status === 0
                     ? "Aktif"
                     : post.status === 1
@@ -708,17 +589,14 @@ const PostDetailScreen = ({ route, navigation }) => {
                 </Text>
               </View>
 
-              <View
-                key="detail-type"
-                className="flex-row justify-between py-2  border-gray-200 items-center"
-              >
+              <View className="flex-row justify-between py-2 border-gray-200 items-center">
                 <Text
                   style={{ fontSize: 16 }}
                   className="font-semibold text-gray-900"
                 >
                   İlan Tipi
                 </Text>
-                <Text style={{ fontSize: 14 }} className=" text-gray-500">
+                <Text style={{ fontSize: 14 }} className="text-gray-500">
                   {post.propertyType || "Belirtilmemiş"}
                 </Text>
               </View>
@@ -728,7 +606,6 @@ const PostDetailScreen = ({ route, navigation }) => {
                   borderBottomWidth: 0.4,
                   borderBottomColor: "#dee0ea",
                 }}
-                key="detail-created-date"
                 className="flex-row justify-between py-2 pb-6 items-center"
               >
                 <Text
@@ -737,7 +614,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                 >
                   İlan Tarihi
                 </Text>
-                <Text className=" text-gray-500">
+                <Text className="text-gray-500">
                   {post.createdDate
                     ? new Date(post.createdDate).toLocaleDateString("tr-TR")
                     : "Belirtilmemiş"}
@@ -753,10 +630,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                 </Text>
               </View>
 
-              <View
-                key="detail-heating"
-                className="flex-row justify-between py-2  border-gray-200 mt-4 items-center"
-              >
+              <View className="flex-row justify-between py-2 border-gray-200 mt-4 items-center">
                 <View className="flex flex-row gap-1 items-center">
                   <FontAwesomeIcon icon={faFireFlameCurved} />
                   <Text
@@ -766,60 +640,48 @@ const PostDetailScreen = ({ route, navigation }) => {
                     Isınma
                   </Text>
                 </View>
-
-                <Text className=" text-gray-500">
+                <Text className="text-gray-500">
                   {post.isitmaTipi || "Belirtilmemiş"}
                 </Text>
               </View>
 
-              <View
-                key="detail-kitchen"
-                className="flex-row justify-between py-2  border-gray-200 items-center"
-              >
+              <View className="flex-row justify-between py-2 border-gray-200 items-center">
                 <View className="flex flex-row gap-1 items-center">
                   <FontAwesomeIcon icon={faOven} />
-                  <View className="flex flex-col gap-1">
-                    <Text
-                      style={{ fontSize: 16 }}
-                      className="text-gray-900 font-semibold"
-                    >
-                      Mutfak türü
-                    </Text>
-                  </View>
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="text-gray-900 font-semibold"
+                  >
+                    Mutfak türü
+                  </Text>
                 </View>
-                <Text className=" text-gray-500">
+                <Text className="text-gray-500">
                   {post.mutfak || "Belirtilmemiş"}
                 </Text>
               </View>
 
-              <View
-                key="detail-net-area"
-                className="flex-row justify-between py-2  border-gray-200"
-              >
+              <View className="flex-row justify-between py-2 border-gray-200">
                 <Text
                   style={{ fontSize: 16 }}
                   className="text-gray-900 font-semibold"
                 >
                   Brüt Metrekare
                 </Text>
-                <Text className=" text-gray-500">
-                  {post.netMetreKare
+                <Text className="text-gray-500">
+                  {post.brutMetreKare
                     ? `${post.brutMetreKare} m²`
                     : "Belirtilmemiş"}
                 </Text>
               </View>
 
-              <View
-                key="detail-net-area"
-                className="flex-row justify-between py-2  border-gray-200"
-              >
+              <View className="flex-row justify-between py-2 border-gray-200">
                 <Text
                   style={{ fontSize: 16 }}
                   className="text-gray-900 font-semibold"
                 >
                   Net Metrekare
                 </Text>
-                <Text className=" text-gray-500">
+                <Text className="text-gray-500">
                   {post.netMetreKare
                     ? `${post.netMetreKare} m²`
                     : "Belirtilmemiş"}
@@ -841,38 +703,19 @@ const PostDetailScreen = ({ route, navigation }) => {
                 </Text>
               </View>
 
-              <View
-                key="detail-building-age"
-                className="flex-row justify-between py-2  border-gray-200"
-              >
+              <View className="flex-row justify-between py-2 border-gray-200">
                 <Text
                   style={{ fontSize: 16 }}
                   className="text-gray-900 font-semibold"
                 >
                   Bina Yaşı
                 </Text>
-                <Text className=" text-gray-500">
+                <Text className="text-gray-500">
                   {post.binaYasi || "Belirtilmemiş"}
                 </Text>
               </View>
 
               <View
-                key="detail-total-floors"
-                className="flex-row justify-between py-2  border-gray-200"
-              >
-                <Text
-                  style={{ fontSize: 16 }}
-                  className="text-gray-900 font-semibold"
-                >
-                  Toplam Kat
-                </Text>
-                <Text className=" text-gray-500">
-                  {post.toplamKat || "Belirtilmemiş"}
-                </Text>
-              </View>
-
-              <View
-                key="detail-total-floors"
                 style={{
                   borderBottomWidth: 0.4,
                   borderBottomColor: "#dee0ea",
@@ -885,7 +728,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                 >
                   Otopark
                 </Text>
-                <Text className=" text-gray-500">
+                <Text className="text-gray-500">
                   {post.otopark === true ? "Var" : "Yok"}
                 </Text>
               </View>
@@ -899,49 +742,40 @@ const PostDetailScreen = ({ route, navigation }) => {
                 </Text>
               </View>
 
-              <View
-                key="detail-dues"
-                className="flex-row justify-between py-2  border-gray-200"
-              >
+              <View className="flex-row justify-between py-2 border-gray-200">
                 <Text
                   style={{ fontSize: 16 }}
                   className="text-gray-900 font-semibold"
                 >
                   Aidat
                 </Text>
-                <Text className=" text-gray-500">
+                <Text className="text-gray-500">
                   {post.aidat ? `${post.aidat} ₺` : "Belirtilmemiş"}
                 </Text>
               </View>
 
-              <View
-                key="detail-deposit"
-                className="flex-row justify-between py-2  border-gray-200"
-              >
+              <View className="flex-row justify-between py-2 border-gray-200">
                 <Text
                   style={{ fontSize: 16 }}
                   className="text-gray-900 font-semibold"
                 >
                   Depozito
                 </Text>
-                <Text className=" text-gray-500">
+                <Text className="text-gray-500">
                   {post.depozito
                     ? `${post.depozito} ${post.paraBirimi || "₺"}`
                     : "Belirtilmemiş"}
                 </Text>
               </View>
 
-              <View
-                key="detail-min-rental"
-                className="flex-row justify-between py-2  border-gray-200"
-              >
+              <View className="flex-row justify-between py-2 border-gray-200">
                 <Text
                   style={{ fontSize: 16 }}
                   className="text-gray-900 font-semibold"
                 >
                   Min. Kiralama Süresi
                 </Text>
-                <Text className=" text-gray-500">
+                <Text className="text-gray-500">
                   {post.minimumKiralamaSuresi
                     ? `${post.minimumKiralamaSuresi} Ay`
                     : "Belirtilmemiş"}
@@ -963,10 +797,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                 </Text>
               </View>
 
-              <View
-                key="detail-from"
-                className="flex-row justify-between py-2 items-center border-gray-200"
-              >
+              <View className="flex-row justify-between py-2 items-center border-gray-200">
                 <View className="flex flex-col gap-1">
                   <Text
                     style={{ fontSize: 16 }}
@@ -978,38 +809,31 @@ const PostDetailScreen = ({ route, navigation }) => {
                     Mülkün kimin tarafından kiralandığı
                   </Text>
                 </View>
-
-                <Text className=" text-gray-500">
+                <Text className="text-gray-500">
                   {post.kimden || "Sahibinden"}
                 </Text>
               </View>
 
-              <View
-                key="detail-site"
-                className="flex-row justify-between py-2  border-gray-200"
-              >
+              <View className="flex-row justify-between py-2 border-gray-200">
                 <Text
                   style={{ fontSize: 16 }}
                   className="text-gray-900 font-semibold"
                 >
                   Site adı
                 </Text>
-                <Text className=" text-gray-500">
+                <Text className="text-gray-500">
                   {post.siteAdi || "Belirtilmemiş"}
                 </Text>
               </View>
 
-              <View
-                key="detail-usage"
-                className="flex-row justify-between py-2  border-gray-200"
-              >
+              <View className="flex-row justify-between py-2 border-gray-200">
                 <Text
                   style={{ fontSize: 16 }}
                   className="text-gray-900 font-semibold"
                 >
                   Kullanım Durumu
                 </Text>
-                <Text className=" text-gray-500">
+                <Text className="text-gray-500">
                   {post.kullanimDurumu || "Belirtilmemiş"}
                 </Text>
               </View>
@@ -1028,17 +852,8 @@ const PostDetailScreen = ({ route, navigation }) => {
             <View className="flex-row flex-wrap">
               {(() => {
                 const features = [
-                  {
-                    key: "balkon",
-                    value: post.balkon,
-                    label: "Balkon",
-                  },
-                  {
-                    key: "asansor",
-                    value: post.asansor,
-                    label: "Asansör",
-                    icon: <FontAwesome icon={faElevator} />,
-                  },
+                  { key: "balkon", value: post.balkon, label: "Balkon" },
+                  { key: "asansor", value: post.asansor, label: "Asansör" },
                   { key: "otopark", value: post.otopark, label: "Otopark" },
                   { key: "esyali", value: post.esyali, label: "Eşyalı" },
                   {

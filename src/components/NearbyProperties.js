@@ -27,6 +27,7 @@ import {
 } from "@fortawesome/pro-light-svg-icons";
 import { BlurView } from "expo-blur";
 import { LoadingSkeleton } from "./LoadingSkeleton"; // Import the skeleton component
+import { LinearGradient } from "expo-linear-gradient";
 
 const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   // Match Score gösterim fonksiyonu
@@ -477,19 +478,32 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
             </View>
           </BlurView>
         )}
-        {/* Blur Overlay - Bottom Half */}
-        <BlurView
-          intensity={30}
-          tint="dark"
-          className="absolute bottom-0 left-0 right-0"
-          style={{ height: 65 }} // Resmin alt yarısı
+        {/* Gradient Shadow - Bottom to Top */}
+        <LinearGradient
+          colors={[
+            "rgba(0,0,0,0.0)",
+            "rgba(0,0,0,0.02)",
+            "rgba(0,0,0,0.04)",
+            "rgba(0,0,0,0.06)",
+            "rgba(0,0,0,0.08)",
+            "rgba(0,0,0,0.1)",
+            "rgba(0,0,0,0.12)",
+            "rgba(0,0,0,0.14)",
+          ]}
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 120,
+          }}
         >
-          <View className="flex-1 justify-end p-4">
-            {/* Property Details - On Blur */}
+          <View className="flex-1 justify-end p-4 mb-4">
+            {/* Property Details - On Gradient */}
             <View className="flex flex-col">
               {/* Title */}
               <Text
-                style={{ fontSize: 16, fontWeight: 700 }}
+                style={{ fontSize: 18, fontWeight: 700 }}
                 className="text-white mb-2"
                 numberOfLines={1}
               >
@@ -538,7 +552,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
               )}
             </View>
           </View>
-        </BlurView>
+        </LinearGradient>
 
         {/* Distance Badge */}
         {item.distanceInKM !== undefined && (
