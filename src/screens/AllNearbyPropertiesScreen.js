@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -9,13 +9,27 @@ import {
   RefreshControl,
   Alert,
   SafeAreaView,
+  Dimensions,
+  ScrollView,
 } from "react-native";
 import { Image } from "expo-image";
 import { useSelector } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
 import { useGetForYouPageQuery } from "../redux/api/apiSlice";
-import { MaterialIcons } from "@expo/vector-icons";
+import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import * as Location from "expo-location";
+import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
+import {
+  faBed,
+  faGrid2,
+  faMoneyBills,
+  faRuler,
+  faShower,
+} from "@fortawesome/pro-light-svg-icons";
+import { BlurView } from "expo-blur";
+import { faSearch } from "@fortawesome/pro-solid-svg-icons";
+
+const { width } = Dimensions.get("window");
 
 const AllNearbyPropertiesScreen = ({ navigation, route }) => {
   const currentUser = useSelector(selectCurrentUser);
@@ -169,41 +183,81 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
     }
   };
 
-  // Render property item
-  const renderPropertyItem = ({ item }) => (
-    <TouchableOpacity
-      style={{ marginHorizontal: 16 }}
-      className="bg-white rounded-2xl overflow-hidden mb-4 pt-4"
-      onPress={() => navigation.navigate("PostDetail", { postId: item.postId })}
-      activeOpacity={0.95}
-    >
-      <View className="relative">
-        {/* Property image */}
-        {item.postImages && item.postImages.length > 0 ? (
-          <Image
-            source={{ uri: item.postImages[0].postImageUrl }}
-            style={{ width: "100%", height: 200, borderRadius: 25 }}
-            contentFit="cover"
-            transition={200}
-            placeholder={{
-              uri: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y5ZmFmYiIvPjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Yw7xrbGVuaXlvcjwvdGV4dD48L3N2Zz4=",
-            }}
-            cachePolicy="memory-disk"
-          />
-        ) : (
-          <View className="w-full h-50 bg-gradient-to-br from-gray-100 to-gray-200 justify-center items-center">
-            <MaterialIcons name="home" size={32} color="#9CA3AF" />
-            <Text className="text-gray-500 mt-2 font-medium">Resim yok</Text>
-          </View>
-        )}
+  // Simple and reliable image slider component
+  const PropertyImageSlider = ({ images, distanceInKM, status, postId }) => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const scrollViewRef = useRef(null);
+
+    const handleScroll = (event) => {
+      const slideSize = width - 32;
+      const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
+      setCurrentIndex(index);
+    };
+
+    const handleDotPress = (index) => {
+      setCurrentIndex(index);
+      const slideSize = width - 32;
+      scrollViewRef.current?.scrollTo({
+        x: slideSize * index,
+        animated: true,
+      });
+    };
+
+    if (!images || images.length === 0) {
+      return (
+        <View className="w-full h-80 bg-gradient-to-br from-gray-100 to-gray-200 justify-center items-center rounded-3xl">
+          <MaterialIcons name="home" size={32} color="#9CA3AF" />
+          <Text className="text-gray-500 mt-2 font-medium">Resim yok</Text>
+        </View>
+      );
+    }
+
+    return (
+      <View
+        className="relative bg-gray-100"
+        style={{ borderRadius: 25, overflow: "hidden" }}
+      >
+        <ScrollView
+          ref={scrollViewRef}
+          horizontal={true}
+          pagingEnabled={true}
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleScroll}
+          scrollEventThrottle={16}
+          decelerationRate="fast"
+          bounces={true}
+          style={{ width: width - 32 }}
+        >
+          {images.map((item, index) => (
+            <TouchableOpacity
+              key={`image-${postId}-${index}`}
+              style={{ width: width - 32 }}
+              activeOpacity={1}
+              onPress={() =>
+                navigation.navigate("PostDetail", { postId: item.postId })
+              }
+            >
+              <Image
+                source={{ uri: item.postImageUrl }}
+                style={{ width: width - 32, height: 350 }}
+                contentFit="cover"
+                transition={150}
+                placeholder={{
+                  uri: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y5ZmFmYiIvPjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Yw7xrbGVuaXlvcjwvdGV4dD48L3N2Zz4=",
+                }}
+                cachePolicy="memory-disk"
+              />
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
         {/* Distance badge */}
-        {item.distanceInKM !== undefined && (
+        {distanceInKM !== undefined && (
           <View className="absolute top-3 left-3">
             <View className="bg-green-500/90 backdrop-blur-sm px-3 py-1.5 rounded-full flex-row items-center">
               <MaterialIcons name="location-on" size={12} color="white" />
               <Text className="text-white text-xs font-semibold ml-1">
-                {item.distanceInKM.toFixed(1)} km
+                {distanceInKM.toFixed(1)} km
               </Text>
             </View>
           </View>
@@ -211,25 +265,68 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
 
         {/* Status badge */}
         <View className="absolute top-3 right-3">
-          <View
-            className={`px-3 py-1.5 rounded-full backdrop-blur-sm ${
-              item.status === 0
-                ? "bg-green-500/90"
-                : item.status === 1
-                ? "bg-green-500/90"
-                : "bg-gray-500/90"
-            }`}
+          <BlurView
+            intensity={90}
+            style={{ overflow: "hidden", borderRadius: 100 }}
+            className="px-3 py-1.5 rounded-full"
           >
             <Text className="text-white text-xs font-semibold">
-              {item.status === 0
-                ? "Aktif"
-                : item.status === 1
-                ? "Kiralandı"
-                : "Kapalı"}
+              {status === 0 ? "Aktif" : status === 1 ? "Kiralandı" : "Kapalı"}
             </Text>
-          </View>
+          </BlurView>
         </View>
+
+        {/* Pagination dots - Only show if more than 1 image */}
+        {images.length > 1 && (
+          <View className="absolute bottom-3 left-0 right-0 flex-row justify-center">
+            <View
+              style={{
+                borderRadius: 20,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+              }}
+            >
+              <View className="flex-row justify-center">
+                {images.map((_, index) => (
+                  <TouchableOpacity
+                    key={`dot-${index}`}
+                    onPress={() => handleDotPress(index)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      marginHorizontal: 4,
+                      backgroundColor:
+                        index === currentIndex
+                          ? "#FFFFFF"
+                          : "rgba(255, 255, 255, 0.5)",
+                    }}
+                  />
+                ))}
+              </View>
+            </View>
+          </View>
+        )}
       </View>
+    );
+  };
+
+  // Render property item
+  const renderPropertyItem = ({ item }) => (
+    <TouchableOpacity
+      style={{ marginHorizontal: 16 }}
+      className="overflow-hidden mb-4 pt-6 border-b border-gray-200"
+      onPress={() => navigation.navigate("PostDetail", { postId: item.postId })}
+      activeOpacity={1}
+    >
+      {/* Image slider */}
+      <PropertyImageSlider
+        images={item.postImages}
+        distanceInKM={item.distanceInKM}
+        status={item.status}
+        postId={item.postId}
+      />
 
       <View className="mt-4 px-1">
         {/* Title and Price */}
@@ -264,36 +361,46 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
           <Text className="text-sm text-gray-400 ml-1">/ay</Text>
         </View>
 
-        {/* Location */}
-
-        {/* Description */}
-        <Text
-          numberOfLines={2}
-          className="text-gray-600 text-sm mb-4 leading-5"
-        >
-          {item.postDescription || "Açıklama yok"}
-        </Text>
-
         {/* Property details */}
-        <View className="flex-row justify-between items-center">
-          <View className="flex-row items-center bg-gray-50 px-3 py-2 rounded-lg">
-            <MaterialIcons name="king-bed" size={16} color="#6B7280" />
-            <Text className="text-xs text-gray-700 ml-1 font-medium">
-              {item.odaSayisi} Oda
+        <View
+          style={{ paddingLeft: 30, paddingRight: 30 }}
+          className="flex-row justify-between p-4 mb-6 mt-4"
+        >
+          <View className="items-center gap-2">
+            <FontAwesomeIcon size={30} icon={faBed} />
+            <Text
+              style={{ fontSize: 14 }}
+              className="font-medium text-center text-gray-500"
+            >
+              {item.odaSayisi || "N/A"} Oda
             </Text>
           </View>
 
-          <View className="flex-row items-center bg-gray-50 px-3 py-2 rounded-lg">
-            <MaterialIcons name="bathtub" size={16} color="#6B7280" />
-            <Text className="text-xs text-gray-700 ml-1 font-medium">
-              {item.banyoSayisi} Banyo
+          <View className="items-center gap-2">
+            <FontAwesomeIcon size={30} icon={faShower} />
+            <Text
+              style={{ fontSize: 14 }}
+              className="font-medium text-center text-gray-500"
+            >
+              {item.banyoSayisi || "N/A"} Banyo
             </Text>
           </View>
-
-          <View className="flex-row items-center bg-gray-50 px-3 py-2 rounded-lg">
-            <MaterialIcons name="square-foot" size={16} color="#6B7280" />
-            <Text className="text-xs text-gray-700 ml-1 font-medium">
-              {item.brutMetreKare} m²
+          <View className="items-center gap-2">
+            <FontAwesomeIcon size={30} icon={faRuler} />
+            <Text
+              style={{ fontSize: 14 }}
+              className="font-medium text-center text-gray-500"
+            >
+              {item.brutMetreKare ? `${item.brutMetreKare} m²` : "N/A"}
+            </Text>
+          </View>
+          <View className="items-center gap-2">
+            <FontAwesomeIcon size={30} icon={faMoneyBills} />
+            <Text
+              style={{ fontSize: 14 }}
+              className="font-medium text-center text-gray-500"
+            >
+              {item.aidat ? `${item.aidat} ₺` : "Belirtilmemiş"}
             </Text>
           </View>
         </View>
@@ -304,26 +411,15 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
   // Render header
   const renderHeader = () => (
     <View className="bg-white border-b border-gray-200 pb-4">
-      {/* Title and location info */}
-      <View className="px-4 pt-4 pb-2">
-        <Text className="text-2xl font-bold text-gray-900 mb-1">
-          Yakındaki Evler
-        </Text>
-        {userLocation && (
-          <Text className="text-sm text-gray-500">
-            {filteredProperties.length} ilan bulundu • Konum:{" "}
-            {userLocation.latitude.toFixed(4)},{" "}
-            {userLocation.longitude.toFixed(4)}
-          </Text>
-        )}
-      </View>
-
       {/* Search bar */}
-      <View className="px-4 mb-3">
-        <View className="bg-gray-50 rounded-lg flex-row items-center px-3 py-2 border border-gray-200">
-          <MaterialIcons name="search" size={20} color="#9CA3AF" />
+      <View className="px-4 mb-3 pt-4">
+        <View
+          style={{ boxShadow: "0px 0px 12px #00000014" }}
+          className="bg-white rounded-3xl gap-2 px-4 flex-row items-center "
+        >
+          <FontAwesomeIcon icon={faSearch} size={20} color="#000" />
           <TextInput
-            className="flex-1 text-base ml-2"
+            className="w-full px-2 placeholder:text-gray-400 placeholder:text-[14px] py-4 text-normal"
             placeholder="İlan ara..."
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -338,7 +434,6 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
 
       {/* Sort options */}
       <View className="px-4">
-        <Text className="text-sm text-gray-600 mb-2">Sırala:</Text>
         <View className="flex-row">
           {[
             { key: "distance", label: "Uzaklık" },
@@ -348,9 +443,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
             <TouchableOpacity
               key={option.key}
               className={`mr-3 px-4 py-2 rounded-full border ${
-                sortBy === option.key
-                  ? "bg-green-500 border-green-500"
-                  : "bg-white border-gray-300"
+                sortBy === option.key ? "bg-gray-900" : "bg-white border-white"
               }`}
               onPress={() => setSortBy(option.key)}
             >

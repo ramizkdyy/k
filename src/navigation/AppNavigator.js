@@ -428,11 +428,11 @@ const LandlordHomeStack = () => {
         options={{
           title: "Yakındaki Evler",
           headerStyle: {
-            backgroundColor: "#A0E79E",
+            backgroundColor: "#fff",
           },
-          headerTintColor: "#fff",
+          headerTintColor: "#000",
           headerTitleStyle: {
-            fontWeight: "bold",
+            fontWeight: 600,
           },
           headerBackTitle: "",
           headerShadowVisible: false,
