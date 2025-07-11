@@ -87,6 +87,12 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from "react-native";
+import {
+  faBuilding,
+  faEnvelope,
+  faHouse,
+  faUser,
+} from "@fortawesome/pro-light-svg-icons";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -730,7 +736,7 @@ const LandlordTabNavigator = () => {
             tabBarLabel: "Ana Sayfa",
             tabBarIcon: ({ focused }) => (
               <FontAwesomeIcon
-                icon={faHouseRegular}
+                icon={faHouse}
                 size={24}
                 color={focused ? "#000" : "#999999"}
               />
@@ -745,7 +751,7 @@ const LandlordTabNavigator = () => {
             tabBarLabel: "Mülklerim",
             tabBarIcon: ({ focused }) => (
               <FontAwesomeIcon
-                icon={faBuildingRegular}
+                icon={faBuilding}
                 size={24}
                 color={focused ? "#000" : "#999999"}
               />
@@ -763,7 +769,7 @@ const LandlordTabNavigator = () => {
             tabBarLabel: "Teklifler",
             tabBarIcon: ({ focused }) => (
               <FontAwesomeIcon
-                icon={faEnvelopeRegular}
+                icon={faEnvelope}
                 size={24}
                 color={focused ? "#000" : "#999999"}
               />
@@ -778,7 +784,7 @@ const LandlordTabNavigator = () => {
             tabBarLabel: "Profil",
             tabBarIcon: ({ focused }) => (
               <FontAwesomeIcon
-                icon={faUserRegular}
+                icon={faUser}
                 size={24}
                 color={focused ? "#000" : "#999999"}
               />

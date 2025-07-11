@@ -436,19 +436,20 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   const renderPropertyCard = ({ item }) => (
     <TouchableOpacity
       activeOpacity={1}
-      className="mr-4 overflow-hidden w-72 flex flex-col"
+      className="overflow-hidden w-72 flex flex-col px-3 py-3"
       onPress={() => {
         navigation.navigate("PostDetail", { postId: item.postId });
       }}
     >
       {/* Image Container with Overlay */}
-      <View
-        className="relative rounded-3xl overflow-hidden"
-        style={{ height: 250 }}
-      >
+      <View className="relative ">
         {/* Background Image */}
         <Image
-          style={{ height: 250 }}
+          style={{
+            height: 230,
+            borderRadius: 30,
+            boxShadow: "0px 0px 12px #00000024",
+          }}
           source={{
             uri:
               item.postImages && item.postImages.length > 0
@@ -456,9 +457,11 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
                 : item.firstPostİmageURL ||
                   "https://via.placeholder.com/300x200",
           }}
-          className="w-full rounded-3xl absolute inset-0"
+          className="w-full "
           resizeMode="cover"
         />
+
+        {/* Distance Badge */}
         {(item.distanceInKM !== undefined || item.distance !== undefined) && (
           <BlurView
             intensity={50}
@@ -478,97 +481,6 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
             </View>
           </BlurView>
         )}
-        {/* Gradient Shadow - Bottom to Top */}
-        <LinearGradient
-          colors={[
-            "rgba(0,0,0,0.0)",
-            "rgba(0,0,0,0.02)",
-            "rgba(0,0,0,0.04)",
-            "rgba(0,0,0,0.06)",
-            "rgba(0,0,0,0.08)",
-            "rgba(0,0,0,0.1)",
-            "rgba(0,0,0,0.12)",
-            "rgba(0,0,0,0.14)",
-          ]}
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 120,
-          }}
-        >
-          <View className="flex-1 justify-end p-4 mb-4">
-            {/* Property Details - On Gradient */}
-            <View className="flex flex-col">
-              {/* Title */}
-              <Text
-                style={{ fontSize: 18, fontWeight: 700 }}
-                className="text-white mb-2"
-                numberOfLines={1}
-              >
-                {item.ilanBasligi || item.title || "İlan Başlığı"}
-              </Text>
-
-              <View className="flex justify-between flex-row items-center">
-                {/* Price */}
-                <View className="flex-row items-center">
-                  <Text
-                    style={{ fontSize: 14, fontWeight: 600 }}
-                    className="text-white"
-                  >
-                    {item.kiraFiyati || item.rent
-                      ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-                          item.paraBirimi || item.currency || "₺"
-                        }`
-                      : "Fiyat belirtilmemiş"}
-                  </Text>
-                </View>
-
-                {/* Location */}
-                <View className="flex-row items-center gap-1">
-                  <FontAwesomeIcon
-                    size={12}
-                    color="#E5E7EB"
-                    icon={faLocationDot}
-                  />
-                  <Text className="text-gray-200 text-sm" numberOfLines={1}>
-                    {item.ilce && item.il
-                      ? `${item.ilce}, ${item.il}`
-                      : item.location || "Konum bilgisi yok"}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Compatibility Level for recommended properties */}
-              {item.compatibilityLevel && item.matchScore && (
-                <View className="mt-2">
-                  <MatchScoreBar
-                    matchScore={item.matchScore}
-                    showBar={true}
-                    size="sm"
-                  />
-                </View>
-              )}
-            </View>
-          </View>
-        </LinearGradient>
-
-        {/* Distance Badge */}
-        {item.distanceInKM !== undefined && (
-          <BlurView
-            intensity={60}
-            tint="dark"
-            className="absolute top-3 left-3 rounded-full overflow-hidden"
-          >
-            <View className="px-3 py-1.5 flex-row items-center gap-1">
-              <FontAwesomeIcon color="white" icon={faRoad} size={14} />
-              <Text className="text-white text-xs font-semibold">
-                {item.distanceInKM.toFixed(1)} km
-              </Text>
-            </View>
-          </BlurView>
-        )}
 
         {/* Match Score Badge */}
         {item.matchScore && (
@@ -584,6 +496,47 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
               </Text>
             </View>
           </BlurView>
+        )}
+      </View>
+
+      {/* Property Details - Below Image */}
+      <View className="py-3 px-1">
+        <View className="">
+          {/* Title - On Light Gradient */}
+          <Text
+            style={{ fontSize: 16, fontWeight: 600 }}
+            className="text-gray-800"
+            numberOfLines={2}
+          >
+            {item.il} {item.ilce} {item.odaSayisi} Kiralık Daire
+          </Text>
+        </View>
+        <View className="flex justify-between flex-row items-center mt-1">
+          {/* Price */}
+          <View className="flex-row items-center">
+            <Text
+              style={{ fontSize: 14, fontWeight: 400 }}
+              className="text-gray-500"
+            >
+              {item.kiraFiyati || item.rent
+                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
+                    item.paraBirimi || item.currency || "₺"
+                  }`
+                : "Fiyat belirtilmemiş"}
+            </Text>
+            <Text className="text-sm text-gray-400 ml-1">/ay</Text>
+          </View>
+        </View>
+
+        {/* Compatibility Level for recommended properties */}
+        {item.compatibilityLevel && item.matchScore && (
+          <View className="mt-2">
+            <MatchScoreBar
+              matchScore={item.matchScore}
+              showBar={true}
+              size="sm"
+            />
+          </View>
         )}
       </View>
     </TouchableOpacity>
@@ -659,7 +612,6 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
 
         {/* Compatibility Level */}
         <View className="py-1">
-          <Text className="mt-2 font-semibold">Eşleşme skoru:</Text>
           <MatchScoreBar
             matchScore={item.matchScore}
             showBar={true}

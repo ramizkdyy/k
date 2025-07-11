@@ -117,21 +117,24 @@ const ProfileScreen = ({ navigation }) => {
     >
       {/* Profile Header */}
       <View
-        style={{ borderRadius: 30, boxShadow: "0px 0px 12px #00000014" }}
-        className="items-center border py-6 border-gray-200 mt-4"
+        style={{ borderRadius: 30 }}
+        className="items-center  py-6 border-gray-200 mt-4"
       >
-        <View className="w-24 h-24 rounded-full bg-white justify-center items-center mb-2 border-4 border-white">
+        <View
+          style={{ boxShadow: "0px 0px 12px #00000014" }}
+          className="w-24 h-24 rounded-full bg-white justify-center items-center mb-2 border-white"
+        >
           {userProfile?.profileImageUrl !== "default_profile_image_url" ? (
             <Image
               style={{ borderRadius: 100, boxShadow: "0px 0px 12px #00000014" }}
               source={{ uri: userProfile.profileImageUrl }}
-              className="w-full h-full rounded-full border border-gray-100"
+              className="w-full h-full rounded-full"
               resizeMode="cover"
             />
           ) : (
             <View
               style={{ borderRadius: 100, boxShadow: "0px 0px 12px #00000014" }}
-              className="w-full h-full rounded-full bg-gray-100 border-gray-200 border justify-center items-center"
+              className="w-full h-full rounded-full bg-gray-100 justify-center items-center"
             >
               <Text
                 style={{ fontSize: 40 }}

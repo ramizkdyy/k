@@ -12,6 +12,7 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
   Animated,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
@@ -27,26 +28,24 @@ import {
   addFavoriteProperty,
   removeFavoriteProperty,
 } from "../redux/slices/profileSlice";
-import { MaterialIcons } from "@expo/vector-icons";
 import { FontAwesome } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import {
-  faBuilding,
-  faElevator,
   faFireFlameCurved,
   faGrid2,
-  faHouseBlank,
-  faLocationDot,
   faMoneyBills,
   faOven,
-  faQuestion,
   faRuler,
   faShower,
+  faArrowLeft,
+  faShare,
+  faChevronLeft,
 } from "@fortawesome/pro-light-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faChevronRight } from "@fortawesome/pro-regular-svg-icons";
 import * as Haptics from "expo-haptics";
 import Carousel from "react-native-reanimated-carousel";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import LocationSection from "../components/LocationSection";
 
 const { width, height } = Dimensions.get("window");
 
@@ -56,6 +55,7 @@ const PostDetailScreen = ({ route, navigation }) => {
   const currentUser = useSelector(selectCurrentUser);
   const userRole = useSelector(selectUserRole);
   const favoriteProperties = useSelector(selectFavoriteProperties);
+  const insets = useSafeAreaInsets();
 
   const [isOfferModalVisible, setIsOfferModalVisible] = useState(false);
   const [offerAmount, setOfferAmount] = useState("");
@@ -63,17 +63,19 @@ const PostDetailScreen = ({ route, navigation }) => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isProcessingFavorite, setIsProcessingFavorite] = useState(false);
-  const scrollY = useRef(new Animated.Value(0)).current;
+  const [isFullscreenModalVisible, setIsFullscreenModalVisible] =
+    useState(false);
+  const [fullscreenImageIndex, setFullscreenImageIndex] = useState(0);
 
   const mainCarouselRef = useRef(null);
-  const thumbnailCarouselRef = useRef(null);
+  const fullscreenCarouselRef = useRef(null);
+  const scrollViewRef = useRef(null);
 
-  const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-  };
+  // Scroll animation values
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   // Get post details
-  const { data, isLoading, refetch } = useGetPostQuery(postId);
+  const { data, isLoading } = useGetPostQuery(postId);
 
   // Mutations
   const [createOffer, { isLoading: isCreatingOffer }] =
@@ -84,30 +86,10 @@ const PostDetailScreen = ({ route, navigation }) => {
   const post = data?.result;
   const images = Array.isArray(post?.postImages) ? post.postImages : [];
 
-  // Calculate dynamic image height based on scroll position
-  const imageHeight = scrollY.interpolate({
-    inputRange: [-200, 0], // When scrolling up (negative values)
-    outputRange: [height * 0.8, height * 0.6], // Expand from 60% to 80% of screen height
-    extrapolate: "clamp",
-  });
-
-  // Calculate content padding top based on scroll position
-  const contentPaddingTop = scrollY.interpolate({
-    inputRange: [-200, 0],
-    outputRange: [height * 0.75, height * 0.55], // Adjust content position accordingly
-    extrapolate: "clamp",
-  });
-
-  // Calculate thumbnail margin top to reduce spacing when scrolled up
-  const thumbnailMarginTop = scrollY.interpolate({
-    inputRange: [-200, 0],
-    outputRange: [0, 24], // Remove top margin completely when scrolled up
-    extrapolate: "clamp",
-  });
-
   useEffect(() => {
     if (data && data.isSuccess && data.result) {
       dispatch(setCurrentPost(data.result));
+      console.log("DATA:", data.result);
     }
   }, [data, dispatch]);
 
@@ -119,68 +101,94 @@ const PostDetailScreen = ({ route, navigation }) => {
     }
   }, [favoriteProperties, postId]);
 
+  // Header opacity based on scroll
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [300, 410],
+    outputRange: [0, 1],
+    extrapolate: "clamp",
+  });
+
+  const imageOpacity = scrollY.interpolate({
+    inputRange: [0, height * 0.5],
+    outputRange: [1, 0.5], // 1'den 0.2'ye (tamamen siyah olmasın, hafif görünür kalsın)
+    extrapolate: "clamp",
+  });
+
+  // Handle scroll events
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    {
+      useNativeDriver: false,
+    }
+  );
+
   // Handle main carousel change
   const handleMainCarouselChange = (index) => {
     setCurrentImageIndex(index);
-
-    // Sync thumbnail carousel if needed
-    if (thumbnailCarouselRef.current && images.length > 4) {
-      const targetIndex = Math.max(0, Math.min(index, images.length - 4));
-      thumbnailCarouselRef.current.scrollTo({
-        index: targetIndex,
-        animated: true,
-      });
-    }
   };
 
   // Handle thumbnail press
   const handleThumbnailPress = (index) => {
-    handlePress();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setCurrentImageIndex(index);
     if (mainCarouselRef.current) {
       mainCarouselRef.current.scrollTo({ index, animated: true });
     }
   };
 
+  // Open fullscreen modal
+  const openFullscreenModal = (index = currentImageIndex) => {
+    setFullscreenImageIndex(index);
+    setIsFullscreenModalVisible(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  };
+
+  // Close fullscreen modal
+  const closeFullscreenModal = () => {
+    setIsFullscreenModalVisible(false);
+  };
+
+  // Handle fullscreen carousel change
+  const handleFullscreenCarouselChange = (index) => {
+    setFullscreenImageIndex(index);
+  };
+
   // Render main image item
   const renderMainImageItem = ({ item, index }) => {
     return (
-      <View style={{ width, height: "100%" }}>
+      <TouchableOpacity
+        style={{ width, height: "100%" }}
+        onPress={() => openFullscreenModal(index)}
+        activeOpacity={1}
+      >
         <Image
           source={{ uri: item.postImageUrl }}
           style={{ width: "100%", height: "100%" }}
           resizeMode="cover"
         />
-      </View>
+      </TouchableOpacity>
     );
   };
 
-  // Render thumbnail item
-  const renderThumbnailItem = ({ item, index }) => (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={() => handleThumbnailPress(index)}
-      style={{
-        width: 70,
-        height: 55,
-        marginRight: 10,
-        borderRadius: 15,
-        opacity: index === currentImageIndex ? 1 : 0.7,
-        borderWidth: index === currentImageIndex ? 2 : 0,
-        borderColor: index === currentImageIndex ? "#22c55e" : "transparent",
-      }}
-    >
-      <Image
-        source={{ uri: item.postImageUrl }}
+  // Render fullscreen image item
+  const renderFullscreenImageItem = ({ item, index }) => {
+    return (
+      <View
         style={{
-          width: "100%",
-          height: "100%",
-          borderRadius: 13,
+          width,
+          height,
+          justifyContent: "center",
+          alignItems: "center",
         }}
-        resizeMode="cover"
-      />
-    </TouchableOpacity>
-  );
+      >
+        <Image
+          source={{ uri: item.postImageUrl }}
+          style={{ width: "100%", height: "100%" }}
+          resizeMode="contain"
+        />
+      </View>
+    );
+  };
 
   const handleCreateOffer = async () => {
     if (!offerAmount.trim()) {
@@ -318,6 +326,13 @@ const PostDetailScreen = ({ route, navigation }) => {
     }
   };
 
+  // Calculate margin top based on scroll position
+  const marginTop = scrollY.interpolate({
+    inputRange: [0, height * 0.95],
+    outputRange: [0, -height * 0.15],
+    extrapolate: "clamp",
+  });
+
   // Render loading state
   if (isLoading) {
     return (
@@ -344,156 +359,283 @@ const PostDetailScreen = ({ route, navigation }) => {
   }
 
   return (
-    <View className="flex-1 bg-white">
-      {/* Dynamic Background Image Carousel */}
+    <View className="flex-1 bg-white pb-10">
+      {/* Absolute Blurred Header */}
       <Animated.View
         style={{
           position: "absolute",
           top: 0,
           left: 0,
           right: 0,
-          height: imageHeight, // Dynamic height based on scroll
-          zIndex: 0,
+          height: 50 + insets.top,
+          opacity: headerOpacity,
+          zIndex: 1000,
         }}
       >
-        {images.length > 0 ? (
-          <View style={{ flex: 1 }}>
-            <Carousel
-              ref={mainCarouselRef}
-              width={width}
-              height="100%"
-              data={images}
-              renderItem={renderMainImageItem}
-              onSnapToItem={handleMainCarouselChange}
-              mode="parallax"
-              modeConfig={{
-                parallaxScrollingScale: 1,
-                parallaxScrollingOffset: 0,
-              }}
-              pagingEnabled={true}
-              snapEnabled={true}
-              enabled={images.length > 1}
-              style={{
-                width: width,
-                height: "100%",
-              }}
-            />
+        <BlurView
+          intensity={80}
+          tint="light"
+          style={{
+            flex: 1,
+          }}
+        >
+          {/* Safe Area Top Blur */}
+          <BlurView
+            intensity={0}
+            tint="light"
+            style={{
+              height: insets.top,
+              width: "100%",
+            }}
+          />
 
-            {/* Pagination Dots */}
-            {images.length > 1 && (
-              <View
-                className="absolute left-0 right-0 flex-row justify-center"
-                style={{ bottom: 70 }}
-              >
-                <BlurView
-                  intensity={60}
-                  tint="dark"
-                  className="rounded-full overflow-hidden"
+          <View
+            style={{
+              height: 50,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 16,
+            }}
+          >
+            {/* Back Button */}
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: "rgba(255, 255, 255, 0.3)",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <FontAwesomeIcon icon={faArrowLeft} size={18} color="#374151" />
+            </TouchableOpacity>
+
+            {/* Title */}
+            <Text
+              numberOfLines={1}
+              style={{
+                flex: 1,
+                marginHorizontal: 16,
+                fontSize: 18,
+                fontWeight: "300",
+                color: "#000",
+                textAlign: "center",
+              }}
+            >
+              {post?.ilanBasligi}
+            </Text>
+
+            {/* Share Button (placeholder for symmetry) */}
+            <TouchableOpacity
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: "rgba(255, 255, 255, 0.3)",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+              onPress={() => {
+                // Add share functionality here
+                console.log("Share pressed");
+              }}
+            >
+              <FontAwesomeIcon icon={faShare} size={16} color="#374151" />
+            </TouchableOpacity>
+          </View>
+        </BlurView>
+      </Animated.View>
+
+      {/* Floating Back Button (for when header is not visible) */}
+      <Animated.View
+        style={{
+          position: "absolute",
+          top: insets.top + 10,
+          left: 16,
+          zIndex: 999,
+          opacity: scrollY.interpolate({
+            inputRange: [0, 100],
+            outputRange: [1, 0],
+            extrapolate: "clamp",
+          }),
+        }}
+      >
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <View
+            className="bg-white"
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 25,
+              justifyContent: "center",
+              alignItems: "center",
+              overflow: "hidden",
+              boxShadow: "0px 0px 12px #00000020",
+            }}
+          >
+            <FontAwesomeIcon icon={faChevronLeft} size={22} color="black" />
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
+
+      <Animated.ScrollView
+        ref={scrollViewRef}
+        className="flex-1 bg-white"
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        overScrollMode="never"
+      >
+        {/* Static Image Carousel */}
+        <View
+          style={{
+            marginBottom: -20,
+            height: height * 0.5,
+            backgroundColor: "#f5f5f5",
+          }}
+        >
+          {images.length > 0 ? (
+            <View style={{ flex: 1 }}>
+              <Animated.View style={{ flex: 1, opacity: imageOpacity }}>
+                <Carousel
+                  ref={mainCarouselRef}
+                  width={width}
+                  height="100%"
+                  data={images}
+                  renderItem={renderMainImageItem}
+                  onSnapToItem={handleMainCarouselChange}
+                  pagingEnabled={true}
+                  loop={false}
+                  snapEnabled={true}
+                  enabled={images.length > 1}
+                />
+              </Animated.View>
+
+              {/* Pagination Dots */}
+              {images.length > 1 && (
+                <Animated.View
+                  className="absolute left-0 right-0 flex-row justify-center"
+                  style={{
+                    bottom: 30,
+                    opacity: imageOpacity, // Pagination dots da birlikte siyahlaşsın
+                  }}
                 >
-                  {" "}
-                  <View className="flex-row justify-center px-3 py-2">
-                    {images.map((_, index) => (
-                      <TouchableOpacity
-                        key={`dot-${index}`}
-                        className={`mx-1 h-2 w-2 rounded-full ${
-                          index === currentImageIndex
-                            ? "bg-white"
-                            : "bg-gray-400"
-                        }`}
-                        onPress={() => handleThumbnailPress(index)}
+                  <BlurView
+                    intensity={60}
+                    tint="dark"
+                    className="rounded-full overflow-hidden"
+                  >
+                    <View className="flex-row justify-center px-3 py-2">
+                      {images.map((_, index) => (
+                        <TouchableOpacity
+                          key={`dot-${index}`}
+                          className={`mx-1 h-2 w-2 rounded-full ${
+                            index === currentImageIndex
+                              ? "bg-white"
+                              : "bg-gray-400"
+                          }`}
+                          onPress={() => handleThumbnailPress(index)}
+                        />
+                      ))}
+                    </View>
+                  </BlurView>
+                </Animated.View>
+              )}
+            </View>
+          ) : (
+            <View className="w-full h-full justify-center items-center bg-gray-100">
+              <Text className="text-gray-500">Resim bulunamadı</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Content Container with Dynamic Margin */}
+        <Animated.View
+          className="bg-white pt-4"
+          style={{
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+
+            marginTop: marginTop,
+            shadowColor: "#000",
+            shadowOffset: {
+              width: 0,
+              height: -4,
+            },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 8,
+          }}
+        >
+          <View className="flex justify-center items-center">
+            {" "}
+            <View
+              style={{ height: 5, width: 50 }}
+              className=" bg-gray-200 rounded-full"
+            ></View>
+          </View>
+          {/* Thumbnail Carousel */}
+          <View style={{ paddingRight: 20 }}>
+            {images.length > 1 && (
+              <View style={{ marginTop: 20, marginBottom: 16 }}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{
+                    paddingLeft: 20,
+                    paddingRight: 20,
+                  }}
+                  style={{
+                    height: 55,
+                  }}
+                >
+                  {images.map((item, index) => (
+                    <TouchableOpacity
+                      key={`thumbnail-${index}`}
+                      activeOpacity={0.8}
+                      onPress={() => handleThumbnailPress(index)}
+                      style={{
+                        width: 70,
+                        height: 55,
+                        marginRight: 10,
+                        borderRadius: 15,
+                        opacity: index === currentImageIndex ? 1 : 0.7,
+                        borderWidth: index === currentImageIndex ? 0 : 0,
+                        borderColor:
+                          index === currentImageIndex ? "#000" : "transparent",
+                      }}
+                    >
+                      <Image
+                        source={{ uri: item.postImageUrl }}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          borderRadius: 13,
+                        }}
+                        resizeMode="cover"
                       />
-                    ))}
-                  </View>
-                </BlurView>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
               </View>
             )}
           </View>
-        ) : (
-          <View className="w-full h-full justify-center items-center bg-gray-100">
-            <Text className="text-gray-500">Resim bulunamadı</Text>
-          </View>
-        )}
-      </Animated.View>
-
-      {/* Scrollable Content */}
-      <Animated.ScrollView
-        className="flex-1"
-        style={{
-          zIndex: 1,
-        }}
-        contentContainerStyle={{
-          paddingTop: 450,
-        }}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
-        scrollEventThrottle={16}
-        bounces={true}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Content Container with rounded top corners */}
-        <View
-          className="bg-white flex-1"
-          style={{
-            minHeight: height * 0.7, // Ensure content covers remaining space
-          }}
-        >
-          {/* Thumbnail Carousel - now inside the white content area */}
-          {images.length > 1 && (
-            <Animated.View style={{ marginTop: 20, marginBottom: 16 }}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{
-                  paddingLeft: 20,
-                  paddingRight: 20,
-                }}
-                style={{
-                  width: width,
-                  height: 55,
-                }}
-              >
-                {images.map((item, index) => (
-                  <TouchableOpacity
-                    key={`thumbnail-${index}`}
-                    activeOpacity={0.8}
-                    onPress={() => handleThumbnailPress(index)}
-                    style={{
-                      width: 70,
-                      height: 55,
-                      marginRight: 10,
-                      borderRadius: 15,
-                      padding: 0,
-                      opacity: index === currentImageIndex ? 1 : 0.7,
-                    }}
-                  >
-                    <Image
-                      source={{ uri: item.postImageUrl }}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        borderRadius: 15,
-                      }}
-                      resizeMode="cover"
-                    />
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </Animated.View>
-          )}
 
           {/* Post Details */}
-          <View className="p-6 pt-2">
+          <View className="p-6  pt-2">
             <View className="flex-col">
               <Text
-                style={{ fontSize: 25 }}
+                style={{ fontSize: 25, fontWeight: 700 }}
                 className="font-bold text-gray-900"
               >
                 {post.ilanBasligi}
               </Text>
             </View>
-            <View className="flex flex-row justify-between items-center">
+            <View className="flex flex-col gap-4 mt-1">
               <View className="flex flex-row items-center">
                 <Text style={{ fontSize: 12 }} className="text-gray-500">
                   {post.il}, {post.ilce}, {post.mahalle}
@@ -501,10 +643,11 @@ const PostDetailScreen = ({ route, navigation }) => {
               </View>
               <Text style={{ fontSize: 14 }} className="text-gray-500">
                 <Text
-                  className="underline text-gray-900 font-semibold"
-                  style={{ fontSize: 22 }}
+                  className="underline text-gray-900 font-medium"
+                  style={{ fontSize: 18 }}
                 >
-                  {post.kiraFiyati} <Text>{post.paraBirimi || "₺"}</Text>
+                  {post.kiraFiyati.toLocaleString("tr-TR")}{" "}
+                  <Text>{post.paraBirimi || "₺"}</Text>
                 </Text>{" "}
                 /ay
               </Text>
@@ -606,7 +749,6 @@ const PostDetailScreen = ({ route, navigation }) => {
               </TouchableOpacity>
             </View>
 
-            {/* Description */}
             <View
               style={{
                 borderBottomWidth: 0.4,
@@ -615,8 +757,8 @@ const PostDetailScreen = ({ route, navigation }) => {
               className="mb-5 pb-6"
             >
               <Text
-                style={{ fontSize: 20 }}
-                className="font-semibold text-gray-900 mb-4 text-center"
+                style={{ fontSize: 14 }}
+                className=" font-medium text-center text-gray-500 mb-4 mt-1"
               >
                 Ev sahibinin mesajı
               </Text>
@@ -625,6 +767,9 @@ const PostDetailScreen = ({ route, navigation }) => {
                   "Bu ilan için açıklama bulunmamaktadır."}
               </Text>
             </View>
+
+            {/* Location Section - NEW */}
+            <LocationSection post={post} />
 
             {/* Property Details */}
             <View className="mb-5">
@@ -728,26 +873,36 @@ const PostDetailScreen = ({ route, navigation }) => {
                     style={{ fontSize: 16 }}
                     className="text-gray-900 font-semibold"
                   >
-                    Brüt Metrekare
-                  </Text>
-                  <Text className="text-gray-500">
-                    {post.brutMetreKare
-                      ? `${post.brutMetreKare} m²`
-                      : "Belirtilmemiş"}
-                  </Text>
-                </View>
-
-                <View className="flex-row justify-between py-2 border-gray-200">
-                  <Text
-                    style={{ fontSize: 16 }}
-                    className="text-gray-900 font-semibold"
-                  >
                     Net Metrekare
                   </Text>
                   <Text className="text-gray-500">
                     {post.netMetreKare
                       ? `${post.netMetreKare} m²`
                       : "Belirtilmemiş"}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between py-2 ">
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="text-gray-900 font-semibold"
+                  >
+                    Eşyalı mı?
+                  </Text>
+                  <Text className="text-gray-500">
+                    {post.esyali === true ? "Evet" : "Hayır"}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between py-2 ">
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="text-gray-900 font-semibold"
+                  >
+                    Balkon var mı?
+                  </Text>
+                  <Text className="text-gray-500">
+                    {post.balkon === true ? "Var" : "Yok"}
                   </Text>
                 </View>
 
@@ -778,6 +933,17 @@ const PostDetailScreen = ({ route, navigation }) => {
                   </Text>
                 </View>
 
+                <View className="flex-row justify-between py-2 ">
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="text-gray-900 font-semibold"
+                  >
+                    Otopark
+                  </Text>
+                  <Text className="text-gray-500">
+                    {post.otopark === true ? "Var" : "Yok"}
+                  </Text>
+                </View>
                 <View
                   style={{
                     borderBottomWidth: 0.4,
@@ -789,10 +955,10 @@ const PostDetailScreen = ({ route, navigation }) => {
                     style={{ fontSize: 16 }}
                     className="text-gray-900 font-semibold"
                   >
-                    Otopark
+                    Asansör
                   </Text>
                   <Text className="text-gray-500">
-                    {post.otopark === true ? "Var" : "Yok"}
+                    {post.asansor === true ? "Var" : "Yok"}
                   </Text>
                 </View>
 
@@ -889,6 +1055,18 @@ const PostDetailScreen = ({ route, navigation }) => {
                   </Text>
                 </View>
 
+                <View className="flex-row justify-between py-2 ">
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="text-gray-900 font-semibold"
+                  >
+                    Takas
+                  </Text>
+                  <Text className="text-gray-500">
+                    {post.takas === true ? "Var" : "Yok"}
+                  </Text>
+                </View>
+
                 <View className="flex-row justify-between py-2 border-gray-200">
                   <Text
                     style={{ fontSize: 16 }}
@@ -904,7 +1082,7 @@ const PostDetailScreen = ({ route, navigation }) => {
             </View>
 
             {/* Property Features */}
-            <View className="mb-5">
+            {/* <View className="mb-5">
               <Text
                 style={{ fontSize: 20 }}
                 className="font-semibold text-gray-900 mb-4"
@@ -944,131 +1122,273 @@ const PostDetailScreen = ({ route, navigation }) => {
                     ));
                 })()}
               </View>
-            </View>
+            </View> */}
           </View>
-        </View>
-      </Animated.ScrollView>
+        </Animated.View>
 
-      {/* Bottom Action Bar */}
-      <View className="flex-row justify-between items-center p-4 bg-white border-t border-gray-200">
-        {userRole === "KIRACI" && (
-          <>
-            <TouchableOpacity
-              className="w-12 h-12 rounded-full bg-red-50 justify-center items-center mr-3"
-              onPress={handleToggleFavorite}
-              disabled={isProcessingFavorite}
-            >
-              <FontAwesome
-                name={isFavorite ? "heart" : "heart-o"}
-                size={20}
-                color={isFavorite ? "#ef4444" : "#9ca3af"}
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="flex-1 bg-green-500 py-3 rounded-lg"
-              onPress={() => setIsOfferModalVisible(true)}
-              disabled={post.status !== 0}
-            >
-              <Text className="text-white font-semibold text-center">
-                {post.status === 0 ? "Teklif Ver" : "Bu ilan kapalı"}
-              </Text>
-            </TouchableOpacity>
-          </>
-        )}
-
-        {userRole === "EVSAHIBI" && post.landlordId === currentUser?.id && (
-          <>
-            <TouchableOpacity
-              className="flex-1 bg-green-50 py-3 rounded-lg mr-2"
-              onPress={() =>
-                navigation.navigate("EditPost", { postId: post.id })
-              }
-            >
-              <Text className="text-green-700 font-semibold text-center">
-                Düzenle
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="flex-1 bg-green-500 py-3 rounded-lg"
-              onPress={() => navigation.navigate("Offers", { postId: post.id })}
-            >
-              <Text className="text-white font-semibold text-center">
-                Teklifleri Gör
-              </Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-
-      {/* Offer Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={isOfferModalVisible}
-        onRequestClose={() => setIsOfferModalVisible(false)}
-      >
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-          <View
-            className="flex-1 justify-end"
-            style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
-          >
-            <View className="bg-white rounded-t-xl p-5">
-              <View className="flex-row justify-between items-center mb-5">
-                <Text className="text-xl font-bold text-gray-800">
-                  Teklif Ver
-                </Text>
-                <TouchableOpacity onPress={() => setIsOfferModalVisible(false)}>
-                  <Text className="text-gray-500 text-xl">✕</Text>
-                </TouchableOpacity>
-              </View>
-
-              <View className="mb-4">
-                <Text className="text-gray-600 mb-2">Teklif Tutarı (₺)</Text>
-                <TextInput
-                  className="bg-gray-100 p-3 rounded-lg text-base"
-                  placeholder="Ör: 3500"
-                  keyboardType="numeric"
-                  value={offerAmount}
-                  onChangeText={setOfferAmount}
+        {/* Bottom Action Bar */}
+        <View className="flex-row justify-between items-center p-4 bg-white border-t border-gray-200">
+          {userRole === "KIRACI" && (
+            <>
+              <TouchableOpacity
+                className="w-12 h-12 rounded-full bg-red-50 justify-center items-center mr-3"
+                onPress={handleToggleFavorite}
+                disabled={isProcessingFavorite}
+              >
+                <FontAwesome
+                  name={isFavorite ? "heart" : "heart-o"}
+                  size={20}
+                  color={isFavorite ? "#ef4444" : "#9ca3af"}
                 />
-              </View>
-
-              <View className="mb-5">
-                <Text className="text-gray-600 mb-2">Mesaj (Opsiyonel)</Text>
-                <TextInput
-                  className="bg-gray-100 p-3 rounded-lg text-base h-24"
-                  placeholder="Ev sahibine mesajınız..."
-                  multiline
-                  textAlignVertical="top"
-                  value={offerMessage}
-                  onChangeText={setOfferMessage}
-                />
-              </View>
+              </TouchableOpacity>
 
               <TouchableOpacity
-                className={`py-3 rounded-lg mb-3 ${
-                  isCreatingOffer ? "bg-green-300" : "bg-green-500"
-                }`}
-                onPress={handleCreateOffer}
-                disabled={isCreatingOffer}
+                className="flex-1 bg-green-500 py-3 rounded-lg"
+                onPress={() => setIsOfferModalVisible(true)}
+                disabled={post.status !== 0}
               >
-                {isCreatingOffer ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <Text className="text-white font-semibold text-center">
-                    Teklifi Gönder
-                  </Text>
-                )}
+                <Text className="text-white font-semibold text-center">
+                  {post.status === 0 ? "Teklif Ver" : "Bu ilan kapalı"}
+                </Text>
               </TouchableOpacity>
+            </>
+          )}
+
+          {userRole === "EVSAHIBI" && post.landlordId === currentUser?.id && (
+            <>
+              <TouchableOpacity
+                className="flex-1 bg-green-50 py-3 rounded-lg mr-2"
+                onPress={() =>
+                  navigation.navigate("EditPost", { postId: post.id })
+                }
+              >
+                <Text className="text-green-700 font-semibold text-center">
+                  Düzenle
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="flex-1 bg-green-500 py-3 rounded-lg"
+                onPress={() =>
+                  navigation.navigate("Offers", { postId: post.id })
+                }
+              >
+                <Text className="text-white font-semibold text-center">
+                  Teklifleri Gör
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+
+        {/* Fullscreen Image Modal */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={isFullscreenModalVisible}
+          onRequestClose={closeFullscreenModal}
+          statusBarTranslucent={true}
+        >
+          <StatusBar hidden={true} />
+          <BlurView
+            intensity={80}
+            style={{
+              flex: 1,
+            }}
+          >
+            {/* Close Button */}
+            <TouchableOpacity
+              onPress={closeFullscreenModal}
+              activeOpacity={0.8}
+              style={{
+                position: "absolute",
+                top: 50,
+                right: 20,
+                zIndex: 10,
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                overflow: "hidden", // önemli! BlurView dışına taşmasın
+              }}
+            >
+              <BlurView
+                intensity={80}
+                style={{
+                  flex: 1,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{ color: "white", fontSize: 18, fontWeight: "bold" }}
+                >
+                  ✕
+                </Text>
+              </BlurView>
+            </TouchableOpacity>
+
+            {/* Image Counter */}
+            {images.length > 1 && (
+              <BlurView
+                intensity={80}
+                style={{
+                  position: "absolute",
+                  top: 50,
+                  left: 20,
+                  zIndex: 10,
+                  overflow: "hidden",
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 100,
+                }}
+              >
+                <Text
+                  style={{ color: "white", fontSize: 14, fontWeight: "400" }}
+                >
+                  {fullscreenImageIndex + 1} / {images.length}
+                </Text>
+              </BlurView>
+            )}
+
+            {/* Fullscreen Carousel */}
+            <View style={{ flex: 1, justifyContent: "center" }}>
+              {images.length > 0 && (
+                <Carousel
+                  loop={false}
+                  ref={fullscreenCarouselRef}
+                  width={width}
+                  height={height}
+                  data={images}
+                  renderItem={renderFullscreenImageItem}
+                  onSnapToItem={handleFullscreenCarouselChange}
+                  defaultIndex={fullscreenImageIndex}
+                  pagingEnabled={true}
+                  snapEnabled={true}
+                  enabled={images.length > 1}
+                />
+              )}
             </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+
+            {/* Pagination Dots for Fullscreen */}
+            {images.length > 1 && (
+              <View
+                style={{
+                  position: "absolute",
+                  bottom: 50,
+                  left: 0,
+                  right: 0,
+                  flexDirection: "row",
+                  justifyContent: "center",
+                }}
+              >
+                <BlurView
+                  intensity={80}
+                  style={{
+                    paddingHorizontal: 8,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                    overflow: "hidden",
+                    flexDirection: "row",
+                  }}
+                >
+                  {images.map((_, index) => (
+                    <TouchableOpacity
+                      key={`fullscreen-dot-${index}`}
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: 4,
+                        marginHorizontal: 4,
+                        backgroundColor:
+                          index === fullscreenImageIndex ? "#fff" : "#6b7280",
+                      }}
+                      onPress={() => {
+                        setFullscreenImageIndex(index);
+                        if (fullscreenCarouselRef.current) {
+                          fullscreenCarouselRef.current.scrollTo({
+                            index,
+                            animated: true,
+                          });
+                        }
+                      }}
+                    />
+                  ))}
+                </BlurView>
+              </View>
+            )}
+          </BlurView>
+        </Modal>
+
+        {/* Offer Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={isOfferModalVisible}
+          onRequestClose={() => setIsOfferModalVisible(false)}
+        >
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+          >
+            <View
+              className="flex-1 justify-end"
+              style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
+            >
+              <View className="bg-white rounded-t-xl p-5">
+                <View className="flex-row justify-between items-center mb-5">
+                  <Text className="text-xl font-bold text-gray-800">
+                    Teklif Ver
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setIsOfferModalVisible(false)}
+                  >
+                    <Text className="text-gray-500 text-xl">✕</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View className="mb-4">
+                  <Text className="text-gray-600 mb-2">Teklif Tutarı (₺)</Text>
+                  <TextInput
+                    className="bg-gray-100 p-3 rounded-lg text-base"
+                    placeholder="Ör: 3500"
+                    keyboardType="numeric"
+                    value={offerAmount}
+                    onChangeText={setOfferAmount}
+                  />
+                </View>
+
+                <View className="mb-5">
+                  <Text className="text-gray-600 mb-2">Mesaj (Opsiyonel)</Text>
+                  <TextInput
+                    className="bg-gray-100 p-3 rounded-lg text-base h-24"
+                    placeholder="Ev sahibine mesajınız..."
+                    multiline
+                    textAlignVertical="top"
+                    value={offerMessage}
+                    onChangeText={setOfferMessage}
+                  />
+                </View>
+
+                <TouchableOpacity
+                  className={`py-3 rounded-lg mb-3 ${
+                    isCreatingOffer ? "bg-green-300" : "bg-green-500"
+                  }`}
+                  onPress={handleCreateOffer}
+                  disabled={isCreatingOffer}
+                >
+                  {isCreatingOffer ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <Text className="text-white font-semibold text-center">
+                      Teklifi Gönder
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
+      </Animated.ScrollView>
     </View>
   );
 };
