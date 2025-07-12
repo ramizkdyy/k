@@ -431,6 +431,7 @@ const LandlordHomeStack = () => {
             backgroundColor: "#fff",
           },
           headerTintColor: "#000",
+          headerShown: false,
           headerTitleStyle: {
             fontWeight: 600,
           },

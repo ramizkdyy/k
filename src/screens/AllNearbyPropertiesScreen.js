@@ -11,6 +11,7 @@ import {
   SafeAreaView,
   Dimensions,
   ScrollView,
+  Animated,
 } from "react-native";
 import { Image } from "expo-image";
 import { useSelector } from "react-redux";
@@ -25,9 +26,18 @@ import {
   faMoneyBills,
   faRuler,
   faShower,
+  faCar,
+  faCalendar,
+  faBuilding,
+  faCoins,
 } from "@fortawesome/pro-light-svg-icons";
 import { BlurView } from "expo-blur";
 import { faSearch } from "@fortawesome/pro-solid-svg-icons";
+import {
+  faChevronLeft,
+  faFilter,
+  faSliders,
+} from "@fortawesome/pro-regular-svg-icons";
 
 const { width } = Dimensions.get("window");
 
@@ -44,6 +54,29 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("distance"); // distance, price, date
   const [isMapView, setIsMapView] = useState(false);
+
+  // OPTIMIZE EDİLDİ: Native driver ile animated değerler
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  // Filter animasyonu için transform ve opacity kullanıyoruz (native driver için)
+  const filterTranslateY = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [0, -60], // Filtreyi yukarı kaydır
+    extrapolate: "clamp",
+  });
+
+  const filterOpacity = scrollY.interpolate({
+    inputRange: [0, 50, 100],
+    outputRange: [1, 0.5, 0],
+    extrapolate: "clamp",
+  });
+
+  // Container height animasyonu (JS thread'de çalışır ama gerekli)
+  const containerHeight = scrollY.interpolate({
+    inputRange: [0, 50],
+    outputRange: [45, 0], // Container yüksekliğini 60px'den 0'a küçült
+    extrapolate: "clamp",
+  });
 
   // Get user's current location if not provided
   useEffect(() => {
@@ -183,6 +216,98 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
     }
   };
 
+  // YENİ: Property Details Free Drag Slider Component
+  const PropertyDetailsSlider = ({ item }) => {
+    // Property özelliklerini array olarak hazırlıyoruz
+    const propertyDetails = [
+      {
+        id: "rooms",
+        icon: faBed,
+        value: item.odaSayisi || "N/A",
+        label: "Oda",
+      },
+      {
+        id: "bathrooms",
+        icon: faShower,
+        value: item.banyoSayisi || "N/A",
+        label: "Banyo",
+      },
+      {
+        id: "area",
+        icon: faRuler,
+        value: item.brutMetreKare ? `${item.brutMetreKare} m²` : "N/A",
+        label: "Alan",
+      },
+      {
+        id: "dues",
+        icon: faMoneyBills,
+        value: item.aidat ? `${item.aidat} ₺` : "Yok",
+        label: "Aidat",
+      },
+      {
+        id: "",
+        icon: faCoins,
+        value: item.depozito ? `${item.depozito} ₺` : "Yok",
+        label: "Depozito",
+      },
+      {
+        id: "floor",
+        icon: faBuilding,
+        value: item.bulunduguKat || "N/A",
+        label: "Kat",
+      },
+      {
+        id: "age",
+        icon: faCalendar,
+        value: item.binaYasi ? `${item.binaYasi} ` : "N/A",
+        label: "Bina yaşı",
+      },
+    ];
+
+    return (
+      <View className="mt-4 mb-6">
+        <ScrollView
+          horizontal={true}
+          showsHorizontalScrollIndicator={false}
+          scrollEventThrottle={16}
+          decelerationRate="normal"
+          bounces={true}
+          contentContainerStyle={{
+            paddingRight: 16, // Sağ tarafta biraz boşluk
+            paddingLeft: 4,
+          }}
+        >
+          {propertyDetails.map((detail, index) => (
+            <View
+              key={detail.id}
+              className="items-center justify-center rounded-2xl"
+              style={{
+                width: 85,
+                height: 85,
+              }}
+            >
+              <FontAwesomeIcon size={30} icon={detail.icon} color="#000" />
+              <Text
+                style={{ fontSize: 16, fontWeight: 600 }}
+                className="text-gray-800 mt-2 text-center"
+                numberOfLines={1}
+              >
+                {detail.value}
+              </Text>
+              <Text
+                style={{ fontSize: 11 }}
+                className="text-gray-500 text-center"
+                numberOfLines={1}
+              >
+                {detail.label}
+              </Text>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
+
   // Simple and reliable image slider component
   const PropertyImageSlider = ({ images, distanceInKM, status, postId }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -234,7 +359,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
               style={{ width: width - 32 }}
               activeOpacity={1}
               onPress={() =>
-                navigation.navigate("PostDetail", { postId: item.postId })
+                navigation.navigate("PostDetail", { postId: postId })
               }
             >
               <Image
@@ -314,19 +439,24 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
 
   // Render property item
   const renderPropertyItem = ({ item }) => (
-    <TouchableOpacity
+    <View
       style={{ marginHorizontal: 16 }}
       className="overflow-hidden mb-4 pt-6 border-b border-gray-200"
-      onPress={() => navigation.navigate("PostDetail", { postId: item.postId })}
-      activeOpacity={1}
     >
-      {/* Image slider */}
-      <PropertyImageSlider
-        images={item.postImages}
-        distanceInKM={item.distanceInKM}
-        status={item.status}
-        postId={item.postId}
-      />
+      {/* Image slider - OnPress sadece burada */}
+      <TouchableOpacity
+        onPress={() =>
+          navigation.navigate("PostDetail", { postId: item.postId })
+        }
+        activeOpacity={1}
+      >
+        <PropertyImageSlider
+          images={item.postImages}
+          distanceInKM={item.distanceInKM}
+          status={item.status}
+          postId={item.postId}
+        />
+      </TouchableOpacity>
 
       <View className="mt-4 px-1">
         {/* Title and Price */}
@@ -349,7 +479,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
 
         <View className="flex-row items-center">
           <Text
-            style={{ fontSize: 18, fontWeight: 400 }}
+            style={{ fontSize: 18, fontWeight: 500 }}
             className="text-gray-900 underline"
           >
             {item.kiraFiyati || item.rent
@@ -361,102 +491,8 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
           <Text className="text-sm text-gray-400 ml-1">/ay</Text>
         </View>
 
-        {/* Property details */}
-        <View
-          style={{ paddingLeft: 30, paddingRight: 30 }}
-          className="flex-row justify-between p-4 mb-6 mt-4"
-        >
-          <View className="items-center gap-2">
-            <FontAwesomeIcon size={30} icon={faBed} />
-            <Text
-              style={{ fontSize: 14 }}
-              className="font-medium text-center text-gray-500"
-            >
-              {item.odaSayisi || "N/A"} Oda
-            </Text>
-          </View>
-
-          <View className="items-center gap-2">
-            <FontAwesomeIcon size={30} icon={faShower} />
-            <Text
-              style={{ fontSize: 14 }}
-              className="font-medium text-center text-gray-500"
-            >
-              {item.banyoSayisi || "N/A"} Banyo
-            </Text>
-          </View>
-          <View className="items-center gap-2">
-            <FontAwesomeIcon size={30} icon={faRuler} />
-            <Text
-              style={{ fontSize: 14 }}
-              className="font-medium text-center text-gray-500"
-            >
-              {item.brutMetreKare ? `${item.brutMetreKare} m²` : "N/A"}
-            </Text>
-          </View>
-          <View className="items-center gap-2">
-            <FontAwesomeIcon size={30} icon={faMoneyBills} />
-            <Text
-              style={{ fontSize: 14 }}
-              className="font-medium text-center text-gray-500"
-            >
-              {item.aidat ? `${item.aidat} ₺` : "Belirtilmemiş"}
-            </Text>
-          </View>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-
-  // Render header
-  const renderHeader = () => (
-    <View className="bg-white border-b border-gray-200 pb-4">
-      {/* Search bar */}
-      <View className="px-4 mb-3 pt-4">
-        <View
-          style={{ boxShadow: "0px 0px 12px #00000014" }}
-          className="bg-white rounded-3xl gap-2 px-4 flex-row items-center "
-        >
-          <FontAwesomeIcon icon={faSearch} size={20} color="#000" />
-          <TextInput
-            className="w-full px-2 placeholder:text-gray-400 placeholder:text-[14px] py-4 text-normal"
-            placeholder="İlan ara..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery("")}>
-              <MaterialIcons name="close" size={20} color="#9CA3AF" />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      </View>
-
-      {/* Sort options */}
-      <View className="px-4">
-        <View className="flex-row">
-          {[
-            { key: "distance", label: "Uzaklık" },
-            { key: "price", label: "Fiyat" },
-            { key: "date", label: "Tarih" },
-          ].map((option) => (
-            <TouchableOpacity
-              key={option.key}
-              className={`mr-3 px-4 py-2 rounded-full border ${
-                sortBy === option.key ? "bg-gray-900" : "bg-white border-white"
-              }`}
-              onPress={() => setSortBy(option.key)}
-            >
-              <Text
-                className={`text-sm font-medium ${
-                  sortBy === option.key ? "text-white" : "text-gray-700"
-                }`}
-              >
-                {option.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {/* YENİ: Property details slider */}
+        <PropertyDetailsSlider item={item} />
       </View>
     </View>
   );
@@ -524,14 +560,99 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <FlatList
+    <SafeAreaView className="flex-1 bg-white">
+      {/* Fixed search bar */}
+      <View className="bg-white border-b border-gray-200 z-10">
+        <View className="flex flex-row items-center px-5">
+          <View style={{ width: "8%" }}>
+            {" "}
+            <FontAwesomeIcon icon={faChevronLeft} color="black" size={25} />
+          </View>
+
+          <View className="px-4 py-4" style={{ width: "84%" }}>
+            <View
+              style={{ boxShadow: "0px 0px 12px #00000014" }}
+              className="bg-white rounded-3xl gap-2 px-4 flex-row items-center"
+            >
+              <TextInput
+                className="w-full px-2 placeholder:text-gray-400 placeholder:text-[14px] py-4 text-normal"
+                placeholder="Yakındaki ilanlar"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery ? (
+                <TouchableOpacity onPress={() => setSearchQuery("")}>
+                  <MaterialIcons name="close" size={20} color="#9CA3AF" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </View>
+          <View style={{ width: "8%" }}>
+            {" "}
+            <FontAwesomeIcon icon={faSliders} color="black" size={20} />
+          </View>
+        </View>
+
+        {/* OPTIMIZE EDİLDİ: Container height da animate ediliyor */}
+        <Animated.View
+          style={{
+            height: containerHeight, // Container yüksekliği de küçülür
+            overflow: "hidden",
+          }}
+        >
+          <Animated.View
+            className="flex justify-center items-center"
+            style={{
+              paddingHorizontal: 16,
+              paddingBottom: 8,
+              height: 50,
+              opacity: filterOpacity,
+              transform: [{ translateY: filterTranslateY }],
+            }}
+          >
+            <View className="flex-row">
+              {[
+                { key: "distance", label: "Uzaklık" },
+                { key: "price", label: "Fiyat" },
+                { key: "date", label: "Tarih" },
+              ].map((option) => (
+                <TouchableOpacity
+                  key={option.key}
+                  className={`mr-3 px-4 py-2 rounded-full border ${
+                    sortBy === option.key
+                      ? "bg-gray-900"
+                      : "bg-white border-white"
+                  }`}
+                  onPress={() => setSortBy(option.key)}
+                >
+                  <Text
+                    className={`text-sm font-medium ${
+                      sortBy === option.key ? "text-white" : "text-gray-700"
+                    }`}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Animated.View>
+        </Animated.View>
+      </View>
+
+      {/* OPTIMIZE EDİLDİ: Native driver ile scroll tracking */}
+      <Animated.FlatList
         data={filteredProperties}
         renderItem={renderPropertyItem}
         keyExtractor={(item, index) => `nearby_${item.postId}_${index}`}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmptyState}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          {
+            useNativeDriver: false, // Height animasyonu için false gerekli
+          }
+        )}
+        scrollEventThrottle={1} // Daha smooth animasyon için düşük değer
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

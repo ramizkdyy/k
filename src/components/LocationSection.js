@@ -290,7 +290,6 @@ const LocationSection = ({ post }) => {
           >
             <TouchableOpacity
               style={{
-                backgroundColor: "#3b82f6",
                 paddingVertical: 12,
                 paddingHorizontal: 20,
                 borderRadius: 8,
@@ -303,16 +302,16 @@ const LocationSection = ({ post }) => {
                 showMapOptions();
               }}
             >
-              <FontAwesomeIcon icon={faLocationDot} size={16} color="white" />
+              <FontAwesomeIcon icon={faLocationDot} size={16} color="black" />
               <Text
                 style={{
-                  color: "white",
-                  fontSize: 16,
+                  color: "black",
+                  fontSize: 22,
                   fontWeight: "600",
                   marginLeft: 8,
                 }}
               >
-                Harita Uygulamasında Aç
+                Yol tarifi al
               </Text>
             </TouchableOpacity>
           </View>
