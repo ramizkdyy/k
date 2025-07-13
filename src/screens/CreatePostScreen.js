@@ -74,12 +74,12 @@ const CreatePostScreen = ({ navigation, route }) => {
 
   // Property type options
   const propertyTypes = [
-    "Daire",
-    "Müstakil Ev",
-    "Villa",
-    "Stüdyo Daire",
-    "Rezidans",
-    "Diğer",
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
   ];
 
   // Heating type options
@@ -260,41 +260,206 @@ const CreatePostScreen = ({ navigation, route }) => {
 
   // Pick image from camera or gallery
   const pickImage = async (useCamera = false) => {
-    try {
-      const options = {
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  try {
+    const options = {
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false, // Çoklu seçim için false yapıyoruz
+      aspect: [4, 3],
+      quality: 0.8,
+      allowsMultipleSelection: true, // Çoklu seçim aktif
+      orderedSelection: true, // Sıralı seçim
+      selectionLimit: 10, // Maksimum 10 fotoğraf
+    };
+
+    let result;
+    if (useCamera) {
+      // Kamera için tek seferde bir fotoğraf
+      result = await ImagePicker.launchCameraAsync({
+        ...options,
+        allowsMultipleSelection: false,
         allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      };
-
-      let result;
-      if (useCamera) {
-        result = await ImagePicker.launchCameraAsync(options);
-      } else {
-        result = await ImagePicker.launchImageLibraryAsync(options);
-      }
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        // Add selected image to the array
-        const newImage = result.assets[0];
-        setImages([
-          ...images,
-          { uri: newImage.uri, id: Date.now().toString() },
-        ]);
-      }
-    } catch (error) {
-      Alert.alert(
-        "Hata",
-        "Fotoğraf seçme sırasında bir hata oluştu: " + error.message
-      );
+      });
+    } else {
+      // Galeri için çoklu seçim
+      result = await ImagePicker.launchImageLibraryAsync(options);
     }
-  };
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      // Tüm seçilen fotoğrafları ekle
+      const newImages = result.assets.map((asset, index) => ({
+        uri: asset.uri,
+        id: `${Date.now()}_${index}`,
+        type: asset.type,
+        width: asset.width,
+        height: asset.height,
+        fileSize: asset.fileSize,
+      }));
+
+      // Mevcut fotoğrafları kontrol et (maksimum limit)
+      const totalImages = images.length + newImages.length;
+      const maxImages = 15; // Maksimum fotoğraf sayısı
+
+      if (totalImages > maxImages) {
+        Alert.alert(
+          "Fotoğraf Limiti",
+          `En fazla ${maxImages} fotoğraf ekleyebilirsiniz. ${newImages.length} fotoğraf seçtiniz, ancak sadece ${maxImages - images.length} tanesi eklenecek.`
+        );
+        // Sadece limit kadar ekle
+        const allowedImages = newImages.slice(0, maxImages - images.length);
+        setImages([...images, ...allowedImages]);
+      } else {
+        // Tüm fotoğrafları ekle
+        setImages([...images, ...newImages]);
+        
+        // Başarı mesajı
+        Alert.alert(
+          "Başarılı",
+          `${newImages.length} fotoğraf başarıyla eklendi.`
+        );
+      }
+    }
+  } catch (error) {
+    Alert.alert(
+      "Hata",
+      "Fotoğraf seçme sırasında bir hata oluştu: " + error.message
+    );
+  }
+};
 
   // Remove selected image
   const removeImage = (id) => {
     setImages(images.filter((img) => img.id !== id));
   };
+
+  const renderImageGallery = () => {
+  return (
+    <View className="bg-white rounded-xl p-5 shadow-sm mb-5">
+      <View className="flex-row justify-between items-center mb-3">
+        <Text className="text-gray-700 font-medium">
+          Fotoğraflar * ({images.length}/15)
+        </Text>
+        {images.length > 0 && (
+          <TouchableOpacity
+            className="bg-red-500 rounded-lg px-3 py-1"
+            onPress={() => {
+              Alert.alert(
+                "Tüm Fotoğrafları Sil",
+                "Tüm fotoğrafları silmek istediğinizden emin misiniz?",
+                [
+                  { text: "İptal", style: "cancel" },
+                  { 
+                    text: "Sil", 
+                    style: "destructive",
+                    onPress: () => setImages([])
+                  }
+                ]
+              );
+            }}
+          >
+            <Text className="text-white text-sm">Tümünü Sil</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Seçilen Fotoğraflar */}
+      {images.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="mb-4"
+        >
+          {images.map((img, index) => (
+            <View key={img.id} className="mr-3 relative">
+              <Image
+                source={{ uri: img.uri }}
+                className="w-24 h-24 rounded-lg"
+                resizeMode="cover"
+              />
+              
+              {/* Fotoğraf numarası */}
+              <View className="absolute top-1 left-1 bg-black bg-opacity-60 rounded-full w-6 h-6 justify-center items-center">
+                <Text className="text-white text-xs font-bold">
+                  {index + 1}
+                </Text>
+              </View>
+              
+              {/* Silme butonu */}
+              <TouchableOpacity
+                className="absolute top-1 right-1 bg-red-500 rounded-full p-1"
+                onPress={() => removeImage(img.id)}
+              >
+                <MaterialIcons name="close" size={14} color="#FFFFFF" />
+              </TouchableOpacity>
+              
+              {/* Dosya boyutu bilgisi */}
+              {img.fileSize && (
+                <View className="absolute bottom-1 left-1 bg-black bg-opacity-60 rounded px-1">
+                  <Text className="text-white text-xs">
+                    {(img.fileSize / 1024 / 1024).toFixed(1)}MB
+                  </Text>
+                </View>
+              )}
+            </View>
+          ))}
+        </ScrollView>
+      )}
+
+      {/* Fotoğraf Ekleme Butonları */}
+      <View className="flex-row justify-center">
+        <TouchableOpacity
+          className="flex-1 bg-blue-500 rounded-lg py-4 mr-2 justify-center items-center"
+          onPress={() => pickImage(false)}
+          disabled={images.length >= 15}
+        >
+          <MaterialIcons name="photo-library" size={28} color="#FFFFFF" />
+          <Text className="text-white font-medium mt-1">
+            Galeriden Seç
+          </Text>
+          <Text className="text-white text-xs">
+            (Çoklu seçim)
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          className="flex-1 bg-green-500 rounded-lg py-4 ml-2 justify-center items-center"
+          onPress={() => pickImage(true)}
+          disabled={images.length >= 15}
+        >
+          <MaterialIcons name="camera-alt" size={28} color="#FFFFFF" />
+          <Text className="text-white font-medium mt-1">
+            Kamera
+          </Text>
+          <Text className="text-white text-xs">
+            (Tek fotoğraf)
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Fotoğraf ipuçları */}
+      <View className="mt-4 bg-blue-50 rounded-lg p-3">
+        <Text className="text-blue-800 text-sm font-medium mb-1">
+          📸 Fotoğraf İpuçları:
+        </Text>
+        <Text className="text-blue-700 text-xs">
+          • Galeriden birden fazla fotoğraf seçebilirsiniz{'\n'}
+          • En az 1, en fazla 15 fotoğraf ekleyebilirsiniz{'\n'}
+          • Farklı açılardan çekilmiş net fotoğraflar kullanın{'\n'}
+          • Fotoğraflar otomatik olarak sıkıştırılır
+        </Text>
+      </View>
+
+      {images.length === 0 && (
+        <View className="border-2 border-dashed border-gray-300 rounded-lg py-8 items-center">
+          <MaterialIcons name="add-photo-alternate" size={48} color="#9CA3AF" />
+          <Text className="text-gray-500 mt-2 text-center">
+            Henüz fotoğraf eklenmedi{'\n'}
+            Yukarıdaki butonları kullanarak fotoğraf ekleyin
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+};
 
   // Form validation
   const validateForm = () => {
@@ -347,7 +512,27 @@ const CreatePostScreen = ({ navigation, route }) => {
       Alert.alert("Hata", "Lütfen kullanım durumu seçiniz.");
       return false;
     }
-    if (!RentalPeriod.trim()) {
+    if (images.length === 0) {
+    Alert.alert("Hata", "Lütfen en az bir fotoğraf ekleyiniz.");
+    return false;
+  }
+
+  if (images.length > 15) {
+    Alert.alert("Hata", "En fazla 15 fotoğraf ekleyebilirsiniz.");
+    return false;
+  }
+
+  // Dosya boyutu kontrolü
+  const oversizedImages = images.filter(img => 
+    img.fileSize && img.fileSize > 10 * 1024 * 1024
+  );
+  
+  if (oversizedImages.length > 0) {
+    Alert.alert(
+      "Dosya Boyutu Hatası", 
+      "Bazı fotoğraflar çok büyük (>10MB). Lütfen daha küçük fotoğraflar seçin."
+    );
+  } if (!RentalPeriod.trim()) {
       Alert.alert("Hata", "Lütfen kiralama süresi seçiniz.");
       return false;
     }
@@ -870,55 +1055,141 @@ const CreatePostScreen = ({ navigation, route }) => {
         </View>
 
         {/* Images Section */}
-        <View className="bg-white rounded-xl p-5 shadow-sm mb-5">
-          <Text className="text-gray-700 mb-3 font-medium">Fotoğraflar *</Text>
+        // ESKİ KODU SİL ve YENİ KODLA DEĞİŞTİR:
 
-          {/* Selected Images */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="mb-4"
+{/* Images Section - YENİ VERSİYON */}
+<View className="bg-white rounded-xl p-5 shadow-sm mb-5">
+  <View className="flex-row justify-between items-center mb-3">
+    <Text className="text-gray-700 font-medium">
+      Fotoğraflar * ({images.length}/15)
+    </Text>
+    {images.length > 0 && (
+      <TouchableOpacity
+        className="bg-red-500 rounded-lg px-3 py-1"
+        onPress={() => {
+          Alert.alert(
+            "Tüm Fotoğrafları Sil",
+            "Tüm fotoğrafları silmek istediğinizden emin misiniz?",
+            [
+              { text: "İptal", style: "cancel" },
+              { 
+                text: "Sil", 
+                style: "destructive",
+                onPress: () => setImages([])
+              }
+            ]
+          );
+        }}
+      >
+        <Text className="text-white text-sm">Tümünü Sil</Text>
+      </TouchableOpacity>
+    )}
+  </View>
+
+  {/* Seçilen Fotoğraflar - YENİ */}
+  {images.length > 0 && (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      className="mb-4"
+    >
+      {images.map((img, index) => (
+        <View key={img.id} className="mr-3 relative">
+          <Image
+            source={{ uri: img.uri }}
+            className="w-24 h-24 rounded-lg"
+            resizeMode="cover"
+          />
+          
+          {/* Fotoğraf numarası - YENİ */}
+          <View className="absolute top-1 left-1 bg-black bg-opacity-60 rounded-full w-6 h-6 justify-center items-center">
+            <Text className="text-white text-xs font-bold">
+              {index + 1}
+            </Text>
+          </View>
+          
+          {/* Silme butonu - GELİŞTİRİLMİŞ */}
+          <TouchableOpacity
+            className="absolute top-1 right-1 bg-red-500 rounded-full p-1"
+            onPress={() => removeImage(img.id)}
           >
-            {images.map((img) => (
-              <View key={img.id} className="mr-3 relative">
-                <Image
-                  source={{ uri: img.uri }}
-                  className="w-24 h-24 rounded-lg"
-                />
-                <TouchableOpacity
-                  className="absolute top-1 right-1 bg-black bg-opacity-50 rounded-full p-1"
-                  onPress={() => removeImage(img.id)}
-                >
-                  <MaterialIcons name="close" size={16} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
-            ))}
-
-            {/* Add Image Buttons */}
-            <View className="flex-row">
-              <TouchableOpacity
-                className="w-24 h-24 bg-gray-100 rounded-lg justify-center items-center mr-3"
-                onPress={() => pickImage(false)}
-              >
-                <MaterialIcons name="photo-library" size={28} color="#4A90E2" />
-                <Text className="text-sm text-gray-600 mt-1">Galeri</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className="w-24 h-24 bg-gray-100 rounded-lg justify-center items-center"
-                onPress={() => pickImage(true)}
-              >
-                <MaterialIcons name="camera-alt" size={28} color="#4A90E2" />
-                <Text className="text-sm text-gray-600 mt-1">Kamera</Text>
-              </TouchableOpacity>
+            <MaterialIcons name="close" size={14} color="#FFFFFF" />
+          </TouchableOpacity>
+          
+          {/* Dosya boyutu bilgisi - YENİ */}
+          {img.fileSize && (
+            <View className="absolute bottom-1 left-1 bg-black bg-opacity-60 rounded px-1">
+              <Text className="text-white text-xs">
+                {(img.fileSize / 1024 / 1024).toFixed(1)}MB
+              </Text>
             </View>
-          </ScrollView>
-
-          <Text className="text-sm text-gray-500 mb-2">
-            En az 1 fotoğraf ekleyin. En iyi sonuç için farklı açılardan
-            çekilmiş net fotoğraflar kullanın.
-          </Text>
+          )}
         </View>
+      ))}
+    </ScrollView>
+  )}
+
+  {/* Fotoğraf Ekleme Butonları - YENİ TASARIM */}
+  <View className="flex-row justify-center">
+    <TouchableOpacity
+      className="flex-1 bg-blue-500 rounded-lg py-4 mr-2 justify-center items-center"
+      onPress={() => pickImage(false)}
+      disabled={images.length >= 15}
+    >
+      <MaterialIcons name="photo-library" size={28} color="#FFFFFF" />
+      <Text className="text-white font-medium mt-1">
+        Galeriden Seç
+      </Text>
+      <Text className="text-white text-xs">
+        (Çoklu seçim)
+      </Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      className="flex-1 bg-green-500 rounded-lg py-4 ml-2 justify-center items-center"
+      onPress={() => pickImage(true)}
+      disabled={images.length >= 15}
+    >
+      <MaterialIcons name="camera-alt" size={28} color="#FFFFFF" />
+      <Text className="text-white font-medium mt-1">
+        Kamera
+      </Text>
+      <Text className="text-white text-xs">
+        (Tek fotoğraf)
+      </Text>
+    </TouchableOpacity>
+  </View>
+
+  {/* Fotoğraf ipuçları - YENİ */}
+  <View className="mt-4 bg-blue-50 rounded-lg p-3">
+    <Text className="text-blue-800 text-sm font-medium mb-1">
+      📸 Fotoğraf İpuçları:
+    </Text>
+    <Text className="text-blue-700 text-xs">
+      • Galeriden birden fazla fotoğraf seçebilirsiniz{'\n'}
+      • En az 1, en fazla 15 fotoğraf ekleyebilirsiniz{'\n'}
+      • Farklı açılardan çekilmiş net fotoğraflar kullanın{'\n'}
+      • Fotoğraflar otomatik olarak sıkıştırılır
+    </Text>
+  </View>
+
+  {/* Fotoğraf yoksa gösterilecek alan - YENİ */}
+  {images.length === 0 && (
+    <View className="border-2 border-dashed border-gray-300 rounded-lg py-8 items-center">
+      <MaterialIcons name="add-photo-alternate" size={48} color="#9CA3AF" />
+      <Text className="text-gray-500 mt-2 text-center">
+        Henüz fotoğraf eklenmedi{'\n'}
+        Yukarıdaki butonları kullanarak fotoğraf ekleyin
+      </Text>
+    </View>
+  )}
+
+  {/* Eski metin - SİLİNEBİLİR */}
+  {/* <Text className="text-sm text-gray-500 mb-2">
+    En az 1 fotoğraf ekleyin. En iyi sonuç için farklı açılardan
+    çekilmiş net fotoğraflar kullanın.
+  </Text> */}
+</View>
 
         {/* Additional Property Features Section */}
         <View className="bg-white rounded-xl p-5 shadow-sm mb-5">
