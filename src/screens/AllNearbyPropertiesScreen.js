@@ -57,6 +57,32 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
 
   // OPTIMIZE EDİLDİ: Native driver ile animated değerler
   const scrollY = useRef(new Animated.Value(0)).current;
+  const headerOpacity = useRef(new Animated.Value(1)).current;
+  const headerTranslateY = useRef(new Animated.Value(0)).current;
+
+  const animatedScrollHandler = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    {
+      useNativeDriver: true, // Native driver kullan
+      listener: (event) => {
+        const scrollOffset = event.nativeEvent.contentOffset.y;
+
+        // Header animasyonlarını native driver ile yap
+        Animated.parallel([
+          Animated.timing(headerOpacity, {
+            toValue: scrollOffset > 50 ? 0 : 1,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(headerTranslateY, {
+            toValue: scrollOffset > 50 ? -60 : 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      },
+    }
+  );
 
   // Filter animasyonu için transform ve opacity kullanıyoruz (native driver için)
   const filterTranslateY = scrollY.interpolate({
@@ -216,6 +242,57 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
     }
   };
 
+  // Relative time function
+  const getRelativeTime = (postTime) => {
+    if (!postTime) return "Tarih belirtilmemiş";
+
+    const now = new Date();
+    const postDate = new Date(postTime);
+
+    // Invalid date check
+    if (isNaN(postDate.getTime())) return "Geçersiz tarih";
+
+    // Milisaniye cinsinden fark
+    const diffMs = now.getTime() - postDate.getTime();
+
+    // Saniye cinsinden fark
+    const diffSeconds = Math.floor(diffMs / 1000);
+
+    // Dakika cinsinden fark
+    const diffMinutes = Math.floor(diffSeconds / 60);
+
+    // Saat cinsinden fark
+    const diffHours = Math.floor(diffMinutes / 60);
+
+    // Gün cinsinden fark
+    const diffDays = Math.floor(diffHours / 24);
+
+    // Hafta cinsinden fark
+    const diffWeeks = Math.floor(diffDays / 7);
+
+    // Ay cinsinden fark
+    const diffMonths = Math.floor(diffDays / 30);
+
+    // Yıl cinsinden fark
+    const diffYears = Math.floor(diffDays / 365);
+
+    if (diffYears > 0) {
+      return `${diffYears} yıl önce`;
+    } else if (diffMonths > 0) {
+      return `${diffMonths} ay önce`;
+    } else if (diffWeeks > 0) {
+      return `${diffWeeks} hafta önce`;
+    } else if (diffDays > 0) {
+      return `${diffDays} gün önce`;
+    } else if (diffHours > 0) {
+      return `${diffHours} saat önce`;
+    } else if (diffMinutes > 0) {
+      return `${diffMinutes} dakika önce`;
+    } else {
+      return "Az önce";
+    }
+  };
+
   // YENİ: Property Details Free Drag Slider Component
   const PropertyDetailsSlider = ({ item }) => {
     // Property özelliklerini array olarak hazırlıyoruz
@@ -239,18 +316,6 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
         label: "Alan",
       },
       {
-        id: "dues",
-        icon: faMoneyBills,
-        value: item.aidat ? `${item.aidat} ₺` : "Yok",
-        label: "Aidat",
-      },
-      {
-        id: "",
-        icon: faCoins,
-        value: item.depozito ? `${item.depozito} ₺` : "Yok",
-        label: "Depozito",
-      },
-      {
         id: "floor",
         icon: faBuilding,
         value: item.bulunduguKat || "N/A",
@@ -259,30 +324,41 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
       {
         id: "age",
         icon: faCalendar,
-        value: item.binaYasi ? `${item.binaYasi} ` : "N/A",
+        value: item.binaYasi ? `${item.binaYasi}` : "N/A",
         label: "Bina yaşı",
+      },
+      {
+        id: "dues",
+        icon: faMoneyBills,
+        value: item.aidat ? `${item.aidat}₺` : "Yok",
+        label: "Aidat",
+      },
+      {
+        id: "deposit", // DÜZELTME: Boş string yerine benzersiz id
+        icon: faCoins,
+        value: item.depozito ? `${item.depozito}₺` : "Yok",
+        label: "Depozito",
       },
     ];
 
     return (
-      <View className="mt-4 mb-6">
+      <View className="mt-3">
         <ScrollView
           horizontal={true}
           showsHorizontalScrollIndicator={false}
           scrollEventThrottle={16}
           decelerationRate="normal"
           bounces={true}
-          contentContainerStyle={{
-            paddingRight: 16, // Sağ tarafta biraz boşluk
-            paddingLeft: 4,
-          }}
+          contentContainerStyle={{}}
         >
           {propertyDetails.map((detail, index) => (
             <View
-              key={detail.id}
+              key={`${detail.id}-${index}`} // DÜZELTME: Benzersiz key
               className="items-center justify-center rounded-2xl"
               style={{
-                width: 85,
+                width: "fit-content",
+                marginRight: 46,
+                marginLeft: 3,
                 height: 85,
               }}
             >
@@ -376,8 +452,8 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
           ))}
         </ScrollView>
 
-        {/* Distance badge */}
-        {distanceInKM !== undefined && (
+        {/* Distance badge - DÜZELTME: Güvenli conditional rendering */}
+        {!!(distanceInKM && distanceInKM > 0) && (
           <View className="absolute top-3 left-3">
             <View className="bg-green-500/90 backdrop-blur-sm px-3 py-1.5 rounded-full flex-row items-center">
               <MaterialIcons name="location-on" size={12} color="white" />
@@ -401,8 +477,8 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
           </BlurView>
         </View>
 
-        {/* Pagination dots - Only show if more than 1 image */}
-        {images.length > 1 && (
+        {/* Pagination dots - DÜZELTME: Güvenli conditional rendering */}
+        {!!(images && images.length > 1) && (
           <View className="absolute bottom-3 left-0 right-0 flex-row justify-center">
             <View
               style={{
@@ -494,6 +570,64 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
         {/* YENİ: Property details slider */}
         <PropertyDetailsSlider item={item} />
       </View>
+      <View className="flex flex-col">
+        <View className="mb-5 pl-1 mt-3">
+          <TouchableOpacity
+            className="flex-row items-center"
+            onPress={() =>
+              navigation.navigate("LandlordProfile", {
+                userId: item.landlordId,
+              })
+            }
+          >
+            <View className="flex-1 flex-row justify-between items-center w-full">
+              <TouchableOpacity
+                className="flex-row items-center"
+                onPress={() =>
+                  navigation.navigate("LandlordProfile", {
+                    userId: item.landlordId,
+                  })
+                }
+              >
+                <View className="w-12 h-12 rounded-full justify-center items-center mr-3 border-gray-900 border">
+                  {!!item.user?.profileImageUrl ? (
+                    <Image
+                      source={{ uri: item.user.profileImageUrl }}
+                      className="w-full h-full rounded-full"
+                    />
+                  ) : (
+                    <View>
+                      <Text className="text-xl font-bold text-gray-900">
+                        {item.user?.name?.charAt(0) || "E"}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                <View className="flex-col gap-1">
+                  <Text
+                    style={{ fontSize: 14 }}
+                    className="font-semibold text-gray-800"
+                  >
+                    {item.user?.name} {item.user?.surname}
+                  </Text>
+                  <View className="flex flex-row items-center gap-1">
+                    <Text style={{ fontSize: 12 }} className="text-gray-500">
+                      Rating
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+              <Text
+                className="mb-2 pl-1 text-gray-500"
+                style={{ fontSize: 12, fontWeight: 500 }}
+              >
+                {getRelativeTime(item.postTime)}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 
@@ -509,7 +643,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
           ? "Arama kriterlerinize uygun yakındaki ilan bulunamadı."
           : "Yakınınızda henüz ilan bulunmuyor. Daha sonra tekrar kontrol edin."}
       </Text>
-      {searchQuery && (
+      {!!searchQuery && (
         <TouchableOpacity
           className="bg-green-500 px-6 py-3 rounded-lg"
           onPress={() => setSearchQuery("")}
@@ -564,14 +698,23 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
       {/* Fixed search bar */}
       <View className="bg-white border-b border-gray-200 z-10">
         <View className="flex flex-row items-center px-5">
-          <View style={{ width: "8%" }}>
-            {" "}
+          <TouchableOpacity
+            style={{ width: "8%" }}
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             <FontAwesomeIcon icon={faChevronLeft} color="black" size={25} />
-          </View>
+          </TouchableOpacity>
 
           <View className="px-4 py-4" style={{ width: "84%" }}>
             <View
-              style={{ boxShadow: "0px 0px 12px #00000014" }}
+              style={{
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 8,
+                elevation: 5,
+              }}
               className="bg-white rounded-3xl gap-2 px-4 flex-row items-center"
             >
               <TextInput
@@ -580,36 +723,34 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
-              {searchQuery ? (
+              {!!searchQuery && (
                 <TouchableOpacity onPress={() => setSearchQuery("")}>
                   <MaterialIcons name="close" size={20} color="#9CA3AF" />
                 </TouchableOpacity>
-              ) : null}
+              )}
             </View>
           </View>
-          <View style={{ width: "8%" }}>
-            {" "}
+
+          <TouchableOpacity
+            style={{ width: "8%" }}
+            onPress={() => {
+              console.log("Filter pressed");
+            }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             <FontAwesomeIcon icon={faSliders} color="black" size={20} />
-          </View>
+          </TouchableOpacity>
         </View>
 
-        {/* OPTIMIZE EDİLDİ: Container height da animate ediliyor */}
+        {/* Rest of the header content remains the same */}
         <Animated.View
           style={{
-            height: containerHeight, // Container yüksekliği de küçülür
-            overflow: "hidden",
+            opacity: headerOpacity,
+            transform: [{ translateY: headerTranslateY }],
+            height: 50, // Sabit yükseklik
           }}
         >
-          <Animated.View
-            className="flex justify-center items-center"
-            style={{
-              paddingHorizontal: 16,
-              paddingBottom: 8,
-              height: 50,
-              opacity: filterOpacity,
-              transform: [{ translateY: filterTranslateY }],
-            }}
-          >
+          <View className="flex justify-center items-center px-4 pb-2">
             <View className="flex-row">
               {[
                 { key: "distance", label: "Uzaklık" },
@@ -635,10 +776,9 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
                 </TouchableOpacity>
               ))}
             </View>
-          </Animated.View>
+          </View>
         </Animated.View>
       </View>
-
       {/* OPTIMIZE EDİLDİ: Native driver ile scroll tracking */}
       <Animated.FlatList
         data={filteredProperties}

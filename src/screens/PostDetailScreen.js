@@ -425,7 +425,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                 textAlign: "center",
               }}
             >
-              {post?.ilanBasligi}
+              {post?.ilanBasligi || ""}
             </Text>
 
             {/* Share Button (placeholder for symmetry) */}
@@ -559,7 +559,6 @@ const PostDetailScreen = ({ route, navigation }) => {
           style={{
             borderTopLeftRadius: 20,
             borderTopRightRadius: 20,
-
             marginTop: marginTop,
             shadowColor: "#000",
             shadowOffset: {
@@ -572,7 +571,6 @@ const PostDetailScreen = ({ route, navigation }) => {
           }}
         >
           <View className="flex justify-center items-center">
-            {" "}
             <View
               style={{ height: 5, width: 50 }}
               className=" bg-gray-200 rounded-full"
@@ -580,7 +578,7 @@ const PostDetailScreen = ({ route, navigation }) => {
           </View>
           {/* Thumbnail Carousel */}
           <View style={{ paddingRight: 20 }}>
-            {images.length > 1 && (
+            {images.length > 1 ? (
               <View style={{ marginTop: 20, marginBottom: 16 }}>
                 <ScrollView
                   horizontal
@@ -622,7 +620,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                   ))}
                 </ScrollView>
               </View>
-            )}
+            ) : null}
           </View>
 
           {/* Post Details */}
@@ -632,13 +630,15 @@ const PostDetailScreen = ({ route, navigation }) => {
                 style={{ fontSize: 25, fontWeight: 700 }}
                 className="font-bold text-gray-900"
               >
-                {post.ilanBasligi}
+                {post.ilanBasligi || "İlan Başlığı"}
               </Text>
             </View>
             <View className="flex flex-col gap-4 mt-1">
               <View className="flex flex-row items-center">
                 <Text style={{ fontSize: 12 }} className="text-gray-500">
-                  {post.il}, {post.ilce}, {post.mahalle}
+                  {[post.il, post.ilce, post.mahalle]
+                    .filter(Boolean)
+                    .join(", ") || "Konum belirtilmemiş"}
                 </Text>
               </View>
               <Text style={{ fontSize: 14 }} className="text-gray-500">
@@ -646,7 +646,9 @@ const PostDetailScreen = ({ route, navigation }) => {
                   className="underline text-gray-900 font-medium"
                   style={{ fontSize: 18 }}
                 >
-                  {post.kiraFiyati.toLocaleString("tr-TR")}{" "}
+                  {post.kiraFiyati
+                    ? post.kiraFiyati.toLocaleString("tr-TR")
+                    : "0"}{" "}
                   <Text>{post.paraBirimi || "₺"}</Text>
                 </Text>{" "}
                 /ay
@@ -738,7 +740,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                     style={{ fontSize: 16 }}
                     className="font-semibold text-gray-800"
                   >
-                    {post.user?.name} {post.user?.surname}
+                    {post.user?.name || ""} {post.user?.surname || ""}
                   </Text>
                   <View className="flex flex-row items-center gap-1">
                     <Text style={{ fontSize: 12 }} className="text-gray-500">
@@ -1080,49 +1082,6 @@ const PostDetailScreen = ({ route, navigation }) => {
                 </View>
               </View>
             </View>
-
-            {/* Property Features */}
-            {/* <View className="mb-5">
-              <Text
-                style={{ fontSize: 20 }}
-                className="font-semibold text-gray-900 mb-4"
-              >
-                Özellikler
-              </Text>
-
-              <View className="flex-row flex-wrap">
-                {(() => {
-                  const features = [
-                    { key: "balkon", value: post.balkon, label: "Balkon" },
-                    { key: "asansor", value: post.asansor, label: "Asansör" },
-                    { key: "otopark", value: post.otopark, label: "Otopark" },
-                    { key: "esyali", value: post.esyali, label: "Eşyalı" },
-                    {
-                      key: "siteIcerisinde",
-                      value: post.siteIcerisinde,
-                      label: "Site İçerisinde",
-                    },
-                    { key: "takas", value: post.takas, label: "Takas" },
-                  ];
-
-                  return features
-                    .filter((feature) => feature.value === true)
-                    .map((feature) => (
-                      <View
-                        key={`feature-${feature.key}`}
-                        className="bg-white rounded-full border border-gray-900 px-3 py-2 mr-2 mb-2"
-                      >
-                        <Text
-                          style={{ fontSize: 12 }}
-                          className="text-gray-900 font-bold"
-                        >
-                          {feature.label}
-                        </Text>
-                      </View>
-                    ));
-                })()}
-              </View>
-            </View> */}
           </View>
         </Animated.View>
 

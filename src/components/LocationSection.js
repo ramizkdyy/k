@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -13,12 +13,105 @@ import MapView, { Marker } from "react-native-maps";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import faExternalLink from "@fortawesome/pro-light-svg-icons";
 import { faLocationDot } from "@fortawesome/pro-solid-svg-icons";
-import { faXmark } from "@fortawesome/pro-solid-svg-icons";
+import { faXmark } from "@fortawesome/pro-regular-svg-icons";
+import * as Location from "expo-location";
+import { BlurView } from "expo-blur";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 const LocationSection = ({ post }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [distance, setDistance] = useState(null);
+  const [travelTime, setTravelTime] = useState(null);
+  const [isLoadingDistance, setIsLoadingDistance] = useState(false);
+
+  // Haversine formula ile iki nokta arasındaki mesafeyi hesapla
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Dünya'nın yarıçapı (km)
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+    return distance;
+  };
+
+  // Mesafeyi dakikaya çevir (ortalama şehir içi hız 30 km/h)
+  const calculateTravelTime = (distanceKm) => {
+    const avgSpeedKmh = 30; // Ortalama şehir içi hız
+    const timeHours = distanceKm / avgSpeedKmh;
+    const timeMinutes = Math.round(timeHours * 60);
+    return timeMinutes;
+  };
+
+  // Kullanıcının mevcut konumunu al
+  const getCurrentLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Hata", "Konum izni verilmedi.");
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      setCurrentLocation(location.coords);
+      return location.coords;
+    } catch (error) {
+      console.error("Konum alınamadı:", error);
+      Alert.alert("Hata", "Konum bilgisi alınamadı.");
+      return null;
+    }
+  };
+
+  // Mesafe ve süre hesapla
+  const calculateDistanceAndTime = async () => {
+    if (!post.postLatitude || !post.postLongitude) {
+      Alert.alert("Hata", "Hedef konum bilgisi bulunamadı.");
+      return;
+    }
+
+    setIsLoadingDistance(true);
+
+    try {
+      let userLocation = currentLocation;
+
+      if (!userLocation) {
+        userLocation = await getCurrentLocation();
+      }
+
+      if (userLocation) {
+        const distanceKm = calculateDistance(
+          userLocation.latitude,
+          userLocation.longitude,
+          post.postLatitude,
+          post.postLongitude
+        );
+
+        const timeMinutes = calculateTravelTime(distanceKm);
+
+        setDistance(distanceKm);
+        setTravelTime(timeMinutes);
+      }
+    } catch (error) {
+      console.error("Mesafe hesaplanamadı:", error);
+      Alert.alert("Hata", "Mesafe hesaplanamadı.");
+    } finally {
+      setIsLoadingDistance(false);
+    }
+  };
+
+  // Komponent yüklendiğinde mesafe hesapla
+  useEffect(() => {
+    if (post.postLatitude && post.postLongitude) {
+      calculateDistanceAndTime();
+    }
+  }, [post.postLatitude, post.postLongitude]);
 
   // Handle opening specific maps app
   const openSpecificMap = (mapType) => {
@@ -208,6 +301,14 @@ const LocationSection = ({ post }) => {
           <Text style={{ fontSize: 12 }} className="text-gray-500 flex-1">
             {post.mahalle}, {post.ilce}, {post.il}
           </Text>
+          {travelTime && (
+            <Text
+              style={{ fontSize: 12 }}
+              className="text-blue-600 font-medium"
+            >
+              ~{travelTime} dk
+            </Text>
+          )}
         </View>
       </View>
 
@@ -218,38 +319,38 @@ const LocationSection = ({ post }) => {
         presentationStyle="fullScreen"
         onRequestClose={() => setIsModalVisible(false)}
       >
-        <View style={{ flex: 1, backgroundColor: "#000" }}>
+        <View className="relative" style={{ flex: 1, backgroundColor: "#000" }}>
           {/* Header */}
           <View
+            className="absolute top-0"
             style={{
-              backgroundColor: "white",
+              backgroundColor: "transparent",
               paddingTop: Platform.OS === "ios" ? 50 : 20,
               paddingHorizontal: 20,
               paddingBottom: 15,
               flexDirection: "row",
               justifyContent: "space-between",
               alignItems: "center",
-              borderBottomWidth: 0.5,
-              borderBottomColor: "#dee0ea",
+              width: "100%",
+              zIndex: 10,
             }}
           >
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 18, fontWeight: "600", color: "#000" }}>
-                {post.ilanBasligi}
-              </Text>
-              <Text style={{ fontSize: 14, color: "#6b7280", marginTop: 2 }}>
+            <BlurView className="px-4 py-1.5 rounded-full overflow-hidden">
+              <Text style={{ fontSize: 14, color: "#dee0ea", marginTop: 2 }}>
                 {post.mahalle}, {post.ilce}, {post.il}
               </Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => setIsModalVisible(false)}
-              style={{
-                padding: 8,
-                borderRadius: 20,
-                backgroundColor: "#f3f4f6",
-              }}
-            >
-              <FontAwesomeIcon icon={faXmark} size={20} color="#4b5563" />
+            </BlurView>
+            <TouchableOpacity onPress={() => setIsModalVisible(false)}>
+              <BlurView
+                className="overflow-hidden"
+                style={{
+                  padding: 8,
+                  borderRadius: 20,
+                }}
+              >
+                {" "}
+                <FontAwesomeIcon icon={faXmark} size={20} color="#dee0ea" />
+              </BlurView>
             </TouchableOpacity>
           </View>
 
@@ -258,9 +359,9 @@ const LocationSection = ({ post }) => {
             style={{ flex: 1 }}
             region={region}
             showsUserLocation={true}
-            showsMyLocationButton={true}
-            showsCompass={true}
-            showsScale={true}
+            showsMyLocationButton={false}
+            showsCompass={false}
+            showsScale={false}
             showsBuildings={true}
             showsTraffic={false}
             showsIndoors={true}
@@ -273,22 +374,23 @@ const LocationSection = ({ post }) => {
               title={post.ilanBasligi}
               description={`${post.mahalle}, ${post.ilce}`}
             >
-              <FontAwesomeIcon icon={faLocationDot} size={32} color="#ef4444" />
+              <FontAwesomeIcon icon={faLocationDot} size={32} color="#fff" />
             </Marker>
           </MapView>
 
           {/* Bottom Action Buttons */}
           <View
+            className="bottom-0 w-full"
             style={{
-              backgroundColor: "white",
+              position: "absolute",
+              backgroundColor: "transparent",
               paddingHorizontal: 20,
               paddingVertical: 15,
               paddingBottom: Platform.OS === "ios" ? 35 : 20,
-              borderTopWidth: 0.5,
-              borderTopColor: "#dee0ea",
             }}
           >
             <TouchableOpacity
+              activeOpacity={1}
               style={{
                 paddingVertical: 12,
                 paddingHorizontal: 20,
@@ -298,21 +400,26 @@ const LocationSection = ({ post }) => {
                 justifyContent: "center",
               }}
               onPress={() => {
-                setIsModalVisible(false);
                 showMapOptions();
               }}
             >
-              <FontAwesomeIcon icon={faLocationDot} size={16} color="black" />
-              <Text
-                style={{
-                  color: "black",
-                  fontSize: 22,
-                  fontWeight: "600",
-                  marginLeft: 8,
-                }}
-              >
-                Yol tarifi al
-              </Text>
+              <BlurView className="flex flex-row px-5 py-3 overflow-hidden rounded-full items-center bg-black bg-opacity-50">
+                <FontAwesomeIcon icon={faLocationDot} size={16} color="white" />
+                <Text
+                  style={{
+                    color: "#dee0ea",
+                    fontSize: 14,
+                    fontWeight: "400",
+                    marginLeft: 8,
+                  }}
+                >
+                  {isLoadingDistance
+                    ? "Hesaplanıyor..."
+                    : travelTime
+                    ? `Yol tarifi al (~${travelTime} dk)`
+                    : "Yol tarifi al"}
+                </Text>
+              </BlurView>
             </TouchableOpacity>
           </View>
         </View>
