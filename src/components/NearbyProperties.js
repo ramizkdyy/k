@@ -354,7 +354,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
               item.postImages && item.postImages.length > 0
                 ? item.postImages[0].postImageUrl
                 : item.firstPostİmageURL ||
-                  "https://via.placeholder.com/120x120",
+                "https://via.placeholder.com/120x120",
           }}
           className="rounded-2xl border border-gray-100"
           resizeMode="cover"
@@ -385,9 +385,8 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
             ellipsizeMode="tail"
           >
             {item.kiraFiyati || item.rent
-              ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-                  item.paraBirimi || item.currency || "₺"
-                }`
+              ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
+              }`
               : "Fiyat belirtilmemiş"}
           </Text>
 
@@ -455,7 +454,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
               item.postImages && item.postImages.length > 0
                 ? item.postImages[0].postImageUrl
                 : item.firstPostİmageURL ||
-                  "https://via.placeholder.com/300x200",
+                "https://via.placeholder.com/300x200",
           }}
           className="w-full "
           resizeMode="cover"
@@ -474,8 +473,8 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
                 {item.distanceInKM
                   ? item.distanceInKM.toFixed(1)
                   : item.distance !== undefined
-                  ? item.distance.toFixed(1)
-                  : "0.0"}{" "}
+                    ? item.distance.toFixed(1)
+                    : "0.0"}{" "}
                 km
               </Text>
             </View>
@@ -519,9 +518,8 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
               className="text-gray-500"
             >
               {item.kiraFiyati || item.rent
-                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-                    item.paraBirimi || item.currency || "₺"
-                  }`
+                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
+                }`
                 : "Fiyat belirtilmemiş"}
             </Text>
             <Text className="text-sm text-gray-400 ml-1">/ay</Text>
@@ -725,11 +723,33 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   );
 
   const handleSeeAll = (type) => {
-    // Navigate to AllNearbyPropertiesScreen with location data and type
-    navigation.navigate("AllNearbyProperties", {
-      initialLocation: userLocation,
-      searchType: type, // 'nearby', 'bestForYou', 'bestTenants', 'bestLandlords', 'similarPosts'
-    });
+    // Different navigation based on type and user role
+    switch (type) {
+      case "nearby":
+      case "bestForYou":
+      case "bestLandlords":
+      case "similarPosts":
+        // Navigate to AllNearbyPropertiesScreen for properties
+        navigation.navigate("AllSimilarProperties", {
+          userLocation: userLocation,
+          similarPosts: similarPosts, // Mevcut verileri gönder
+        });
+        break;
+      case "bestTenants":
+        // Navigate to AllMatchingTenants for tenants (landlord users)
+        navigation.navigate("AllMatchingUsers", {
+          initialLocation: userLocation,
+          searchType: type,
+        });
+        break;
+      default:
+        // Fallback to AllNearbyProperties
+        navigation.navigate("AllNearbyProperties", {
+          initialLocation: userLocation,
+          searchType: type,
+        });
+        break;
+    }
   };
 
   // Show loading skeleton if location is being fetched

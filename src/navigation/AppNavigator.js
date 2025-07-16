@@ -9,6 +9,7 @@ import Animated, {
   interpolate,
   useAnimatedStyle,
 } from "react-native-reanimated";
+
 import { useSelector, useDispatch } from "react-redux";
 import {
   selectIsAuthenticated,
@@ -31,7 +32,8 @@ import { BlurView } from "expo-blur";
 
 // Import screens
 import AllNearbyPropertiesScreen from "../screens/AllNearbyPropertiesScreen";
-
+import AllMatchingUsers from "../screens/AllMatchingUsers";
+import AllSimilarPropertiesScreen from "../screens/AllSimilarPropertiesScreen";
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import RoleSelectionScreen from "../screens/RoleSelectionScreen";
@@ -440,10 +442,37 @@ const LandlordHomeStack = () => {
         }}
       />
       <LandlordStack.Screen
+        name="AllMatchingUsers"
+        component={AllMatchingUsers}
+        options={{
+          title: "Size Uygun Kiracılar",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+          headerTintColor: "#000",
+          headerShown: false,
+          headerTitleStyle: {
+            fontWeight: 600,
+          },
+          headerBackTitle: "",
+          headerShadowVisible: false,
+          tabBarStyle: { display: 'none' }, // BottomTabs'ı gizle
+
+        }}
+      />
+      <LandlordStack.Screen
         name="ProfileExpectation"
         component={ProfileExpectationScreen}
         options={{
           title: "Beklenti Profili Oluştur",
+          headerShown: false,
+        }}
+      />
+      <LandlordStack.Screen
+        name="AllSimilarProperties"
+        component={AllSimilarPropertiesScreen}
+        options={{
+          title: "Benzer İlanlar",
           headerShown: false,
         }}
       />
@@ -995,10 +1024,10 @@ const ProfileLoader = ({ children }) => {
     isLoading,
     error,
   } = userRole === "EVSAHIBI"
-    ? useGetLandlordProfileQuery(currentUser?.id, {
+      ? useGetLandlordProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       })
-    : useGetTenantProfileQuery(currentUser?.id, {
+      : useGetTenantProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       });
 
