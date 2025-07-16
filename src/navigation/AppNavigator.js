@@ -459,9 +459,9 @@ const LandlordPropertiesStack = () => {
         component={PostsScreen}
         options={{
           title: "Mülklerim",
+          headerShown: false,
           headerStyle: {
             backgroundColor: "#A0E79E",
-            headerShownVisible: false,
           },
           headerTintColor: "#fff",
         }}
@@ -749,6 +749,7 @@ const LandlordTabNavigator = () => {
           component={LandlordPropertiesStack}
           options={{
             title: "Mülklerim",
+
             tabBarLabel: "Mülklerim",
             tabBarIcon: ({ focused }) => (
               <FontAwesomeIcon

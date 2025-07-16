@@ -8,8 +8,10 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  SafeAreaView,
+  StatusBar,
 } from "react-native";
-import { Image } from "expo-image"; // Expo Image import
+import { Image } from "expo-image";
 import { useSelector, useDispatch } from "react-redux";
 import { selectUserRole, selectCurrentUser } from "../redux/slices/authSlice";
 import {
@@ -24,7 +26,12 @@ import {
   useDeletePostMutation,
 } from "../redux/api/apiSlice";
 import { useFocusEffect } from "@react-navigation/native";
-import { MaterialIcons } from "@expo/vector-icons";
+import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
+import { faPlus, faSliders } from "@fortawesome/pro-regular-svg-icons";
+import { faSearch } from "@fortawesome/pro-solid-svg-icons";
+import { BlurView } from "expo-blur";
+import { faEdit, faTrash } from "@fortawesome/pro-light-svg-icons";
 
 // Logger utility
 const Logger = {
@@ -346,16 +353,20 @@ const PostsScreen = ({ navigation }) => {
   const renderPostItem = ({ item }) => {
     return (
       <TouchableOpacity
-        className="bg-white rounded-2xl overflow-hidden mb-4 shadow-lg border border-gray-100"
+        className="bg-white  overflow-hidden mb-4 "
         onPress={() => handlePostNavigation(item.postId)}
-        activeOpacity={0.95}
+        activeOpacity={1}
       >
-        <View className="relative">
+        <View style={{ borderRadius: 30 }} className="relative">
           {/* Post image with Expo Image */}
           {item.postImages && item.postImages.length > 0 ? (
             <Image
               source={{ uri: item.postImages[0].postImageUrl }}
-              style={{ width: "100%", height: 208 }} // h-52 = 208px
+              style={{
+                width: "100%",
+                height: 350,
+                borderRadius: 30,
+              }} // h-52 = 208px
               contentFit="cover"
               transition={200} // Smooth transition
               placeholder={{
@@ -377,17 +388,17 @@ const PostsScreen = ({ navigation }) => {
           )}
 
           {/* Status badge - improved design */}
-          <View className="absolute top-3 right-3">
+          <BlurView
+            intensity={100}
+            style={{ overflow: "hidden" }}
+            className="absolute top-3 py-3 px-2 left-3 rounded-full"
+          >
             <View
-              className={`px-3 py-1.5 rounded-full backdrop-blur-sm ${
-                item.status === 0
-                  ? "bg-green-500/90"
-                  : item.status === 1
-                  ? "bg-green-500/90"
-                  : "bg-gray-500/90"
+              className={`px-3 py-1.5 rounded-full ${
+                item.status === 0 ? "" : item.status === 1 ? "" : ""
               }`}
             >
-              <Text className="text-white text-xs font-semibold">
+              <Text className="text-gray-900 text-sm font-semibold">
                 {item.status === 0
                   ? "Aktif"
                   : item.status === 1
@@ -395,7 +406,7 @@ const PostsScreen = ({ navigation }) => {
                   : "Kapalı"}
               </Text>
             </View>
-          </View>
+          </BlurView>
 
           {/* Distance badge (if available) */}
           {item.distance && (
@@ -408,30 +419,92 @@ const PostsScreen = ({ navigation }) => {
               </View>
             </View>
           )}
+          {userRole === "EVSAHIBI" && item.userId === currentUser?.id && (
+            <View className="flex-row absolute gap-2 top-3 right-3">
+              <BlurView
+                intensity={100}
+                className="overflow-hidden rounded-full"
+              >
+                {" "}
+                <TouchableOpacity
+                  className=" flex justify-center items-center p-4"
+                  onPress={() => handleOffersNavigation(item.postId)}
+                  activeOpacity={1}
+                >
+                  <View className="flex-row items-center justify-center">
+                    <Text className="text-gray-900 font-semibold text-center text-sm ml-1">
+                      Teklifler ({item.offerCount || 0})
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </BlurView>
+
+              <BlurView
+                intensity={100}
+                className="overflow-hidden rounded-full"
+              >
+                {" "}
+                <TouchableOpacity
+                  className=" flex justify-center items-center p-4"
+                  onPress={() => handleEditPostNavigation(item.postId)}
+                  activeOpacity={1}
+                >
+                  <View className="flex-row items-center justify-center">
+                    <FontAwesomeIcon icon={faEdit} />
+                  </View>
+                </TouchableOpacity>
+              </BlurView>
+
+              <BlurView
+                intensity={100}
+                className="overflow-hidden rounded-full"
+              >
+                {" "}
+                <TouchableOpacity
+                  className=" flex justify-center items-center p-4"
+                  onPress={() => handleDeletePost(item.postId)}
+                  disabled={isDeleting}
+                  activeOpacity={1}
+                >
+                  <View className="flex-row items-center justify-center">
+                    <FontAwesomeIcon color="#9c092e" icon={faTrash} />
+                  </View>
+                </TouchableOpacity>
+              </BlurView>
+            </View>
+          )}
         </View>
 
-        <View className="p-5">
+        <View className="px-2 py-3">
           {/* Title and Price */}
-          <View className="flex-row justify-between items-start mb-2">
+          <View className="flex-col items-start mb-2">
             <Text
               className="text-lg font-bold text-gray-900 flex-1 mr-3"
               numberOfLines={2}
             >
               {item.ilanBasligi || "İlan başlığı yok"}
             </Text>
-            <View className="bg-green-50 px-3 py-1 rounded-lg">
-              <Text className="text-lg font-bold text-green-600">
-                {`${item.kiraFiyati} ₺`}
+            <View className="flex flex-row items-center mb-3">
+              <Text style={{ fontSize: 12 }} className="text-gray-500">
+                {[item.il, item.ilce, item.mahalle]
+                  .filter(Boolean)
+                  .join(", ") || "Konum belirtilmemiş"}
               </Text>
             </View>
-          </View>
-
-          {/* Location */}
-          <View className="flex-row items-center mb-3">
-            <MaterialIcons name="location-on" size={16} color="#6B7280" />
-            <Text className="text-sm text-gray-600 ml-1">
-              {item.il || "Konum belirtilmemiş"}
-            </Text>
+            <View className=" py-1 rounded-lg mb-2">
+              <Text style={{ fontSize: 14 }} className="text-gray-500">
+                <Text
+                  className="underline text-gray-900 font-medium"
+                  style={{ fontSize: 18 }}
+                >
+                  {item.kiraFiyati
+                    ? item.kiraFiyati.toLocaleString("tr-TR")
+                    : "0"}{" "}
+                  <Text>{item.paraBirimi || "₺"}</Text>
+                </Text>{" "}
+                /ay
+              </Text>
+            </View>
           </View>
 
           {/* Description */}
@@ -441,74 +514,6 @@ const PostsScreen = ({ navigation }) => {
           >
             {item.postDescription || "Açıklama yok"}
           </Text>
-
-          {/* Property details */}
-          <View className="flex-row justify-between items-center mb-4">
-            <View className="flex-row items-center bg-gray-50 px-3 py-2 rounded-lg">
-              <MaterialIcons name="king-bed" size={16} color="#6B7280" />
-              <Text className="text-xs text-gray-700 ml-1 font-medium">
-                {item.odaSayisi} Oda
-              </Text>
-            </View>
-
-            <View className="flex-row items-center bg-gray-50 px-3 py-2 rounded-lg">
-              <MaterialIcons name="bathtub" size={16} color="#6B7280" />
-              <Text className="text-xs text-gray-700 ml-1 font-medium">
-                {item.banyoSayisi} Banyo
-              </Text>
-            </View>
-
-            <View className="flex-row items-center bg-gray-50 px-3 py-2 rounded-lg">
-              <MaterialIcons name="square-foot" size={16} color="#6B7280" />
-              <Text className="text-xs text-gray-700 ml-1 font-medium">
-                {`${item.brutMetreKare} m²`}
-              </Text>
-            </View>
-          </View>
-
-          {/* Show action buttons for landlords */}
-          {userRole === "EVSAHIBI" && item.userId === currentUser?.id && (
-            <View className="flex-row">
-              <TouchableOpacity
-                className="flex-1 bg-green-50 py-3 rounded-lg mr-2 border border-green-100"
-                onPress={() => handleEditPostNavigation(item.postId)}
-                activeOpacity={0.7}
-              >
-                <View className="flex-row items-center justify-center">
-                  <MaterialIcons name="edit" size={16} color="#538d22" />
-                  <Text className="text-green-700 font-semibold text-center text-sm ml-1">
-                    Düzenle
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className="flex-1 bg-green-500 py-3 rounded-lg mr-2 shadow-sm"
-                onPress={() => handleOffersNavigation(item.postId)}
-                activeOpacity={0.8}
-              >
-                <View className="flex-row items-center justify-center">
-                  <MaterialIcons name="local-offer" size={16} color="white" />
-                  <Text className="text-white font-semibold text-center text-sm ml-1">
-                    Teklifler ({item.offerCount || 0})
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className="w-12 bg-red-50 py-3 rounded-lg justify-center items-center border border-red-100"
-                onPress={() => handleDeletePost(item.postId)}
-                disabled={isDeleting}
-                activeOpacity={0.7}
-              >
-                <MaterialIcons
-                  name="delete"
-                  size={18}
-                  color={isDeleting ? "#FCA5A5" : "#EF4444"}
-                />
-              </TouchableOpacity>
-            </View>
-          )}
         </View>
       </TouchableOpacity>
     );
@@ -677,41 +682,43 @@ const PostsScreen = ({ navigation }) => {
 
   // Header with title and filter toggle
   const renderHeader = () => (
-    <View className="flex-row justify-between items-center mb-4">
-      <Text className="text-xl font-bold text-gray-800">
+    <View className="flex-row justify-between items-center mt-4 mb-4">
+      <Text style={{ fontSize: 14 }} className=" font-medium text-gray-500">
         {userRole === "EVSAHIBI" ? "Mülklerim" : "İlanlar"}
       </Text>
 
       <View className="flex-row">
         {userRole === "EVSAHIBI" && (
           <TouchableOpacity
-            className="bg-green-500 p-2 rounded-full mr-2"
+            style={{ boxShadow: "0px 0px 12px #00000014" }}
+            className="p-3 bg-white flex justify-center items-center rounded-full mr-2"
             onPress={handleCreatePostNavigation}
           >
-            <MaterialIcons name="add" size={22} color="#FFFFFF" />
+            <FontAwesomeIcon icon={faPlus} size={18} />
           </TouchableOpacity>
         )}
 
         <TouchableOpacity
-          className={`p-2 rounded-full ${
+          style={{ boxShadow: "0px 0px 12px #00000014" }}
+          className={`p-3 rounded-full ${
             isFilterVisible ||
             Object.values(filters).some((val) => val !== null)
               ? "bg-green-500"
-              : "bg-gray-200"
+              : "bg-white"
           }`}
           onPress={() => {
             Logger.event("toggle_filter_panel", { show: !isFilterVisible });
             setIsFilterVisible(!isFilterVisible);
           }}
         >
-          <MaterialIcons
-            name="filter-list"
-            size={22}
+          <FontAwesomeIcon
+            icon={faSliders}
+            size={18}
             color={
               isFilterVisible ||
               Object.values(filters).some((val) => val !== null)
-                ? "#FFFFFF"
-                : "#4B5563"
+                ? "gray"
+                : "#000"
             }
           />
         </TouchableOpacity>
@@ -737,40 +744,6 @@ const PostsScreen = ({ navigation }) => {
                 Logger.event("remove_filter", { type: "location" });
                 dispatch(setPostFilters({ ...filters, location: null }));
                 setLocalFilters({ ...localFilters, location: "" });
-              }}
-            >
-              <MaterialIcons name="close" size={16} color="#1E40AF" />
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {filters.priceMin !== null && (
-          <View className="bg-green-100 rounded-full px-3 py-1 mr-2 mb-1 flex-row items-center">
-            <Text className="text-green-800 text-sm mr-1">
-              Min: {filters.priceMin} ₺
-            </Text>
-            <TouchableOpacity
-              onPress={() => {
-                Logger.event("remove_filter", { type: "priceMin" });
-                dispatch(setPostFilters({ ...filters, priceMin: null }));
-                setLocalFilters({ ...localFilters, priceMin: "" });
-              }}
-            >
-              <MaterialIcons name="close" size={16} color="#1E40AF" />
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {filters.priceMax !== null && (
-          <View className="bg-green-100 rounded-full px-3 py-1 mr-2 mb-1 flex-row items-center">
-            <Text className="text-green-800 text-sm mr-1">
-              Max: {filters.priceMax} ₺
-            </Text>
-            <TouchableOpacity
-              onPress={() => {
-                Logger.event("remove_filter", { type: "priceMax" });
-                dispatch(setPostFilters({ ...filters, priceMax: null }));
-                setLocalFilters({ ...localFilters, priceMax: "" });
               }}
             >
               <MaterialIcons name="close" size={16} color="#1E40AF" />
@@ -815,72 +788,75 @@ const PostsScreen = ({ navigation }) => {
   const filteredPosts = getFilteredPosts();
 
   return (
-    <View className="flex-1 bg-gray-50 p-4">
-      {/* Search bar */}
-      <View className="bg-white rounded-lg flex-row items-center px-4 py-2 mb-4 border border-gray-200">
-        <MaterialIcons
-          name="search"
-          size={20}
-          color="#9CA3AF"
-          className="mr-2"
-        />
-        <TextInput
-          className="flex-1 text-base"
-          placeholder={
-            userRole === "EVSAHIBI"
-              ? "Kendi ilanlarınızda arayın..."
-              : "İlanlarda arayın..."
-          }
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        {searchQuery ? (
-          <TouchableOpacity
-            onPress={() => {
-              Logger.event("clear_search");
-              setSearchQuery("");
-            }}
+    <SafeAreaView className="flex-1 bg-white">
+      {/* Status Bar Configuration */}
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="#F9FAFB"
+        translucent={false}
+      />
+
+      <View className="flex-1 p-4">
+        {/* Search bar */}
+        <View className="">
+          <View
+            style={{ boxShadow: "0px 0px 12px #00000014" }}
+            className="bg-white rounded-3xl gap-2 px-4 flex-row items-center "
           >
-            <MaterialIcons name="close" size={20} color="#9CA3AF" />
-          </TouchableOpacity>
-        ) : null}
-      </View>
-
-      {renderHeader()}
-      {renderFilterModal()}
-      {renderAppliedFilters()}
-
-      {isLoading ? (
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#4A90E2" />
-          <Text className="mt-3 text-base text-gray-500">
-            İlanlar yükleniyor...
-          </Text>
+            <FontAwesomeIcon icon={faSearch} size={20} color="#000" />
+            <TextInput
+              className="w-full placeholder:text-gray-500 placeholder:text-[14px] py-4 text-normal"
+              style={{
+                textAlignVertical: "center", // Android için
+                includeFontPadding: false, // Android için
+              }}
+              placeholder={
+                userRole === "KIRACI"
+                  ? "Konuma göre ev ara..."
+                  : "İlanlarınızda arayın..."
+              }
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
         </View>
-      ) : (
-        <FlatList
-          data={filteredPosts}
-          renderItem={renderPostItem}
-          keyExtractor={(item, index) => `post_${item.postId}_${index}`}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }}
-          ListEmptyComponent={renderEmptyState}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          onEndReached={() => {
-            Logger.event("end_of_list_reached");
-          }}
-          onEndReachedThreshold={0.5}
-          // Performance optimizations for image loading
-          removeClippedSubviews={true}
-          maxToRenderPerBatch={10}
-          updateCellsBatchingPeriod={100}
-          initialNumToRender={5}
-          windowSize={10}
-        />
-      )}
-    </View>
+
+        {renderHeader()}
+        {renderFilterModal()}
+        {renderAppliedFilters()}
+
+        {isLoading ? (
+          <View className="flex-1 justify-center items-center">
+            <ActivityIndicator size="large" color="#4A90E2" />
+            <Text className="mt-3 text-base text-gray-500">
+              İlanlar yükleniyor...
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredPosts}
+            renderItem={renderPostItem}
+            keyExtractor={(item, index) => `post_${item.postId}_${index}`}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }}
+            ListEmptyComponent={renderEmptyState}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            onEndReached={() => {
+              Logger.event("end_of_list_reached");
+            }}
+            onEndReachedThreshold={0.5}
+            // Performance optimizations for image loading
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={10}
+            updateCellsBatchingPeriod={100}
+            initialNumToRender={5}
+            windowSize={10}
+          />
+        )}
+      </View>
+    </SafeAreaView>
   );
 };
 

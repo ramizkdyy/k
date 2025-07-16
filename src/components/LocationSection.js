@@ -42,12 +42,48 @@ const LocationSection = ({ post }) => {
     return distance;
   };
 
-  // Mesafeyi dakikaya çevir (ortalama şehir içi hız 30 km/h)
+  // Mesafeyi dakikaya çevir ve formatla (ortalama şehir içi hız 30 km/h)
   const calculateTravelTime = (distanceKm) => {
     const avgSpeedKmh = 30; // Ortalama şehir içi hız
     const timeHours = distanceKm / avgSpeedKmh;
-    const timeMinutes = Math.round(timeHours * 60);
-    return timeMinutes;
+    const totalMinutes = Math.round(timeHours * 60);
+
+    return totalMinutes;
+  };
+
+  // Süreyi formatla (dakika, saat, gün)
+  const formatTravelTime = (minutes) => {
+    if (minutes < 60) {
+      return `${minutes} dk`;
+    } else if (minutes < 1440) {
+      // 24 saat = 1440 dakika
+      const hours = Math.floor(minutes / 60);
+      const remainingMinutes = minutes % 60;
+
+      if (remainingMinutes === 0) {
+        return `${hours} saat`;
+      } else {
+        return `${hours} saat ${remainingMinutes} dk`;
+      }
+    } else {
+      // 1 gün veya daha fazla
+      const days = Math.floor(minutes / 1440);
+      const remainingMinutes = minutes % 1440;
+      const hours = Math.floor(remainingMinutes / 60);
+      const mins = remainingMinutes % 60;
+
+      let result = `${days} gün`;
+
+      if (hours > 0) {
+        result += ` ${hours} saat`;
+      }
+
+      if (mins > 0) {
+        result += ` ${mins} dk`;
+      }
+
+      return result;
+    }
   };
 
   // Kullanıcının mevcut konumunu al
@@ -306,7 +342,7 @@ const LocationSection = ({ post }) => {
               style={{ fontSize: 12 }}
               className="text-blue-600 font-medium"
             >
-              ~{travelTime} dk
+              ~{formatTravelTime(travelTime)}
             </Text>
           )}
         </View>
@@ -416,7 +452,7 @@ const LocationSection = ({ post }) => {
                   {isLoadingDistance
                     ? "Hesaplanıyor..."
                     : travelTime
-                    ? `Yol tarifi al (~${travelTime} dk)`
+                    ? `Yol tarifi al (~${formatTravelTime(travelTime)})`
                     : "Yol tarifi al"}
                 </Text>
               </BlurView>

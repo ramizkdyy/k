@@ -557,8 +557,6 @@ const PostDetailScreen = ({ route, navigation }) => {
         <Animated.View
           className="bg-white pt-4"
           style={{
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
             marginTop: marginTop,
             shadowColor: "#000",
             shadowOffset: {

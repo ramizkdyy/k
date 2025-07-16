@@ -57,32 +57,6 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
 
   // OPTIMIZE EDİLDİ: Native driver ile animated değerler
   const scrollY = useRef(new Animated.Value(0)).current;
-  const headerOpacity = useRef(new Animated.Value(1)).current;
-  const headerTranslateY = useRef(new Animated.Value(0)).current;
-
-  const animatedScrollHandler = Animated.event(
-    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-    {
-      useNativeDriver: true, // Native driver kullan
-      listener: (event) => {
-        const scrollOffset = event.nativeEvent.contentOffset.y;
-
-        // Header animasyonlarını native driver ile yap
-        Animated.parallel([
-          Animated.timing(headerOpacity, {
-            toValue: scrollOffset > 50 ? 0 : 1,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(headerTranslateY, {
-            toValue: scrollOffset > 50 ? -60 : 0,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      },
-    }
-  );
 
   // Filter animasyonu için transform ve opacity kullanıyoruz (native driver için)
   const filterTranslateY = scrollY.interpolate({
@@ -695,26 +669,20 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Fixed search bar */}
+      {/* Fixed search bar - İLK DOSYADAN GETİRİLEN HEADER */}
       <View className="bg-white border-b border-gray-200 z-10">
         <View className="flex flex-row items-center px-5">
           <TouchableOpacity
-            style={{ width: "8%" }}
             onPress={() => navigation.goBack()}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={{ width: "8%" }}
           >
+            {" "}
             <FontAwesomeIcon icon={faChevronLeft} color="black" size={25} />
           </TouchableOpacity>
 
           <View className="px-4 py-4" style={{ width: "84%" }}>
             <View
-              style={{
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 8,
-                elevation: 5,
-              }}
+              style={{ boxShadow: "0px 0px 12px #00000014" }}
               className="bg-white rounded-3xl gap-2 px-4 flex-row items-center"
             >
               <TextInput
@@ -723,34 +691,36 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
-              {!!searchQuery && (
+              {searchQuery ? (
                 <TouchableOpacity onPress={() => setSearchQuery("")}>
                   <MaterialIcons name="close" size={20} color="#9CA3AF" />
                 </TouchableOpacity>
-              )}
+              ) : null}
             </View>
           </View>
-
-          <TouchableOpacity
-            style={{ width: "8%" }}
-            onPress={() => {
-              console.log("Filter pressed");
-            }}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
+          <View style={{ width: "8%" }}>
+            {" "}
             <FontAwesomeIcon icon={faSliders} color="black" size={20} />
-          </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Rest of the header content remains the same */}
+        {/* OPTIMIZE EDİLDİ: Container height da animate ediliyor */}
         <Animated.View
           style={{
-            opacity: headerOpacity,
-            transform: [{ translateY: headerTranslateY }],
-            height: 50, // Sabit yükseklik
+            height: containerHeight, // Container yüksekliği de küçülür
+            overflow: "hidden",
           }}
         >
-          <View className="flex justify-center items-center px-4 pb-2">
+          <Animated.View
+            className="flex justify-center items-center"
+            style={{
+              paddingHorizontal: 16,
+              paddingBottom: 8,
+              height: 50,
+              opacity: filterOpacity,
+              transform: [{ translateY: filterTranslateY }],
+            }}
+          >
             <View className="flex-row">
               {[
                 { key: "distance", label: "Uzaklık" },
@@ -776,9 +746,10 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
+          </Animated.View>
         </Animated.View>
       </View>
+
       {/* OPTIMIZE EDİLDİ: Native driver ile scroll tracking */}
       <Animated.FlatList
         data={filteredProperties}

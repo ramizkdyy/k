@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -11,7 +11,9 @@ import {
   Platform,
   KeyboardAvoidingView,
   SafeAreaView,
+  Animated,
   Modal,
+  Dimensions,
   Pressable,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
@@ -28,6 +30,7 @@ import {
   faChevronLeft,
   faChevronDown,
   faCalendar,
+  faCheck,
 } from "@fortawesome/pro-solid-svg-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -40,7 +43,7 @@ const ProfileExpectationHeader = ({
   onUpdate,
   isLoading,
 }) => (
-  <View style={{ paddingVertical: 12 }} className=" px-3 relative bg-white">
+  <View style={{ paddingVertical: 12 }} className="px-3 relative bg-white">
     <View className="flex-row justify-between ml-2 items-center w-full">
       {/* Sol taraf - Geri butonu */}
       <TouchableOpacity
@@ -72,12 +75,25 @@ const ProfileExpectationHeader = ({
         >
           <Text
             style={{ fontSize: 16, color: "#6aeba9", borderColor: "#6aeba9" }}
-            className=" font-normal border px-4 py-2 rounded-full"
+            className="font-normal border px-4 py-2 rounded-full"
           >
             {isLoading ? "Oluşturuluyor..." : "Oluştur"}
           </Text>
         </TouchableOpacity>
       )}
+    </View>
+
+    {/* Ortalanmış başlık - Absolute positioning ile */}
+    <View className="absolute inset-0 justify-center items-center pointer-events-none">
+      <Text
+        className="text-gray-500"
+        style={{
+          fontWeight: 500,
+          fontSize: 14,
+        }}
+      >
+        Beklenti Profili Oluştur
+      </Text>
     </View>
   </View>
 );
@@ -165,6 +181,50 @@ const CustomDropdown = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
+  // Animation refs - same structure as RegisterScreen
+  const modalBackgroundOpacity = useRef(new Animated.Value(0)).current;
+  const modalSlideAnim = useRef(new Animated.Value(300)).current;
+
+  const openModal = () => {
+    setIsOpen(true);
+    // Start open animation - same as RegisterScreen
+    Animated.parallel([
+      Animated.timing(modalBackgroundOpacity, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: false,
+      }),
+      Animated.timing(modalSlideAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const closeModal = () => {
+    // Close animation - same as RegisterScreen
+    Animated.parallel([
+      Animated.timing(modalBackgroundOpacity, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: false,
+      }),
+      Animated.timing(modalSlideAnim, {
+        toValue: 300,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsOpen(false);
+    });
+  };
+
+  const handleOptionSelect = (option) => {
+    setValue(option);
+    closeModal();
+  };
+
   return (
     <View className="mb-6">
       <Text
@@ -175,7 +235,7 @@ const CustomDropdown = ({
       </Text>
       <TouchableOpacity
         className="border border-gray-900 rounded-xl px-4 py-4 flex-row justify-between items-center"
-        onPress={() => setIsOpen(true)}
+        onPress={openModal}
       >
         <Text
           className={value ? "text-gray-900" : "text-gray-500"}
@@ -186,49 +246,79 @@ const CustomDropdown = ({
         <FontAwesomeIcon icon={faChevronDown} size={16} color="#6b7280" />
       </TouchableOpacity>
 
+      {/* Modal with same animation structure as RegisterScreen */}
       <Modal
         visible={isOpen}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setIsOpen(false)}
+        transparent
+        animationType="none"
+        onRequestClose={closeModal}
       >
-        <View className="flex-1 justify-end bg-black/50">
-          <View className="bg-white rounded-t-3xl max-h-[50%]">
-            <View className="p-4 border-b border-gray-200 flex-row justify-between items-center">
-              <Text className="text-lg font-semibold text-gray-800">
+        <Animated.View
+          className="flex-1 justify-end"
+          style={{
+            backgroundColor: modalBackgroundOpacity.interpolate({
+              inputRange: [0, 1],
+              outputRange: ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.5)"],
+            }),
+          }}
+        >
+          <Animated.View
+            className="bg-white rounded-t-3xl max-h-[50%]"
+            style={{
+              transform: [{ translateY: modalSlideAnim }],
+            }}
+          >
+            {/* Header - same style as RegisterScreen */}
+            <View className="flex-row justify-between items-center px-6 py-4 bg-white rounded-t-3xl">
+              <Text
+                style={{ fontWeight: 600, fontSize: 18 }}
+                className="text-gray-800"
+              >
                 {label}
               </Text>
-              <TouchableOpacity onPress={() => setIsOpen(false)}>
-                <Text className="text-blue-500 font-medium">Kapat</Text>
+              <TouchableOpacity onPress={closeModal} className="px-2 py-2">
+                <Text
+                  style={{
+                    fontSize: 17,
+                    color: "#007AFF",
+                    fontWeight: "500",
+                  }}
+                >
+                  Kapat
+                </Text>
               </TouchableOpacity>
             </View>
 
-            <ScrollView>
+            {/* Options List */}
+            <ScrollView className="bg-white py-3">
               {options.map((option, index) => (
                 <TouchableOpacity
                   key={index}
-                  className={`p-4 border-b border-gray-100 ${
-                    value === option ? "bg-green-50" : ""
+                  className={`py-4 px-7 flex-row items-center justify-between ${
+                    value === option ? "bg-gray-100" : ""
                   }`}
-                  onPress={() => {
-                    setValue(option);
-                    setIsOpen(false);
-                  }}
+                  onPress={() => handleOptionSelect(option)}
                 >
                   <Text
-                    className={`text-base ${
+                    className={`text-lg ${
                       value === option
-                        ? "text-green-600 font-medium"
-                        : "text-gray-700"
+                        ? "text-gray-900 font-medium"
+                        : "text-gray-400"
                     }`}
                   >
                     {option}
                   </Text>
+                  {value === option && (
+                    <FontAwesomeIcon icon={faCheck} size={16} color="#000" />
+                  )}
                 </TouchableOpacity>
               ))}
             </ScrollView>
-          </View>
-        </View>
+
+            {/* Safe area for bottom - same as RegisterScreen */}
+            <View style={{ height: 34, backgroundColor: "#FFFFFF" }} />
+          </Animated.View>
+        </Animated.View>
       </Modal>
     </View>
   );
