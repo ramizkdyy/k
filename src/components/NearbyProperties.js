@@ -723,32 +723,33 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   );
 
   const handleSeeAll = (type) => {
-    // Different navigation based on type and user role
-    switch (type) {
-      case "nearby":
-      case "bestForYou":
-      case "bestLandlords":
-      case "similarPosts":
-        // Navigate to AllNearbyPropertiesScreen for properties
-        navigation.navigate("AllSimilarProperties", {
-          userLocation: userLocation,
-          similarPosts: similarPosts, // Mevcut verileri gönder
-        });
-        break;
-      case "bestTenants":
-        // Navigate to AllMatchingTenants for tenants (landlord users)
-        navigation.navigate("AllMatchingUsers", {
-          initialLocation: userLocation,
-          searchType: type,
-        });
-        break;
-      default:
-        // Fallback to AllNearbyProperties
-        navigation.navigate("AllNearbyProperties", {
-          initialLocation: userLocation,
-          searchType: type,
-        });
-        break;
+    console.log("handleSeeAll called with type:", type); // Debug için
+
+    // Type ve user role'e göre farklı navigation
+    if (type === "similarPosts") {
+      // Benzer ilanlar için AllSimilarProperties
+      navigation.navigate("AllSimilarProperties", {
+        userLocation: userLocation,
+        similarPosts: similarPosts,
+      });
+    } else if (type === "bestTenants") {
+      // Size uygun kiracılar için AllMatchingUsers (landlord için)
+      navigation.navigate("AllMatchingUsers", {
+        initialLocation: userLocation,
+        searchType: type,
+      });
+    } else if (type === "bestLandlords") {
+      // Size uygun ev sahipleri için AllMatchingUsers (tenant için) 
+      navigation.navigate("AllMatchingUsers", {
+        initialLocation: userLocation,
+        searchType: type,
+      });
+    } else {
+      // nearby, bestForYou ve diğerleri için AllNearbyProperties
+      navigation.navigate("AllNearbyProperties", {
+        initialLocation: userLocation,
+        searchType: type,
+      });
     }
   };
 
