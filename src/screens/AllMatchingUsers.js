@@ -99,21 +99,21 @@ const AllMatchingUsers = ({ navigation, route }) => {
                 iconSize: 10,
                 textSize: 11,
                 containerPadding: 1,
-                barWidth: 180,
+                barWidth: width * 0.8,
             },
             sm: {
                 barHeight: 5,
                 iconSize: 12,
                 textSize: 12,
                 containerPadding: 2,
-                barWidth: 180,
+                barWidth: width * 0.8,
             },
             md: {
                 barHeight: 4,
                 iconSize: 14,
                 textSize: 14,
                 containerPadding: 3,
-                barWidth: 180,
+                barWidth: width * 0.8,
             },
         };
 
@@ -153,7 +153,9 @@ const AllMatchingUsers = ({ navigation, route }) => {
                             style={{
                                 height: currentSize.barHeight,
                                 width: currentSize.barWidth,
-                                marginRight: 6,
+                                marginRight: 12,
+                                maxWidth: width * 0.71, // Bar maksimum genişliği
+
                             }}
                         >
                             <Animated.View

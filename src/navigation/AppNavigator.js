@@ -498,7 +498,9 @@ const LandlordPropertiesStack = () => {
       <LandlordStack.Screen
         name="PostDetail"
         component={PostDetailScreen}
-        options={{ title: "İlan Detayı", headerShown: false }}
+        options={{
+          headerShown: false,
+        }}
       />
       <LandlordStack.Screen
         name="CreatePost"
@@ -519,7 +521,12 @@ const LandlordPropertiesStack = () => {
       <LandlordStack.Screen
         name="Offers"
         component={OffersScreen}
-        options={{ title: "Teklifler" }}
+        options={{
+          headerStyle: {
+            headerShown: false,
+          }
+
+        }}
       />
     </LandlordStack.Navigator>
   );
@@ -531,12 +538,14 @@ const LandlordOffersStack = () => {
       <LandlordStack.Screen
         name="ReceivedOffersList"
         component={OffersScreen}
-        options={{ title: "Gelen Teklifler" }}
+        options={{ headerShown: false }}
       />
       <LandlordStack.Screen
         name="PostDetail"
         component={PostDetailScreen}
-        options={{ title: "İlan Detayı" }}
+        options={{
+          headerShown: false,
+        }}
       />
     </LandlordStack.Navigator>
   );
@@ -619,7 +628,9 @@ const TenantHomeStack = () => {
       <TenantStack.Screen
         name="PostDetail"
         component={PostDetailScreen}
-        options={{ title: "İlan Detayı" }}
+        options={{
+          headerShown: false,
+        }}
       />
       <TenantStack.Screen
         name="AllNearbyProperties"
@@ -657,7 +668,9 @@ const TenantPropertiesStack = () => {
       <TenantStack.Screen
         name="PostDetail"
         component={PostDetailScreen}
-        options={{ title: "İlan Detayı" }}
+        options={{
+          headerShown: false,
+        }}
       />
       <TenantStack.Screen
         name="Offers"
@@ -679,7 +692,9 @@ const TenantOffersStack = () => {
       <TenantStack.Screen
         name="PostDetail"
         component={PostDetailScreen}
-        options={{ title: "İlan Detayı" }}
+        options={{
+          headerShown: false,
+        }}
       />
     </TenantStack.Navigator>
   );
