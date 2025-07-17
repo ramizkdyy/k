@@ -1,18 +1,14 @@
-// src/redux/api/apiSlice.js
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-// Define the base URL for the API
-const BASE_URL = "https://kiraxapi.justkey.online/";
+const BASE_URL = "https://kiraxapiyeni.justkey.online/";
 
 export const apiSlice = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
     baseUrl: BASE_URL,
     prepareHeaders: (headers, { getState }) => {
-      // Get the token from the auth state
       const token = getState().auth.token;
 
-      // If we have a token, add it to the headers
       if (token) {
         headers.set("authorization", `Bearer ${token}`);
       }
@@ -46,13 +42,47 @@ export const apiSlice = createApi({
     }),
 
     // Post endpoints
+    // Eski getAllPosts endpoint'i (geriye dönük uyumluluk için)
     getAllPosts: builder.query({
       query: () => "/api/post",
       providesTags: ["Post"],
     }),
+
+    // YENİ: Paginated posts endpoint'i
+    getAllPostsPaginated: builder.query({
+      query: ({ page = 1, pageSize = 10 } = {}) => ({
+        url: `/api/post/GetAllPostPaginated?page=${page}&pageSize=${pageSize}`,
+        method: "GET",
+      }),
+      providesTags: ["Post"],
+      // Pagination için cache merge stratejisi
+      serializeQueryArgs: ({ endpointName }) => {
+        return endpointName;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        // Eğer sayfa 1 ise cache'i sıfırla, yoksa ekle
+        if (arg.page === 1) {
+          return newItems;
+        }
+        // Yeni sayfanın verilerini mevcut cache'e ekle
+        return {
+          ...newItems,
+          data: [...(currentCache?.data || []), ...(newItems?.data || [])],
+        };
+      },
+      forceRefetch({ currentArg, previousArg }) {
+        return currentArg !== previousArg;
+      },
+    }),
+
     getPost: builder.query({
-      query: (id) => `/api/post/${id}`,
-      providesTags: (result, error, id) => [{ type: "Post", id }],
+      query: ({ postId, userId }) => ({
+        url: `/api/post/${postId}?UserId=${userId}`,
+        method: "GET",
+      }),
+      providesTags: (result, error, { postId }) => [
+        { type: "Post", id: postId },
+      ],
     }),
     createPost: builder.mutation({
       query: (postData) => ({
@@ -296,7 +326,8 @@ export const {
   useAssignRoleMutation,
 
   // Post hooks
-  useGetAllPostsQuery,
+  useGetAllPostsQuery, // Eski hook (geriye dönük uyumluluk için)
+  useGetAllPostsPaginatedQuery, // YENİ paginated hook
   useGetPostQuery,
   useCreatePostMutation,
   useUpdatePostMutation,

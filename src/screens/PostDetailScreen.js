@@ -75,7 +75,10 @@ const PostDetailScreen = ({ route, navigation }) => {
   const scrollY = useRef(new Animated.Value(0)).current;
 
   // Get post details
-  const { data, isLoading } = useGetPostQuery(postId);
+  const { data, isLoading } = useGetPostQuery({
+    postId: postId,
+    userId: currentUser.id,
+  });
 
   // Mutations
   const [createOffer, { isLoading: isCreatingOffer }] =
@@ -83,13 +86,15 @@ const PostDetailScreen = ({ route, navigation }) => {
   const [toggleFavoriteProperty] = useToggleFavoritePropertyMutation();
 
   // Extract post and images safely
-  const post = data?.result;
+  const post = data?.result.post;
+  console.log("RESULT:", data?.result);
+
   const images = Array.isArray(post?.postImages) ? post.postImages : [];
 
   useEffect(() => {
-    if (data && data.isSuccess && data.result) {
-      dispatch(setCurrentPost(data.result));
-      console.log("DATA:", data.result);
+    if (data && data.isSuccess && data.result && data.result.post) {
+      dispatch(setCurrentPost(data.result.post));
+      console.log("DATA:", data.result.post);
     }
   }, [data, dispatch]);
 
