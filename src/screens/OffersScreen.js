@@ -7,8 +7,9 @@ import {
   Image,
   RefreshControl,
   ActivityIndicator,
-  FlatList,
   Alert,
+  SafeAreaView,
+  Platform,
 } from "react-native";
 import { useSelector } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
@@ -19,6 +20,7 @@ import {
   useLandlordOfferActionMutation,
 } from "../redux/api/apiSlice";
 import Icon from "react-native-vector-icons/MaterialIcons";
+import { BlurView } from "expo-blur";
 
 const OffersScreen = () => {
   const navigation = useNavigation();
@@ -264,17 +266,17 @@ const OffersScreen = () => {
   const getStatusText = (status) => {
     switch (status) {
       case 0:
-        return { text: "Beklemede", color: "#FFA500" };
+        return { text: "Beklemede", color: "#fff" };
       case 1:
-        return { text: "Kabul Edildi", color: "#4CAF50" };
+        return { text: "Kabul Edildi", color: "#fff" };
       case 2:
-        return { text: "Reddedildi", color: "#F44336" };
+        return { text: "Reddedildi", color: "#fff" };
       default:
-        return { text: "Bilinmiyor", color: "#666" };
+        return { text: "Bilinmiyor", color: "#fff" };
     }
   };
 
-  const renderOfferItem = ({ item }) => {
+  const renderOfferItem = (item, index) => {
     console.log("Rendering offer item:", {
       offerId: item.offerId,
       status: item.status,
@@ -287,130 +289,293 @@ const OffersScreen = () => {
 
     return (
       <TouchableOpacity
-        className="bg-white mx-4 my-2 rounded-lg shadow-md overflow-hidden"
+        key={item.offerId?.toString() || index.toString()}
+        className="px-4 mb-4"
         onPress={() =>
           navigation.navigate("PostDetail", {
             postId: item.postId || post.postId,
           })
         }
+        activeOpacity={1}
       >
-        <View className="flex-row">
-          {/* Post Image */}
-          <View className="w-24 h-24 bg-gray-200">
-            {post.postImages && post.postImages.length > 0 ? (
-              <Image
-                source={{ uri: post.postImages[0].postImageUrl }}
-                className="w-full h-full"
-                resizeMode="cover"
-                onError={(e) =>
-                  console.log("Image load error:", e.nativeEvent.error)
-                }
-              />
-            ) : (
-              <View className="w-full h-full justify-center items-center">
-                <Icon name="image" size={30} color="#999" />
-              </View>
-            )}
-          </View>
+        <View className="bg-white">
+          {/* Main Content Container */}
+          <View className="relative">
+            {/* Post Image */}
+            <View className="relative">
+              {post.postImages && post.postImages.length > 0 ? (
+                <Image
+                  source={{ uri: post.postImages[0].postImageUrl }}
+                  style={{
+                    width: "100%",
+                    height: 280,
+                    borderRadius: 24,
+                  }}
+                  resizeMode="cover"
+                  onError={(e) =>
+                    console.log("Image load error:", e.nativeEvent.error)
+                  }
+                />
+              ) : (
+                <View
+                  style={{
+                    width: "100%",
+                    height: 200,
+                    borderTopLeftRadius: 24,
+                    borderTopRightRadius: 24,
+                  }}
+                  className="bg-gray-100 justify-center items-center"
+                >
+                  <Icon name="image" size={40} color="#9CA3AF" />
+                  <Text className="text-gray-400 text-sm mt-2">Resim yok</Text>
+                </View>
+              )}
 
-          {/* Offer Details */}
-          <View className="flex-1 p-3">
-            <Text className="font-bold text-base mb-1" numberOfLines={1}>
-              {post.ilanBasligi || "İlan Başlığı Yok"}
-            </Text>
+              {/* Status Badge with Blur Effect */}
+              {Platform.OS === 'ios' ? (
+                <BlurView
+                  intensity={80}
+                  tint="light"
+                  style={{
+                    position: 'absolute',
+                    top: 12,
+                    left: 12,
+                    borderRadius: 16,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <View
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: statusInfo.color,
+                        fontSize: 12,
+                        fontWeight: '600'
+                      }}
+                    >
+                      {statusInfo.text}
+                    </Text>
+                  </View>
+                </BlurView>
+              ) : (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 12,
+                    left: 12,
+                    backgroundColor: statusInfo.color + '20',
+                    borderRadius: 16,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: statusInfo.color,
+                      fontSize: 12,
+                      fontWeight: '600'
+                    }}
+                  >
+                    {statusInfo.text}
+                  </Text>
+                </View>
+              )}
 
-            <View className="flex-row items-center mb-1">
-              <Icon name="location-on" size={14} color="#666" />
-              <Text className="text-xs text-gray-600 ml-1" numberOfLines={1}>
-                {post.il && post.il !== "Türkiye" ? post.il : ""}
-                {post.ilce ? `, ${post.ilce}` : ""}
-                {post.mahalle ? `, ${post.mahalle}` : ""}
-              </Text>
-            </View>
-
-            <View className="flex-row items-center mb-2">
-              <Text className="font-bold text-lg text-green-600">
-                {post.paraBirimi === "USD"
-                  ? "$"
-                  : post.paraBirimi === "EUR"
-                    ? "€"
-                    : "₺"}
-                {item.offerAmount?.toLocaleString() || "0"}
-              </Text>
-              {post.kiraFiyati && (
-                <Text className="text-sm text-gray-500 ml-2">
-                  (İlan:{" "}
-                  {post.paraBirimi === "USD"
-                    ? "$"
-                    : post.paraBirimi === "EUR"
-                      ? "€"
-                      : "₺"}
-                  {post.kiraFiyati.toLocaleString()})
-                </Text>
+              {/* Offer Amount Badge */}
+              {Platform.OS === 'ios' ? (
+                <BlurView
+                  intensity={80}
+                  tint="dark"
+                  style={{
+                    position: 'absolute',
+                    top: 12,
+                    right: 12,
+                    borderRadius: 16,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <View
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: 'white',
+                        fontSize: 14,
+                        fontWeight: '700'
+                      }}
+                    >
+                      {post.paraBirimi === "USD"
+                        ? "$"
+                        : post.paraBirimi === "EUR"
+                          ? "€"
+                          : "₺"}
+                      {item.offerAmount?.toLocaleString() || "0"}
+                    </Text>
+                  </View>
+                </BlurView>
+              ) : (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 12,
+                    right: 12,
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                    borderRadius: 16,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: 'white',
+                      fontSize: 14,
+                      fontWeight: '700'
+                    }}
+                  >
+                    {post.paraBirimi === "USD"
+                      ? "$"
+                      : post.paraBirimi === "EUR"
+                        ? "€"
+                        : "₺"}
+                    {item.offerAmount?.toLocaleString() || "0"}
+                  </Text>
+                </View>
               )}
             </View>
 
-            <View className="flex-row items-center justify-between">
-              <View
-                className={`px-2 py-1 rounded-full`}
-                style={{ backgroundColor: statusInfo.color + "20" }}
+            {/* Content Section */}
+            <View className="py-3">
+              {/* Title */}
+              <Text
+                className="font-bold text-lg text-gray-900 mb-2"
+
+                numberOfLines={2}
               >
+                {post.ilanBasligi || "İlan Başlığı Yok"}
+              </Text>
+
+              {/* Location */}
+              <View className="flex-row items-center mb-3">
+                <Icon name="location-on" size={16} color="#6B7280" />
                 <Text
-                  style={{ color: statusInfo.color }}
-                  className="text-xs font-semibold"
+                  className="text-gray-600 ml-1 flex-1"
+                  style={{ fontSize: 12 }}
+                  numberOfLines={1}
                 >
-                  {statusInfo.text}
+                  {post.il && post.il !== "Türkiye" ? post.il : ""}
+                  {post.ilce ? `, ${post.ilce}` : ""}
+                  {post.mahalle ? `, ${post.mahalle}` : ""}
                 </Text>
               </View>
 
-              <Text className="text-xs text-gray-500">
-                {item.offerTime
-                  ? new Date(item.offerTime).toLocaleDateString("tr-TR")
-                  : ""}
-              </Text>
+              {/* Price Comparison */}
+              {post.kiraFiyati && (
+                <View className="rounded-2xl py-2 mb-3">
+                  <View className="flex-row items-center justify-between">
+                    <View className="items-center">
+                      <Text className="text-gray-700 text-[18px] mb-1">İlan Fiyatı</Text>
+                      <Text className="font-semibold text-gray-700">
+                        {post.paraBirimi === "USD"
+                          ? "$"
+                          : post.paraBirimi === "EUR"
+                            ? "€"
+                            : "₺"}
+                        {post.kiraFiyati.toLocaleString()}
+                      </Text>
+                    </View>
+                    <View className="items-center">
+                      <Text className="text-gray-700 text-[18px] mb-1">Verilen Teklif</Text>
+                      <Text className="font-bold text-gray-700">
+                        {post.paraBirimi === "USD"
+                          ? "$"
+                          : post.paraBirimi === "EUR"
+                            ? "€"
+                            : "₺"}
+                        {item.offerAmount?.toLocaleString() || "0"}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {/* Date */}
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="text-gray-400 text-xs">
+                  {item.offerTime
+                    ? new Date(item.offerTime).toLocaleDateString("tr-TR", {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })
+                    : ""}
+                </Text>
+              </View>
+
+              {/* Offer Description */}
+              {item.offerDescription && (
+                <View className="rounded-2xl py-2 mb-3">
+                  <Text className="text-m font-medium mb-1">
+                    Teklif Açıklaması
+                  </Text>
+                  <Text className="text-sm" numberOfLines={3}>
+                    {item.offerDescription}
+                  </Text>
+                </View>
+              )}
+
+              {/* User Info for Landlords */}
+              {isLandlord && item.offeringUser && (
+                <View className="bg-green-50 rounded-2xl p-3 mb-3">
+                  <Text className="text-green-900 text-xs font-medium mb-1">
+                    Teklif Veren
+                  </Text>
+                  <Text className="text-green-800 text-sm font-semibold">
+                    {item.offeringUser.name} {item.offeringUser.surname}
+                  </Text>
+                </View>
+              )}
             </View>
+
+            {/* Action Buttons for Landlords */}
+            {isLandlord && item.status === 0 && (
+              <View className="flex-row gap-3">
+                <TouchableOpacity
+                  className="flex-1 bg-black rounded-2xl justify-center items-center"
+                  style={{ height: 40 }}
+                  onPress={() => handleAcceptOffer(item.offerId)}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    className="text-white text-center font-semibold"
+                    style={{ fontSize: 16, lineHeight: 20 }}
+                  >
+                    Kabul Et
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  className="flex-1 bg-white border-gray-900 border rounded-2xl justify-center items-center"
+                  style={{ height: 40 }}
+                  onPress={() => handleRejectOffer(item.offerId)}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    className="text-gray-900 text-center font-semibold"
+                    style={{ fontSize: 16, lineHeight: 20 }}
+                  >
+                    Reddet
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
-
-        {/* Offer Description */}
-        {item.offerDescription && (
-          <View className="px-3 pb-3 pt-2 border-t border-gray-100">
-            <Text className="text-sm text-gray-600" numberOfLines={2}>
-              {item.offerDescription}
-            </Text>
-          </View>
-        )}
-
-        {/* Action Buttons for Landlords */}
-        {isLandlord && item.status === 0 && (
-          <View className="flex-row border-t border-gray-100">
-            <TouchableOpacity
-              className="flex-1 py-3 bg-green-50"
-              onPress={() => handleAcceptOffer(item.offerId)}
-            >
-              <Text className="text-green-600 text-center font-semibold">
-                Kabul Et
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="flex-1 py-3 bg-red-50"
-              onPress={() => handleRejectOffer(item.offerId)}
-            >
-              <Text className="text-red-600 text-center font-semibold">
-                Reddet
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* User Info for Landlords */}
-        {isLandlord && item.offeringUser && (
-          <View className="px-3 pb-3 pt-2 border-t border-gray-100">
-            <Text className="text-xs text-gray-500">
-              Teklif Veren: {item.offeringUser.name} {item.offeringUser.surname}
-            </Text>
-          </View>
-        )}
       </TouchableOpacity>
     );
   };
@@ -435,27 +600,21 @@ const OffersScreen = () => {
     ];
 
     return (
-      <View className="flex-row bg-white shadow-sm">
+      <View className="flex-row bg-white gap-2 px-4 mb-4">
         {tabs.map((tab) => (
           <TouchableOpacity
             key={tab.key}
-            className={`flex-1 py-3 relative ${selectedTab === tab.key ? "border-b-2 border-green-500" : ""
+            className={`flex-1 border border-gray-900 rounded-full py-3 ${selectedTab === tab.key ? "bg-black border-gray-900" : ""
               }`}
             onPress={() => setSelectedTab(tab.key)}
+            style={{ boxShadow: "0px 0px 12px #00000014" }}
           >
             <Text
-              className={`text-center font-semibold ${selectedTab === tab.key ? "text-green-500" : "text-gray-600"
+              className={`text-center font-semibold ${selectedTab === tab.key ? "text-white" : "text-gray-600"
                 }`}
             >
-              {tab.label}
+              {tab.label} ({tab.count})
             </Text>
-            {tab.count > 0 && (
-              <View className="absolute -top-1 right-4 bg-green-500 rounded-full px-2 py-0.5 min-w-[20px]">
-                <Text className="text-white text-xs text-center">
-                  {tab.count}
-                </Text>
-              </View>
-            )}
           </TouchableOpacity>
         ))}
       </View>
@@ -464,85 +623,85 @@ const OffersScreen = () => {
 
   const renderEmptyState = () => (
     <View className="flex-1 justify-center items-center py-20">
-      {" "}
-      <Icon name="inbox" size={80} color="#ddd" />{" "}
+      <Icon name="inbox" size={80} color="#ddd" />
       <Text className="text-gray-500 text-lg mt-4 text-center">
-        {" "}
-        {selectedTab === "pending" && "Bekleyen teklif bulunmuyor"}{" "}
-        {selectedTab === "accepted" && "Kabul edilen teklif bulunmuyor"}{" "}
-        {selectedTab === "rejected" && "Reddedilen teklif bulunmuyor"}{" "}
-      </Text>{" "}
+        {selectedTab === "pending" && "Bekleyen teklif bulunmuyor"}
+        {selectedTab === "accepted" && "Kabul edilen teklif bulunmuyor"}
+        {selectedTab === "rejected" && "Reddedilen teklif bulunmuyor"}
+      </Text>
       <Text className="text-gray-400 text-sm mt-2 text-center px-8">
-        {" "}
         {isTenant
           ? "Henüz hiç teklif göndermediniz. İlanları inceleyin ve teklif verin."
-          : "Henüz size hiç teklif gelmedi. İlanlarınızı kontrol edin."}{" "}
-      </Text>{" "}
+          : "Henüz size hiç teklif gelmedi. İlanlarınızı kontrol edin."}
+      </Text>
     </View>
   );
+
   if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center bg-gray-50">
-        {" "}
-        <ActivityIndicator size="large" color="#4A90E2" />{" "}
-        <Text className="mt-3 text-gray-500">Teklifler yükleniyor...</Text>{" "}
+        <ActivityIndicator size="large" color="#4A90E2" />
+        <Text className="mt-3 text-gray-500">Teklifler yükleniyor...</Text>
       </View>
     );
   }
+
   if (error) {
     console.log("API Error:", error);
     return (
       <View className="flex-1 justify-center items-center bg-gray-50 px-6">
-        {" "}
-        <Icon name="error-outline" size={60} color="#F44336" />{" "}
+        <Icon name="error-outline" size={60} color="#F44336" />
         <Text className="text-gray-700 text-lg font-semibold mt-4">
-          {" "}
-          Bir hata oluştu{" "}
-        </Text>{" "}
+          Bir hata oluştu
+        </Text>
         <Text className="text-gray-500 text-center mt-2">
-          {" "}
           Teklifler yüklenirken bir problem oluştu. Lütfen daha sonra tekrar
-          deneyin.{" "}
-        </Text>{" "}
+          deneyin.
+        </Text>
         <TouchableOpacity
           className="mt-4 bg-green-500 px-6 py-3 rounded-lg"
           onPress={handleRefresh}
         >
-          {" "}
-          <Text className="text-white font-semibold">Tekrar Dene</Text>{" "}
-        </TouchableOpacity>{" "}
+          <Text className="text-white font-semibold">Tekrar Dene</Text>
+        </TouchableOpacity>
       </View>
     );
   }
+
   return (
-    <View className="flex-1 bg-gray-50">
-      {" "}
-      {/* Header */}{" "}
-      <View className="bg-white shadow-sm px-4 py-3">
-        {" "}
-        <Text className="text-xl font-bold text-gray-800">
-          {" "}
-          {isTenant ? "Gönderdiğim Teklifler" : "Gelen Teklifler"}{" "}
-        </Text>{" "}
-        <Text className="text-sm text-gray-500 mt-1">
-          {" "}
-          Toplam {offers.length} teklif{" "}
-        </Text>{" "}
-      </View>{" "}
-      {/* Tabs */} {renderTabs()} {/* Offers List */}{" "}
-      <FlatList
-        data={filteredOffers}
-        renderItem={renderOfferItem}
-        keyExtractor={(item) =>
-          item.offerId?.toString() || Math.random().toString()
-        }
-        contentContainerStyle={{ paddingVertical: 8 }}
+    <SafeAreaView className="flex-1 bg-white">
+      <ScrollView
+        className="flex-1"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
-        ListEmptyComponent={renderEmptyState()}
-      />{" "}
-    </View>
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 55 }}
+      >
+        {/* Header */}
+        <View className="px-4 py-3">
+          <Text className="text-xl font-bold text-gray-800">
+            {isTenant ? "Gönderdiğim Teklifler" : "Gelen Teklifler"}
+          </Text>
+          <Text className="text-sm text-gray-500 mt-1">
+            Toplam {offers.length} teklif
+          </Text>
+        </View>
+
+        {/* Tabs */}
+        {renderTabs()}
+
+        {/* Offers List */}
+        {filteredOffers.length === 0 ? (
+          renderEmptyState()
+        ) : (
+          <View>
+            {filteredOffers.map((item, index) => renderOfferItem(item, index))}
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 };
+
 export default OffersScreen;
