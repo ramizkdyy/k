@@ -22,7 +22,7 @@ import {
 } from "../redux/slices/postSlice";
 import {
   useGetLandlordPropertyListingsQuery,
-  useGetAllPostsQuery,
+  useGetAllPostsPaginatedQuery, // YENİ: Paginated hook kullanıyoruz
   useDeletePostMutation,
 } from "../redux/api/apiSlice";
 import { useFocusEffect } from "@react-navigation/native";
@@ -53,6 +53,12 @@ const PostsScreen = ({ navigation }) => {
   const currentUser = useSelector(selectCurrentUser);
   const filters = useSelector(selectPostFilters);
   const userPosts = useSelector(selectAllUserPosts);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const PAGE_SIZE = 10;
 
   // Log component mount
   useEffect(() => {
@@ -97,14 +103,22 @@ const PostsScreen = ({ navigation }) => {
     }
   }, [landlordListingsError]);
 
+  // YENİ: Paginated posts query - sadece tenant için
   const {
     data: allPostsData,
     isLoading: isLoadingAllPosts,
+    isFetching: isFetchingAllPosts,
     refetch: refetchAllPosts,
     error: allPostsError,
-  } = useGetAllPostsQuery(undefined, {
-    skip: userRole !== "KIRACI",
-  });
+  } = useGetAllPostsPaginatedQuery(
+    {
+      page: currentPage,
+      pageSize: PAGE_SIZE,
+    },
+    {
+      skip: userRole !== "KIRACI",
+    }
+  );
 
   // Log API errors
   useEffect(() => {
@@ -135,8 +149,14 @@ const PostsScreen = ({ navigation }) => {
   useEffect(() => {
     if (userRole === "KIRACI" && allPostsData) {
       Logger.info(COMPONENT_NAME, "All posts loaded", {
-        count: allPostsData?.result?.length || 0,
+        totalCount: allPostsData?.pagination?.totalCount || 0,
+        currentPage: allPostsData?.pagination?.currentPage || 1,
+        totalPages: allPostsData?.pagination?.totalPages || 1,
+        hasNextPage: allPostsData?.pagination?.hasNextPage || false,
       });
+
+      // Update pagination state
+      setHasNextPage(allPostsData?.pagination?.hasNextPage || false);
     }
   }, [allPostsData, userRole]);
 
@@ -144,6 +164,10 @@ const PostsScreen = ({ navigation }) => {
   useFocusEffect(
     useCallback(() => {
       Logger.info(COMPONENT_NAME, "Screen focused", { userRole });
+
+      // Reset pagination when screen is focused
+      setCurrentPage(1);
+      setHasNextPage(true);
 
       if (userRole === "EVSAHIBI") {
         refetchLandlordListings();
@@ -158,6 +182,9 @@ const PostsScreen = ({ navigation }) => {
     Logger.event("refresh_posts_list", { userRole });
 
     setRefreshing(true);
+    setCurrentPage(1); // Reset to first page
+    setHasNextPage(true);
+
     try {
       if (userRole === "EVSAHIBI") {
         await refetchLandlordListings();
@@ -172,9 +199,39 @@ const PostsScreen = ({ navigation }) => {
     }
   };
 
+  // YENİ: Load more posts function
+  const loadMorePosts = async () => {
+    if (
+      userRole !== "KIRACI" ||
+      !hasNextPage ||
+      isLoadingMore ||
+      isFetchingAllPosts
+    ) {
+      return;
+    }
+
+    Logger.event("load_more_posts", { currentPage: currentPage + 1 });
+
+    setIsLoadingMore(true);
+    setCurrentPage((prevPage) => prevPage + 1);
+
+    try {
+      // RTK Query will automatically handle the new page request
+      // and merge the results based on our merge function in the API slice
+    } catch (error) {
+      Logger.error(COMPONENT_NAME, "Load more failed", error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
   // Apply filters
   const applyFilters = () => {
     Logger.event("apply_filters", localFilters);
+
+    // Reset pagination when applying filters
+    setCurrentPage(1);
+    setHasNextPage(true);
 
     dispatch(
       setPostFilters({
@@ -194,6 +251,10 @@ const PostsScreen = ({ navigation }) => {
   // Reset filters
   const resetFilters = () => {
     Logger.event("reset_filters");
+
+    // Reset pagination when clearing filters
+    setCurrentPage(1);
+    setHasNextPage(true);
 
     setLocalFilters({
       location: "",
@@ -285,8 +346,8 @@ const PostsScreen = ({ navigation }) => {
       // Use API data for landlords, NOT Redux store
       filteredPosts = landlordListingsData?.result || [];
     } else {
-      // For tenants, use data from all posts query
-      filteredPosts = allPostsData?.result || [];
+      // For tenants, use data from paginated posts query
+      filteredPosts = allPostsData?.data || [];
     }
 
     // Apply search query
@@ -519,6 +580,20 @@ const PostsScreen = ({ navigation }) => {
     );
   };
 
+  // YENİ: Render loading more indicator
+  const renderLoadingMore = () => {
+    if (!isLoadingMore) return null;
+
+    return (
+      <View className="py-4 justify-center items-center">
+        <ActivityIndicator size="small" color="#4A90E2" />
+        <Text className="mt-2 text-sm text-gray-500">
+          Daha fazla ilan yükleniyor...
+        </Text>
+      </View>
+    );
+  };
+
   // Render empty state
   const renderEmptyState = () => {
     // Log when no posts are found
@@ -683,9 +758,22 @@ const PostsScreen = ({ navigation }) => {
   // Header with title and filter toggle
   const renderHeader = () => (
     <View className="flex-row justify-between items-center mt-4 mb-4">
-      <Text style={{ fontSize: 14 }} className=" font-medium text-gray-500">
-        {userRole === "EVSAHIBI" ? "Mülklerim" : "İlanlar"}
-      </Text>
+      <View className="flex-col">
+        <Text style={{ fontSize: 14 }} className=" font-medium text-gray-500">
+          {userRole === "EVSAHIBI" ? "Mülklerim" : "İlanlar"}
+        </Text>
+        {/* YENİ: Pagination info for tenants */}
+        {userRole === "KIRACI" && allPostsData?.pagination && (
+          <Text style={{ fontSize: 12 }} className="text-gray-400 mt-1">
+            {allPostsData.pagination.totalCount} ilanın{" "}
+            {Math.min(
+              currentPage * PAGE_SIZE,
+              allPostsData.pagination.totalCount
+            )}{" "}
+            tanesi gösteriliyor
+          </Text>
+        )}
+      </View>
 
       <View className="flex-row">
         {userRole === "EVSAHIBI" && (
@@ -840,13 +928,12 @@ const PostsScreen = ({ navigation }) => {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }}
             ListEmptyComponent={renderEmptyState}
+            ListFooterComponent={renderLoadingMore} // YENİ: Loading more indicator
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
             }
-            onEndReached={() => {
-              Logger.event("end_of_list_reached");
-            }}
-            onEndReachedThreshold={0.5}
+            onEndReached={loadMorePosts} // YENİ: Load more function
+            onEndReachedThreshold={0.3} // YENİ: Trigger earlier for better UX
             // Performance optimizations for image loading
             removeClippedSubviews={true}
             maxToRenderPerBatch={10}
