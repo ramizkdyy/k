@@ -16,7 +16,15 @@ export const apiSlice = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Post", "Offer", "Profile", "User", "Expectation"],
+  tagTypes: [
+    "Post",
+    "Offer",
+    "Profile",
+    "User",
+    "Expectation",
+    "Matching",
+    "Health",
+  ],
   endpoints: (builder) => ({
     // User endpoints
     register: builder.mutation({
@@ -39,6 +47,19 @@ export const apiSlice = createApi({
         method: "POST",
         body: userData,
       }),
+    }),
+    deleteUser: builder.mutation({
+      query: (userId) => ({
+        url: `/api/user/DeleteUser/${userId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["User"],
+    }),
+
+    // Health Check
+    healthCheck: builder.query({
+      query: () => "/api/HealthCheck",
+      providesTags: ["Health"],
     }),
 
     // Post endpoints
@@ -112,6 +133,19 @@ export const apiSlice = createApi({
       invalidatesTags: (result, error, id) => [{ type: "Post", id }],
     }),
 
+    // Post tracking and stats
+    trackPost: builder.mutation({
+      query: ({ postId, userId }) => ({
+        url: `/api/post/track/${postId}?userId=${userId}`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Post"],
+    }),
+    getPostStats: builder.query({
+      query: (postId) => `/api/post/stats/${postId}`,
+      providesTags: (result, error, id) => [{ type: "Post", id }],
+    }),
+
     // Offer endpoints
     createOffer: builder.mutation({
       query: (offerData) => ({
@@ -170,13 +204,90 @@ export const apiSlice = createApi({
       invalidatesTags: ["Offer", "Post"],
     }),
 
-    // ForYou page endpoint
+    // FYP (For You Page) endpoints
     getForYouPage: builder.query({
-      query: ({ userId, latitude, longitude }) => ({
-        url: `/api/Fyp/GetForYourPage?userId=${userId}&latitude=${latitude}&longitude=${longitude}`,
+      query: ({ userId, latitude, longitude, radiusKm = 50, limit = 15 }) => ({
+        url: `/api/Fyp/GetForYourPage?userId=${userId}&latitude=${latitude}&longitude=${longitude}&radiusKm=${radiusKm}&limit=${limit}`,
         method: "GET",
       }),
       providesTags: ["Post"],
+    }),
+
+    // YENİ: Nearby posts paginated endpoint
+    getNearbyPostsPaginated: builder.query({
+      query: ({
+        userId,
+        latitude,
+        longitude,
+        radiusKm = 50,
+        page = 1,
+        pageSize = 10,
+        sortDirection,
+        isMatch = true,
+      }) => {
+        const params = new URLSearchParams();
+        if (userId) params.append("userId", userId);
+        if (latitude !== undefined) params.append("latitude", latitude);
+        if (longitude !== undefined) params.append("longitude", longitude);
+        params.append("radiusKm", radiusKm);
+        params.append("page", page);
+        params.append("pageSize", pageSize);
+        if (sortDirection !== undefined)
+          params.append("sortDirection", sortDirection);
+        params.append("isMatch", isMatch);
+
+        return {
+          url: `/api/Fyp/GetNearbyPostsPaginated?${params.toString()}`,
+          method: "GET",
+        };
+      },
+      providesTags: ["Post"],
+    }),
+
+    // YENİ: Posts sorted endpoint
+    getPostsSorted: builder.query({
+      query: ({
+        userId,
+        page = 1,
+        pageSize = 10,
+        sortBy,
+        sortDirection,
+        isMatch = false,
+      }) => ({
+        url: `/api/Fyp/GetPostsSorted?userId=${userId}&page=${page}&pageSize=${pageSize}&sortBy=${sortBy}&sortDirection=${sortDirection}&isMatch=${isMatch}`,
+        method: "GET",
+      }),
+      providesTags: ["Post"],
+    }),
+
+    // YENİ: Matching endpoints
+    getBestTenant: builder.query({
+      query: (landlordUserId) => `/api/Matching/best-tenant/${landlordUserId}`,
+      providesTags: ["Matching"],
+    }),
+    getBestLandlord: builder.query({
+      query: (tenantUserId) => `/api/Matching/best-landlord/${tenantUserId}`,
+      providesTags: ["Matching"],
+    }),
+    getMatchingScore: builder.query({
+      query: ({ tenantUserId, landlordUserId }) =>
+        `/api/Matching/score/${tenantUserId}/${landlordUserId}`,
+      providesTags: ["Matching"],
+    }),
+    getTopTenants: builder.query({
+      query: ({ landlordUserId, count = 5 }) =>
+        `/api/Matching/top-tenants/${landlordUserId}?count=${count}`,
+      providesTags: ["Matching"],
+    }),
+    getTopLandlords: builder.query({
+      query: ({ tenantUserId, count = 5 }) =>
+        `/api/Matching/top-landlords/${tenantUserId}?count=${count}`,
+      providesTags: ["Matching"],
+    }),
+    getTopPostsForTenant: builder.query({
+      query: ({ tenantUserId, count = 15 }) =>
+        `/api/Matching/top-posts-tenant/${tenantUserId}?count=${count}`,
+      providesTags: ["Matching"],
     }),
 
     // Profile endpoints
@@ -315,6 +426,139 @@ export const apiSlice = createApi({
         { type: "User", id: userId },
       ],
     }),
+
+    // YENİ: Seed endpoints
+    getSeedStatus: builder.query({
+      query: () => "/api/Seed/status",
+      providesTags: ["Health"],
+    }),
+    runSeed: builder.mutation({
+      query: () => ({
+        url: "/api/Seed/seed",
+        method: "POST",
+      }),
+      invalidatesTags: ["Post", "Profile", "User"],
+    }),
+    runSeedForce: builder.mutation({
+      query: () => ({
+        url: "/api/Seed/seed-force",
+        method: "POST",
+      }),
+      invalidatesTags: ["Post", "Profile", "User"],
+    }),
+
+    // YENİ: Callback endpoints (bunları genellikle client tarafında kullanmazsınız, backend için)
+    postUploadImageStatus: builder.mutation({
+      query: (data) => ({
+        url: "/api/PostCallBack/PostUploadImageStatus",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    postUpdateImageStatus: builder.mutation({
+      query: (data) => ({
+        url: "/api/PostCallBack/UpdateImageStatus",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    postDeleteImageStatus: builder.mutation({
+      query: (data) => ({
+        url: "/api/PostCallBack/PostDeleteImageStatus",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    postSensorImageStatus: builder.mutation({
+      query: (data) => ({
+        url: "/api/PostCallBack/PostSensorImageStatus",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    postUpdateTextStatus: builder.mutation({
+      query: (data) => ({
+        url: "/api/PostCallBack/PostUpdateTextStatus",
+        method: "POST",
+        body: data,
+      }),
+    }),
+
+    // YENİ: Landlord Profile Callback endpoints
+    landlordProfileUploadImageStatus: builder.mutation({
+      query: (data) => ({
+        url: "/api/LandLordProfileCallback/LandLordProfileUploadImageStatus",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    landlordProfileUpdateImageStatus: builder.mutation({
+      query: (data) => ({
+        url: "/api/LandLordProfileCallback/UpdateImageStatus",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    landlordProfileDeleteImageStatus: builder.mutation({
+      query: (data) => ({
+        url: "/api/LandLordProfileCallback/LandLordProfileDeleteImageStatus",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    landlordProfileSensorImageStatus: builder.mutation({
+      query: (data) => ({
+        url: "/api/LandLordProfileCallback/LandLordProfileSensorImageStatus",
+        method: "POST",
+        body: data,
+      }),
+    }),
+
+    // YENİ: Tenant Profile Callback endpoints
+    tenantProfileUploadImageStatus: builder.mutation({
+      query: (data) => ({
+        url: "/api/TenantProfileCallback/TenantProfileUploadImageStatus",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    tenantProfileUpdateImageStatus: builder.mutation({
+      query: (data) => ({
+        url: "/api/TenantProfileCallback/UpdateImageStatus",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    tenantProfileDeleteImageStatus: builder.mutation({
+      query: (data) => ({
+        url: "/api/TenantProfileCallback/TenantProfileDeleteImageStatus",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    tenantProfileSensorImageStatus: builder.mutation({
+      query: (data) => ({
+        url: "/api/TenantProfileCallback/TenantProfileSensorImageStatus",
+        method: "POST",
+        body: data,
+      }),
+    }),
+
+    // YENİ: Profile Callback endpoints
+    profileUploadImageStatus: builder.mutation({
+      query: (data) => ({
+        url: "/api/ProfileCallBack/ProfileUploadImageStatus",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    profileSensorImageStatus: builder.mutation({
+      query: (data) => ({
+        url: "/api/ProfileCallBack/ProfileSensorImageStatus",
+        method: "POST",
+        body: data,
+      }),
+    }),
   }),
 });
 
@@ -324,6 +568,10 @@ export const {
   useRegisterMutation,
   useLoginMutation,
   useAssignRoleMutation,
+  useDeleteUserMutation,
+
+  // Health hooks
+  useHealthCheckQuery,
 
   // Post hooks
   useGetAllPostsQuery, // Eski hook (geriye dönük uyumluluk için)
@@ -332,9 +580,21 @@ export const {
   useCreatePostMutation,
   useUpdatePostMutation,
   useDeletePostMutation,
+  useTrackPostMutation,
+  useGetPostStatsQuery,
 
-  //ForYou hooks
+  // FYP hooks
   useGetForYouPageQuery,
+  useGetNearbyPostsPaginatedQuery,
+  useGetPostsSortedQuery,
+
+  // Matching hooks
+  useGetBestTenantQuery,
+  useGetBestLandlordQuery,
+  useGetMatchingScoreQuery,
+  useGetTopTenantsQuery,
+  useGetTopLandlordsQuery,
+  useGetTopPostsForTenantQuery,
 
   // Offer hooks
   useCreateOfferMutation,
@@ -370,4 +630,32 @@ export const {
   useGetTenantExpectationByIdQuery,
   useUpdateLandlordExpectationMutation,
   useUpdateTenantExpectationMutation,
+
+  // Seed hooks
+  useGetSeedStatusQuery,
+  useRunSeedMutation,
+  useRunSeedForceMutation,
+
+  // Callback hooks (genellikle client tarafında kullanılmaz)
+  usePostUploadImageStatusMutation,
+  usePostUpdateImageStatusMutation,
+  usePostDeleteImageStatusMutation,
+  usePostSensorImageStatusMutation,
+  usePostUpdateTextStatusMutation,
+
+  // Landlord Profile Callback hooks
+  useLandlordProfileUploadImageStatusMutation,
+  useLandlordProfileUpdateImageStatusMutation,
+  useLandlordProfileDeleteImageStatusMutation,
+  useLandlordProfileSensorImageStatusMutation,
+
+  // Tenant Profile Callback hooks
+  useTenantProfileUploadImageStatusMutation,
+  useTenantProfileUpdateImageStatusMutation,
+  useTenantProfileDeleteImageStatusMutation,
+  useTenantProfileSensorImageStatusMutation,
+
+  // Profile Callback hooks
+  useProfileUploadImageStatusMutation,
+  useProfileSensorImageStatusMutation,
 } = apiSlice;

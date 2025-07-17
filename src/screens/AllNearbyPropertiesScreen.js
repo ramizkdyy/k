@@ -16,7 +16,7 @@ import {
 import { Image } from "expo-image";
 import { useSelector } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
-import { useGetForYouPageQuery } from "../redux/api/apiSlice";
+import { useGetNearbyPostsPaginatedQuery } from "../redux/api/apiSlice";
 import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
@@ -38,8 +38,229 @@ import {
   faFilter,
   faSliders,
 } from "@fortawesome/pro-regular-svg-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
+
+// Skeleton Components
+const ShimmerPlaceholder = ({ width, height, borderRadius = 8, style }) => {
+  const animatedValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const shimmerAnimation = Animated.loop(
+      Animated.timing(animatedValue, {
+        toValue: 1,
+        duration: 2000,
+        useNativeDriver: true,
+      }),
+      { iterations: -1 }
+    );
+
+    shimmerAnimation.start();
+
+    return () => shimmerAnimation.stop();
+  }, [animatedValue]);
+
+  const translateX = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-width * 1.5, width * 1.5],
+    extrapolate: "clamp",
+  });
+
+  return (
+    <View
+      style={[
+        {
+          width,
+          height,
+          borderRadius,
+          backgroundColor: "#E5E7EB",
+          overflow: "hidden",
+        },
+        style,
+      ]}
+    >
+      <Animated.View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          transform: [{ translateX }],
+        }}
+      >
+        <LinearGradient
+          colors={[
+            "rgba(255, 255, 255, 0)",
+            "rgba(255, 255, 255, 0.4)",
+            "rgba(255, 255, 255, 0.8)",
+            "rgba(255, 255, 255, 0.4)",
+            "rgba(255, 255, 255, 0)",
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={{
+            width: width * 1.5,
+            height: "100%",
+          }}
+        />
+      </Animated.View>
+    </View>
+  );
+};
+
+const PropertyListItemSkeleton = () => {
+  return (
+    <View
+      style={{ marginHorizontal: 16 }}
+      className="overflow-hidden mb-4 pt-6 border-b border-gray-200"
+    >
+      {/* Image Skeleton */}
+      <View className="relative">
+        <ShimmerPlaceholder width={width - 32} height={350} borderRadius={25} />
+
+        {/* Distance badge skeleton */}
+        <View className="absolute top-3 left-3">
+          <ShimmerPlaceholder width={70} height={28} borderRadius={14} />
+        </View>
+
+        {/* Status badge skeleton */}
+        <View className="absolute top-3 right-3">
+          <ShimmerPlaceholder width={50} height={28} borderRadius={14} />
+        </View>
+
+        {/* Pagination dots skeleton */}
+        <View className="absolute bottom-3 left-0 right-0 flex-row justify-center">
+          <View className="flex-row">
+            {[1, 2, 3].map((_, index) => (
+              <View
+                key={index}
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  marginHorizontal: 4,
+                  backgroundColor: "rgba(255, 255, 255, 0.5)",
+                }}
+              />
+            ))}
+          </View>
+        </View>
+      </View>
+
+      <View className="mt-4 px-1">
+        {/* Title Skeleton */}
+        <View className="items-start mb-1">
+          <ShimmerPlaceholder
+            width={width - 80}
+            height={20}
+            borderRadius={10}
+            style={{ marginBottom: 8 }}
+          />
+          <ShimmerPlaceholder
+            width={width - 120}
+            height={16}
+            borderRadius={8}
+          />
+        </View>
+
+        {/* Location Skeleton */}
+        <View className="mb-2 mt-2">
+          <ShimmerPlaceholder width={150} height={14} borderRadius={7} />
+        </View>
+
+        {/* Price Skeleton */}
+        <View className="flex-row items-center mb-3">
+          <ShimmerPlaceholder width={120} height={18} borderRadius={9} />
+          <View className="ml-2">
+            <ShimmerPlaceholder width={25} height={14} borderRadius={7} />
+          </View>
+        </View>
+
+        {/* Property Details Slider Skeleton */}
+        <View className="mt-3">
+          <View className="flex-row">
+            {[1, 2, 3, 4, 5].map((_, index) => (
+              <View
+                key={index}
+                className="items-center justify-center"
+                style={{
+                  marginRight: 46,
+                  marginLeft: 3,
+                  height: 85,
+                }}
+              >
+                {/* Icon skeleton */}
+                <ShimmerPlaceholder width={30} height={30} borderRadius={15} />
+
+                {/* Value skeleton */}
+                <ShimmerPlaceholder
+                  width={40}
+                  height={16}
+                  borderRadius={8}
+                  style={{ marginTop: 8 }}
+                />
+
+                {/* Label skeleton */}
+                <ShimmerPlaceholder
+                  width={35}
+                  height={11}
+                  borderRadius={5}
+                  style={{ marginTop: 4 }}
+                />
+              </View>
+            ))}
+          </View>
+        </View>
+      </View>
+
+      {/* User Profile Section Skeleton */}
+      <View className="flex flex-col">
+        <View className="mb-5 pl-1 mt-3">
+          <View className="flex-1 flex-row justify-between items-center w-full">
+            {/* User info skeleton */}
+            <View className="flex-row items-center">
+              {/* Profile image skeleton */}
+              <ShimmerPlaceholder
+                width={48}
+                height={48}
+                borderRadius={24}
+                style={{ marginRight: 12 }}
+              />
+
+              <View className="flex-col">
+                {/* Name skeleton */}
+                <ShimmerPlaceholder
+                  width={120}
+                  height={14}
+                  borderRadius={7}
+                  style={{ marginBottom: 4 }}
+                />
+
+                {/* Rating skeleton */}
+                <ShimmerPlaceholder width={80} height={12} borderRadius={6} />
+              </View>
+            </View>
+
+            {/* Time skeleton */}
+            <ShimmerPlaceholder width={60} height={12} borderRadius={6} />
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const PropertyListLoadingSkeleton = ({ count = 2 }) => {
+  return (
+    <View>
+      {Array.from({ length: count }).map((_, index) => (
+        <PropertyListItemSkeleton key={`property-skeleton-${index}`} />
+      ))}
+    </View>
+  );
+};
 
 const AllNearbyPropertiesScreen = ({ navigation, route }) => {
   const currentUser = useSelector(selectCurrentUser);
@@ -52,8 +273,16 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
   const [locationLoading, setLocationLoading] = useState(!initialLocation);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("distance"); // distance, price, date
+  const [sortBy, setSortBy] = useState(0); // 0: distance, 1: price, 2: date, 3: match, 4: updated
+  const [sortDirection, setSortDirection] = useState(0); // 0: ASC, 1: DESC
   const [isMapView, setIsMapView] = useState(false);
+  const [isMatch, setIsMatch] = useState(false);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [allProperties, setAllProperties] = useState([]);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasNextPage, setHasNextPage] = useState(true);
 
   // OPTIMIZE EDİLDİ: Native driver ile animated değerler
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -84,6 +313,13 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
       getCurrentLocation();
     }
   }, [initialLocation]);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+    setAllProperties([]);
+    setHasNextPage(true);
+  }, [sortBy, sortDirection, isMatch, userLocation]);
 
   const getCurrentLocation = async () => {
     try {
@@ -117,17 +353,22 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
     }
   };
 
-  // Fetch nearby properties
+  // Fetch nearby properties with pagination
   const {
     data: nearbyData,
     isLoading: isLoadingNearby,
     error,
     refetch,
-  } = useGetForYouPageQuery(
+  } = useGetNearbyPostsPaginatedQuery(
     {
       userId: currentUser?.id,
       latitude: userLocation?.latitude,
       longitude: userLocation?.longitude,
+      radiusKm: 50,
+      page: currentPage,
+      pageSize: 10,
+      sortDirection: sortDirection,
+      isMatch: isMatch,
     },
     {
       skip: !userLocation || !currentUser?.id,
@@ -135,27 +376,85 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
     }
   );
 
-  const nearbyProperties = nearbyData?.result?.bestForYou || [];
-  const nearFromYouProperties = nearbyData?.result?.nearFromYou || [];
+  // Update properties when new data arrives
+  useEffect(() => {
+    if (nearbyData?.data) {
+      const newProperties = nearbyData.data;
+      const pagination = nearbyData.pagination;
 
-  // Combine and deduplicate properties
-  const allProperties = React.useMemo(() => {
-    const combined = [...nearFromYouProperties, ...nearbyProperties];
-
-    // Remove duplicates based on postId
-    const uniqueProperties = combined.reduce((acc, current) => {
-      const isDuplicate = acc.find((item) => item.postId === current.postId);
-      if (!isDuplicate) {
-        acc.push(current);
+      if (currentPage === 1) {
+        // First page or refresh - replace all data
+        setAllProperties(newProperties);
+      } else {
+        // Subsequent pages - append to existing data
+        setAllProperties((prev) => {
+          // Remove duplicates based on postId
+          const existingIds = new Set(prev.map((item) => item.postId));
+          const uniqueNewItems = newProperties.filter(
+            (item) => !existingIds.has(item.postId)
+          );
+          return [...prev, ...uniqueNewItems];
+        });
       }
-      return acc;
-    }, []);
 
-    return uniqueProperties;
-  }, [nearFromYouProperties, nearbyProperties]);
+      // Update pagination state
+      setHasNextPage(pagination?.hasNextPage || false);
+    }
+  }, [nearbyData, currentPage]);
 
-  // Filter and sort properties
-  const getFilteredAndSortedProperties = () => {
+  // DÜZELTME: Client-side sorting function
+  const getSortedProperties = (properties) => {
+    if (!properties || properties.length === 0) return [];
+
+    let sortedProperties = [...properties];
+
+    switch (sortBy) {
+      case 0: // distance
+        sortedProperties.sort((a, b) => {
+          const distanceA = a.distance || 999;
+          const distanceB = b.distance || 999;
+          return sortDirection === 0
+            ? distanceA - distanceB
+            : distanceB - distanceA;
+        });
+        break;
+      case 1: // price
+        sortedProperties.sort((a, b) => {
+          const priceA = a.kiraFiyati || 0;
+          const priceB = b.kiraFiyati || 0;
+          return sortDirection === 0 ? priceA - priceB : priceB - priceA;
+        });
+        break;
+      case 2: // date
+        sortedProperties.sort((a, b) => {
+          const dateA = new Date(a.postTime || 0);
+          const dateB = new Date(b.postTime || 0);
+          return sortDirection === 0 ? dateA - dateB : dateB - dateA;
+        });
+        break;
+      case 3: // match score
+        sortedProperties.sort((a, b) => {
+          const matchA = a.matchScore || 0;
+          const matchB = b.matchScore || 0;
+          return sortDirection === 0 ? matchA - matchB : matchB - matchA;
+        });
+        break;
+      case 4: // updated date
+        sortedProperties.sort((a, b) => {
+          const dateA = new Date(a.updatedDate || a.postTime || 0);
+          const dateB = new Date(b.updatedDate || b.postTime || 0);
+          return sortDirection === 0 ? dateA - dateB : dateB - dateA;
+        });
+        break;
+      default:
+        break;
+    }
+
+    return sortedProperties;
+  };
+
+  // Filter properties based on search query
+  const getFilteredProperties = () => {
     let filteredProperties = [...allProperties];
 
     // Apply search filter
@@ -172,41 +471,26 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
       );
     }
 
-    // Apply sorting
-    switch (sortBy) {
-      case "distance":
-        filteredProperties.sort((a, b) => {
-          const distanceA = a.distanceInKM || 999;
-          const distanceB = b.distanceInKM || 999;
-          return distanceA - distanceB;
-        });
-        break;
-      case "price":
-        filteredProperties.sort((a, b) => {
-          const priceA = a.kiraFiyati || 0;
-          const priceB = b.kiraFiyati || 0;
-          return priceA - priceB;
-        });
-        break;
-      case "date":
-        filteredProperties.sort((a, b) => {
-          const dateA = new Date(a.createdDate || 0);
-          const dateB = new Date(b.createdDate || 0);
-          return dateB - dateA; // Newest first
-        });
-        break;
-      default:
-        break;
-    }
-
-    return filteredProperties;
+    // Apply client-side sorting
+    return getSortedProperties(filteredProperties);
   };
 
-  const filteredProperties = getFilteredAndSortedProperties();
+  const filteredProperties = getFilteredProperties();
+
+  // Handle load more
+  const handleLoadMore = () => {
+    if (!isLoadingMore && hasNextPage && !isLoadingNearby) {
+      setIsLoadingMore(true);
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
 
   // Handle refresh
   const onRefresh = async () => {
     setRefreshing(true);
+    setCurrentPage(1);
+    setAllProperties([]);
+    setHasNextPage(true);
     try {
       await refetch();
     } catch (error) {
@@ -215,6 +499,33 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
       setRefreshing(false);
     }
   };
+
+  // DÜZELTME: Sort handling
+  const handleSortChange = (newSortBy) => {
+    if (newSortBy === sortBy) {
+      // Same sort option - toggle direction
+      setSortDirection((prev) => (prev === 0 ? 1 : 0));
+    } else {
+      // Different sort option - set new sort and default direction
+      setSortBy(newSortBy);
+      setSortDirection(0); // Default to ascending
+    }
+  };
+
+  // DÜZELTME: Sort options mapping
+  const sortOptions = [
+    { key: 0, label: "Uzaklık" },
+    { key: 1, label: "Fiyat" },
+    { key: 2, label: "Tarih" },
+    { key: 3, label: "Eşleşme" },
+  ];
+
+  // Loading state effect
+  useEffect(() => {
+    if (currentPage > 1) {
+      setIsLoadingMore(false);
+    }
+  }, [nearbyData]);
 
   // Relative time function
   const getRelativeTime = (postTime) => {
@@ -267,9 +578,8 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
     }
   };
 
-  // YENİ: Property Details Free Drag Slider Component
+  // Property Details Free Drag Slider Component
   const PropertyDetailsSlider = ({ item }) => {
-    // Property özelliklerini array olarak hazırlıyoruz
     const propertyDetails = [
       {
         id: "rooms",
@@ -308,7 +618,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
         label: "Aidat",
       },
       {
-        id: "deposit", // DÜZELTME: Boş string yerine benzersiz id
+        id: "deposit",
         icon: faCoins,
         value: item.depozito ? `${item.depozito}₺` : "Yok",
         label: "Depozito",
@@ -327,7 +637,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
         >
           {propertyDetails.map((detail, index) => (
             <View
-              key={`${detail.id}-${index}`} // DÜZELTME: Benzersiz key
+              key={`${detail.id}-${index}`}
               className="items-center justify-center rounded-2xl"
               style={{
                 width: "fit-content",
@@ -359,7 +669,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
   };
 
   // Simple and reliable image slider component
-  const PropertyImageSlider = ({ images, distanceInKM, status, postId }) => {
+  const PropertyImageSlider = ({ images, distance, status, postId }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const scrollViewRef = useRef(null);
 
@@ -426,23 +736,31 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
           ))}
         </ScrollView>
 
-        {/* Distance badge - DÜZELTME: Güvenli conditional rendering */}
-        {!!(distanceInKM && distanceInKM > 0) && (
-          <View className="absolute top-3 left-3">
-            <View className="bg-green-500/90 backdrop-blur-sm px-3 py-1.5 rounded-full flex-row items-center">
+        {/* Distance badge */}
+        {!!(distance && distance > 0) && (
+          <BlurView
+            style={{ boxShadow: "0px 0px 12px #00000012" }}
+            intensity={100}
+            className="absolute top-3 left-3 rounded-full overflow-hidden"
+          >
+            <View className="px-3 py-1.5 rounded-full flex-row items-center">
               <MaterialIcons name="location-on" size={12} color="white" />
               <Text className="text-white text-xs font-semibold ml-1">
-                {distanceInKM.toFixed(1)} km
+                {distance.toFixed(1)} km
               </Text>
             </View>
-          </View>
+          </BlurView>
         )}
 
         {/* Status badge */}
         <View className="absolute top-3 right-3">
           <BlurView
-            intensity={90}
-            style={{ overflow: "hidden", borderRadius: 100 }}
+            intensity={100}
+            style={{
+              overflow: "hidden",
+              borderRadius: 100,
+              boxShadow: "0px 0px 12px #00000012",
+            }}
             className="px-3 py-1.5 rounded-full"
           >
             <Text className="text-white text-xs font-semibold">
@@ -451,7 +769,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
           </BlurView>
         </View>
 
-        {/* Pagination dots - DÜZELTME: Güvenli conditional rendering */}
+        {/* Pagination dots */}
         {!!(images && images.length > 1) && (
           <View className="absolute bottom-3 left-0 right-0 flex-row justify-center">
             <View
@@ -487,13 +805,15 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
     );
   };
 
+  console.log("filteredProperties:", filteredProperties);
+
   // Render property item
   const renderPropertyItem = ({ item }) => (
     <View
       style={{ marginHorizontal: 16 }}
       className="overflow-hidden mb-4 pt-6 border-b border-gray-200"
     >
-      {/* Image slider - OnPress sadece burada */}
+      {/* Image slider */}
       <TouchableOpacity
         onPress={() =>
           navigation.navigate("PostDetail", { postId: item.postId })
@@ -502,7 +822,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
       >
         <PropertyImageSlider
           images={item.postImages}
-          distanceInKM={item.distanceInKM}
+          distance={item.distance}
           status={item.status}
           postId={item.postId}
         />
@@ -541,7 +861,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
           <Text className="text-sm text-gray-400 ml-1">/ay</Text>
         </View>
 
-        {/* YENİ: Property details slider */}
+        {/* Property details slider */}
         <PropertyDetailsSlider item={item} />
       </View>
       <View className="flex flex-col">
@@ -550,7 +870,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
             className="flex-row items-center"
             onPress={() =>
               navigation.navigate("LandlordProfile", {
-                userId: item.landlordId,
+                userId: item.userId,
               })
             }
           >
@@ -559,7 +879,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
                 className="flex-row items-center"
                 onPress={() =>
                   navigation.navigate("LandlordProfile", {
-                    userId: item.landlordId,
+                    userId: item.userId,
                   })
                 }
               >
@@ -587,7 +907,9 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
                   </Text>
                   <View className="flex flex-row items-center gap-1">
                     <Text style={{ fontSize: 12 }} className="text-gray-500">
-                      Rating
+                      {item.matchScore
+                        ? `Skor: ${item.matchScore.toFixed(1)}`
+                        : "Rating"}
                     </Text>
                   </View>
                 </View>
@@ -604,6 +926,13 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
       </View>
     </View>
   );
+
+  // Render load more footer - UPDATED with skeleton
+  const renderFooter = () => {
+    if (!isLoadingMore) return null;
+
+    return <PropertyListLoadingSkeleton count={2} />;
+  };
 
   // Render empty state
   const renderEmptyState = () => (
@@ -669,14 +998,13 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Fixed search bar - İLK DOSYADAN GETİRİLEN HEADER */}
+      {/* Fixed search bar */}
       <View className="bg-white border-b border-gray-200 z-10">
         <View className="flex flex-row items-center px-5">
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={{ width: "8%" }}
           >
-            {" "}
             <FontAwesomeIcon icon={faChevronLeft} color="black" size={25} />
           </TouchableOpacity>
 
@@ -699,15 +1027,20 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
             </View>
           </View>
           <View style={{ width: "8%" }}>
-            {" "}
-            <FontAwesomeIcon icon={faSliders} color="black" size={20} />
+            <TouchableOpacity onPress={() => setIsMatch(!isMatch)}>
+              <FontAwesomeIcon
+                icon={faSliders}
+                color={isMatch ? "#4A90E2" : "black"}
+                size={20}
+              />
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* OPTIMIZE EDİLDİ: Container height da animate ediliyor */}
+        {/* Filter container */}
         <Animated.View
           style={{
-            height: containerHeight, // Container yüksekliği de küçülür
+            height: containerHeight,
             overflow: "hidden",
           }}
         >
@@ -722,11 +1055,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
             }}
           >
             <View className="flex-row">
-              {[
-                { key: "distance", label: "Uzaklık" },
-                { key: "price", label: "Fiyat" },
-                { key: "date", label: "Tarih" },
-              ].map((option) => (
+              {sortOptions.map((option) => (
                 <TouchableOpacity
                   key={option.key}
                   className={`mr-3 px-4 py-2 rounded-full border ${
@@ -734,7 +1063,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
                       ? "bg-gray-900"
                       : "bg-white border-white"
                   }`}
-                  onPress={() => setSortBy(option.key)}
+                  onPress={() => handleSortChange(option.key)}
                 >
                   <Text
                     className={`text-sm font-medium ${
@@ -742,6 +1071,11 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
                     }`}
                   >
                     {option.label}
+                    {sortBy === option.key && (
+                      <Text className="ml-1">
+                        {sortDirection === 0 ? "↑" : "↓"}
+                      </Text>
+                    )}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -750,20 +1084,23 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
         </Animated.View>
       </View>
 
-      {/* OPTIMIZE EDİLDİ: Native driver ile scroll tracking */}
+      {/* Properties list with pagination */}
       <Animated.FlatList
         data={filteredProperties}
         renderItem={renderPropertyItem}
         keyExtractor={(item, index) => `nearby_${item.postId}_${index}`}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderEmptyState}
+        ListFooterComponent={renderFooter}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.1}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           {
-            useNativeDriver: false, // Height animasyonu için false gerekli
+            useNativeDriver: false,
           }
         )}
-        scrollEventThrottle={1} // Daha smooth animasyon için düşük değer
+        scrollEventThrottle={1}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
