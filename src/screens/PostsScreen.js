@@ -10,6 +10,7 @@ import {
   Alert,
   SafeAreaView,
   StatusBar,
+  ScrollView
 } from "react-native";
 import { Image } from "expo-image";
 import { useSelector, useDispatch } from "react-redux";
@@ -32,6 +33,8 @@ import { faPlus, faSliders } from "@fortawesome/pro-regular-svg-icons";
 import { faSearch } from "@fortawesome/pro-solid-svg-icons";
 import { BlurView } from "expo-blur";
 import { faEdit, faTrash } from "@fortawesome/pro-light-svg-icons";
+import PropertiesFilterModal from '../modals/PropertiesFilterModal';
+
 
 // Logger utility
 const Logger = {
@@ -79,7 +82,12 @@ const PostsScreen = ({ navigation }) => {
     location: filters.location || "",
     priceMin: filters.priceMin ? String(filters.priceMin) : "",
     priceMax: filters.priceMax ? String(filters.priceMax) : "",
-    status: filters.status,
+    quickPrice: filters.quickPrice || null, // Hızlı fiyat seçenekleri için
+    rooms: filters.rooms || null,
+    propertyType: filters.propertyType || null,
+    features: filters.features || {},
+    status: filters.status || null,
+    sortBy: filters.sortBy || null,
   });
 
   // API calls based on user role
@@ -248,7 +256,7 @@ const PostsScreen = ({ navigation }) => {
     setIsFilterVisible(false);
   };
 
-  // Reset filters
+  // Basitleştirilmiş resetFilters fonksiyonu
   const resetFilters = () => {
     Logger.event("reset_filters");
 
@@ -260,8 +268,15 @@ const PostsScreen = ({ navigation }) => {
       location: "",
       priceMin: "",
       priceMax: "",
+      quickPrice: null,
+      rooms: null,
+      propertyType: null,
+      features: {},
       status: null,
-    });
+      sortBy: null,
+    };
+
+    setLocalFilters(emptyFilters);
     dispatch(clearPostFilters());
     setIsFilterVisible(false);
   };
@@ -337,8 +352,9 @@ const PostsScreen = ({ navigation }) => {
     navigation.navigate("CreatePost");
   };
 
-  // Filter and search posts
+  // Basitleştirilmiş filtreleme fonksiyonu - sadece temel filtreler
   const getFilteredPosts = () => {
+
     let filteredPosts = [];
 
     // Get the appropriate posts based on user role
@@ -350,64 +366,85 @@ const PostsScreen = ({ navigation }) => {
       filteredPosts = allPostsData?.data || [];
     }
 
-    // Apply search query
+    // Arama sorgusu filtresi
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filteredPosts = filteredPosts.filter(
-        (post) =>
-          (post.ilanBasligi &&
-            post.ilanBasligi.toLowerCase().includes(query)) ||
-          (post.il && post.il.toLowerCase().includes(query)) ||
-          (post.postDescription &&
-            post.postDescription.toLowerCase().includes(query))
+      posts = posts.filter(post =>
+        (post.ilanBasligi && post.ilanBasligi.toLowerCase().includes(query)) ||
+        (post.il && post.il.toLowerCase().includes(query)) ||
+        (post.ilce && post.ilce.toLowerCase().includes(query))
       );
     }
 
-    // Apply filters
+    // Konum filtresi
     if (filters.location) {
-      filteredPosts = filteredPosts.filter(
-        (post) =>
-          post.il &&
-          post.il.toLowerCase().includes(filters.location.toLowerCase())
+      const location = filters.location.toLowerCase();
+      posts = posts.filter(post =>
+        (post.il && post.il.toLowerCase().includes(location)) ||
+        (post.ilce && post.ilce.toLowerCase().includes(location))
       );
     }
 
-    if (filters.priceMin !== null) {
-      filteredPosts = filteredPosts.filter(
-        (post) => post.kiraFiyati && post.kiraFiyati >= filters.priceMin
+    // Fiyat aralığı filtresi
+    if (filters.priceMin || filters.priceMax) {
+      posts = posts.filter(post => {
+        const price = post.kiraFiyati || 0;
+        const minPrice = filters.priceMin || 0;
+        const maxPrice = filters.priceMax || Infinity;
+        return price >= minPrice && price <= maxPrice;
+      });
+    }
+
+    // Oda sayısı filtresi
+    if (filters.rooms) {
+      posts = posts.filter(post => {
+        if (filters.rooms === '5+') {
+          return (post.odaSayisi || 0) >= 5;
+        }
+        return String(post.odaSayisi) === filters.rooms;
+      });
+    }
+
+    // Emlak tipi filtresi
+    if (filters.propertyType) {
+      posts = posts.filter(post =>
+        post.propertyType && post.propertyType.toLowerCase() === filters.propertyType.toLowerCase()
       );
     }
 
-    if (filters.priceMax !== null) {
-      filteredPosts = filteredPosts.filter(
-        (post) => post.kiraFiyati && post.kiraFiyati <= filters.priceMax
-      );
+    // Temel özellikler filtresi
+    if (filters.features && Object.keys(filters.features).length > 0) {
+      posts = posts.filter(post => {
+        if (filters.features.furnished && !post.esyali) return false;
+        if (filters.features.parking && !post.otopark) return false;
+        if (filters.features.elevator && !post.asansor) return false;
+        if (filters.features.balcony && !post.balkon) return false;
+        return true;
+      });
     }
 
-    if (filters.status !== null) {
-      filteredPosts = filteredPosts.filter(
-        (post) => post.status === filters.status
-      );
+    // Durum filtresi (ev sahibi için)
+    if (userRole === "EVSAHIBI" && filters.status !== null) {
+      posts = posts.filter(post => post.status === filters.status);
     }
 
-    // Remove duplicates based on postId (extra safety)
-    const uniquePosts = filteredPosts.reduce((acc, current) => {
-      const isDuplicate = acc.find((item) => item.postId === current.postId);
-      if (!isDuplicate) {
-        acc.push(current);
-      }
-      return acc;
-    }, []);
+    // Basit sıralama
+    if (filters.sortBy) {
+      posts = [...posts].sort((a, b) => {
+        switch (filters.sortBy) {
+          case 'newest':
+            return new Date(b.createdDate || 0) - new Date(a.createdDate || 0);
+          case 'priceLow':
+            return (a.kiraFiyati || 0) - (b.kiraFiyati || 0);
+          case 'priceHigh':
+            return (b.kiraFiyati || 0) - (a.kiraFiyati || 0);
+          default:
+            return 0;
+        }
+      });
+    }
 
-    // Log filtered results count
-    Logger.info(COMPONENT_NAME, "Posts filtered", {
-      totalCount: uniquePosts.length,
-      originalCount: filteredPosts.length,
-      hasSearchQuery: !!searchQuery.trim(),
-      hasFilters: Object.values(filters).some((val) => val !== null),
-    });
-
-    return uniquePosts;
+    return posts;
   };
 
   // Render post item
@@ -455,16 +492,15 @@ const PostsScreen = ({ navigation }) => {
             className="absolute top-3 py-3 px-2 left-3 rounded-full"
           >
             <View
-              className={`px-3 py-1.5 rounded-full ${
-                item.status === 0 ? "" : item.status === 1 ? "" : ""
-              }`}
+              className={`px-3 py-1.5 rounded-full ${item.status === 0 ? "" : item.status === 1 ? "" : ""
+                }`}
             >
               <Text className="text-gray-900 text-sm font-semibold">
                 {item.status === 0
                   ? "Aktif"
                   : item.status === 1
-                  ? "Kiralandı"
-                  : "Kapalı"}
+                    ? "Kiralandı"
+                    : "Kapalı"}
               </Text>
             </View>
           </BlurView>
@@ -628,132 +664,8 @@ const PostsScreen = ({ navigation }) => {
     );
   };
 
-  // Filter modal component
-  const renderFilterModal = () =>
-    isFilterVisible && (
-      <View className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
-        <Text className="text-lg font-bold text-gray-800 mb-3">Filtrele</Text>
+  // PostsScreen.js - Kompakt ve Verimli Filtre Sistemi
 
-        <View className="mb-3">
-          <Text className="text-gray-600 mb-1">Konum</Text>
-          <TextInput
-            className="bg-gray-100 p-2 rounded-lg"
-            placeholder="İstanbul, Ankara, vb."
-            value={localFilters.location}
-            onChangeText={(text) =>
-              setLocalFilters({ ...localFilters, location: text })
-            }
-          />
-        </View>
-
-        <View className="flex-row mb-3">
-          <View className="flex-1 mr-2">
-            <Text className="text-gray-600 mb-1">Min. Fiyat (₺)</Text>
-            <TextInput
-              className="bg-gray-100 p-2 rounded-lg"
-              placeholder="1000"
-              keyboardType="numeric"
-              value={localFilters.priceMin}
-              onChangeText={(text) =>
-                setLocalFilters({ ...localFilters, priceMin: text })
-              }
-            />
-          </View>
-
-          <View className="flex-1">
-            <Text className="text-gray-600 mb-1">Max. Fiyat (₺)</Text>
-            <TextInput
-              className="bg-gray-100 p-2 rounded-lg"
-              placeholder="5000"
-              keyboardType="numeric"
-              value={localFilters.priceMax}
-              onChangeText={(text) =>
-                setLocalFilters({ ...localFilters, priceMax: text })
-              }
-            />
-          </View>
-        </View>
-
-        {userRole === "EVSAHIBI" && (
-          <View className="mb-3">
-            <Text className="text-gray-600 mb-1">Durum</Text>
-            <View className="flex-row mt-1">
-              <TouchableOpacity
-                className={`mr-2 px-3 py-1 rounded-full ${
-                  localFilters.status === 0 ? "bg-green-500" : "bg-gray-200"
-                }`}
-                onPress={() => {
-                  setLocalFilters({ ...localFilters, status: 0 });
-                  Logger.event("filter_status_changed", { status: 0 });
-                }}
-              >
-                <Text
-                  className={`${
-                    localFilters.status === 0 ? "text-white" : "text-gray-700"
-                  }`}
-                >
-                  Aktif
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className={`mr-2 px-3 py-1 rounded-full ${
-                  localFilters.status === 1 ? "bg-green-500" : "bg-gray-200"
-                }`}
-                onPress={() => {
-                  setLocalFilters({ ...localFilters, status: 1 });
-                  Logger.event("filter_status_changed", { status: 1 });
-                }}
-              >
-                <Text
-                  className={`${
-                    localFilters.status === 1 ? "text-white" : "text-gray-700"
-                  }`}
-                >
-                  Kiralandı
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className={`px-3 py-1 rounded-full ${
-                  localFilters.status === 2 ? "bg-green-500" : "bg-gray-200"
-                }`}
-                onPress={() => {
-                  setLocalFilters({ ...localFilters, status: 2 });
-                  Logger.event("filter_status_changed", { status: 2 });
-                }}
-              >
-                <Text
-                  className={`${
-                    localFilters.status === 2 ? "text-white" : "text-gray-700"
-                  }`}
-                >
-                  Kapalı
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        <View className="flex-row mt-2">
-          <TouchableOpacity
-            className="flex-1 bg-white border border-gray-300 py-2 rounded-lg mr-2"
-            onPress={resetFilters}
-          >
-            <Text className="text-gray-700 font-semibold text-center">
-              Sıfırla
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            className="flex-1 bg-green-500 py-2 rounded-lg"
-            onPress={applyFilters}
-          >
-            <Text className="text-white font-semibold text-center">Uygula</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
 
   // Header with title and filter toggle
   const renderHeader = () => (
@@ -788,12 +700,11 @@ const PostsScreen = ({ navigation }) => {
 
         <TouchableOpacity
           style={{ boxShadow: "0px 0px 12px #00000014" }}
-          className={`p-3 rounded-full ${
-            isFilterVisible ||
+          className={`p-3 rounded-full ${isFilterVisible ||
             Object.values(filters).some((val) => val !== null)
-              ? "bg-green-500"
-              : "bg-white"
-          }`}
+            ? "bg-gray-700"
+            : "bg-white"
+            }`}
           onPress={() => {
             Logger.event("toggle_filter_panel", { show: !isFilterVisible });
             setIsFilterVisible(!isFilterVisible);
@@ -804,8 +715,8 @@ const PostsScreen = ({ navigation }) => {
             size={18}
             color={
               isFilterVisible ||
-              Object.values(filters).some((val) => val !== null)
-                ? "gray"
+                Object.values(filters).some((val) => val !== null)
+                ? "lightgray"
                 : "#000"
             }
           />
@@ -846,8 +757,8 @@ const PostsScreen = ({ navigation }) => {
               {filters.status === 0
                 ? "Aktif"
                 : filters.status === 1
-                ? "Kiralandı"
-                : "Kapalı"}
+                  ? "Kiralandı"
+                  : "Kapalı"}
             </Text>
             <TouchableOpacity
               onPress={() => {
@@ -910,7 +821,6 @@ const PostsScreen = ({ navigation }) => {
         </View>
 
         {renderHeader()}
-        {renderFilterModal()}
         {renderAppliedFilters()}
 
         {isLoading ? (
@@ -943,6 +853,18 @@ const PostsScreen = ({ navigation }) => {
           />
         )}
       </View>
+      {/* YENİ: PropertiesFilterModal */}
+      <PropertiesFilterModal
+        visible={isFilterVisible}
+        onClose={() => setIsFilterVisible(false)}
+        onApply={(appliedFilters) => {
+          // Filtreleri uygula
+          console.log('Applied filters:', appliedFilters);
+          setIsFilterVisible(false);
+        }}
+        currentFilters={filters}
+        userRole={userRole}
+      />
     </SafeAreaView>
   );
 };
