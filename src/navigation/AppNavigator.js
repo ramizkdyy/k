@@ -456,8 +456,7 @@ const LandlordHomeStack = () => {
           },
           headerBackTitle: "",
           headerShadowVisible: false,
-          tabBarStyle: { display: 'none' }, // BottomTabs'ı gizle
-
+          tabBarStyle: { display: "none" }, // BottomTabs'ı gizle
         }}
       />
       <LandlordStack.Screen
@@ -482,7 +481,11 @@ const LandlordHomeStack = () => {
 
 const LandlordPropertiesStack = () => {
   return (
-    <LandlordStack.Navigator>
+    <LandlordStack.Navigator
+      screenOptions={{
+        headerShown: false, // Add this to ensure all screens have no header by default
+      }}
+    >
       <LandlordStack.Screen
         name="MyPropertiesList"
         component={PostsScreen}
@@ -522,10 +525,8 @@ const LandlordPropertiesStack = () => {
         name="Offers"
         component={OffersScreen}
         options={{
-          headerStyle: {
-            headerShown: false,
-          }
-
+          headerShown: false, // Explicitly set to false
+          // Remove any headerStyle that might be causing issues
         }}
       />
     </LandlordStack.Navigator>
@@ -1039,10 +1040,10 @@ const ProfileLoader = ({ children }) => {
     isLoading,
     error,
   } = userRole === "EVSAHIBI"
-      ? useGetLandlordProfileQuery(currentUser?.id, {
+    ? useGetLandlordProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       })
-      : useGetTenantProfileQuery(currentUser?.id, {
+    : useGetTenantProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       });
 

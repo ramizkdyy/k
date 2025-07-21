@@ -3,85 +3,111 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   Alert,
   ActivityIndicator,
   TextInput,
-  SafeAreaView,
+  Platform,
+  Dimensions,
 } from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView from "react-native-maps";
 import * as Location from "expo-location";
 import { MaterialIcons } from "@expo/vector-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
+import { faLocationDot, faXmark } from "@fortawesome/pro-solid-svg-icons";
+import { BlurView } from "expo-blur";
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
-  const [selectedLocation, setSelectedLocation] = useState(null);
-  const [currentLocation, setCurrentLocation] = useState(null);
+  const [region, setRegion] = useState(null);
+  const [centerLocation, setCenterLocation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
   const [locationName, setLocationName] = useState("");
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [isMapReady, setIsMapReady] = useState(false);
 
   // İstanbul'u varsayılan konum olarak ayarla
-  const defaultLocation = {
+  const defaultRegion = {
     latitude: 41.0082,
     longitude: 28.9784,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
+    latitudeDelta: 0.05,
+    longitudeDelta: 0.05,
   };
 
   useEffect(() => {
-    getCurrentLocation();
-
-    // Eğer initialLocation varsa, onu seçili konum olarak ayarla
-    if (initialLocation) {
-      setSelectedLocation(initialLocation);
-      reverseGeocode(initialLocation.latitude, initialLocation.longitude);
-    }
+    initializeLocation();
   }, []);
 
-  const getCurrentLocation = async () => {
+  const initializeLocation = async () => {
     try {
-      // Konum izni iste
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Konum İzni",
-          "Konum izni verilmedi. Varsayılan konum kullanılacak.",
-          [{ text: "Tamam" }]
-        );
-        setCurrentLocation(defaultLocation);
+      // İlk olarak varsayılan konumu ayarla
+      setRegion(defaultRegion);
+      setCenterLocation({
+        latitude: defaultRegion.latitude,
+        longitude: defaultRegion.longitude,
+      });
+
+      // Eğer initialLocation varsa, onu kullan
+      if (initialLocation) {
+        const initialRegion = {
+          latitude: initialLocation.latitude,
+          longitude: initialLocation.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        };
+        setRegion(initialRegion);
+        setCenterLocation({
+          latitude: initialLocation.latitude,
+          longitude: initialLocation.longitude,
+        });
+        reverseGeocode(initialLocation.latitude, initialLocation.longitude);
         setLoading(false);
         return;
       }
 
-      // Mevcut konumu al
+      // Konum izni kontrolü
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setLoading(false);
+        reverseGeocode(defaultRegion.latitude, defaultRegion.longitude);
+        return;
+      }
+
+      // Mevcut konumu al (arka planda)
       const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
+        accuracy: Location.Accuracy.Balanced,
+        timeout: 10000,
       });
 
-      const currentLoc = {
+      const currentRegion = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
       };
 
-      setCurrentLocation(currentLoc);
+      setRegion(currentRegion);
+      setCenterLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
 
-      // Eğer seçili konum yoksa, mevcut konumu kullan
-      if (!selectedLocation) {
-        setSelectedLocation(currentLoc);
-        reverseGeocode(currentLoc.latitude, currentLoc.longitude);
-      }
+      reverseGeocode(location.coords.latitude, location.coords.longitude);
     } catch (error) {
       console.log("Konum alınamadı:", error);
-      setCurrentLocation(defaultLocation);
+      // Hata durumunda varsayılan konumu kullan
+      reverseGeocode(defaultRegion.latitude, defaultRegion.longitude);
     } finally {
       setLoading(false);
     }
   };
 
-  // Koordinatları adres bilgisine çevir
+  // Koordinatları adres bilgisine çevir (debounced)
   const reverseGeocode = async (latitude, longitude) => {
+    if (isLoadingLocation) return;
+
+    setIsLoadingLocation(true);
     try {
       const results = await Location.reverseGeocodeAsync({
         latitude,
@@ -90,47 +116,49 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
 
       if (results.length > 0) {
         const result = results[0];
-        const address = [
-          result.street,
-          result.district,
-          result.subregion,
-          result.region,
-          result.country,
-        ]
-          .filter(Boolean)
-          .join(", ");
+        const addressParts = [];
 
-        setLocationName(address);
+        if (result.street) addressParts.push(result.street);
+        if (result.district) addressParts.push(result.district);
+        if (result.subregion) addressParts.push(result.subregion);
+        if (result.region) addressParts.push(result.region);
+
+        const address = addressParts.join(", ");
+        setLocationName(address || "Seçilen Konum");
       }
     } catch (error) {
       console.log("Reverse geocode hatası:", error);
+      setLocationName("Konum bilgisi alınamadı");
+    } finally {
+      setIsLoadingLocation(false);
     }
   };
 
-  // Harita üzerinde bir yere tıklandığında
-  const handleMapPress = (event) => {
-    const { latitude, longitude } = event.nativeEvent.coordinate;
-    const newLocation = {
-      latitude,
-      longitude,
-      latitudeDelta: 0.0922,
-      longitudeDelta: 0.0421,
-    };
+  // Harita bölgesi değiştiğinde
+  const handleRegionChangeComplete = (newRegion) => {
+    if (!isMapReady) return;
 
-    setSelectedLocation(newLocation);
-    reverseGeocode(latitude, longitude);
+    setCenterLocation({
+      latitude: newRegion.latitude,
+      longitude: newRegion.longitude,
+    });
+
+    // Debounce reverse geocoding
+    setTimeout(() => {
+      reverseGeocode(newRegion.latitude, newRegion.longitude);
+    }, 300);
   };
 
   // Konumu onayla
   const confirmLocation = () => {
-    if (!selectedLocation) {
+    if (!centerLocation) {
       Alert.alert("Hata", "Lütfen bir konum seçin.");
       return;
     }
 
     onLocationSelect({
-      latitude: selectedLocation.latitude,
-      longitude: selectedLocation.longitude,
+      latitude: centerLocation.latitude,
+      longitude: centerLocation.longitude,
       address: locationName || "Seçilen Konum",
     });
   };
@@ -142,20 +170,25 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
       return;
     }
 
+    setIsLoadingLocation(true);
     try {
       const results = await Location.geocodeAsync(searchText);
 
       if (results.length > 0) {
         const result = results[0];
-        const newLocation = {
+        const newRegion = {
           latitude: result.latitude,
           longitude: result.longitude,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
         };
 
-        setSelectedLocation(newLocation);
-        setCurrentLocation(newLocation);
+        setRegion(newRegion);
+        setCenterLocation({
+          latitude: result.latitude,
+          longitude: result.longitude,
+        });
+
         reverseGeocode(result.latitude, result.longitude);
       } else {
         Alert.alert("Hata", "Konum bulunamadı.");
@@ -163,217 +196,305 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
     } catch (error) {
       console.log("Geocode hatası:", error);
       Alert.alert("Hata", "Konum aranırken bir hata oluştu.");
+    } finally {
+      setIsLoadingLocation(false);
     }
   };
 
   // Mevcut konuma git
-  const goToCurrentLocation = () => {
-    if (currentLocation) {
-      setSelectedLocation(currentLocation);
-      reverseGeocode(currentLocation.latitude, currentLocation.longitude);
+  const goToCurrentLocation = async () => {
+    setIsLoadingLocation(true);
+    try {
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+        timeout: 10000,
+      });
+
+      const currentRegion = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      };
+
+      setRegion(currentRegion);
+      setCenterLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+
+      reverseGeocode(location.coords.latitude, location.coords.longitude);
+    } catch (error) {
+      Alert.alert("Hata", "Mevcut konum alınamadı.");
+    } finally {
+      setIsLoadingLocation(false);
     }
   };
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#fff",
+        }}
+      >
         <ActivityIndicator size="large" color="#4A90E2" />
-        <Text style={styles.loadingText}>Konum yükleniyor...</Text>
+        <Text
+          style={{
+            marginTop: 10,
+            fontSize: 16,
+            color: "#666",
+          }}
+        >
+          Konum yükleniyor...
+        </Text>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={{ flex: 1 }}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <MaterialIcons name="close" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Konum Seç</Text>
-        <TouchableOpacity
-          onPress={confirmLocation}
-          style={styles.confirmButton}
-        >
-          <Text style={styles.confirmText}>Tamam</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Konum ara (örn: Kadıköy, İstanbul)"
-          value={searchText}
-          onChangeText={setSearchText}
-          onSubmitEditing={searchLocation}
-        />
-        <TouchableOpacity onPress={searchLocation} style={styles.searchButton}>
-          <MaterialIcons name="search" size={24} color="#4A90E2" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Map */}
-      <View style={styles.mapContainer}>
-        <MapView
-          provider={PROVIDER_GOOGLE}
-          style={styles.map}
-          region={currentLocation || defaultLocation}
-          onPress={handleMapPress}
-          showsUserLocation={true}
-          showsMyLocationButton={false}
-        >
-          {selectedLocation && (
-            <Marker
-              coordinate={{
-                latitude: selectedLocation.latitude,
-                longitude: selectedLocation.longitude,
+      <View
+        style={{
+          backgroundColor: "transparent",
+          paddingTop: Platform.OS === "ios" ? 50 : 40,
+          paddingHorizontal: 20,
+          paddingBottom: 15,
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          position: "absolute",
+          top: 0,
+          width: "100%",
+          zIndex: 10,
+        }}
+      >
+        {/* Search Bar - Floating */}
+        <View style={{}}>
+          <BlurView className="overflow-hidden rounded-2xl">
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 16,
               }}
-              title="Seçilen Konum"
-              description={locationName}
-            />
-          )}
-        </MapView>
+            >
+              <TextInput
+                style={{
+                  height: 20,
+                  fontSize: 16,
+                  color: "#fff",
+                }}
+                placeholder="Konum ara (örn: Kadıköy, İstanbul)"
+                placeholderTextColor="#ccc"
+                value={searchText}
+                onChangeText={setSearchText}
+                onSubmitEditing={searchLocation}
+              />
+              <TouchableOpacity
+                onPress={searchLocation}
+                disabled={isLoadingLocation}
+                style={{ marginLeft: 8, padding: 8 }}
+              >
+                {isLoadingLocation ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <MaterialIcons name="search" size={24} color="#fff" />
+                )}
+              </TouchableOpacity>
+            </View>
+          </BlurView>
+        </View>
 
-        {/* Current Location Button */}
-        <TouchableOpacity
-          style={styles.currentLocationButton}
-          onPress={goToCurrentLocation}
-        >
-          <MaterialIcons name="my-location" size={24} color="#4A90E2" />
+        <TouchableOpacity onPress={onClose}>
+          <BlurView
+            className="overflow-hidden"
+            style={{
+              padding: 8,
+              borderRadius: 20,
+            }}
+          >
+            <FontAwesomeIcon icon={faXmark} size={20} color="#fff" />
+          </BlurView>
         </TouchableOpacity>
       </View>
 
-      {/* Selected Location Info */}
-      {selectedLocation && (
-        <View style={styles.locationInfo}>
-          <Text style={styles.locationTitle}>Seçilen Konum:</Text>
-          <Text style={styles.locationText}>
-            {locationName || "Konum bilgisi yükleniyor..."}
-          </Text>
-          <Text style={styles.coordinatesText}>
-            {selectedLocation.latitude.toFixed(6)},{" "}
-            {selectedLocation.longitude.toFixed(6)}
-          </Text>
-        </View>
-      )}
-    </SafeAreaView>
+      {/* Full Screen Map */}
+      <MapView
+        style={{ flex: 1 }}
+        region={region}
+        onRegionChangeComplete={handleRegionChangeComplete}
+        onMapReady={() => setIsMapReady(true)}
+        showsUserLocation={true}
+        showsMyLocationButton={false}
+        showsCompass={false}
+        showsScale={false}
+        showsBuildings={true}
+        showsTraffic={false}
+        showsIndoors={true}
+        loadingEnabled={true}
+        loadingIndicatorColor="#4A90E2"
+        loadingBackgroundColor="#f0f0f0"
+      />
+
+      {/* Center Marker - Fixed in screen center */}
+      <View
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          marginLeft: -16, // Half of marker width
+          marginTop: -32, // Full marker height to point at bottom
+          zIndex: 5,
+        }}
+      >
+        <FontAwesomeIcon icon={faLocationDot} size={32} color="#4A90E2" />
+      </View>
+
+      {/* Crosshair/Guide (optional) */}
+      <View
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          width: 20,
+          height: 20,
+          marginLeft: -10,
+          marginTop: -10,
+          borderRadius: 10,
+          borderWidth: 2,
+          borderColor: "#4A90E2",
+          backgroundColor: "rgba(74, 144, 226, 0.2)",
+          zIndex: 4,
+        }}
+      />
+
+      {/* Current Location Button - Floating */}
+      <TouchableOpacity
+        style={{
+          position: "absolute",
+          bottom: 200,
+          right: 20,
+          width: 50,
+          height: 50,
+          borderRadius: 25,
+          backgroundColor: "#fff",
+          justifyContent: "center",
+          alignItems: "center",
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 3.84,
+          elevation: 5,
+          zIndex: 5,
+        }}
+        onPress={goToCurrentLocation}
+        disabled={isLoadingLocation}
+      >
+        {isLoadingLocation ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <MaterialIcons name="my-location" size={24} color="#fff" />
+        )}
+      </TouchableOpacity>
+
+      {/* Instruction Text */}
+      <View
+        style={{
+          position: "absolute",
+          top: "40%",
+          left: 20,
+          right: 20,
+          alignItems: "center",
+          zIndex: 3,
+        }}
+      ></View>
+
+      {/* Bottom Info Panel */}
+      <View
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: "transparent",
+          paddingHorizontal: 20,
+          paddingVertical: 15,
+          paddingBottom: Platform.OS === "ios" ? 35 : 20,
+          zIndex: 5,
+        }}
+      >
+        <BlurView className="overflow-hidden rounded-2xl">
+          <View style={{ padding: 16 }}>
+            {/* Selected Location Info */}
+            {centerLocation && (
+              <View style={{ marginBottom: 16 }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "600",
+                    color: "#fff",
+                    marginBottom: 4,
+                  }}
+                >
+                  Seçilen Konum:
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: "#ccc",
+                    marginBottom: 4,
+                    minHeight: 20,
+                  }}
+                >
+                  {isLoadingLocation
+                    ? "Konum bilgisi yükleniyor..."
+                    : locationName || "Konum bilgisi alınamadı"}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: "#aaa",
+                  }}
+                >
+                  {centerLocation.latitude.toFixed(6)},{" "}
+                  {centerLocation.longitude.toFixed(6)}
+                </Text>
+              </View>
+            )}
+
+            {/* Confirm Button */}
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#4A90E2",
+                paddingVertical: 12,
+                paddingHorizontal: 24,
+                borderRadius: 12,
+                alignItems: "center",
+                opacity: centerLocation ? 1 : 0.6,
+              }}
+              onPress={confirmLocation}
+              disabled={!centerLocation}
+            >
+              <Text
+                style={{
+                  color: "#fff",
+                  fontSize: 16,
+                  fontWeight: "600",
+                }}
+              >
+                Bu Konumu Seç
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </BlurView>
+      </View>
+    </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#fff",
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: "#666",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-    backgroundColor: "#f8f8f8",
-  },
-  closeButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  confirmButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: "#4A90E2",
-    borderRadius: 8,
-  },
-  confirmText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#f8f8f8",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-  },
-  searchInput: {
-    flex: 1,
-    height: 40,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    backgroundColor: "#fff",
-  },
-  searchButton: {
-    marginLeft: 8,
-    padding: 8,
-  },
-  mapContainer: {
-    flex: 1,
-    position: "relative",
-  },
-  map: {
-    flex: 1,
-  },
-  currentLocationButton: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#fff",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  locationInfo: {
-    padding: 16,
-    backgroundColor: "#f8f8f8",
-    borderTopWidth: 1,
-    borderTopColor: "#e0e0e0",
-  },
-  locationTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 4,
-  },
-  locationText: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 4,
-  },
-  coordinatesText: {
-    fontSize: 12,
-    color: "#999",
-  },
-});
 
 export default LocationPicker;

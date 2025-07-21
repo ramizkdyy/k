@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,9 @@ import {
   StyleSheet,
   Platform,
   Modal,
+  KeyboardAvoidingView,
+  Switch,
+  Animated,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser } from "../redux/slices/authSlice";
@@ -23,13 +26,301 @@ import {
 import { useCreatePostMutation } from "../redux/api/apiSlice";
 import * as ImagePicker from "expo-image-picker";
 import { MaterialIcons } from "@expo/vector-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
+import {
+  faChevronLeft,
+  faChevronDown,
+  faCheck,
+  faXmark,
+} from "@fortawesome/pro-solid-svg-icons";
 import LocationPicker from "../components/LocationPicker";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BlurView } from "expo-blur";
+
+// Header component matching ProfileExpectationScreen
+const CreatePostHeader = ({
+  navigation,
+  onSubmit,
+  isLoading,
+  propertyData,
+}) => (
+  <View style={{ paddingVertical: 12 }} className="px-3 relative bg-white">
+    <View className="flex-row justify-between ml-2 items-center w-full">
+      {/* Sol taraf - Geri butonu */}
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        className="flex-row items-center"
+      >
+        <FontAwesomeIcon icon={faChevronLeft} size={22} color="#0d0d0d" />
+      </TouchableOpacity>
+
+      {/* Sağ taraf - Submit butonu */}
+      <TouchableOpacity
+        className="px-6 items-center justify-center"
+        onPress={onSubmit}
+        disabled={isLoading}
+      >
+        <Text
+          style={{ fontSize: 16, color: "#6aeba9", borderColor: "#6aeba9" }}
+          className="font-normal border px-4 py-2 rounded-full"
+        >
+          {isLoading
+            ? propertyData
+              ? "Güncelleniyor..."
+              : "Oluşturuluyor..."
+            : propertyData
+            ? "Güncelle"
+            : "Oluştur"}
+        </Text>
+      </TouchableOpacity>
+    </View>
+
+    {/* Ortalanmış başlık */}
+    <View className="absolute inset-0 justify-center items-center pointer-events-none">
+      <Text
+        className="text-gray-500"
+        style={{
+          fontWeight: 500,
+          fontSize: 14,
+        }}
+      >
+        {propertyData ? "İlanı Düzenle" : "Yeni İlan Oluştur"}
+      </Text>
+    </View>
+  </View>
+);
+
+// Form section component matching ProfileExpectationScreen
+const FormSection = ({ title, children }) => (
+  <View className="mb-8">
+    <Text
+      style={{ fontSize: 12, marginBottom: 50 }}
+      className="font-semibold text-gray-500 text-center"
+    >
+      {title}
+    </Text>
+    {children}
+  </View>
+);
+
+// Custom TextInput Component matching ProfileExpectationScreen
+const CustomTextInput = ({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  required = false,
+  keyboardType = "default",
+  multiline = false,
+  numberOfLines = 1,
+  maxLength,
+  editable = true,
+}) => (
+  <View className="mb-6">
+    <Text style={{ fontSize: 14 }} className="font-semibold text-gray-900 mb-3">
+      {label} {required && <Text className="text-red-500">*</Text>}
+    </Text>
+    <View className="border border-gray-900 rounded-xl px-4 py-4">
+      <TextInput
+        className="text-gray-900 text-base"
+        placeholder={placeholder}
+        placeholderTextColor="#b0b0b0"
+        value={value}
+        onChangeText={onChangeText}
+        keyboardType={keyboardType}
+        multiline={multiline}
+        numberOfLines={numberOfLines}
+        maxLength={maxLength}
+        editable={editable}
+        style={{ fontSize: 16 }}
+        textAlignVertical={multiline ? "top" : "center"}
+      />
+    </View>
+  </View>
+);
+
+// Switch field component matching ProfileExpectationScreen
+const SwitchField = ({ label, value, setValue, description = null }) => (
+  <View className="mb-6">
+    <View className="flex-row justify-between items-center">
+      <View className="flex-1 mr-4">
+        <Text style={{ fontSize: 14 }} className="text-gray-900 font-semibold">
+          {label}
+        </Text>
+        {description && (
+          <Text className="text-sm text-gray-500 mt-1">{description}</Text>
+        )}
+      </View>
+      <Switch
+        value={value}
+        onValueChange={setValue}
+        trackColor={{ false: "#e5e7eb", true: "#97e8bc" }}
+        thumbColor={value ? "#fff" : "#f4f3f4"}
+      />
+    </View>
+  </View>
+);
+
+// Custom Dropdown Component matching ProfileExpectationScreen
+const CustomDropdown = ({
+  label,
+  value,
+  setValue,
+  options,
+  placeholder,
+  required = false,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Animation refs - same structure as RegisterScreen
+  const modalBackgroundOpacity = useRef(new Animated.Value(0)).current;
+  const modalSlideAnim = useRef(new Animated.Value(300)).current;
+
+  const openModal = () => {
+    setIsOpen(true);
+    // Start open animation
+    Animated.parallel([
+      Animated.timing(modalBackgroundOpacity, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: false,
+      }),
+      Animated.timing(modalSlideAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const closeModal = () => {
+    // Close animation
+    Animated.parallel([
+      Animated.timing(modalBackgroundOpacity, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: false,
+      }),
+      Animated.timing(modalSlideAnim, {
+        toValue: 300,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsOpen(false);
+    });
+  };
+
+  const handleOptionSelect = (option) => {
+    setValue(option);
+    closeModal();
+  };
+
+  return (
+    <View className="mb-6">
+      <Text
+        style={{ fontSize: 14 }}
+        className="text-gray-900 font-semibold mb-3"
+      >
+        {label} {required && <Text className="text-red-500">*</Text>}
+      </Text>
+      <TouchableOpacity
+        className="border border-gray-900 rounded-xl px-4 py-4 flex-row justify-between items-center"
+        onPress={openModal}
+      >
+        <Text
+          className={value ? "text-gray-900" : "text-gray-500"}
+          style={{ fontSize: 16 }}
+        >
+          {value || placeholder}
+        </Text>
+        <FontAwesomeIcon icon={faChevronDown} size={16} color="#6b7280" />
+      </TouchableOpacity>
+
+      {/* Modal with same animation structure as ProfileExpectationScreen */}
+      <Modal
+        visible={isOpen}
+        transparent
+        animationType="none"
+        onRequestClose={closeModal}
+      >
+        <Animated.View
+          className="flex-1 justify-end"
+          style={{
+            backgroundColor: modalBackgroundOpacity.interpolate({
+              inputRange: [0, 1],
+              outputRange: ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.5)"],
+            }),
+          }}
+        >
+          <Animated.View
+            className="bg-white rounded-t-3xl max-h-[50%]"
+            style={{
+              transform: [{ translateY: modalSlideAnim }],
+            }}
+          >
+            {/* Header - same style as ProfileExpectationScreen */}
+            <View className="flex-row justify-between items-center px-6 py-4 bg-white rounded-t-3xl">
+              <Text
+                style={{ fontWeight: 600, fontSize: 18 }}
+                className="text-gray-800"
+              >
+                {label}
+              </Text>
+              <TouchableOpacity onPress={closeModal} className="px-2 py-2">
+                <Text
+                  style={{
+                    fontSize: 17,
+                    color: "#007AFF",
+                    fontWeight: "500",
+                  }}
+                >
+                  Kapat
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Options List */}
+            <ScrollView className="bg-white py-3">
+              {options.map((option, index) => (
+                <TouchableOpacity
+                  key={index}
+                  className={`py-4 px-7 flex-row items-center justify-between ${
+                    value === option ? "bg-gray-100" : ""
+                  }`}
+                  onPress={() => handleOptionSelect(option)}
+                >
+                  <Text
+                    className={`text-lg ${
+                      value === option
+                        ? "text-gray-900 font-medium"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    {option}
+                  </Text>
+                  {value === option && (
+                    <FontAwesomeIcon icon={faCheck} size={16} color="#000" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Safe area for bottom - same as ProfileExpectationScreen */}
+            <View style={{ height: 34, backgroundColor: "#FFFFFF" }} />
+          </Animated.View>
+        </Animated.View>
+      </Modal>
+    </View>
+  );
+};
 
 const CreatePostScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const currentUser = useSelector(selectCurrentUser);
   const savedFormData = useSelector(selectPostFormData);
   const [createPost, { isLoading: isCreating }] = useCreatePostMutation();
+  const insets = useSafeAreaInsets();
 
   // Get property data from route params if exists (for editing)
   const propertyData = route.params?.propertyData;
@@ -49,13 +340,13 @@ const CreatePostScreen = ({ navigation, route }) => {
   const [depozito, setDepozito] = useState("");
   const [binaYasi, setBinaYasi] = useState("");
   const [toplamKat, setToplamKat] = useState("");
-  const [balkon, setBalkon] = useState("");
-  const [asansor, setAsansor] = useState("");
-  const [otopark, setOtopark] = useState("");
-  const [esyali, setEsyali] = useState("");
-  const [siteIcerisinde, setSiteIcerisinde] = useState("");
+  const [balkon, setBalkon] = useState(false);
+  const [asansor, setAsansor] = useState(false);
+  const [otopark, setOtopark] = useState(false);
+  const [esyali, setEsyali] = useState(false);
+  const [siteIcerisinde, setSiteIcerisinde] = useState(false);
   const [aidat, setAidat] = useState("");
-  const [takas, setTakas] = useState("");
+  const [takas, setTakas] = useState(false);
   const [minimumKiralamaSuresi, setMinimumKiralamaSuresi] = useState("");
   const [uploadStatus, setUploadStatus] = useState("idle");
   const [il, setIl] = useState("");
@@ -73,22 +364,13 @@ const CreatePostScreen = ({ navigation, route }) => {
   const [selectedCoordinates, setSelectedCoordinates] = useState(null);
 
   // Property type options
-
   const propertyTypes = [
-    {
-      value: 1,
-      label: "Daire",
-      description: "Apartman içerisinde yer alan konut",
-    },
-    {
-      value: 2,
-      label: "Müstakil Ev",
-      description: "Bağımsız tek veya çok katlı ev",
-    },
-    { value: 3, label: "Villa", description: "Lüks ve büyük konut" },
-    { value: 4, label: "Stüdyo Daire", description: "Tek oda yaşam alanı" },
-    { value: 5, label: "Rezidans", description: "Lüks apartman kompleksi" },
-    { value: 6, label: "Diğer", description: "Diğer emlak türleri" },
+    "Daire",
+    "Müstakil Ev",
+    "Villa",
+    "Stüdyo Daire",
+    "Rezidans",
+    "Diğer",
   ];
 
   // Heating type options
@@ -104,12 +386,12 @@ const CreatePostScreen = ({ navigation, route }) => {
   // Usage status options
   const usageStatusOptions = ["Boş", "Kiracılı", "Mülk Sahibi Oturuyor"];
 
-  // Rental Period options matching the enum
+  // Rental Period options
   const rentalPeriodOptions = [
-    { value: "1", label: "6 Ay" },
-    { value: "2", label: "1 Yıl" },
-    { value: "3", label: "Uzun Vadeli (1+ Yıl)" },
-    { value: "4", label: "Kısa Dönem Olabilir" },
+    "6 Ay",
+    "1 Yıl",
+    "Uzun Vadeli (1+ Yıl)",
+    "Kısa Dönem Olabilir",
   ];
 
   // Parse location string to extract il, ilce, and mahalle if available
@@ -156,13 +438,13 @@ const CreatePostScreen = ({ navigation, route }) => {
       setDepozito(propertyData.depozito?.toString() || "");
       setBinaYasi(propertyData.binaYasi?.toString() || "");
       setToplamKat(propertyData.toplamKat?.toString() || "");
-      setBalkon(propertyData.balkon?.toString() || "");
-      setAsansor(propertyData.asansor?.toString() || "");
-      setOtopark(propertyData.otopark?.toString() || "");
-      setEsyali(propertyData.esyali?.toString() || "");
-      setSiteIcerisinde(propertyData.siteIcerisinde?.toString() || "");
+      setBalkon(propertyData.balkon === "true" || false);
+      setAsansor(propertyData.asansor === "true" || false);
+      setOtopark(propertyData.otopark === "true" || false);
+      setEsyali(propertyData.esyali === "true" || false);
+      setSiteIcerisinde(propertyData.siteIcerisinde === "true" || false);
       setAidat(propertyData.aidat?.toString() || "");
-      setTakas(propertyData.takas?.toString() || "");
+      setTakas(propertyData.takas === "true" || false);
       setMinimumKiralamaSuresi(
         propertyData.minimumKiralamaSuresi?.toString() || ""
       );
@@ -272,29 +554,26 @@ const CreatePostScreen = ({ navigation, route }) => {
     try {
       const options = {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false, // Çoklu seçim için false yapıyoruz
+        allowsEditing: false,
         aspect: [4, 3],
         quality: 0.8,
-        allowsMultipleSelection: true, // Çoklu seçim aktif
-        orderedSelection: true, // Sıralı seçim
-        selectionLimit: 10, // Maksimum 10 fotoğraf
+        allowsMultipleSelection: true,
+        orderedSelection: true,
+        selectionLimit: 10,
       };
 
       let result;
       if (useCamera) {
-        // Kamera için tek seferde bir fotoğraf
         result = await ImagePicker.launchCameraAsync({
           ...options,
           allowsMultipleSelection: false,
           allowsEditing: true,
         });
       } else {
-        // Galeri için çoklu seçim
         result = await ImagePicker.launchImageLibraryAsync(options);
       }
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        // Tüm seçilen fotoğrafları ekle
         const newImages = result.assets.map((asset, index) => ({
           uri: asset.uri,
           id: `${Date.now()}_${index}`,
@@ -304,9 +583,8 @@ const CreatePostScreen = ({ navigation, route }) => {
           fileSize: asset.fileSize,
         }));
 
-        // Mevcut fotoğrafları kontrol et (maksimum limit)
         const totalImages = images.length + newImages.length;
-        const maxImages = 15; // Maksimum fotoğraf sayısı
+        const maxImages = 15;
 
         if (totalImages > maxImages) {
           Alert.alert(
@@ -317,14 +595,10 @@ const CreatePostScreen = ({ navigation, route }) => {
               maxImages - images.length
             } tanesi eklenecek.`
           );
-          // Sadece limit kadar ekle
           const allowedImages = newImages.slice(0, maxImages - images.length);
           setImages([...images, ...allowedImages]);
         } else {
-          // Tüm fotoğrafları ekle
           setImages([...images, ...newImages]);
-
-          // Başarı mesajı
           Alert.alert(
             "Başarılı",
             `${newImages.length} fotoğraf başarıyla eklendi.`
@@ -346,131 +620,96 @@ const CreatePostScreen = ({ navigation, route }) => {
 
   const renderImageGallery = () => {
     return (
-      <View className="bg-white rounded-xl p-5 shadow-sm mb-5">
-        <View className="flex-row justify-between items-center mb-3">
-          <Text className="text-gray-700 font-medium">
-            Fotoğraflar * ({images.length}/15)
+      <FormSection title="Fotoğraflar">
+        <View className="mb-6">
+          <Text
+            style={{ fontSize: 14 }}
+            className="font-semibold text-gray-900 mb-3"
+          >
+            Fotoğraflar ({images.length}
+            /15) <Text className="text-red-500">*</Text>
           </Text>
+
+          {/* Seçilen Fotoğraflar */}
           {images.length > 0 && (
-            <TouchableOpacity
-              className="bg-red-500 rounded-lg px-3 py-1"
-              onPress={() => {
-                Alert.alert(
-                  "Tüm Fotoğrafları Sil",
-                  "Tüm fotoğrafları silmek istediğinizden emin misiniz?",
-                  [
-                    { text: "İptal", style: "cancel" },
-                    {
-                      text: "Sil",
-                      style: "destructive",
-                      onPress: () => setImages([]),
-                    },
-                  ]
-                );
-              }}
-            >
-              <Text className="text-white text-sm">Tümünü Sil</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+            <>
+              <ScrollView
+                horizontal
+                bounces={true}
+                showsHorizontalScrollIndicator={false}
+                className="mb-4 p-2"
+              >
+                {images.map((img, index) => (
+                  <View
+                    style={{ boxShadow: "0px 0px 12px #00000014" }}
+                    key={img.id}
+                    className="mr-3 relative rounded-2xl"
+                  >
+                    <Image
+                      source={{ uri: img.uri }}
+                      className="w-24 h-24 rounded-2xl"
+                      resizeMode="cover"
+                    />
 
-        {/* Seçilen Fotoğraflar */}
-        {images.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="mb-4"
-          >
-            {images.map((img, index) => (
-              <View key={img.id} className="mr-3 relative">
-                <Image
-                  source={{ uri: img.uri }}
-                  className="w-24 h-24 rounded-lg"
-                  resizeMode="cover"
-                />
-
-                {/* Fotoğraf numarası */}
-                <View className="absolute top-1 left-1 bg-black bg-opacity-60 rounded-full w-6 h-6 justify-center items-center">
-                  <Text className="text-white text-xs font-bold">
-                    {index + 1}
-                  </Text>
-                </View>
-
-                {/* Silme butonu */}
-                <TouchableOpacity
-                  className="absolute top-1 right-1 bg-red-500 rounded-full p-1"
-                  onPress={() => removeImage(img.id)}
-                >
-                  <MaterialIcons name="close" size={14} color="#FFFFFF" />
-                </TouchableOpacity>
-
-                {/* Dosya boyutu bilgisi */}
-                {img.fileSize && (
-                  <View className="absolute bottom-1 left-1 bg-black bg-opacity-60 rounded px-1">
-                    <Text className="text-white text-xs">
-                      {(img.fileSize / 1024 / 1024).toFixed(1)}MB
-                    </Text>
+                    {/* Silme butonu */}
+                    <View className="absolute top-1 right-1">
+                      <BlurView
+                        intensity={50}
+                        tint="dark"
+                        className="overflow-hidden rounded-full"
+                      >
+                        <TouchableOpacity
+                          className="p-1"
+                          onPress={() => removeImage(img.id)}
+                        >
+                          <FontAwesomeIcon icon={faXmark} color="white" />
+                        </TouchableOpacity>
+                      </BlurView>
+                    </View>
                   </View>
-                )}
-              </View>
-            ))}
-          </ScrollView>
-        )}
+                ))}
+              </ScrollView>
+            </>
+          )}
 
-        {/* Fotoğraf Ekleme Butonları */}
-        <View className="flex-row justify-center">
-          <TouchableOpacity
-            className="flex-1 bg-blue-500 rounded-lg py-4 mr-2 justify-center items-center"
-            onPress={() => pickImage(false)}
-            disabled={images.length >= 15}
-          >
-            <MaterialIcons name="photo-library" size={28} color="#FFFFFF" />
-            <Text className="text-white font-medium mt-1">Galeriden Seç</Text>
-            <Text className="text-white text-xs">(Çoklu seçim)</Text>
-          </TouchableOpacity>
+          {/* Fotoğraf Ekleme Butonları */}
+          <View className="flex-row justify-center mb-4">
+            <TouchableOpacity
+              style={{ paddingVertical: 30 }}
+              className="flex-1 border border-gray-900 rounded-3xl mr-2 justify-center items-center"
+              onPress={() => pickImage(false)}
+              disabled={images.length >= 15}
+            >
+              <MaterialIcons name="photo-library" size={28} color="#000" />
+              <Text className="font-medium mt-1">Galeriden Seç</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            className="flex-1 bg-green-500 rounded-lg py-4 ml-2 justify-center items-center"
-            onPress={() => pickImage(true)}
-            disabled={images.length >= 15}
-          >
-            <MaterialIcons name="camera-alt" size={28} color="#FFFFFF" />
-            <Text className="text-white font-medium mt-1">Kamera</Text>
-            <Text className="text-white text-xs">(Tek fotoğraf)</Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              className="flex-1 border border-gray-900 rounded-3xl py-4 ml-2 justify-center items-center"
+              onPress={() => pickImage(true)}
+              disabled={images.length >= 15}
+            >
+              <MaterialIcons name="camera-alt" size={28} color="#000" />
+              <Text className=" font-medium mt-1">Kamera</Text>
+            </TouchableOpacity>
+          </View>
 
-        {/* Fotoğraf ipuçları */}
-        <View className="mt-4 bg-blue-50 rounded-lg p-3">
-          <Text className="text-blue-800 text-sm font-medium mb-1">
-            📸 Fotoğraf İpuçları:
-          </Text>
-          <Text className="text-blue-700 text-xs">
-            • Galeriden birden fazla fotoğraf seçebilirsiniz{"\n"}• En az 1, en
-            fazla 15 fotoğraf ekleyebilirsiniz{"\n"}• Farklı açılardan çekilmiş
-            net fotoğraflar kullanın{"\n"}• Fotoğraflar otomatik olarak
-            sıkıştırılır
-          </Text>
-        </View>
-
-        {images.length === 0 && (
-          <View className="border-2 border-dashed border-gray-300 rounded-lg py-8 items-center">
-            <MaterialIcons
-              name="add-photo-alternate"
-              size={48}
-              color="#9CA3AF"
-            />
-            <Text className="text-gray-500 mt-2 text-center">
-              Henüz fotoğraf eklenmedi{"\n"}
-              Yukarıdaki butonları kullanarak fotoğraf ekleyin
+          {/* Fotoğraf ipuçları */}
+          <View className="">
+            <Text className="text-gray-500 text-sm">
+              • Galeriden birden fazla fotoğraf seçebilirsiniz{"\n"}• En az 1,
+              en fazla 15 fotoğraf ekleyebilirsiniz{"\n"}• Farklı açılardan
+              çekilmiş net fotoğraflar kullanın{"\n"}• Fotoğraflar otomatik
+              olarak sıkıştırılır
             </Text>
           </View>
-        )}
-      </View>
+        </View>
+      </FormSection>
     );
   };
 
   // Form validation
+  // Form validation devamı
   const validateForm = () => {
     if (!ilanBasligi.trim()) {
       Alert.alert("Hata", "Lütfen ilan başlığı giriniz.");
@@ -488,11 +727,6 @@ const CreatePostScreen = ({ navigation, route }) => {
       Alert.alert("Hata", "Lütfen ilan açıklaması giriniz.");
       return false;
     }
-    if (images.length === 0) {
-      Alert.alert("Hata", "Lütfen en az bir fotoğraf ekleyiniz.");
-      return false;
-    }
-    // Validate the new required fields
     if (!il.trim()) {
       Alert.alert("Hata", "Lütfen il bilgisi giriniz.");
       return false;
@@ -531,7 +765,6 @@ const CreatePostScreen = ({ navigation, route }) => {
       return false;
     }
 
-    // Dosya boyutu kontrolü
     const oversizedImages = images.filter(
       (img) => img.fileSize && img.fileSize > 10 * 1024 * 1024
     );
@@ -541,6 +774,7 @@ const CreatePostScreen = ({ navigation, route }) => {
         "Dosya Boyutu Hatası",
         "Bazı fotoğraflar çok büyük (>10MB). Lütfen daha küçük fotoğraflar seçin."
       );
+      return false;
     }
     if (!RentalPeriod.trim()) {
       Alert.alert("Hata", "Lütfen kiralama süresi seçiniz.");
@@ -597,13 +831,13 @@ const CreatePostScreen = ({ navigation, route }) => {
       if (depozito) formData.append("Depozito", depozito);
       if (binaYasi) formData.append("BinaYasi", binaYasi);
       if (toplamKat) formData.append("ToplamKat", toplamKat);
-      if (balkon) formData.append("Balkon", balkon);
-      if (asansor) formData.append("Asansor", asansor);
-      if (otopark) formData.append("Otopark", otopark);
-      if (esyali) formData.append("Esyali", esyali);
-      if (siteIcerisinde) formData.append("SiteIcerisinde", siteIcerisinde);
+      formData.append("Balkon", balkon ? "true" : "false");
+      formData.append("Asansor", asansor ? "true" : "false");
+      formData.append("Otopark", otopark ? "true" : "false");
+      formData.append("Esyali", esyali ? "true" : "false");
+      formData.append("SiteIcerisinde", siteIcerisinde ? "true" : "false");
       if (aidat) formData.append("Aidat", aidat);
-      if (takas) formData.append("Takas", takas);
+      formData.append("Takas", takas ? "true" : "false");
       if (minimumKiralamaSuresi)
         formData.append("MinimumKiralamaSuresi", minimumKiralamaSuresi);
 
@@ -632,6 +866,7 @@ const CreatePostScreen = ({ navigation, route }) => {
         // Add image status
         formData.append("PostImageStatus", "pending");
       });
+
       // Log the form data being sent
       console.log("===== SENDING POST DATA =====");
       console.log("UserId:", currentUser.id);
@@ -722,633 +957,343 @@ const CreatePostScreen = ({ navigation, route }) => {
   };
 
   return (
-    <ScrollView
-      className="flex-1 bg-gray-50"
-      contentContainerStyle={{ paddingBottom: 100 }}
-    >
-      <View className="p-5">
-        <View className="flex-row justify-between items-center mb-6">
-          <TouchableOpacity className="p-2" onPress={() => navigation.goBack()}>
-            <MaterialIcons name="arrow-back" size={24} color="#4A90E2" />
-          </TouchableOpacity>
-          <Text className="text-xl font-bold text-gray-800">
-            {propertyData ? "İlanı Düzenle" : "Yeni İlan Oluştur"}
-          </Text>
-          <View style={{ width: 24 }} />
-        </View>
-        {/* Main Form */}
-        <View className="bg-white rounded-xl p-5 shadow-sm mb-5">
-          {/* Title */}
-          <View className="mb-4">
-            <Text className="text-gray-700 mb-1 font-medium">
-              İlan Başlığı *
-            </Text>
-            <TextInput
-              className="border border-gray-300 rounded-lg p-3 text-base"
-              placeholder="Modern 2+1 Daire"
-              value={ilanBasligi}
-              onChangeText={setIlanBasligi}
-            />
-          </View>
+    <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
+      >
+        {/* Header */}
+        <CreatePostHeader
+          navigation={navigation}
+          onSubmit={handleSubmit}
+          isLoading={isCreating || uploadStatus === "uploading"}
+          propertyData={propertyData}
+        />
 
-          {/* Price */}
-          <View className="mb-4">
-            <Text className="text-gray-700 mb-1 font-medium">
-              Kira Tutarı (₺) *
-            </Text>
-            <TextInput
-              className="border border-gray-300 rounded-lg p-3 text-base"
-              placeholder="3500"
-              keyboardType="numeric"
-              value={kiraFiyati}
-              onChangeText={setKiraFiyati}
-            />
-          </View>
-
-          {/* Deposit Amount */}
-          <View className="mb-4">
-            <Text className="text-gray-700 mb-1 font-medium">
-              Depozito Tutarı (₺)
-            </Text>
-            <TextInput
-              className="border border-gray-300 rounded-lg p-3 text-base"
-              placeholder="7000"
-              keyboardType="numeric"
-              value={depozito}
-              onChangeText={setDepozito}
-            />
-          </View>
-
-          {/* Rental Period Section */}
-          <View className="mb-4">
-            <Text className="text-gray-700 mb-1 font-medium">
-              Kiralama Süresi *
-            </Text>
-            <View className="flex-row flex-wrap mt-1">
-              {rentalPeriodOptions.map((period) => (
-                <TouchableOpacity
-                  key={period.value}
-                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${
-                    RentalPeriod === period.value
-                      ? "bg-green-500"
-                      : "bg-gray-200"
-                  }`}
-                  onPress={() => setRentalPeriod(period.value)}
-                >
-                  <Text
-                    className={`${
-                      RentalPeriod === period.value
-                        ? "text-white"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    {period.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Location with Map Integration */}
-          <View className="mb-4">
-            <Text className="text-gray-700 mb-1 font-medium">Konum *</Text>
-
-            {/* Location Input with Map Button */}
-            <View className="flex-row items-center mb-3">
-              <TextInput
-                className="flex-1 border border-gray-300 rounded-lg p-3 text-base mr-2"
-                placeholder="Haritadan konum seçin"
-                value={location}
-                onChangeText={setLocation}
-                editable={false}
+        {/* Content */}
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View className="px-5 py-4">
+            {/* Basic Information */}
+            <FormSection title="Temel Bilgiler">
+              <CustomTextInput
+                label="İlan Başlığı"
+                value={ilanBasligi}
+                onChangeText={setIlanBasligi}
+                placeholder="Modern 2+1 Daire"
+                required
               />
-              <TouchableOpacity
-                className="bg-green-500 rounded-lg p-3"
-                onPress={() => setShowLocationPicker(true)}
-              >
-                <MaterialIcons name="location-on" size={24} color="white" />
-              </TouchableOpacity>
-            </View>
 
-            {/* Show coordinates if selected */}
-            {selectedCoordinates && (
-              <View className="bg-gray-100 rounded-lg p-3 mb-3">
-                <Text className="text-sm text-gray-600">
-                  Koordinatlar: {selectedCoordinates.latitude.toFixed(6)},{" "}
-                  {selectedCoordinates.longitude.toFixed(6)}
+              <CustomTextInput
+                label="Kira Tutarı (₺)"
+                value={kiraFiyati}
+                onChangeText={setKiraFiyati}
+                placeholder="3500"
+                keyboardType="numeric"
+                required
+              />
+
+              <CustomTextInput
+                label="Depozito Tutarı (₺)"
+                value={depozito}
+                onChangeText={setDepozito}
+                placeholder="7000"
+                keyboardType="numeric"
+              />
+
+              <CustomDropdown
+                label="Kiralama Süresi"
+                value={RentalPeriod}
+                setValue={setRentalPeriod}
+                options={rentalPeriodOptions}
+                placeholder="Kiralama süresi seçin"
+                required
+              />
+            </FormSection>
+
+            {/* Location Information */}
+            <FormSection title="Konum Bilgileri">
+              {/* Location Input with Map Button */}
+              <View className="mb-2">
+                <Text
+                  style={{ fontSize: 14 }}
+                  className="font-semibold text-gray-900 mb-3"
+                >
+                  Konum <Text className="text-red-500">*</Text>
                 </Text>
-              </View>
-            )}
-
-            {/* Manual Location Fields */}
-            <View className="flex-row justify-between mb-3">
-              <View className="w-[48%]">
-                <Text className="text-gray-600 mb-1 text-sm">İl *</Text>
-                <TextInput
-                  className="border border-gray-300 rounded-lg p-3 text-base"
-                  placeholder="İstanbul"
-                  value={il}
-                  onChangeText={setIl}
-                />
-              </View>
-              <View className="w-[48%]">
-                <Text className="text-gray-600 mb-1 text-sm">İlçe *</Text>
-                <TextInput
-                  className="border border-gray-300 rounded-lg p-3 text-base"
-                  placeholder="Kadıköy"
-                  value={ilce}
-                  onChangeText={setIlce}
-                />
-              </View>
-            </View>
-
-            <View className="flex-row justify-between">
-              <View className="w-[48%]">
-                <Text className="text-gray-600 mb-1 text-sm">Mahalle *</Text>
-                <TextInput
-                  className="border border-gray-300 rounded-lg p-3 text-base"
-                  placeholder="Caferağa"
-                  value={mahalle}
-                  onChangeText={setMahalle}
-                />
-              </View>
-              <View className="w-[48%]">
-                <Text className="text-gray-600 mb-1 text-sm">Site Adı *</Text>
-                <TextInput
-                  className="border border-gray-300 rounded-lg p-3 text-base"
-                  placeholder="Örnek Site"
-                  value={siteAdi}
-                  onChangeText={setSiteAdi}
-                />
-              </View>
-            </View>
-          </View>
-
-          {/* Property Features */}
-          <View className="mb-4">
-            <Text className="text-gray-700 mb-3 font-medium">Özellikler</Text>
-            <View className="flex-row justify-between">
-              <View className="w-[30%]">
-                <Text className="text-gray-600 mb-1 text-sm">Oda Sayısı</Text>
-                <TextInput
-                  className="border border-gray-300 rounded-lg p-3 text-base"
-                  placeholder="2+1"
-                  value={odaSayisi}
-                  onChangeText={setOdaSayisi}
-                />
-              </View>
-
-              <View className="w-[30%]">
-                <Text className="text-gray-600 mb-1 text-sm">Banyo</Text>
-                <TextInput
-                  className="border border-gray-300 rounded-lg p-3 text-base"
-                  placeholder="1"
-                  keyboardType="numeric"
-                  value={banyoSayisi}
-                  onChangeText={setBanyoSayisi}
-                />
-              </View>
-
-              <View className="w-[30%]">
-                <Text className="text-gray-600 mb-1 text-sm">Alan (m²)</Text>
-                <TextInput
-                  className="border border-gray-300 rounded-lg p-3 text-base"
-                  placeholder="90"
-                  keyboardType="numeric"
-                  value={brutMetreKare}
-                  onChangeText={setBrutMetreKare}
-                />
-              </View>
-            </View>
-          </View>
-
-          {/* Additional required fields */}
-          <View className="mb-4">
-            <View className="flex-row justify-between mb-3">
-              <View className="w-[48%]">
-                <Text className="text-gray-600 mb-1 text-sm">
-                  Net M² (Alan)
-                </Text>
-                <TextInput
-                  className="border border-gray-300 rounded-lg p-3 text-base"
-                  placeholder="85"
-                  keyboardType="numeric"
-                  value={netMetreKare}
-                  onChangeText={setNetMetreKare}
-                />
-              </View>
-              <View className="w-[48%]">
-                <Text className="text-gray-600 mb-1 text-sm">Mutfak *</Text>
-                <TextInput
-                  className="border border-gray-300 rounded-lg p-3 text-base"
-                  placeholder="Amerikan Mutfak"
-                  value={mutfak}
-                  onChangeText={setMutfak}
-                />
-              </View>
-            </View>
-          </View>
-
-          {/* Property Type */}
-          <View className="mb-4">
-            <Text className="text-gray-700 mb-1 font-medium">Mülk Tipi</Text>
-            <View className="flex-row flex-wrap mt-1">
-              {propertyTypes.map((type) => (
-                <TouchableOpacity
-                  key={type.value}
-                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${
-                    propertyType === type.value.toString()
-                      ? "bg-green-500"
-                      : "bg-gray-200"
-                  }`}
-                  onPress={() => setPropertyType(type.value.toString())}
-                >
-                  <Text
-                    className={`${
-                      propertyType === type.value.toString()
-                        ? "text-white"
-                        : "text-gray-700"
-                    }`}
+                <View className="flex-row items-center mb-3">
+                  <View className="flex-1 border border-gray-900 rounded-xl px-4 py-4 mr-2">
+                    <TextInput
+                      className="text-gray-900 text-base"
+                      placeholder="Haritadan konum seçin"
+                      placeholderTextColor="#b0b0b0"
+                      value={location}
+                      onChangeText={setLocation}
+                      editable={false}
+                      style={{ fontSize: 16 }}
+                    />
+                  </View>
+                  <TouchableOpacity
+                    className="bg-green-500 rounded-lg p-3"
+                    onPress={() => setShowLocationPicker(true)}
                   >
-                    {type.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+                    <FontAwesomeIcon icon={faMark} />
+                  </TouchableOpacity>
+                </View>
 
-          {/* Heating Type */}
-          <View className="mb-4">
-            <Text className="text-gray-700 mb-1 font-medium">
-              Isınma Tipi *
-            </Text>
-            <View className="flex-row flex-wrap mt-1">
-              {heatingTypes.map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${
-                    isitmaTipi === type ? "bg-green-500" : "bg-gray-200"
-                  }`}
-                  onPress={() => setIsitmaTipi(type)}
-                >
-                  <Text
-                    className={`${
-                      isitmaTipi === type ? "text-white" : "text-gray-700"
-                    }`}
-                  >
-                    {type}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Usage Status */}
-          <View className="mb-4">
-            <Text className="text-gray-700 mb-1 font-medium">
-              Kullanım Durumu *
-            </Text>
-            <View className="flex-row flex-wrap mt-1">
-              {usageStatusOptions.map((status) => (
-                <TouchableOpacity
-                  key={status}
-                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${
-                    kullanimDurumu === status ? "bg-green-500" : "bg-gray-200"
-                  }`}
-                  onPress={() => setKullanimDurumu(status)}
-                >
-                  <Text
-                    className={`${
-                      kullanimDurumu === status ? "text-white" : "text-gray-700"
-                    }`}
-                  >
-                    {status}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* From Whom (Kimden) */}
-          <View className="mb-4">
-            <Text className="text-gray-700 mb-1 font-medium">Kimden *</Text>
-            <View className="flex-row flex-wrap mt-1">
-              {["Sahibinden", "Emlakçıdan"].map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  className={`mr-2 mb-2 px-3 py-2 rounded-full ${
-                    kimden === type ? "bg-green-500" : "bg-gray-200"
-                  }`}
-                  onPress={() => setKimden(type)}
-                >
-                  <Text
-                    className={`${
-                      kimden === type ? "text-white" : "text-gray-700"
-                    }`}
-                  >
-                    {type}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Description */}
-          <View className="mb-4">
-            <Text className="text-gray-700 mb-1 font-medium">Açıklama *</Text>
-            <TextInput
-              className="border border-gray-300 rounded-lg p-3 text-base h-32"
-              placeholder="İlanınız hakkında detaylı bilgi verin..."
-              multiline
-              textAlignVertical="top"
-              value={postDescription}
-              onChangeText={setPostDescription}
-            />
-          </View>
-        </View>
-        {/* Images Section */}
-        // ESKİ KODU SİL ve YENİ KODLA DEĞİŞTİR:
-        {/* Images Section - YENİ VERSİYON */}
-        <View className="bg-white rounded-xl p-5 shadow-sm mb-5">
-          <View className="flex-row justify-between items-center mb-3">
-            <Text className="text-gray-700 font-medium">
-              Fotoğraflar * ({images.length}/15)
-            </Text>
-            {images.length > 0 && (
-              <TouchableOpacity
-                className="bg-red-500 rounded-lg px-3 py-1"
-                onPress={() => {
-                  Alert.alert(
-                    "Tüm Fotoğrafları Sil",
-                    "Tüm fotoğrafları silmek istediğinizden emin misiniz?",
-                    [
-                      { text: "İptal", style: "cancel" },
-                      {
-                        text: "Sil",
-                        style: "destructive",
-                        onPress: () => setImages([]),
-                      },
-                    ]
-                  );
-                }}
-              >
-                <Text className="text-white text-sm">Tümünü Sil</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Seçilen Fotoğraflar - YENİ */}
-          {images.length > 0 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              className="mb-4"
-            >
-              {images.map((img, index) => (
-                <View key={img.id} className="mr-3 relative">
-                  <Image
-                    source={{ uri: img.uri }}
-                    className="w-24 h-24 rounded-lg"
-                    resizeMode="cover"
-                  />
-
-                  {/* Fotoğraf numarası - YENİ */}
-                  <View className="absolute top-1 left-1 bg-black bg-opacity-60 rounded-full w-6 h-6 justify-center items-center">
-                    <Text className="text-white text-xs font-bold">
-                      {index + 1}
+                {/* Show coordinates if selected */}
+                {selectedCoordinates && (
+                  <View className=" mb-3">
+                    <Text className="text-sm text-gray-600">
+                      Koordinatlar: {selectedCoordinates.latitude.toFixed(6)},{" "}
+                      {selectedCoordinates.longitude.toFixed(6)}
                     </Text>
                   </View>
+                )}
+              </View>
 
-                  {/* Silme butonu - GELİŞTİRİLMİŞ */}
-                  <TouchableOpacity
-                    className="absolute top-1 right-1 bg-red-500 rounded-full p-1"
-                    onPress={() => removeImage(img.id)}
-                  >
-                    <MaterialIcons name="close" size={14} color="#FFFFFF" />
-                  </TouchableOpacity>
-
-                  {/* Dosya boyutu bilgisi - YENİ */}
-                  {img.fileSize && (
-                    <View className="absolute bottom-1 left-1 bg-black bg-opacity-60 rounded px-1">
-                      <Text className="text-white text-xs">
-                        {(img.fileSize / 1024 / 1024).toFixed(1)}MB
-                      </Text>
-                    </View>
-                  )}
+              <View className="flex-row justify-between mb-2">
+                <View className="w-[48%]">
+                  <CustomTextInput
+                    label="İl"
+                    value={il}
+                    onChangeText={setIl}
+                    placeholder="İstanbul"
+                    required
+                  />
                 </View>
-              ))}
-            </ScrollView>
-          )}
+                <View className="w-[48%]">
+                  <CustomTextInput
+                    label="İlçe"
+                    value={ilce}
+                    onChangeText={setIlce}
+                    placeholder="Kadıköy"
+                    required
+                  />
+                </View>
+              </View>
 
-          {/* Fotoğraf Ekleme Butonları - YENİ TASARIM */}
-          <View className="flex-row justify-center">
-            <TouchableOpacity
-              className="flex-1 bg-blue-500 rounded-lg py-4 mr-2 justify-center items-center"
-              onPress={() => pickImage(false)}
-              disabled={images.length >= 15}
-            >
-              <MaterialIcons name="photo-library" size={28} color="#FFFFFF" />
-              <Text className="text-white font-medium mt-1">Galeriden Seç</Text>
-              <Text className="text-white text-xs">(Çoklu seçim)</Text>
-            </TouchableOpacity>
+              <View className="flex-row justify-between">
+                <View className="w-[48%]">
+                  <CustomTextInput
+                    label="Mahalle"
+                    value={mahalle}
+                    onChangeText={setMahalle}
+                    placeholder="Caferağa"
+                    required
+                  />
+                </View>
+                <View className="w-[48%]">
+                  <CustomTextInput
+                    label="Site Adı"
+                    value={siteAdi}
+                    onChangeText={setSiteAdi}
+                    placeholder="Örnek Site"
+                    required
+                  />
+                </View>
+              </View>
+            </FormSection>
 
-            <TouchableOpacity
-              className="flex-1 bg-green-500 rounded-lg py-4 ml-2 justify-center items-center"
-              onPress={() => pickImage(true)}
-              disabled={images.length >= 15}
-            >
-              <MaterialIcons name="camera-alt" size={28} color="#FFFFFF" />
-              <Text className="text-white font-medium mt-1">Kamera</Text>
-              <Text className="text-white text-xs">(Tek fotoğraf)</Text>
-            </TouchableOpacity>
-          </View>
+            {/* Property Features */}
+            <FormSection title="Emlak Özellikleri">
+              <View className="flex-row justify-between mb-2">
+                <View className="w-[30%]">
+                  <CustomTextInput
+                    label="Oda Sayısı"
+                    value={odaSayisi}
+                    onChangeText={setOdaSayisi}
+                    placeholder="2+1"
+                    required
+                  />
+                </View>
+                <View className="w-[30%]">
+                  <CustomTextInput
+                    label="Banyo"
+                    value={banyoSayisi}
+                    onChangeText={setBanyoSayisi}
+                    placeholder="1"
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View className="w-[30%]">
+                  <CustomTextInput
+                    label="Alan (m²)"
+                    value={brutMetreKare}
+                    onChangeText={setBrutMetreKare}
+                    placeholder="90"
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
 
-          {/* Fotoğraf ipuçları - YENİ */}
-          <View className="mt-4 bg-blue-50 rounded-lg p-3">
-            <Text className="text-blue-800 text-sm font-medium mb-1">
-              📸 Fotoğraf İpuçları:
-            </Text>
-            <Text className="text-blue-700 text-xs">
-              • Galeriden birden fazla fotoğraf seçebilirsiniz{"\n"}• En az 1,
-              en fazla 15 fotoğraf ekleyebilirsiniz{"\n"}• Farklı açılardan
-              çekilmiş net fotoğraflar kullanın{"\n"}• Fotoğraflar otomatik
-              olarak sıkıştırılır
-            </Text>
-          </View>
+              <View className="flex-row justify-between">
+                <View className="w-[48%]">
+                  <CustomTextInput
+                    label="Net M² (Alan)"
+                    value={netMetreKare}
+                    onChangeText={setNetMetreKare}
+                    placeholder="85"
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View className="w-[48%]">
+                  <CustomTextInput
+                    label="Mutfak"
+                    value={mutfak}
+                    onChangeText={setMutfak}
+                    placeholder="Amerikan Mutfak"
+                    required
+                  />
+                </View>
+              </View>
 
-          {/* Fotoğraf yoksa gösterilecek alan - YENİ */}
-          {images.length === 0 && (
-            <View className="border-2 border-dashed border-gray-300 rounded-lg py-8 items-center">
-              <MaterialIcons
-                name="add-photo-alternate"
-                size={48}
-                color="#9CA3AF"
+              <CustomDropdown
+                label="Mülk Tipi"
+                value={propertyType}
+                setValue={setPropertyType}
+                options={propertyTypes}
+                placeholder="Mülk tipi seçin"
               />
-              <Text className="text-gray-500 mt-2 text-center">
-                Henüz fotoğraf eklenmedi{"\n"}
-                Yukarıdaki butonları kullanarak fotoğraf ekleyin
-              </Text>
-            </View>
-          )}
 
-          {/* Eski metin - SİLİNEBİLİR */}
-          {/* <Text className="text-sm text-gray-500 mb-2">
-    En az 1 fotoğraf ekleyin. En iyi sonuç için farklı açılardan
-    çekilmiş net fotoğraflar kullanın.
-  </Text> */}
-        </View>
-        {/* Additional Property Features Section */}
-        <View className="bg-white rounded-xl p-5 shadow-sm mb-5">
-          <Text className="text-gray-700 mb-3 font-medium">Ek Özellikler</Text>
+              <CustomDropdown
+                label="Isınma Tipi"
+                value={isitmaTipi}
+                setValue={setIsitmaTipi}
+                options={heatingTypes}
+                placeholder="Isınma tipi seçin"
+                required
+              />
 
-          <View className="flex-row justify-between mb-3">
-            <View className="w-[48%]">
-              <Text className="text-gray-600 mb-1 text-sm">Bina Yaşı</Text>
-              <TextInput
-                className="border border-gray-300 rounded-lg p-3 text-base"
-                placeholder="5"
-                keyboardType="numeric"
-                value={binaYasi}
-                onChangeText={setBinaYasi}
+              <CustomDropdown
+                label="Kullanım Durumu"
+                value={kullanimDurumu}
+                setValue={setKullanimDurumu}
+                options={usageStatusOptions}
+                placeholder="Kullanım durumu seçin"
+                required
               />
-            </View>
-            <View className="w-[48%]">
-              <Text className="text-gray-600 mb-1 text-sm">Toplam Kat</Text>
-              <TextInput
-                className="border border-gray-300 rounded-lg p-3 text-base"
-                placeholder="8"
-                keyboardType="numeric"
-                value={toplamKat}
-                onChangeText={setToplamKat}
-              />
-            </View>
-          </View>
 
-          <View className="flex-row justify-between mb-3">
-            <View className="w-[48%]">
-              <Text className="text-gray-600 mb-1 text-sm">Aidat (TL)</Text>
-              <TextInput
-                className="border border-gray-300 rounded-lg p-3 text-base"
-                placeholder="350"
-                keyboardType="numeric"
-                value={aidat}
-                onChangeText={setAidat}
+              <CustomDropdown
+                label="Kimden"
+                value={kimden}
+                setValue={setKimden}
+                options={["Sahibinden", "Emlakçıdan"]}
+                placeholder="Kimden seçin"
+                required
               />
-            </View>
-            <View className="w-[48%]">
-              <Text className="text-gray-600 mb-1 text-sm">
-                Min. Kiralama Süresi (Ay)
-              </Text>
-              <TextInput
-                className="border border-gray-300 rounded-lg p-3 text-base"
-                placeholder="12"
-                keyboardType="numeric"
-                value={minimumKiralamaSuresi}
-                onChangeText={setMinimumKiralamaSuresi}
-              />
-            </View>
-          </View>
 
-          {/* Toggle Options */}
-          <Text className="text-gray-700 mb-2 mt-4 font-medium">
-            Ek Seçenekler
-          </Text>
-          <View className="flex-row flex-wrap">
-            {[
-              { label: "Balkon", state: balkon, setState: setBalkon },
-              { label: "Asansör", state: asansor, setState: setAsansor },
-              { label: "Otopark", state: otopark, setState: setOtopark },
-              { label: "Eşyalı", state: esyali, setState: setEsyali },
-              {
-                label: "Site İçerisinde",
-                state: siteIcerisinde,
-                setState: setSiteIcerisinde,
-              },
-              { label: "Takas", state: takas, setState: setTakas },
-            ].map((option) => (
-              <TouchableOpacity
-                key={option.label}
-                className={`mr-2 mb-2 px-3 py-2 rounded-full ${
-                  option.state === "true" ? "bg-green-500" : "bg-gray-200"
-                }`}
-                onPress={() =>
-                  option.setState(option.state === "true" ? "false" : "true")
-                }
-              >
-                <Text
-                  className={`${
-                    option.state === "true" ? "text-white" : "text-gray-700"
-                  }`}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+              <CustomTextInput
+                label="Açıklama"
+                value={postDescription}
+                onChangeText={setPostDescription}
+                placeholder="İlanınız hakkında detaylı bilgi verin..."
+                multiline
+                numberOfLines={4}
+                required
+              />
+            </FormSection>
+
+            {/* Images Section */}
+            {renderImageGallery()}
+
+            {/* Additional Features */}
+            <FormSection title="Ek Özellikler">
+              <View className="flex-row justify-between mb-2">
+                <View className="w-[48%]">
+                  <CustomTextInput
+                    label="Bina Yaşı"
+                    value={binaYasi}
+                    onChangeText={setBinaYasi}
+                    placeholder="5"
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View className="w-[48%]">
+                  <CustomTextInput
+                    label="Toplam Kat"
+                    value={toplamKat}
+                    onChangeText={setToplamKat}
+                    placeholder="8"
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              <View className="flex-row justify-between mb-2">
+                <View className="w-[48%]">
+                  <CustomTextInput
+                    label="Aidat (TL)"
+                    value={aidat}
+                    onChangeText={setAidat}
+                    placeholder="350"
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View className="w-[48%]">
+                  <CustomTextInput
+                    label="Min. Kiralama Süresi (Ay)"
+                    value={minimumKiralamaSuresi}
+                    onChangeText={setMinimumKiralamaSuresi}
+                    placeholder="12"
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              {/* Switch Options */}
+              <SwitchField label="Balkon" value={balkon} setValue={setBalkon} />
+
+              <SwitchField
+                label="Asansör"
+                value={asansor}
+                setValue={setAsansor}
+              />
+
+              <SwitchField
+                label="Otopark"
+                value={otopark}
+                setValue={setOtopark}
+              />
+
+              <SwitchField label="Eşyalı" value={esyali} setValue={setEsyali} />
+
+              <SwitchField
+                label="Site İçerisinde"
+                value={siteIcerisinde}
+                setValue={setSiteIcerisinde}
+              />
+
+              <SwitchField label="Takas" value={takas} setValue={setTakas} />
+
+              <CustomDropdown
+                label="Para Birimi"
+                value={paraBirimi}
+                setValue={setParaBirimi}
+                options={["TL", "USD", "EUR"]}
+                placeholder="Para birimi seçin"
+              />
+            </FormSection>
           </View>
-        </View>
-        {/* Para Birimi Section */}
-        <View className="bg-white rounded-xl p-5 shadow-sm mb-5">
-          <Text className="text-gray-700 mb-3 font-medium">Para Birimi</Text>
-          <View className="flex-row flex-wrap mt-1">
-            {["TL", "USD", "EUR"].map((currency) => (
-              <TouchableOpacity
-                key={currency}
-                className={`mr-2 mb-2 px-3 py-2 rounded-full ${
-                  paraBirimi === currency ? "bg-green-500" : "bg-gray-200"
-                }`}
-                onPress={() => setParaBirimi(currency)}
-              >
-                <Text
-                  className={`${
-                    paraBirimi === currency ? "text-white" : "text-gray-700"
-                  }`}
-                >
-                  {currency}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-        {/* Submit Button */}
-        <TouchableOpacity
-          className={`py-3 rounded-lg mb-10 ${
-            isCreating || uploadStatus === "uploading"
-              ? "bg-green-300"
-              : "bg-green-500"
-          }`}
-          onPress={handleSubmit}
-          disabled={isCreating || uploadStatus === "uploading"}
+        </ScrollView>
+
+        {/* Location Picker Modal */}
+        <Modal
+          visible={showLocationPicker}
+          animationType="slide"
+          presentationStyle="fullScreen"
         >
-          {isCreating || uploadStatus === "uploading" ? (
-            <View className="flex-row justify-center items-center">
-              <ActivityIndicator color="#FFFFFF" size="small" />
-              <Text className="text-white font-semibold ml-2">
-                {propertyData
-                  ? "İlan Güncelleniyor..."
-                  : "İlan Oluşturuluyor..."}
-              </Text>
-            </View>
-          ) : (
-            <Text className="text-white font-semibold text-center text-lg">
-              {propertyData ? "İlanı Güncelle" : "İlanı Yayınla"}
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* Location Picker Modal */}
-      <Modal
-        visible={showLocationPicker}
-        animationType="slide"
-        presentationStyle="fullScreen"
-      >
-        <LocationPicker
-          onLocationSelect={handleLocationSelect}
-          initialLocation={selectedCoordinates}
-          onClose={() => setShowLocationPicker(false)}
-        />
-      </Modal>
-    </ScrollView>
+          <LocationPicker
+            onLocationSelect={handleLocationSelect}
+            initialLocation={selectedCoordinates}
+            onClose={() => setShowLocationPicker(false)}
+          />
+        </Modal>
+      </KeyboardAvoidingView>
+    </View>
   );
 };
 

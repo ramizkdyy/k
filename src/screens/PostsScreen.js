@@ -29,7 +29,11 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faPlus, faSliders } from "@fortawesome/pro-regular-svg-icons";
+import {
+  faHomeAlt,
+  faPlus,
+  faSliders,
+} from "@fortawesome/pro-regular-svg-icons";
 import { faSearch } from "@fortawesome/pro-solid-svg-icons";
 import { BlurView } from "expo-blur";
 import { faEdit, faTrash } from "@fortawesome/pro-light-svg-icons";
@@ -485,24 +489,27 @@ const PostsScreen = ({ navigation }) => {
               }
             />
           ) : (
-            <View className="w-full h-52 bg-gradient-to-br from-gray-100 to-gray-200 justify-center items-center">
-              <MaterialIcons name="home" size={32} color="#9CA3AF" />
-              <Text className="text-gray-500 mt-2 font-medium">Resim yok</Text>
+            <View
+              style={{ height: 350, borderRadius: 30 }}
+              className="w-full bg-gray-100 justify-center items-center"
+            >
+              <FontAwesomeIcon size={50} color="#dee0ea" icon={faHomeAlt} />
             </View>
           )}
 
           {/* Status badge - improved design */}
           <BlurView
-            intensity={100}
-            style={{ overflow: "hidden" }}
-            className="absolute top-3 py-3 px-2 left-3 rounded-full"
+            tint="dark"
+            intensity={50}
+            style={{ boxShadow: "0px 0px 12px #00000014", overflow: "hidden" }}
+            className="absolute  top-3 left-3 rounded-full"
           >
             <View
               className={`px-3 py-1.5 rounded-full ${
                 item.status === 0 ? "" : item.status === 1 ? "" : ""
               }`}
             >
-              <Text className="text-gray-900 text-sm font-semibold">
+              <Text className="text-white text-sm font-semibold">
                 {item.status === 0
                   ? "Aktif"
                   : item.status === 1
@@ -526,17 +533,19 @@ const PostsScreen = ({ navigation }) => {
           {userRole === "EVSAHIBI" && item.userId === currentUser?.id && (
             <View className="flex-row absolute gap-2 top-3 right-3">
               <BlurView
-                intensity={100}
+                style={{ boxShadow: "0px 0px 12px #00000014" }}
+                tint="dark"
+                intensity={50}
                 className="overflow-hidden rounded-full"
               >
                 {" "}
                 <TouchableOpacity
-                  className=" flex justify-center items-center p-4"
+                  className=" flex justify-center items-center"
                   onPress={() => handleOffersNavigation(item.postId)}
                   activeOpacity={1}
                 >
-                  <View className="flex-row items-center justify-center">
-                    <Text className="text-gray-900 font-semibold text-center text-sm ml-1">
+                  <View className="flex-row items-center justify-center px-3 py-3">
+                    <Text className="text-white font-medium text-center text-sm ">
                       Teklifler ({item.offerCount || 0})
                     </Text>
                   </View>
@@ -544,34 +553,38 @@ const PostsScreen = ({ navigation }) => {
               </BlurView>
 
               <BlurView
-                intensity={100}
+                style={{ boxShadow: "0px 0px 12px #00000014" }}
+                intensity={50}
+                tint="dark"
                 className="overflow-hidden rounded-full"
               >
                 {" "}
                 <TouchableOpacity
-                  className=" flex justify-center items-center p-4"
+                  className=" flex justify-center items-center py-3 px-3"
                   onPress={() => handleEditPostNavigation(item.postId)}
                   activeOpacity={1}
                 >
                   <View className="flex-row items-center justify-center">
-                    <FontAwesomeIcon icon={faEdit} />
+                    <FontAwesomeIcon color="white" icon={faEdit} />
                   </View>
                 </TouchableOpacity>
               </BlurView>
 
               <BlurView
-                intensity={100}
+                style={{ boxShadow: "0px 0px 12px #00000014" }}
+                intensity={50}
+                tint="dark"
                 className="overflow-hidden rounded-full"
               >
                 {" "}
                 <TouchableOpacity
-                  className=" flex justify-center items-center p-4"
+                  className=" flex justify-center items-center"
                   onPress={() => handleDeletePost(item.postId)}
                   disabled={isDeleting}
                   activeOpacity={1}
                 >
-                  <View className="flex-row items-center justify-center">
-                    <FontAwesomeIcon color="#9c092e" icon={faTrash} />
+                  <View className="flex-row items-center justify-center py-3 px-3">
+                    <FontAwesomeIcon color="#ff0040" icon={faTrash} />
                   </View>
                 </TouchableOpacity>
               </BlurView>
@@ -586,7 +599,7 @@ const PostsScreen = ({ navigation }) => {
               className="text-lg font-bold text-gray-900 flex-1 mr-3"
               numberOfLines={2}
             >
-              {item.ilanBasligi || "İlan başlığı yok"}
+              {item.ilanBasligi}
             </Text>
             <View className="flex flex-row items-center mb-3">
               <Text style={{ fontSize: 12 }} className="text-gray-500">

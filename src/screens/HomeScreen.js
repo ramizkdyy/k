@@ -97,7 +97,7 @@ const HomeScreen = ({ navigation }) => {
                   userRole === "EVSAHIBI" ? "LandlordProfile" : "TenantProfile"
                 );
               }}
-              className="w-12 h-12 mr-3 rounded-full bg-white justify-center items-center"
+              className="w-12 h-12 rounded-full bg-white justify-center items-center"
             >
               {/* Profile avatar or icon */}
               <Text className="text-gray-900 font-bold">

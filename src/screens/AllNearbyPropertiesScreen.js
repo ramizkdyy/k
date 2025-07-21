@@ -256,7 +256,10 @@ const PropertyListLoadingSkeleton = ({ count = 2 }) => {
   return (
     <View>
       {Array.from({ length: count }).map((_, index) => (
-        <PropertyListItemSkeleton key={`property-skeleton-${index}`} />
+        <PropertyListItemSkeleton
+          className="hidden"
+          key={`property-skeleton-${index}`}
+        />
       ))}
     </View>
   );
@@ -273,7 +276,10 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
   const [locationLoading, setLocationLoading] = useState(!initialLocation);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState(0); // 0: distance, 1: price, 2: date, 3: match, 4: updated
+
+  // UPDATED: Backend SortBy enum değerleri
+  // 0: Distance, 1: PostTime, 2: KiraFiyati, 3: ViewCount, 4: UpdatedDate
+  const [sortBy, setSortBy] = useState(0);
   const [sortDirection, setSortDirection] = useState(0); // 0: ASC, 1: DESC
   const [isMapView, setIsMapView] = useState(false);
   const [isMatch, setIsMatch] = useState(false);
@@ -283,6 +289,9 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
   const [allProperties, setAllProperties] = useState([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(true);
+
+  // NEW: Filtre değişikliği loading state'i için
+  const [isFilterChanging, setIsFilterChanging] = useState(false);
 
   // OPTIMIZE EDİLDİ: Native driver ile animated değerler
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -316,9 +325,18 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
 
   // Reset pagination when filters change
   useEffect(() => {
+    // Filtre değişikliği başladığında loading state'i set et
+    setIsFilterChanging(true);
     setCurrentPage(1);
     setAllProperties([]);
     setHasNextPage(true);
+
+    // Kısa bir delay ile loading state'i kaldır (API çağrısı başlayınca)
+    const timer = setTimeout(() => {
+      setIsFilterChanging(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
   }, [sortBy, sortDirection, isMatch, userLocation]);
 
   const getCurrentLocation = async () => {
@@ -353,7 +371,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
     }
   };
 
-  // Fetch nearby properties with pagination
+  // UPDATED: Fetch nearby properties with pagination and sortBy
   const {
     data: nearbyData,
     isLoading: isLoadingNearby,
@@ -367,6 +385,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
       radiusKm: 50,
       page: currentPage,
       pageSize: 10,
+      sortBy: sortBy, // Backend'e gönderilen sortBy parametresi
       sortDirection: sortDirection,
       isMatch: isMatch,
     },
@@ -385,6 +404,8 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
       if (currentPage === 1) {
         // First page or refresh - replace all data
         setAllProperties(newProperties);
+        // İlk sayfa yüklendiğinde filter loading'i kapat
+        setIsFilterChanging(false);
       } else {
         // Subsequent pages - append to existing data
         setAllProperties((prev) => {
@@ -402,62 +423,12 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
     }
   }, [nearbyData, currentPage]);
 
-  // DÜZELTME: Client-side sorting function
-  const getSortedProperties = (properties) => {
-    if (!properties || properties.length === 0) return [];
-
-    let sortedProperties = [...properties];
-
-    switch (sortBy) {
-      case 0: // distance
-        sortedProperties.sort((a, b) => {
-          const distanceA = a.distance || 999;
-          const distanceB = b.distance || 999;
-          return sortDirection === 0
-            ? distanceA - distanceB
-            : distanceB - distanceA;
-        });
-        break;
-      case 1: // price
-        sortedProperties.sort((a, b) => {
-          const priceA = a.kiraFiyati || 0;
-          const priceB = b.kiraFiyati || 0;
-          return sortDirection === 0 ? priceA - priceB : priceB - priceA;
-        });
-        break;
-      case 2: // date
-        sortedProperties.sort((a, b) => {
-          const dateA = new Date(a.postTime || 0);
-          const dateB = new Date(b.postTime || 0);
-          return sortDirection === 0 ? dateA - dateB : dateB - dateA;
-        });
-        break;
-      case 3: // match score
-        sortedProperties.sort((a, b) => {
-          const matchA = a.matchScore || 0;
-          const matchB = b.matchScore || 0;
-          return sortDirection === 0 ? matchA - matchB : matchB - matchA;
-        });
-        break;
-      case 4: // updated date
-        sortedProperties.sort((a, b) => {
-          const dateA = new Date(a.updatedDate || a.postTime || 0);
-          const dateB = new Date(b.updatedDate || b.postTime || 0);
-          return sortDirection === 0 ? dateA - dateB : dateB - dateA;
-        });
-        break;
-      default:
-        break;
-    }
-
-    return sortedProperties;
-  };
-
-  // Filter properties based on search query
+  // UPDATED: Filter properties based on search query only
+  // Backend'den gelen veriler zaten sortBy'a göre sıralanmış olarak geliyor
   const getFilteredProperties = () => {
     let filteredProperties = [...allProperties];
 
-    // Apply search filter
+    // Apply search filter only - sorting is now handled by backend
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filteredProperties = filteredProperties.filter(
@@ -471,15 +442,20 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
       );
     }
 
-    // Apply client-side sorting
-    return getSortedProperties(filteredProperties);
+    // Backend'den gelen veriler zaten sıralanmış olarak geliyor
+    return filteredProperties;
   };
 
   const filteredProperties = getFilteredProperties();
 
   // Handle load more
   const handleLoadMore = () => {
-    if (!isLoadingMore && hasNextPage && !isLoadingNearby) {
+    if (
+      !isLoadingMore &&
+      hasNextPage &&
+      !isLoadingNearby &&
+      !isFilterChanging
+    ) {
       setIsLoadingMore(true);
       setCurrentPage((prev) => prev + 1);
     }
@@ -491,6 +467,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
     setCurrentPage(1);
     setAllProperties([]);
     setHasNextPage(true);
+    setIsFilterChanging(false);
     try {
       await refetch();
     } catch (error) {
@@ -500,7 +477,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
     }
   };
 
-  // DÜZELTME: Sort handling
+  // UPDATED: Sort handling
   const handleSortChange = (newSortBy) => {
     if (newSortBy === sortBy) {
       // Same sort option - toggle direction
@@ -512,12 +489,13 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
     }
   };
 
-  // DÜZELTME: Sort options mapping
+  // UPDATED: Sort options mapping - Backend enum değerlerine göre
   const sortOptions = [
-    { key: 0, label: "Uzaklık" },
-    { key: 1, label: "Fiyat" },
-    { key: 2, label: "Tarih" },
-    { key: 3, label: "Eşleşme" },
+    { key: 0, label: "Uzaklık" }, // Distance
+    { key: 2, label: "Fiyat" }, // KiraFiyati
+    { key: 1, label: "Tarih" }, // PostTime
+    { key: 3, label: "Görüntülenme" }, // ViewCount
+    { key: 4, label: "Güncellenme" }, // UpdatedDate
   ];
 
   // Loading state effect
@@ -726,11 +704,12 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
                 source={{ uri: item.postImageUrl }}
                 style={{ width: width - 32, height: 350 }}
                 contentFit="cover"
-                transition={150}
+                transition={0}
                 placeholder={{
                   uri: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y5ZmFmYiIvPjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Yw7xrbGVuaXlvcjwvdGV4dD48L3N2Zz4=",
                 }}
                 cachePolicy="memory-disk"
+                recyclingKey={`${postId}-${index}`}
               />
             </TouchableOpacity>
           ))}
@@ -740,7 +719,8 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
         {!!(distance && distance > 0) && (
           <BlurView
             style={{ boxShadow: "0px 0px 12px #00000012" }}
-            intensity={100}
+            intensity={50}
+            tint="dark"
             className="absolute top-3 left-3 rounded-full overflow-hidden"
           >
             <View className="px-3 py-1.5 rounded-full flex-row items-center">
@@ -755,7 +735,8 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
         {/* Status badge */}
         <View className="absolute top-3 right-3">
           <BlurView
-            intensity={100}
+            intensity={50}
+            tint="dark"
             style={{
               overflow: "hidden",
               borderRadius: 100,
@@ -934,28 +915,36 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
     return <PropertyListLoadingSkeleton count={2} />;
   };
 
-  // Render empty state
-  const renderEmptyState = () => (
-    <View className="flex-1 justify-center items-center p-8">
-      <MaterialIcons name="location-off" size={64} color="#CBD5E0" />
-      <Text className="text-xl font-semibold text-gray-700 mt-4 mb-2 text-center">
-        Yakınında ilan bulunamadı
-      </Text>
-      <Text className="text-base text-gray-500 text-center mb-6">
-        {searchQuery
-          ? "Arama kriterlerinize uygun yakındaki ilan bulunamadı."
-          : "Yakınınızda henüz ilan bulunmuyor. Daha sonra tekrar kontrol edin."}
-      </Text>
-      {!!searchQuery && (
-        <TouchableOpacity
-          className="bg-green-500 px-6 py-3 rounded-lg"
-          onPress={() => setSearchQuery("")}
-        >
-          <Text className="text-white font-semibold">Aramayı Temizle</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
+  // UPDATED: Render empty state - Show skeleton during filter changes
+  const renderEmptyState = () => {
+    // Show skeleton during filter changes or initial loading
+    if (isFilterChanging || (isLoadingNearby && currentPage === 1)) {
+      return <PropertyListLoadingSkeleton count={3} />;
+    }
+
+    // Show empty state only when not loading and no results
+    return (
+      <View className="flex-1 justify-center items-center p-8">
+        <MaterialIcons name="location-off" size={64} color="#CBD5E0" />
+        <Text className="text-xl font-semibold text-gray-700 mt-4 mb-2 text-center">
+          Yakınında ilan bulunamadı
+        </Text>
+        <Text className="text-base text-gray-500 text-center mb-6">
+          {searchQuery
+            ? "Arama kriterlerinize uygun yakındaki ilan bulunamadı."
+            : "Yakınınızda henüz ilan bulunmuyor. Daha sonra tekrar kontrol edin."}
+        </Text>
+        {!!searchQuery && (
+          <TouchableOpacity
+            className="bg-green-500 px-6 py-3 rounded-lg"
+            onPress={() => setSearchQuery("")}
+          >
+            <Text className="text-white font-semibold">Aramayı Temizle</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
 
   // Show loading state
   if (locationLoading || (!userLocation && isLoadingNearby)) {
@@ -1054,32 +1043,43 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
               transform: [{ translateY: filterTranslateY }],
             }}
           >
-            <View className="flex-row">
-              {sortOptions.map((option) => (
-                <TouchableOpacity
-                  key={option.key}
-                  className={`mr-3 px-4 py-2 rounded-full border ${
-                    sortBy === option.key
-                      ? "bg-gray-900"
-                      : "bg-white border-white"
-                  }`}
-                  onPress={() => handleSortChange(option.key)}
-                >
-                  <Text
-                    className={`text-sm font-medium ${
-                      sortBy === option.key ? "text-white" : "text-gray-700"
+            <ScrollView
+              horizontal={true}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{
+                alignItems: "center",
+                paddingHorizontal: 0,
+              }}
+              style={{ width: "100%" }}
+            >
+              <View className="flex-row">
+                {sortOptions.map((option) => (
+                  <TouchableOpacity
+                    activeOpacity={1}
+                    key={option.key}
+                    className={`mr-3 px-4 py-2 rounded-full border ${
+                      sortBy === option.key
+                        ? "bg-gray-900"
+                        : "bg-white border-white"
                     }`}
+                    onPress={() => handleSortChange(option.key)}
                   >
-                    {option.label}
-                    {sortBy === option.key && (
-                      <Text className="ml-1">
-                        {sortDirection === 0 ? "↑" : "↓"}
-                      </Text>
-                    )}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+                    <Text
+                      className={`text-sm font-medium ${
+                        sortBy === option.key ? "text-white" : "text-gray-700"
+                      }`}
+                    >
+                      {option.label}
+                      {sortBy === option.key && (
+                        <Text className="ml-1">
+                          {sortDirection === 0 ? " ↑" : " ↓"}
+                        </Text>
+                      )}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
           </Animated.View>
         </Animated.View>
       </View>

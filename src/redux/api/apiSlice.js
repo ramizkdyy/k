@@ -213,7 +213,6 @@ export const apiSlice = createApi({
       providesTags: ["Post"],
     }),
 
-    // YENİ: Nearby posts paginated endpoint
     getNearbyPostsPaginated: builder.query({
       query: ({
         userId,
@@ -222,8 +221,9 @@ export const apiSlice = createApi({
         radiusKm = 50,
         page = 1,
         pageSize = 10,
+        sortBy,
         sortDirection,
-        isMatch = true,
+        isMatch = false,
       }) => {
         const params = new URLSearchParams();
         if (userId) params.append("userId", userId);
@@ -232,6 +232,7 @@ export const apiSlice = createApi({
         params.append("radiusKm", radiusKm);
         params.append("page", page);
         params.append("pageSize", pageSize);
+        if (sortBy !== undefined) params.append("sortBy", sortBy);
         if (sortDirection !== undefined)
           params.append("sortDirection", sortDirection);
         params.append("isMatch", isMatch);
@@ -290,6 +291,172 @@ export const apiSlice = createApi({
       providesTags: ["Matching"],
     }),
 
+    // YENİ: Paginated Matching endpoints
+    getLandlordTenantsPaginated: builder.query({
+      query: ({
+        landlordUserId,
+        page = 1,
+        pageSize = 10,
+        minMatchScore = 0.3,
+        propertyId,
+      }) => {
+        const params = new URLSearchParams();
+        if (landlordUserId) params.append("landlordUserId", landlordUserId);
+        params.append("page", page);
+        params.append("pageSize", pageSize);
+        params.append("minMatchScore", minMatchScore);
+        if (propertyId) params.append("propertyId", propertyId);
+
+        return {
+          url: `/api/Matching/landlord/tenants/paginated?${params.toString()}`,
+          method: "GET",
+        };
+      },
+      providesTags: ["Matching"],
+      // Pagination için cache merge stratejisi
+      serializeQueryArgs: ({ endpointName, queryArgs }) => {
+        const { landlordUserId, minMatchScore, propertyId } = queryArgs;
+        return `${endpointName}-${landlordUserId}-${minMatchScore}-${
+          propertyId || "all"
+        }`;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        if (arg.page === 1) {
+          return newItems;
+        }
+        return {
+          ...newItems,
+          data: [...(currentCache?.data || []), ...(newItems?.data || [])],
+        };
+      },
+      forceRefetch({ currentArg, previousArg }) {
+        return currentArg !== previousArg;
+      },
+    }),
+
+    getLandlordTenantsWithFallback: builder.query({
+      query: ({
+        landlordUserId,
+        page = 1,
+        pageSize = 10,
+        minMatchScore = 0.3,
+        propertyId,
+        includeFallback = true,
+      }) => {
+        const params = new URLSearchParams();
+        if (landlordUserId) params.append("landlordUserId", landlordUserId);
+        params.append("page", page);
+        params.append("pageSize", pageSize);
+        params.append("minMatchScore", minMatchScore);
+        if (propertyId) params.append("propertyId", propertyId);
+        params.append("includeFallback", includeFallback);
+
+        return {
+          url: `/api/Matching/landlord/tenants/paginated-with-fallback?${params.toString()}`,
+          method: "GET",
+        };
+      },
+      providesTags: ["Matching"],
+      // Pagination için cache merge stratejisi
+      serializeQueryArgs: ({ endpointName, queryArgs }) => {
+        const { landlordUserId, minMatchScore, propertyId, includeFallback } =
+          queryArgs;
+        return `${endpointName}-${landlordUserId}-${minMatchScore}-${
+          propertyId || "all"
+        }-${includeFallback}`;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        if (arg.page === 1) {
+          return newItems;
+        }
+        return {
+          ...newItems,
+          data: [...(currentCache?.data || []), ...(newItems?.data || [])],
+        };
+      },
+      forceRefetch({ currentArg, previousArg }) {
+        return currentArg !== previousArg;
+      },
+    }),
+
+    getTenantLandlordsPaginated: builder.query({
+      query: ({
+        tenantUserId,
+        page = 1,
+        pageSize = 10,
+        minMatchScore = 0.3,
+      }) => {
+        const params = new URLSearchParams();
+        if (tenantUserId) params.append("tenantUserId", tenantUserId);
+        params.append("page", page);
+        params.append("pageSize", pageSize);
+        params.append("minMatchScore", minMatchScore);
+
+        return {
+          url: `/api/Matching/tenant/landlords/paginated?${params.toString()}`,
+          method: "GET",
+        };
+      },
+      providesTags: ["Matching"],
+      // Pagination için cache merge stratejisi
+      serializeQueryArgs: ({ endpointName, queryArgs }) => {
+        const { tenantUserId, minMatchScore } = queryArgs;
+        return `${endpointName}-${tenantUserId}-${minMatchScore}`;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        if (arg.page === 1) {
+          return newItems;
+        }
+        return {
+          ...newItems,
+          data: [...(currentCache?.data || []), ...(newItems?.data || [])],
+        };
+      },
+      forceRefetch({ currentArg, previousArg }) {
+        return currentArg !== previousArg;
+      },
+    }),
+
+    getTenantLandlordsWithFallback: builder.query({
+      query: ({
+        tenantUserId,
+        page = 1,
+        pageSize = 10,
+        minMatchScore = 0.3,
+        includeFallback = true,
+      }) => {
+        const params = new URLSearchParams();
+        if (tenantUserId) params.append("tenantUserId", tenantUserId);
+        params.append("page", page);
+        params.append("pageSize", pageSize);
+        params.append("minMatchScore", minMatchScore);
+        params.append("includeFallback", includeFallback);
+
+        return {
+          url: `/api/Matching/tenant/landlords/paginated-with-fallback?${params.toString()}`,
+          method: "GET",
+        };
+      },
+      providesTags: ["Matching"],
+      // Pagination için cache merge stratejisi
+      serializeQueryArgs: ({ endpointName, queryArgs }) => {
+        const { tenantUserId, minMatchScore, includeFallback } = queryArgs;
+        return `${endpointName}-${tenantUserId}-${minMatchScore}-${includeFallback}`;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        if (arg.page === 1) {
+          return newItems;
+        }
+        return {
+          ...newItems,
+          data: [...(currentCache?.data || []), ...(newItems?.data || [])],
+        };
+      },
+      forceRefetch({ currentArg, previousArg }) {
+        return currentArg !== previousArg;
+      },
+    }),
+
     // Profile endpoints
     createLandlordProfile: builder.mutation({
       query: (profileData) => ({
@@ -335,6 +502,7 @@ export const apiSlice = createApi({
         { type: "Expectation", id: UserId }, // Also invalidate Expectation tag
       ],
     }),
+
     getLandlordProfiles: builder.query({
       query: () => "/api/profile/GetLandlordProfiles",
       providesTags: ["Profile"],
@@ -358,6 +526,7 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: (result, error, id) => [{ type: "Profile", id }, "User"],
     }),
+
     getLandlordPropertyListings: builder.query({
       query: (userId) => `/api/profile/GetLandlordPropertyListings/${userId}`,
       providesTags: ["Post", "Profile"],
@@ -559,6 +728,82 @@ export const apiSlice = createApi({
         body: data,
       }),
     }),
+    getSimilarPostsPaginated: builder.query({
+      query: ({
+        LandLordUserId,
+        page = 1,
+        pageSize = 10,
+        minSimilarityScore = 0.3,
+      }) => {
+        const params = new URLSearchParams();
+        if (LandLordUserId) params.append("LandLordUserId", LandLordUserId);
+        params.append("page", page);
+        params.append("pageSize", pageSize);
+        params.append("minSimilarityScore", minSimilarityScore);
+
+        return {
+          url: `/api/Matching/similar-posts/paginated?${params.toString()}`,
+          method: "GET",
+        };
+      },
+      providesTags: ["Matching"],
+      // Pagination için cache merge stratejisi
+      serializeQueryArgs: ({ endpointName, queryArgs }) => {
+        const { LandLordUserId, minSimilarityScore } = queryArgs;
+        return `${endpointName}-${
+          LandLordUserId || "all"
+        }-${minSimilarityScore}`;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        if (arg.page === 1) {
+          return newItems;
+        }
+        return {
+          ...newItems,
+          data: [...(currentCache?.data || []), ...(newItems?.data || [])],
+        };
+      },
+      forceRefetch({ currentArg, previousArg }) {
+        return currentArg !== previousArg;
+      },
+    }),
+
+    getSimilarPostsByPostIdPaginated: builder.query({
+      query: ({
+        postId,
+        page = 1,
+        pageSize = 10,
+        minSimilarityScore = 0.3,
+      }) => {
+        const params = new URLSearchParams();
+        params.append("page", page);
+        params.append("pageSize", pageSize);
+        params.append("minSimilarityScore", minSimilarityScore);
+
+        return {
+          url: `/api/Matching/similar-posts/by-post/${postId}/paginated?${params.toString()}`,
+          method: "GET",
+        };
+      },
+      providesTags: ["Matching"],
+      // Pagination için cache merge stratejisi
+      serializeQueryArgs: ({ endpointName, queryArgs }) => {
+        const { postId, minSimilarityScore } = queryArgs;
+        return `${endpointName}-${postId}-${minSimilarityScore}`;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        if (arg.page === 1) {
+          return newItems;
+        }
+        return {
+          ...newItems,
+          data: [...(currentCache?.data || []), ...(newItems?.data || [])],
+        };
+      },
+      forceRefetch({ currentArg, previousArg }) {
+        return currentArg !== previousArg;
+      },
+    }),
   }),
 });
 
@@ -595,6 +840,15 @@ export const {
   useGetTopTenantsQuery,
   useGetTopLandlordsQuery,
   useGetTopPostsForTenantQuery,
+
+  // YENİ: Paginated Matching hooks
+  useGetLandlordTenantsPaginatedQuery,
+  useGetLandlordTenantsWithFallbackQuery,
+  useGetTenantLandlordsPaginatedQuery,
+  useGetTenantLandlordsWithFallbackQuery,
+
+  useGetSimilarPostsPaginatedQuery,
+  useGetSimilarPostsByPostIdPaginatedQuery,
 
   // Offer hooks
   useCreateOfferMutation,
