@@ -40,6 +40,8 @@ import {
   faArrowLeft,
   faShare,
   faChevronLeft,
+  faBed,
+  faBedBunk,
 } from "@fortawesome/pro-light-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import * as Haptics from "expo-haptics";
@@ -48,6 +50,50 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import LocationSection from "../components/LocationSection";
 
 const { width, height } = Dimensions.get("window");
+
+// Enum mapping functions
+const getRentalPeriodText = (value) => {
+  const mapping = {
+    1: "6 Ay",
+    2: "1 Yıl",
+    3: "Uzun Vadeli (1+ Yıl)",
+    4: "Kısa Dönem Olabilir",
+  };
+  return mapping[value] || "Belirtilmemiş";
+};
+
+const getPropertyTypeText = (value) => {
+  const mapping = {
+    1: "Daire",
+    2: "Müstakil Ev",
+    3: "Villa",
+    4: "Stüdyo Daire",
+    5: "Rezidans",
+    6: "Diğer",
+  };
+  return mapping[value] || "Belirtilmemiş";
+};
+
+const getHeatingTypeText = (value) => {
+  const mapping = {
+    1: "Doğalgaz Kombi",
+    2: "Merkezi Sistem",
+    3: "Elektrikli Isıtma",
+    4: "Soba",
+    5: "Fark Etmez",
+  };
+  return mapping[value] || "Belirtilmemiş";
+};
+
+const getCurrencyText = (value) => {
+  const mapping = {
+    1: "₺",
+    2: "USD",
+    3: "EUR",
+    4: "GBP",
+  };
+  return mapping[value] || "₺";
+};
 
 const PostDetailScreen = ({ route, navigation }) => {
   const { postId } = route.params;
@@ -115,7 +161,7 @@ const PostDetailScreen = ({ route, navigation }) => {
 
   const imageOpacity = scrollY.interpolate({
     inputRange: [0, height * 0.5],
-    outputRange: [1, 0.5], // 1'den 0.2'ye (tamamen siyah olmasın, hafif görünür kalsın)
+    outputRange: [1, 0.5],
     extrapolate: "clamp",
   });
 
@@ -526,7 +572,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                   className="absolute left-0 right-0 flex-row justify-center"
                   style={{
                     bottom: 30,
-                    opacity: imageOpacity, // Pagination dots da birlikte siyahlaşsın
+                    opacity: imageOpacity,
                   }}
                 >
                   <BlurView
@@ -652,52 +698,64 @@ const PostDetailScreen = ({ route, navigation }) => {
                   {post.kiraFiyati
                     ? post.kiraFiyati.toLocaleString("tr-TR")
                     : "0"}{" "}
-                  <Text>{post.paraBirimi || "₺"}</Text>
+                  <Text>{getCurrencyText(post.paraBirimi)}</Text>
                 </Text>{" "}
                 /ay
               </Text>
             </View>
 
-            {/* Property Features */}
+            {/* Property Features - Güncellenmiş 5 özellik */}
             <View
-              style={{ paddingLeft: 30, paddingRight: 30 }}
+              style={{ paddingLeft: 20, paddingRight: 20 }}
               className="flex-row justify-between p-4 mb-6 mt-6"
             >
               <View className="items-center gap-2">
-                <FontAwesomeIcon size={30} icon={faGrid2} />
+                <FontAwesomeIcon size={26} icon={faBed} />
                 <Text
-                  style={{ fontSize: 14 }}
+                  style={{ fontSize: 13 }}
                   className="font-medium text-center text-gray-500"
                 >
-                  {post.odaSayisi || "N/A"} Oda
+                  {post.odaSayisi || "N/A"}
                 </Text>
               </View>
 
               <View className="items-center gap-2">
-                <FontAwesomeIcon size={30} icon={faShower} />
+                <FontAwesomeIcon size={26} icon={faBedBunk} />
                 <Text
-                  style={{ fontSize: 14 }}
+                  style={{ fontSize: 13 }}
+                  className="font-medium text-center text-gray-500"
+                >
+                  {post.yatakOdasiSayisi || "N/A"} Y.Odası
+                </Text>
+              </View>
+
+              <View className="items-center gap-2">
+                <FontAwesomeIcon size={26} icon={faShower} />
+                <Text
+                  style={{ fontSize: 13 }}
                   className="font-medium text-center text-gray-500"
                 >
                   {post.banyoSayisi || "N/A"} Banyo
                 </Text>
               </View>
+
               <View className="items-center gap-2">
-                <FontAwesomeIcon size={30} icon={faRuler} />
+                <FontAwesomeIcon size={26} icon={faRuler} />
                 <Text
-                  style={{ fontSize: 14 }}
+                  style={{ fontSize: 13 }}
                   className="font-medium text-center text-gray-500"
                 >
                   {post.brutMetreKare ? `${post.brutMetreKare} m²` : "N/A"}
                 </Text>
               </View>
+
               <View className="items-center gap-2">
-                <FontAwesomeIcon size={30} icon={faMoneyBills} />
+                <FontAwesomeIcon size={26} icon={faMoneyBills} />
                 <Text
-                  style={{ fontSize: 14 }}
+                  style={{ fontSize: 13 }}
                   className="font-medium text-center text-gray-500"
                 >
-                  {post.aidat ? `${post.aidat} ₺` : "Belirtilmemiş"}
+                  {post.aidat ? `${post.aidat} ₺` : "Yok"}
                 </Text>
               </View>
             </View>
@@ -773,7 +831,7 @@ const PostDetailScreen = ({ route, navigation }) => {
               </Text>
             </View>
 
-            {/* Location Section - NEW */}
+            {/* Location Section */}
             <LocationSection post={post} />
 
             {/* Property Details */}
@@ -810,7 +868,19 @@ const PostDetailScreen = ({ route, navigation }) => {
                     İlan Tipi
                   </Text>
                   <Text style={{ fontSize: 14 }} className="text-gray-500">
-                    {post.propertyType || "Belirtilmemiş"}
+                    {getPropertyTypeText(post.propertyType)}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between py-2 border-gray-200 items-center">
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="font-semibold text-gray-900"
+                  >
+                    Kiralama Süresi
+                  </Text>
+                  <Text style={{ fontSize: 14 }} className="text-gray-500">
+                    {getRentalPeriodText(post.rentalPeriod)}
                   </Text>
                 </View>
 
@@ -828,8 +898,8 @@ const PostDetailScreen = ({ route, navigation }) => {
                     İlan Tarihi
                   </Text>
                   <Text className="text-gray-500">
-                    {post.createdDate
-                      ? new Date(post.createdDate).toLocaleDateString("tr-TR")
+                    {post.postTime
+                      ? new Date(post.postTime).toLocaleDateString("tr-TR")
                       : "Belirtilmemiş"}
                   </Text>
                 </View>
@@ -845,7 +915,6 @@ const PostDetailScreen = ({ route, navigation }) => {
 
                 <View className="flex-row justify-between py-2 border-gray-200 mt-4 items-center">
                   <View className="flex flex-row gap-1 items-center">
-                    <FontAwesomeIcon icon={faFireFlameCurved} />
                     <Text
                       style={{ fontSize: 16 }}
                       className="text-gray-900 font-semibold"
@@ -854,13 +923,12 @@ const PostDetailScreen = ({ route, navigation }) => {
                     </Text>
                   </View>
                   <Text className="text-gray-500">
-                    {post.isitmaTipi || "Belirtilmemiş"}
+                    {getHeatingTypeText(post.isitmaTipi)}
                   </Text>
                 </View>
 
                 <View className="flex-row justify-between py-2 border-gray-200 items-center">
                   <View className="flex flex-row gap-1 items-center">
-                    <FontAwesomeIcon icon={faOven} />
                     <Text
                       style={{ fontSize: 16 }}
                       className="text-gray-900 font-semibold"
@@ -883,6 +951,20 @@ const PostDetailScreen = ({ route, navigation }) => {
                   <Text className="text-gray-500">
                     {post.netMetreKare
                       ? `${post.netMetreKare} m²`
+                      : "Belirtilmemiş"}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between py-2 border-gray-200">
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="text-gray-900 font-semibold"
+                  >
+                    Brüt Metrekare
+                  </Text>
+                  <Text className="text-gray-500">
+                    {post.brutMetreKare
+                      ? `${post.brutMetreKare} m²`
                       : "Belirtilmemiş"}
                   </Text>
                 </View>
@@ -926,6 +1008,31 @@ const PostDetailScreen = ({ route, navigation }) => {
                   </Text>
                 </View>
 
+                {/* YENİ: Bulunduğu Kat */}
+                <View className="flex-row justify-between py-2 border-gray-200">
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="text-gray-900 font-semibold"
+                  >
+                    Bulunduğu Kat
+                  </Text>
+                  <Text className="text-gray-500">
+                    {post.bulunduguKat || "Belirtilmemiş"}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between py-2 border-gray-200">
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="text-gray-900 font-semibold"
+                  >
+                    Toplam Kat
+                  </Text>
+                  <Text className="text-gray-500">
+                    {post.toplamKat || "Belirtilmemiş"}
+                  </Text>
+                </View>
+
                 <View className="flex-row justify-between py-2 border-gray-200">
                   <Text
                     style={{ fontSize: 16 }}
@@ -949,6 +1056,19 @@ const PostDetailScreen = ({ route, navigation }) => {
                     {post.otopark === true ? "Var" : "Yok"}
                   </Text>
                 </View>
+
+                <View className="flex-row justify-between py-2 ">
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="text-gray-900 font-semibold"
+                  >
+                    Asansör
+                  </Text>
+                  <Text className="text-gray-500">
+                    {post.asansor === true ? "Var" : "Yok"}
+                  </Text>
+                </View>
+
                 <View
                   style={{
                     borderBottomWidth: 0.4,
@@ -960,10 +1080,10 @@ const PostDetailScreen = ({ route, navigation }) => {
                     style={{ fontSize: 16 }}
                     className="text-gray-900 font-semibold"
                   >
-                    Asansör
+                    Site İçerisinde
                   </Text>
                   <Text className="text-gray-500">
-                    {post.asansor === true ? "Var" : "Yok"}
+                    {post.siteIcerisinde === true ? "Evet" : "Hayır"}
                   </Text>
                 </View>
 
@@ -997,7 +1117,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                   </Text>
                   <Text className="text-gray-500">
                     {post.depozito
-                      ? `${post.depozito} ${post.paraBirimi || "₺"}`
+                      ? `${post.depozito} ${getCurrencyText(post.paraBirimi)}`
                       : "Belirtilmemiş"}
                   </Text>
                 </View>
@@ -1116,12 +1236,12 @@ const PostDetailScreen = ({ route, navigation }) => {
             </>
           )}
 
-          {userRole === "EVSAHIBI" && post.landlordId === currentUser?.id && (
+          {userRole === "EVSAHIBI" && post.userId === currentUser?.id && (
             <>
               <TouchableOpacity
                 className="flex-1 bg-green-50 py-3 rounded-lg mr-2"
                 onPress={() =>
-                  navigation.navigate("EditPost", { postId: post.id })
+                  navigation.navigate("EditPost", { propertyData: post })
                 }
               >
                 <Text className="text-green-700 font-semibold text-center">
@@ -1132,7 +1252,7 @@ const PostDetailScreen = ({ route, navigation }) => {
               <TouchableOpacity
                 className="flex-1 bg-green-500 py-3 rounded-lg"
                 onPress={() =>
-                  navigation.navigate("Offers", { postId: post.id })
+                  navigation.navigate("Offers", { postId: post.postId })
                 }
               >
                 <Text className="text-white font-semibold text-center">
@@ -1170,7 +1290,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                 width: 40,
                 height: 40,
                 borderRadius: 20,
-                overflow: "hidden", // önemli! BlurView dışına taşmasın
+                overflow: "hidden",
               }}
             >
               <BlurView
@@ -1309,7 +1429,9 @@ const PostDetailScreen = ({ route, navigation }) => {
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-gray-600 mb-2">Teklif Tutarı (₺)</Text>
+                  <Text className="text-gray-600 mb-2">
+                    Teklif Tutarı ({getCurrencyText(post.paraBirimi)})
+                  </Text>
                   <TextInput
                     className="bg-gray-100 p-3 rounded-lg text-base"
                     placeholder="Ör: 3500"

@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { useDrawerProgress } from "@react-navigation/drawer";
+import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 import Animated, {
   interpolate,
   useAnimatedStyle,
@@ -419,12 +420,13 @@ const LandlordHomeStack = () => {
       <LandlordStack.Screen
         name="CreatePost"
         component={CreatePostScreen}
-        options={{
+        options={({ navigation }) => ({
           title: "Yeni İlan Oluştur",
           headerShown: false,
-        }}
+          tabBarStyle: { display: "none" }, // Tab bar'ı gizle
+        })}
       />
-      <TenantStack.Screen
+      <LandlordStack.Screen
         name="AllNearbyProperties"
         component={AllNearbyPropertiesScreen}
         options={{
@@ -508,18 +510,20 @@ const LandlordPropertiesStack = () => {
       <LandlordStack.Screen
         name="CreatePost"
         component={CreatePostScreen}
-        options={{
+        options={({ navigation }) => ({
           title: "Yeni İlan Oluştur",
           headerShown: false,
-        }}
+          tabBarStyle: { display: "none" }, // Tab bar'ı gizle
+        })}
       />
       <LandlordStack.Screen
         name="EditPost"
         component={CreatePostScreen}
-        options={{
+        options={({ navigation }) => ({
           title: "İlan Düzenle",
           headerShown: false,
-        }}
+          tabBarStyle: { display: "none" }, // Tab bar'ı gizle
+        })}
       />
       <LandlordStack.Screen
         name="Offers"
@@ -601,10 +605,11 @@ const LandlordProfileStack = () => {
       <LandlordStack.Screen
         name="CreatePost"
         component={CreatePostScreen}
-        options={{
+        options={({ navigation }) => ({
           title: "Yeni İlan Oluştur",
           headerShown: false,
-        }}
+          tabBarStyle: { display: "none" }, // Tab bar'ı gizle
+        })}
       />
       <LandlordStack.Screen
         name="ProfileExpectation"
@@ -658,6 +663,7 @@ const TenantHomeStack = () => {
     </TenantStack.Navigator>
   );
 };
+
 const TenantPropertiesStack = () => {
   return (
     <TenantStack.Navigator>
@@ -736,26 +742,36 @@ const TenantProfileStack = () => {
   );
 };
 
-// Tab Navigator
+// Tab Navigator - Dynamic tab bar visibility
 const LandlordTabNavigator = () => {
   return (
     <View style={{ flex: 1 }}>
       <Tab.Navigator
-        screenOptions={{
+        screenOptions={({ route, navigation }) => ({
           headerBackgroundContainerStyle: "",
           tabBarActiveTintColor: "#000",
           tabBarInactiveTintColor: "#999999",
-          tabBarStyle: {
-            backgroundColor: "rgba(255, 255, 255, 0.05)", // Daha yüksek opacity
-            borderTopColor: "rgba(224, 224, 224, 0.2)",
-            paddingTop: 5,
-            paddingBottom: 5,
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            elevation: 8,
-          },
+          tabBarStyle: ((route) => {
+            const routeName = getFocusedRouteNameFromRoute(route) ?? "";
+
+            // CreatePost ve EditPost ekranlarında tab bar'ı gizle
+            if (routeName === "CreatePost" || routeName === "EditPost") {
+              return { display: "none" };
+            }
+
+            // Normal tab bar style
+            return {
+              backgroundColor: "rgba(255, 255, 255, 0.05)",
+              borderTopColor: "rgba(224, 224, 224, 0.2)",
+              paddingTop: 5,
+              paddingBottom: 5,
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              elevation: 8,
+            };
+          })(route),
           tabBarBackground: () => (
             <BlurView
               intensity={100}
@@ -772,7 +788,7 @@ const LandlordTabNavigator = () => {
             />
           ),
           headerShown: false,
-        }}
+        })}
       >
         <Tab.Screen
           name="LandlordHome"
@@ -794,7 +810,6 @@ const LandlordTabNavigator = () => {
           component={LandlordPropertiesStack}
           options={{
             title: "Mülklerim",
-
             tabBarLabel: "Mülklerim",
             tabBarIcon: ({ focused }) => (
               <FontAwesomeIcon

@@ -274,7 +274,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
         }}
       >
         {/* Search Bar - Floating */}
-        <View style={{}}>
+        <View style={{ width: "80%" }}>
           <BlurView className="overflow-hidden rounded-2xl">
             <View
               style={{
@@ -298,10 +298,10 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
               <TouchableOpacity
                 onPress={searchLocation}
                 disabled={isLoadingLocation}
-                style={{ marginLeft: 8, padding: 8 }}
+                style={{ marginLeft: "75%", padding: 8 }}
               >
                 {isLoadingLocation ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator size={24} color="#fff" />
                 ) : (
                   <MaterialIcons name="search" size={24} color="#fff" />
                 )}
@@ -352,7 +352,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
           zIndex: 5,
         }}
       >
-        <FontAwesomeIcon icon={faLocationDot} size={32} color="#4A90E2" />
+        <FontAwesomeIcon icon={faLocationDot} size={32} color="#fff" />
       </View>
 
       {/* Crosshair/Guide (optional) */}
@@ -367,58 +367,17 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
           marginTop: -10,
           borderRadius: 10,
           borderWidth: 2,
-          borderColor: "#4A90E2",
+          borderColor: "#fff",
           backgroundColor: "rgba(74, 144, 226, 0.2)",
           zIndex: 4,
         }}
       />
 
-      {/* Current Location Button - Floating */}
-      <TouchableOpacity
-        style={{
-          position: "absolute",
-          bottom: 200,
-          right: 20,
-          width: 50,
-          height: 50,
-          borderRadius: 25,
-          backgroundColor: "#fff",
-          justifyContent: "center",
-          alignItems: "center",
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.25,
-          shadowRadius: 3.84,
-          elevation: 5,
-          zIndex: 5,
-        }}
-        onPress={goToCurrentLocation}
-        disabled={isLoadingLocation}
-      >
-        {isLoadingLocation ? (
-          <ActivityIndicator size="small" color="#fff" />
-        ) : (
-          <MaterialIcons name="my-location" size={24} color="#fff" />
-        )}
-      </TouchableOpacity>
-
-      {/* Instruction Text */}
-      <View
-        style={{
-          position: "absolute",
-          top: "40%",
-          left: 20,
-          right: 20,
-          alignItems: "center",
-          zIndex: 3,
-        }}
-      ></View>
-
       {/* Bottom Info Panel */}
       <View
         style={{
           position: "absolute",
-          bottom: 0,
+          bottom: 40,
           left: 0,
           right: 0,
           backgroundColor: "transparent",
@@ -455,22 +414,13 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
                     ? "Konum bilgisi yükleniyor..."
                     : locationName || "Konum bilgisi alınamadı"}
                 </Text>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: "#aaa",
-                  }}
-                >
-                  {centerLocation.latitude.toFixed(6)},{" "}
-                  {centerLocation.longitude.toFixed(6)}
-                </Text>
               </View>
             )}
 
             {/* Confirm Button */}
             <TouchableOpacity
               style={{
-                backgroundColor: "#4A90E2",
+                backgroundColor: "#fff",
                 paddingVertical: 12,
                 paddingHorizontal: 24,
                 borderRadius: 12,
@@ -482,12 +432,12 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
             >
               <Text
                 style={{
-                  color: "#fff",
+                  color: "#000",
                   fontSize: 16,
                   fontWeight: "600",
                 }}
               >
-                Bu Konumu Seç
+                Konumu Seç
               </Text>
             </TouchableOpacity>
           </View>

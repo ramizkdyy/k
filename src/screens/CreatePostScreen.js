@@ -32,10 +32,92 @@ import {
   faChevronDown,
   faCheck,
   faXmark,
+  faLocationDot,
 } from "@fortawesome/pro-solid-svg-icons";
 import LocationPicker from "../components/LocationPicker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
+
+// Enum mapping functions
+const mapRentalPeriodToEnum = (value) => {
+  const mapping = {
+    "6 Ay": 1,
+    "1 Yıl": 2,
+    "Uzun Vadeli (1+ Yıl)": 3,
+    "Kısa Dönem Olabilir": 4,
+  };
+  return mapping[value] || 1;
+};
+
+const mapPropertyTypeToEnum = (value) => {
+  const mapping = {
+    Daire: 1,
+    "Müstakil Ev": 2,
+    Villa: 3,
+    "Stüdyo Daire": 4,
+    Rezidans: 5,
+    Diğer: 6,
+  };
+  return mapping[value] || 1;
+};
+
+const mapHeatingTypeToEnum = (value) => {
+  const mapping = {
+    "Doğalgaz Kombi": 1,
+    "Merkezi Sistem": 2,
+    "Elektrikli Isıtma": 3,
+    Soba: 4,
+    "Fark Etmez": 5,
+  };
+  return mapping[value] || 1;
+};
+
+const mapPetPolicyToEnum = (value) => {
+  const mapping = {
+    "Evet, Kabul Ediyorum": 1,
+    "Hayır, Kabul Etmiyorum": 2,
+    "Sadece Küçük Hayvan": 3,
+  };
+  return mapping[value] || 2;
+};
+
+const mapStudentPolicyToEnum = (value) => {
+  const mapping = {
+    "Evet, Kabul Ediyorum": 1,
+    "Hayır, Kabul Etmiyorum": 2,
+    "Referanslı Öğrenci Olabilir": 3,
+  };
+  return mapping[value] || 2;
+};
+
+const mapSmokingPolicyToEnum = (value) => {
+  const mapping = {
+    "Evet, İzin Veriyorum": 1,
+    "Hayır, İzin Vermiyorum": 2,
+    "Sadece Balkonda İçilebilir": 3,
+  };
+  return mapping[value] || 2;
+};
+
+const mapPaymentMethodToEnum = (value) => {
+  const mapping = {
+    "Banka Havalesi": 1,
+    "Nakit Ödeme": 2,
+    Çek: 3,
+    "Fark Etmez": 4,
+  };
+  return mapping[value] || 1;
+};
+
+const mapCurrencyTypeToEnum = (value) => {
+  const mapping = {
+    TL: 1,
+    USD: 2,
+    EUR: 3,
+    GBP: 4,
+  };
+  return mapping[value] || 1;
+};
 
 // Header component matching ProfileExpectationScreen
 const CreatePostHeader = ({
@@ -325,43 +407,59 @@ const CreatePostScreen = ({ navigation, route }) => {
   // Get property data from route params if exists (for editing)
   const propertyData = route.params?.propertyData;
 
-  // Form state
+  // Form state - Temel Bilgiler
   const [ilanBasligi, setIlanBasligi] = useState("");
   const [kiraFiyati, setKiraFiyati] = useState("");
+  const [depozito, setDepozito] = useState("");
+  const [RentalPeriod, setRentalPeriod] = useState("");
+  const [paraBirimi, setParaBirimi] = useState("TL");
+  const [paymentMethod, setPaymentMethod] = useState("");
+
+  // Konum Bilgileri
   const [location, setLocation] = useState("");
+  const [il, setIl] = useState("");
+  const [ilce, setIlce] = useState("");
+  const [mahalle, setMahalle] = useState("");
+  const [siteAdi, setSiteAdi] = useState("");
+  const [selectedCoordinates, setSelectedCoordinates] = useState(null);
+
+  // Emlak Özellikleri
   const [postDescription, setPostDescription] = useState("");
   const [odaSayisi, setOdaSayisi] = useState("");
   const [banyoSayisi, setBanyoSayisi] = useState("");
+  const [yatakOdasiSayisi, setYatakOdasiSayisi] = useState(""); // YENİ ALAN
   const [brutMetreKare, setBrutMetreKare] = useState("");
   const [netMetreKare, setNetMetreKare] = useState("");
-  const [images, setImages] = useState([]);
   const [propertyType, setPropertyType] = useState("");
   const [isitmaTipi, setIsitmaTipi] = useState("");
-  const [depozito, setDepozito] = useState("");
+  const [kullanimDurumu, setKullanimDurumu] = useState("");
+  const [kimden, setKimden] = useState("Sahibinden");
+  const [mutfak, setMutfak] = useState("");
+
+  // Bina Bilgileri
   const [binaYasi, setBinaYasi] = useState("");
+  const [bulunduguKat, setBulunduguKat] = useState(""); // YENİ ALAN
   const [toplamKat, setToplamKat] = useState("");
+  const [aidat, setAidat] = useState("");
+  const [minimumKiralamaSuresi, setMinimumKiralamaSuresi] = useState("");
+
+  // Boolean Özellikler
   const [balkon, setBalkon] = useState(false);
   const [asansor, setAsansor] = useState(false);
   const [otopark, setOtopark] = useState(false);
   const [esyali, setEsyali] = useState(false);
   const [siteIcerisinde, setSiteIcerisinde] = useState(false);
-  const [aidat, setAidat] = useState("");
   const [takas, setTakas] = useState(false);
-  const [minimumKiralamaSuresi, setMinimumKiralamaSuresi] = useState("");
-  const [uploadStatus, setUploadStatus] = useState("idle");
-  const [il, setIl] = useState("");
-  const [RentalPeriod, setRentalPeriod] = useState("");
-  const [ilce, setIlce] = useState("");
-  const [kimden, setKimden] = useState("Sahibinden");
-  const [mutfak, setMutfak] = useState("");
-  const [mahalle, setMahalle] = useState("");
-  const [siteAdi, setSiteAdi] = useState("");
-  const [paraBirimi, setParaBirimi] = useState("TL");
-  const [kullanimDurumu, setKullanimDurumu] = useState("");
 
-  // Location picker states
+  // Yeni Politika Alanları
+  const [petPolicy, setPetPolicy] = useState("");
+  const [studentPolicy, setStudentPolicy] = useState("");
+  const [smokingPolicy, setSmokingPolicy] = useState("");
+
+  // Diğer
+  const [images, setImages] = useState([]);
+  const [uploadStatus, setUploadStatus] = useState("idle");
   const [showLocationPicker, setShowLocationPicker] = useState(false);
-  const [selectedCoordinates, setSelectedCoordinates] = useState(null);
 
   // Property type options
   const propertyTypes = [
@@ -375,12 +473,11 @@ const CreatePostScreen = ({ navigation, route }) => {
 
   // Heating type options
   const heatingTypes = [
-    "Merkezi Isıtma",
-    "Kombi",
+    "Doğalgaz Kombi",
+    "Merkezi Sistem",
+    "Elektrikli Isıtma",
     "Soba",
-    "Yerden Isıtma",
-    "Klima",
-    "Diğer",
+    "Fark Etmez",
   ];
 
   // Usage status options
@@ -392,6 +489,38 @@ const CreatePostScreen = ({ navigation, route }) => {
     "1 Yıl",
     "Uzun Vadeli (1+ Yıl)",
     "Kısa Dönem Olabilir",
+  ];
+
+  // Currency options
+  const currencyOptions = ["TL", "USD", "EUR", "GBP"];
+
+  // Payment method options
+  const paymentMethodOptions = [
+    "Banka Havalesi",
+    "Nakit Ödeme",
+    "Çek",
+    "Fark Etmez",
+  ];
+
+  // Pet policy options
+  const petPolicyOptions = [
+    "Evet, Kabul Ediyorum",
+    "Hayır, Kabul Etmiyorum",
+    "Sadece Küçük Hayvan",
+  ];
+
+  // Student policy options
+  const studentPolicyOptions = [
+    "Evet, Kabul Ediyorum",
+    "Hayır, Kabul Etmiyorum",
+    "Referanslı Öğrenci Olabilir",
+  ];
+
+  // Smoking policy options
+  const smokingPolicyOptions = [
+    "Evet, İzin Veriyorum",
+    "Hayır, İzin Vermiyorum",
+    "Sadece Balkonda İçilebilir",
   ];
 
   // Parse location string to extract il, ilce, and mahalle if available
@@ -423,6 +552,44 @@ const CreatePostScreen = ({ navigation, route }) => {
     setShowLocationPicker(false);
   };
 
+  // Numeric validation function
+  const validateNumericFields = () => {
+    const numericFields = [
+      { value: kiraFiyati, name: "Kira Tutarı", required: true },
+      { value: depozito, name: "Depozito", required: false },
+      { value: banyoSayisi, name: "Banyo Sayısı", required: false },
+      { value: yatakOdasiSayisi, name: "Yatak Odası Sayısı", required: false },
+      { value: brutMetreKare, name: "Brüt Metrekare", required: false },
+      { value: netMetreKare, name: "Net Metrekare", required: false },
+      { value: binaYasi, name: "Bina Yaşı", required: false },
+      { value: bulunduguKat, name: "Bulunduğu Kat", required: false },
+      { value: toplamKat, name: "Toplam Kat", required: false },
+      { value: aidat, name: "Aidat", required: false },
+      {
+        value: minimumKiralamaSuresi,
+        name: "Minimum Kiralama Süresi",
+        required: false,
+      },
+    ];
+
+    for (const field of numericFields) {
+      if (field.value && field.value.trim() !== "") {
+        const numValue = Number(field.value);
+        if (isNaN(numValue) || numValue < 0) {
+          Alert.alert(
+            "Hata",
+            `${field.name} geçerli bir pozitif sayı olmalıdır.`
+          );
+          return false;
+        }
+      } else if (field.required) {
+        Alert.alert("Hata", `${field.name} zorunludur.`);
+        return false;
+      }
+    }
+    return true;
+  };
+
   // Initialize form with property data if editing
   useEffect(() => {
     if (propertyData) {
@@ -432,11 +599,13 @@ const CreatePostScreen = ({ navigation, route }) => {
       setPostDescription(propertyData.postDescription || "");
       setOdaSayisi(propertyData.odaSayisi || "");
       setBanyoSayisi(propertyData.banyoSayisi?.toString() || "");
+      setYatakOdasiSayisi(propertyData.yatakOdasiSayisi?.toString() || "");
       setBrutMetreKare(propertyData.brutMetreKare?.toString() || "");
       setNetMetreKare(propertyData.netMetreKare?.toString() || "");
       setIsitmaTipi(propertyData.isitmaTipi || "");
       setDepozito(propertyData.depozito?.toString() || "");
       setBinaYasi(propertyData.binaYasi?.toString() || "");
+      setBulunduguKat(propertyData.bulunduguKat?.toString() || "");
       setToplamKat(propertyData.toplamKat?.toString() || "");
       setBalkon(propertyData.balkon === "true" || false);
       setAsansor(propertyData.asansor === "true" || false);
@@ -483,6 +652,7 @@ const CreatePostScreen = ({ navigation, route }) => {
       setPostDescription(savedFormData.postDescription || "");
       setOdaSayisi(savedFormData.odaSayisi || "");
       setBanyoSayisi(savedFormData.banyoSayisi || "");
+      setYatakOdasiSayisi(savedFormData.yatakOdasiSayisi || "");
       setBrutMetreKare(savedFormData.brutMetreKare || "");
       setNetMetreKare(savedFormData.netMetreKare || "");
       setImages(savedFormData.images || []);
@@ -500,6 +670,7 @@ const CreatePostScreen = ({ navigation, route }) => {
       setSiteAdi(savedFormData.siteAdi || "");
       setParaBirimi(savedFormData.paraBirimi || "TL");
       setKullanimDurumu(savedFormData.kullanimDurumu || "");
+      setBulunduguKat(savedFormData.bulunduguKat || "");
 
       // Load coordinates if available
       if (savedFormData.latitude && savedFormData.longitude) {
@@ -709,8 +880,8 @@ const CreatePostScreen = ({ navigation, route }) => {
   };
 
   // Form validation
-  // Form validation devamı
   const validateForm = () => {
+    // Temel zorunlu alanlar
     if (!ilanBasligi.trim()) {
       Alert.alert("Hata", "Lütfen ilan başlığı giriniz.");
       return false;
@@ -755,6 +926,21 @@ const CreatePostScreen = ({ navigation, route }) => {
       Alert.alert("Hata", "Lütfen kullanım durumu seçiniz.");
       return false;
     }
+    if (!RentalPeriod.trim()) {
+      Alert.alert("Hata", "Lütfen kiralama süresi seçiniz.");
+      return false;
+    }
+    if (!isitmaTipi.trim()) {
+      Alert.alert("Hata", "Lütfen ısıtma tipi seçiniz.");
+      return false;
+    }
+
+    // Numeric validation
+    if (!validateNumericFields()) {
+      return false;
+    }
+
+    // Fotoğraf kontrolü
     if (images.length === 0) {
       Alert.alert("Hata", "Lütfen en az bir fotoğraf ekleyiniz.");
       return false;
@@ -776,10 +962,7 @@ const CreatePostScreen = ({ navigation, route }) => {
       );
       return false;
     }
-    if (!RentalPeriod.trim()) {
-      Alert.alert("Hata", "Lütfen kiralama süresi seçiniz.");
-      return false;
-    }
+
     return true;
   };
 
@@ -818,28 +1001,51 @@ const CreatePostScreen = ({ navigation, route }) => {
       formData.append("Mahalle", mahalle);
       formData.append("SiteAdi", siteAdi);
       formData.append("OdaSayisi", odaSayisi);
-      formData.append("IsitmaTipi", isitmaTipi);
-      formData.append("ParaBirimi", paraBirimi);
       formData.append("KullanimDurumu", kullanimDurumu);
-      formData.append("RentalPeriod", RentalPeriod);
 
-      // Optional fields
+      // Enum mappings
+      formData.append("RentalPeriod", mapRentalPeriodToEnum(RentalPeriod));
+      formData.append("ParaBirimi", mapCurrencyTypeToEnum(paraBirimi));
+      formData.append("IsitmaTipi", mapHeatingTypeToEnum(isitmaTipi));
+
+      // Optional enum mappings
+      if (propertyType) {
+        formData.append("PropertyType", mapPropertyTypeToEnum(propertyType));
+      }
+      if (paymentMethod) {
+        formData.append("PaymentMethod", mapPaymentMethodToEnum(paymentMethod));
+      }
+      if (petPolicy) {
+        formData.append("PetPolicy", mapPetPolicyToEnum(petPolicy));
+      }
+      if (studentPolicy) {
+        formData.append("StudentPolicy", mapStudentPolicyToEnum(studentPolicy));
+      }
+      if (smokingPolicy) {
+        formData.append("SmokingPolicy", mapSmokingPolicyToEnum(smokingPolicy));
+      }
+
+      // Optional numeric fields
+      if (depozito) formData.append("Depozito", depozito);
       if (banyoSayisi) formData.append("BanyoSayisi", banyoSayisi);
+      if (yatakOdasiSayisi)
+        formData.append("YatakOdasiSayisi", yatakOdasiSayisi);
       if (brutMetreKare) formData.append("BrutMetreKare", brutMetreKare);
       if (netMetreKare) formData.append("NetMetreKare", netMetreKare);
-      if (propertyType) formData.append("PropertyType", propertyType);
-      if (depozito) formData.append("Depozito", depozito);
       if (binaYasi) formData.append("BinaYasi", binaYasi);
+      if (bulunduguKat) formData.append("BulunduguKat", bulunduguKat);
       if (toplamKat) formData.append("ToplamKat", toplamKat);
+      if (aidat) formData.append("Aidat", aidat);
+      if (minimumKiralamaSuresi)
+        formData.append("MinimumKiralamaSuresi", minimumKiralamaSuresi);
+
+      // Boolean fields
       formData.append("Balkon", balkon ? "true" : "false");
       formData.append("Asansor", asansor ? "true" : "false");
       formData.append("Otopark", otopark ? "true" : "false");
       formData.append("Esyali", esyali ? "true" : "false");
       formData.append("SiteIcerisinde", siteIcerisinde ? "true" : "false");
-      if (aidat) formData.append("Aidat", aidat);
       formData.append("Takas", takas ? "true" : "false");
-      if (minimumKiralamaSuresi)
-        formData.append("MinimumKiralamaSuresi", minimumKiralamaSuresi);
 
       // If editing, include the postId
       if (propertyData && propertyData.postId) {
@@ -870,9 +1076,15 @@ const CreatePostScreen = ({ navigation, route }) => {
       // Log the form data being sent
       console.log("===== SENDING POST DATA =====");
       console.log("UserId:", currentUser.id);
-      console.log("RentalPeriod:", RentalPeriod);
+      console.log("RentalPeriod enum:", mapRentalPeriodToEnum(RentalPeriod));
+      console.log(
+        "PropertyType enum:",
+        propertyType ? mapPropertyTypeToEnum(propertyType) : "Not set"
+      );
       console.log("Total images being sent:", newImages.length);
       console.log("Selected coordinates:", selectedCoordinates);
+      console.log("BulunduguKat:", bulunduguKat);
+      console.log("YatakOdasiSayisi:", yatakOdasiSayisi);
       console.log("=============================");
 
       // Submit post
@@ -932,6 +1144,7 @@ const CreatePostScreen = ({ navigation, route }) => {
         postDescription,
         odaSayisi,
         banyoSayisi,
+        yatakOdasiSayisi,
         brutMetreKare,
         netMetreKare,
         images,
@@ -948,6 +1161,7 @@ const CreatePostScreen = ({ navigation, route }) => {
         siteAdi,
         paraBirimi,
         kullanimDurumu,
+        bulunduguKat,
         // Save coordinates
         latitude: selectedCoordinates?.latitude,
         longitude: selectedCoordinates?.longitude,
@@ -1012,6 +1226,28 @@ const CreatePostScreen = ({ navigation, route }) => {
                 placeholder="Kiralama süresi seçin"
                 required
               />
+
+              <View className="flex-row justify-between">
+                <View className="w-[48%]">
+                  <CustomDropdown
+                    label="Para Birimi"
+                    value={paraBirimi}
+                    setValue={setParaBirimi}
+                    options={currencyOptions}
+                    placeholder="Para birimi seçin"
+                    required
+                  />
+                </View>
+                <View className="w-[48%]">
+                  <CustomDropdown
+                    label="Ödeme Yöntemi"
+                    value={paymentMethod}
+                    setValue={setPaymentMethod}
+                    options={paymentMethodOptions}
+                    placeholder="Ödeme yöntemi seçin"
+                  />
+                </View>
+              </View>
             </FormSection>
 
             {/* Location Information */}
@@ -1037,10 +1273,11 @@ const CreatePostScreen = ({ navigation, route }) => {
                     />
                   </View>
                   <TouchableOpacity
-                    className="bg-green-500 rounded-lg p-3"
+                    style={{ padding: 16 }}
+                    className="bg-gray-900 rounded-2xl"
                     onPress={() => setShowLocationPicker(true)}
                   >
-                    <FontAwesomeIcon icon={faMark} />
+                    <FontAwesomeIcon icon={faLocationDot} color="white" />
                   </TouchableOpacity>
                 </View>
 
@@ -1121,35 +1358,43 @@ const CreatePostScreen = ({ navigation, route }) => {
                 </View>
                 <View className="w-[30%]">
                   <CustomTextInput
-                    label="Alan (m²)"
+                    label="Yatak Odası"
+                    value={yatakOdasiSayisi}
+                    onChangeText={setYatakOdasiSayisi}
+                    placeholder="2"
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              <View className="flex-row justify-between mb-2">
+                <View className="w-[48%]">
+                  <CustomTextInput
+                    label="Brüt Alan (m²)"
                     value={brutMetreKare}
                     onChangeText={setBrutMetreKare}
                     placeholder="90"
                     keyboardType="numeric"
                   />
                 </View>
-              </View>
-
-              <View className="flex-row justify-between">
                 <View className="w-[48%]">
                   <CustomTextInput
-                    label="Net M² (Alan)"
+                    label="Net Alan (m²)"
                     value={netMetreKare}
                     onChangeText={setNetMetreKare}
                     placeholder="85"
                     keyboardType="numeric"
                   />
                 </View>
-                <View className="w-[48%]">
-                  <CustomTextInput
-                    label="Mutfak"
-                    value={mutfak}
-                    onChangeText={setMutfak}
-                    placeholder="Amerikan Mutfak"
-                    required
-                  />
-                </View>
               </View>
+
+              <CustomTextInput
+                label="Mutfak"
+                value={mutfak}
+                onChangeText={setMutfak}
+                placeholder="Amerikan Mutfak"
+                required
+              />
 
               <CustomDropdown
                 label="Mülk Tipi"
@@ -1200,10 +1445,10 @@ const CreatePostScreen = ({ navigation, route }) => {
             {/* Images Section */}
             {renderImageGallery()}
 
-            {/* Additional Features */}
-            <FormSection title="Ek Özellikler">
+            {/* Building Information */}
+            <FormSection title="Bina Bilgileri">
               <View className="flex-row justify-between mb-2">
-                <View className="w-[48%]">
+                <View className="w-[30%]">
                   <CustomTextInput
                     label="Bina Yaşı"
                     value={binaYasi}
@@ -1212,7 +1457,16 @@ const CreatePostScreen = ({ navigation, route }) => {
                     keyboardType="numeric"
                   />
                 </View>
-                <View className="w-[48%]">
+                <View className="w-[30%]">
+                  <CustomTextInput
+                    label="Bulunduğu Kat"
+                    value={bulunduguKat}
+                    onChangeText={setBulunduguKat}
+                    placeholder="3"
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View className="w-[30%]">
                   <CustomTextInput
                     label="Toplam Kat"
                     value={toplamKat}
@@ -1246,35 +1500,49 @@ const CreatePostScreen = ({ navigation, route }) => {
 
               {/* Switch Options */}
               <SwitchField label="Balkon" value={balkon} setValue={setBalkon} />
-
               <SwitchField
                 label="Asansör"
                 value={asansor}
                 setValue={setAsansor}
               />
-
               <SwitchField
                 label="Otopark"
                 value={otopark}
                 setValue={setOtopark}
               />
-
               <SwitchField label="Eşyalı" value={esyali} setValue={setEsyali} />
-
               <SwitchField
                 label="Site İçerisinde"
                 value={siteIcerisinde}
                 setValue={setSiteIcerisinde}
               />
-
               <SwitchField label="Takas" value={takas} setValue={setTakas} />
+            </FormSection>
+
+            {/* Rental Policies */}
+            <FormSection title="Kiralama Politikaları">
+              <CustomDropdown
+                label="Evcil Hayvan Politikası"
+                value={petPolicy}
+                setValue={setPetPolicy}
+                options={petPolicyOptions}
+                placeholder="Evcil hayvan politikası seçin"
+              />
 
               <CustomDropdown
-                label="Para Birimi"
-                value={paraBirimi}
-                setValue={setParaBirimi}
-                options={["TL", "USD", "EUR"]}
-                placeholder="Para birimi seçin"
+                label="Öğrenci Kabulü"
+                value={studentPolicy}
+                setValue={setStudentPolicy}
+                options={studentPolicyOptions}
+                placeholder="Öğrenci politikası seçin"
+              />
+
+              <CustomDropdown
+                label="Sigara Politikası"
+                value={smokingPolicy}
+                setValue={setSmokingPolicy}
+                options={smokingPolicyOptions}
+                placeholder="Sigara politikası seçin"
               />
             </FormSection>
           </View>

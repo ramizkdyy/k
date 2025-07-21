@@ -371,13 +371,19 @@ const LocationSection = ({ post }) => {
               zIndex: 10,
             }}
           >
-            <BlurView className="px-4 py-1.5 rounded-full overflow-hidden">
+            <BlurView
+              intensity={50}
+              tint="dark"
+              className="px-4 py-1.5 rounded-full overflow-hidden"
+            >
               <Text style={{ fontSize: 14, color: "#dee0ea", marginTop: 2 }}>
                 {post.mahalle}, {post.ilce}, {post.il}
               </Text>
             </BlurView>
             <TouchableOpacity onPress={() => setIsModalVisible(false)}>
               <BlurView
+                intensity={50}
+                tint="dark"
                 className="overflow-hidden"
                 style={{
                   padding: 8,
@@ -439,7 +445,11 @@ const LocationSection = ({ post }) => {
                 showMapOptions();
               }}
             >
-              <BlurView className="flex flex-row px-5 py-3 overflow-hidden rounded-full items-center bg-black bg-opacity-50">
+              <BlurView
+                intensity={50}
+                tint="dark"
+                className="flex flex-row px-5 py-3 overflow-hidden rounded-full items-center bg-black bg-opacity-50"
+              >
                 <FontAwesomeIcon icon={faLocationDot} size={16} color="white" />
                 <Text
                   style={{
