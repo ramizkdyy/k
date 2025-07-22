@@ -715,7 +715,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                   style={{ fontSize: 13 }}
                   className="font-medium text-center text-gray-500"
                 >
-                  {post.odaSayisi || "N/A"}
+                  {post.odaSayisi || "N/A"} Oda
                 </Text>
               </View>
 

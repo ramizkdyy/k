@@ -499,88 +499,55 @@ const OffersScreen = () => {
                 </Text>
               </View>
 
-              {/* Price Comparison */}
-              {post.kiraFiyati && (
-                <View
-                  style={{ paddingHorizontal: 40 }}
-                  className="rounded-2xl py-2 mb-2"
-                >
+              <View className="items-center flex flex-row gap-1 mt-1">
+                {" "}
+                <View className="w-12 h-12 rounded-full justify-center items-center mr-3">
+                  {!!item.offeringUser?.profileImageUrl ? (
+                    <Image
+                      source={{ uri: item.offeringUser.profileImageUrl }}
+                      className="w-full h-full rounded-full"
+                    />
+                  ) : (
+                    <View>
+                      <Text className="text-xl font-bold text-gray-900">
+                        {item.offeringUser.user?.name?.charAt(0) || "E"}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <View className="flex flex-col">
+                  {/* User Info for Landlords */}
+                  {isLandlord && item.offeringUser && (
+                    <View className="rounded-2xl">
+                      <Text style={{ fontSize: 14 }} className="text-gray-900">
+                        {item.offeringUser.user.name}{" "}
+                        {item.offeringUser.user.surname}
+                      </Text>
+                    </View>
+                  )}
+                  {/* Offer Description */}
+                  {item.offerDescription && (
+                    <View style={{ marginTop: 2 }} className="rounded-2xl mb-1">
+                      <Text className="text-sm text-gray-500" numberOfLines={3}>
+                        {item.offerDescription}
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Date */}
                   <View className="flex-row items-center justify-between">
-                    <View className="items-center">
-                      <Text className="text-gray-900 font-semibold text-[14px] mb-1">
-                        İlan Fiyatı
-                      </Text>
-                      <Text
-                        style={{ fontSize: 23 }}
-                        className=" underline text-gray-500"
-                      >
-                        {post.paraBirimi === "USD"
-                          ? "$"
-                          : post.paraBirimi === "EUR"
-                          ? "€"
-                          : "₺"}
-                        {post.kiraFiyati.toLocaleString()}
-                      </Text>
-                    </View>
-                    <View className="items-center">
-                      <Text className="text-gray-900 font-semibold text-[14px] mb-1">
-                        Verilen Teklif
-                      </Text>
-                      <Text
-                        style={{ fontSize: 23 }}
-                        className={`underline ${
-                          post.kiraFiyati > item.offerAmount
-                            ? "text-red-500"
-                            : post.kiraFiyati < item.offerAmount
-                            ? "text-green-500"
-                            : "text-gray-500"
-                        }`}
-                      >
-                        {post.paraBirimi === "USD"
-                          ? "$"
-                          : post.paraBirimi === "EUR"
-                          ? "€"
-                          : "₺"}
-                        {item.offerAmount?.toLocaleString() || "0"}
-                      </Text>
-                    </View>
+                    <Text className="text-gray-400 text-xs">
+                      {item.offerTime
+                        ? new Date(item.offerTime).toLocaleDateString("tr-TR", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })
+                        : ""}
+                    </Text>
                   </View>
                 </View>
-              )}
-
-              {/* Offer Description */}
-              {item.offerDescription && (
-                <View className="rounded-2xl py-2">
-                  <Text className="text-sm" numberOfLines={3}>
-                    {item.offerDescription}
-                  </Text>
-                </View>
-              )}
-
-              {/* Date */}
-              <View className="flex-row items-center justify-between">
-                <Text className="text-gray-400 text-xs">
-                  {item.offerTime
-                    ? new Date(item.offerTime).toLocaleDateString("tr-TR", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })
-                    : ""}
-                </Text>
               </View>
-
-              {/* User Info for Landlords */}
-              {isLandlord && item.offeringUser && (
-                <View className="bg-green-50 rounded-2xl p-3 mb-3">
-                  <Text className="text-green-900 text-xs font-medium mb-1">
-                    Teklif Veren
-                  </Text>
-                  <Text className="text-green-800 text-sm font-semibold">
-                    {item.offeringUser.name} {item.offeringUser.surname}
-                  </Text>
-                </View>
-              )}
             </View>
 
             {/* Action Buttons for Landlords */}

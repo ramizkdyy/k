@@ -16,11 +16,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Image } from "expo-image";
 import { useSelector } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
-import {
-  useGetForYouPageQuery,
-  useGetSimilarPostsPaginatedQuery,
-  useGetSimilarPostsByPostIdPaginatedQuery,
-} from "../redux/api/apiSlice";
+import { useGetSimilarPostsPaginatedQuery } from "../redux/api/apiSlice";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
@@ -32,31 +28,425 @@ import {
   faCalendar,
   faBuilding,
   faCoins,
+  faHouse,
+  faHeart,
 } from "@fortawesome/pro-light-svg-icons";
 import { BlurView } from "expo-blur";
 import { faChevronLeft, faSliders } from "@fortawesome/pro-regular-svg-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
+
+// Skeleton Components
+const ShimmerPlaceholder = ({ width, height, borderRadius = 8, style }) => {
+  const animatedValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const shimmerAnimation = Animated.loop(
+      Animated.timing(animatedValue, {
+        toValue: 1,
+        duration: 2000,
+        useNativeDriver: true,
+      }),
+      { iterations: -1 }
+    );
+
+    shimmerAnimation.start();
+
+    return () => shimmerAnimation.stop();
+  }, [animatedValue]);
+
+  const translateX = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-width * 1.5, width * 1.5],
+    extrapolate: "clamp",
+  });
+
+  return (
+    <View
+      style={[
+        {
+          width,
+          height,
+          borderRadius,
+          backgroundColor: "#E5E7EB",
+          overflow: "hidden",
+        },
+        style,
+      ]}
+    >
+      <Animated.View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          transform: [{ translateX }],
+        }}
+      >
+        <LinearGradient
+          colors={[
+            "rgba(255, 255, 255, 0)",
+            "rgba(255, 255, 255, 0.4)",
+            "rgba(255, 255, 255, 0.8)",
+            "rgba(255, 255, 255, 0.4)",
+            "rgba(255, 255, 255, 0)",
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={{
+            width: width * 1.5,
+            height: "100%",
+          }}
+        />
+      </Animated.View>
+    </View>
+  );
+};
+
+const PropertyListItemSkeleton = () => {
+  return (
+    <View
+      style={{ marginHorizontal: 16 }}
+      className="overflow-hidden mb-4 pt-6 border-b border-gray-200"
+    >
+      {/* Image Skeleton */}
+      <View className="relative">
+        <ShimmerPlaceholder width={width - 32} height={350} borderRadius={25} />
+
+        {/* Status badge skeleton */}
+        <View className="absolute top-3 right-3">
+          <ShimmerPlaceholder width={50} height={28} borderRadius={14} />
+        </View>
+
+        {/* Pagination dots skeleton */}
+        <View className="absolute bottom-3 left-0 right-0 flex-row justify-center">
+          <View className="flex-row">
+            {[1, 2, 3].map((_, index) => (
+              <View
+                key={index}
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  marginHorizontal: 4,
+                  backgroundColor: "rgba(255, 255, 255, 0.5)",
+                }}
+              />
+            ))}
+          </View>
+        </View>
+      </View>
+
+      <View className="mt-4 px-1">
+        {/* Title Skeleton */}
+        <View className="items-start mb-1">
+          <ShimmerPlaceholder
+            width={width - 80}
+            height={20}
+            borderRadius={10}
+            style={{ marginBottom: 8 }}
+          />
+          <ShimmerPlaceholder
+            width={width - 120}
+            height={16}
+            borderRadius={8}
+          />
+        </View>
+
+        {/* Location Skeleton */}
+        <View className="mb-2 mt-2">
+          <ShimmerPlaceholder width={150} height={14} borderRadius={7} />
+        </View>
+
+        {/* Price Skeleton */}
+        <View className="flex-row items-center mb-3">
+          <ShimmerPlaceholder width={120} height={18} borderRadius={9} />
+          <View className="ml-2">
+            <ShimmerPlaceholder width={25} height={14} borderRadius={7} />
+          </View>
+        </View>
+
+        {/* Property Details Slider Skeleton */}
+        <View className="mt-3">
+          <View className="flex-row">
+            {[1, 2, 3, 4, 5].map((_, index) => (
+              <View
+                key={index}
+                className="items-center justify-center"
+                style={{
+                  marginRight: 46,
+                  marginLeft: 3,
+                  height: 85,
+                }}
+              >
+                {/* Icon skeleton */}
+                <ShimmerPlaceholder width={30} height={30} borderRadius={15} />
+
+                {/* Value skeleton */}
+                <ShimmerPlaceholder
+                  width={40}
+                  height={16}
+                  borderRadius={8}
+                  style={{ marginTop: 8 }}
+                />
+
+                {/* Label skeleton */}
+                <ShimmerPlaceholder
+                  width={35}
+                  height={11}
+                  borderRadius={5}
+                  style={{ marginTop: 4 }}
+                />
+              </View>
+            ))}
+          </View>
+        </View>
+      </View>
+
+      {/* User Profile Section Skeleton */}
+      <View className="flex flex-col">
+        <View className="mb-5 pl-1 mt-3">
+          <View className="flex-1 flex-row justify-between items-center w-full">
+            {/* User info skeleton */}
+            <View className="flex-row items-center">
+              {/* Profile image skeleton */}
+              <ShimmerPlaceholder
+                width={48}
+                height={48}
+                borderRadius={24}
+                style={{ marginRight: 12 }}
+              />
+
+              <View className="flex-col">
+                {/* Name skeleton */}
+                <ShimmerPlaceholder
+                  width={120}
+                  height={14}
+                  borderRadius={7}
+                  style={{ marginBottom: 4 }}
+                />
+
+                {/* Rating skeleton */}
+                <ShimmerPlaceholder width={80} height={12} borderRadius={6} />
+              </View>
+            </View>
+
+            {/* Time skeleton */}
+            <ShimmerPlaceholder width={60} height={12} borderRadius={6} />
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const PropertyListLoadingSkeleton = ({ count = 2 }) => {
+  return (
+    <View>
+      {Array.from({ length: count }).map((_, index) => (
+        <PropertyListItemSkeleton key={`property-skeleton-${index}`} />
+      ))}
+    </View>
+  );
+};
+
+// Enum mapping functions - API response'undaki format için güncellendi
+const getCurrencyText = (value) => {
+  // Eğer zaten string ise direkt döndür
+  if (typeof value === "string") {
+    return value;
+  }
+
+  // Sayı ise mapping'den al
+  const mapping = {
+    1: "₺",
+    2: "USD",
+    3: "EUR",
+    4: "GBP",
+  };
+  return mapping[value] || "₺";
+};
 
 const AllSimilarPropertiesScreen = ({ navigation, route }) => {
   const currentUser = useSelector(selectCurrentUser);
   const userRole = useSelector(selectUserRole);
 
-  // Route params - NearbyProperties'den gelen parametreler
-  const {
-    userLocation,
-    similarPosts = [], // Eğer similarPosts doğrudan gönderilirse
-    landlordUserId, // Yeni: Landlord ID'si
-    postId, // Yeni: Belirli bir post'a benzer postlar için
-    searchType = "general", // "general", "byLandlord", "byPost"
-  } = route.params || {};
+  // Route params - Sadece landlordUserId kullanıyoruz
+  const { landlordUserId } = route.params || {};
 
   // State
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [sortBy, setSortBy] = useState("date"); // date, price, title
+  const [currentPage, setCurrentPage] = useState(1);
+  const [allData, setAllData] = useState([]);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isFilterChanging, setIsFilterChanging] = useState(false);
 
   const scrollY = useRef(new Animated.Value(0)).current;
+
+  // Similarity Score gösterim fonksiyonu
+  const getSimilarityScoreInfo = (score) => {
+    const percentage = Math.round(score);
+    if (percentage >= 80)
+      return {
+        level: "excellent",
+        color: "#86efac",
+        text: "Mükemmel",
+        bgColor: "#dcfce7",
+        percentage,
+      };
+    if (percentage >= 60)
+      return {
+        level: "good",
+        color: "#9cf0ba",
+        text: "Çok İyi",
+        bgColor: "#dbeafe",
+        percentage,
+      };
+    if (percentage >= 40)
+      return {
+        level: "medium",
+        color: "#f59e0b",
+        text: "İyi",
+        bgColor: "#fef3c7",
+        percentage,
+      };
+    return {
+      level: "weak",
+      color: "#ef4444",
+      text: "Orta",
+      bgColor: "#fee2e2",
+      percentage,
+    };
+  };
+
+  // Similarity Score Bar Component
+  const SimilarityScoreBar = ({
+    similarityScore,
+    showBar = true,
+    size = "xss",
+  }) => {
+    const progressAnim = useRef(new Animated.Value(0)).current;
+    const timeoutRef = useRef(null);
+
+    const scoreInfo = getSimilarityScoreInfo(similarityScore);
+
+    // Boyut ayarları
+    const sizes = {
+      xs: {
+        barHeight: 2,
+        iconSize: 10,
+        textSize: 11,
+        containerPadding: 1,
+        barWidth: width * 0.8,
+      },
+      sm: {
+        barHeight: 5,
+        iconSize: 12,
+        textSize: 12,
+        containerPadding: 2,
+        barWidth: width * 0.8,
+      },
+      md: {
+        barHeight: 4,
+        iconSize: 14,
+        textSize: 14,
+        containerPadding: 3,
+        barWidth: width * 0.8,
+      },
+    };
+
+    const currentSize = sizes[size];
+
+    // Score değiştiğinde debounce ile animasyonu başlat
+    useEffect(() => {
+      // Önceki timeout'u temizle
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      // Yeni timeout ayarla
+      timeoutRef.current = setTimeout(() => {
+        Animated.timing(progressAnim, {
+          toValue: scoreInfo.percentage,
+          duration: 800,
+          useNativeDriver: false,
+        }).start();
+      }, 200);
+
+      // Cleanup function
+      return () => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+      };
+    }, [scoreInfo.percentage]);
+
+    if (showBar) {
+      return (
+        <View style={{ marginTop: currentSize.containerPadding * 2 }}>
+          {/* Uyum Barı */}
+          <View className="flex-row items-center ">
+            <View
+              className="bg-gray-100 rounded-full overflow-hidden"
+              style={{
+                boxShadow: "0px 0px 12px #00000012",
+                height: 4,
+                width: currentSize.barWidth,
+                maxWidth: width * 0.2, // Bar maksimum genişliği
+              }}
+            >
+              <Animated.View
+                style={{
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 100],
+                    outputRange: ["0%", "100%"],
+                    extrapolate: "clamp",
+                  }),
+                  backgroundColor: scoreInfo.color,
+                  height: "100%",
+                  borderRadius: currentSize.barHeight / 2,
+                }}
+              />
+            </View>
+            <Text
+              className="font-medium ml-1"
+              style={{
+                color: scoreInfo.color,
+                fontSize: currentSize.textSize,
+              }}
+            >
+              {scoreInfo.percentage}%
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    // Sadece skor gösterimi (bar olmadan)
+    return (
+      <View className="flex-row items-center">
+        <FontAwesomeIcon
+          color={scoreInfo.color}
+          icon={faHeart}
+          size={currentSize.iconSize}
+        />
+        <Text
+          className="font-medium ml-1"
+          style={{
+            color: scoreInfo.color,
+            fontSize: currentSize.textSize,
+          }}
+        >
+          {scoreInfo.percentage}% {scoreInfo.text}
+        </Text>
+      </View>
+    );
+  };
 
   // Filter animasyonu için transform ve opacity kullanıyoruz (native driver için)
   const filterTranslateY = scrollY.interpolate({
@@ -105,115 +495,113 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
     }, [navigation])
   );
 
-  // YENİ: Similar Posts API Query - postId'ye göre benzer postlar
-  const {
-    data: similarPostsByPostData,
-    isLoading: isLoadingSimilarByPost,
-    error: errorSimilarByPost,
-    refetch: refetchSimilarByPost,
-  } = useGetSimilarPostsByPostIdPaginatedQuery(
-    {
-      postId: postId,
-      page: 1,
-      pageSize: 50, // Daha fazla veri almak için
-      minSimilarityScore: 0.3,
-    },
-    {
-      enabled: !!postId && searchType === "byPost",
-      skip: !postId || searchType !== "byPost",
-    }
-  );
+  // Reset pagination when filters change
+  useEffect(() => {
+    // Filtre değişikliği başladığında loading state'i set et
+    setIsFilterChanging(true);
+    setCurrentPage(1);
+    setAllData([]);
+    setHasNextPage(true);
 
-  // YENİ: Similar Posts API Query - landlord'a göre benzer postlar
+    // Kısa bir delay ile loading state'i kaldır (API çağrısı başlayınca)
+    const timer = setTimeout(() => {
+      setIsFilterChanging(false);
+    }, 100); // Delay'i azalttım
+
+    return () => clearTimeout(timer);
+  }, [sortBy, landlordUserId]);
+
+  // Sadece getSimilarPostsPaginated API Query
   const {
-    data: similarPostsByLandlordData,
-    isLoading: isLoadingSimilarByLandlord,
-    error: errorSimilarByLandlord,
-    refetch: refetchSimilarByLandlord,
+    data: similarPostsData,
+    isLoading,
+    error,
+    refetch,
   } = useGetSimilarPostsPaginatedQuery(
     {
       LandLordUserId: landlordUserId,
-      page: 1,
-      pageSize: 50, // Daha fazla veri almak için
+      page: currentPage,
+      pageSize: 10, // AllNearbyProperties ile aynı sayfa boyutu
       minSimilarityScore: 0.3,
     },
     {
-      enabled: !!landlordUserId && searchType === "byLandlord",
-      skip: !landlordUserId || searchType !== "byLandlord",
+      skip: !landlordUserId, // landlordUserId yoksa API çağrısını atla
+      refetchOnMountOrArgChange: true,
     }
   );
 
-  // Fallback: Eski API Query - genel benzer postlar için
-  const {
-    data: nearbyData,
-    isLoading: isLoadingNearby,
-    error: errorNearby,
-    refetch: refetchNearby,
-  } = useGetForYouPageQuery(
-    {
-      userId: currentUser?.id,
-      latitude: userLocation?.latitude,
-      longitude: userLocation?.longitude,
-    },
-    {
-      enabled:
-        !!userLocation && searchType === "general" && similarPosts.length === 0,
-      skip:
-        !userLocation ||
-        !currentUser?.id ||
-        searchType !== "general" ||
-        similarPosts.length > 0,
-    }
-  );
+  // API'den gelen verileri işle - API response formatına göre güncellenmiş
+  useEffect(() => {
+    if (similarPostsData?.data) {
+      const newProperties = similarPostsData.data;
 
-  // Get similar properties based on search type
+      if (currentPage === 1) {
+        // İlk sayfa - verileri yeniden ayarla
+        setAllData(newProperties);
+        // İlk sayfa yüklendiğinde filter loading'i kapat
+        setIsFilterChanging(false);
+      } else {
+        // Sonraki sayfalar - mevcut verilere ekle ve duplicateları engelle
+        setAllData((prev) => {
+          const existingIds = new Set(prev.map((item) => item.postId));
+          const uniqueNewItems = newProperties.filter(
+            (item) => !existingIds.has(item.postId)
+          );
+          return [...prev, ...uniqueNewItems];
+        });
+      }
+
+      // Pagination bilgilerini kontrol et - API response'undaki pagination objesinden al
+      if (similarPostsData.pagination) {
+        setHasNextPage(similarPostsData.pagination.hasNextPage || false);
+      } else {
+        // Pagination objesi yoksa, veri miktarına göre hesapla
+        const pageSize = 10;
+        setHasNextPage(newProperties.length >= pageSize);
+      }
+    }
+  }, [similarPostsData, currentPage]);
+
+  // Loading state effect - AllNearbyProperties'deki gibi
+  useEffect(() => {
+    if (currentPage > 1) {
+      setIsLoadingMore(false);
+    }
+  }, [similarPostsData]);
+
+  // API'den gelen verileri al
   const allSimilarProperties = React.useMemo(() => {
-    // Eğer route params'tan similarPosts geliyorsa onu kullan
-    if (similarPosts && similarPosts.length > 0) {
-      return similarPosts;
+    // Debug modda console.log kullan
+    if (__DEV__) {
+      console.log("=== AllSimilarProperties Debug ===");
+      console.log("LandlordUserId:", landlordUserId);
+      console.log("Current Page:", currentPage);
+      console.log("All Data Length:", allData.length);
+      console.log("Has Next Page:", hasNextPage);
+      if (similarPostsData) {
+        console.log("New Properties Length:", similarPostsData?.data?.length);
+        console.log("Pagination Info:", similarPostsData?.pagination);
+        console.log(
+          "API Has Next Page:",
+          similarPostsData?.pagination?.hasNextPage
+        );
+        console.log(
+          "API Current Page:",
+          similarPostsData?.pagination?.currentPage
+        );
+        console.log(
+          "API Total Pages:",
+          similarPostsData?.pagination?.totalPages
+        );
+        console.log(
+          "API Total Count:",
+          similarPostsData?.pagination?.totalCount
+        );
+      }
     }
 
-    // PostId'ye göre benzer postlar
-    if (searchType === "byPost" && similarPostsByPostData?.data) {
-      return similarPostsByPostData.data;
-    }
-
-    // Landlord'a göre benzer postlar
-    if (searchType === "byLandlord" && similarPostsByLandlordData?.data) {
-      return similarPostsByLandlordData.data;
-    }
-
-    // Fallback: Genel nearby data
-    if (searchType === "general" && nearbyData?.result?.similarPost) {
-      return nearbyData.result.similarPost;
-    }
-
-    return [];
-  }, [
-    similarPosts,
-    searchType,
-    similarPostsByPostData,
-    similarPostsByLandlordData,
-    nearbyData,
-  ]);
-
-  // Determine loading and error states
-  const isLoading = React.useMemo(() => {
-    if (searchType === "byPost") return isLoadingSimilarByPost;
-    if (searchType === "byLandlord") return isLoadingSimilarByLandlord;
-    return isLoadingNearby;
-  }, [
-    searchType,
-    isLoadingSimilarByPost,
-    isLoadingSimilarByLandlord,
-    isLoadingNearby,
-  ]);
-
-  const error = React.useMemo(() => {
-    if (searchType === "byPost") return errorSimilarByPost;
-    if (searchType === "byLandlord") return errorSimilarByLandlord;
-    return errorNearby;
-  }, [searchType, errorSimilarByPost, errorSimilarByLandlord, errorNearby]);
+    return allData;
+  }, [landlordUserId, allData, currentPage, hasNextPage, similarPostsData]);
 
   // Filter and sort properties
   const getFilteredAndSortedProperties = () => {
@@ -264,22 +652,35 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
 
   const filteredProperties = getFilteredAndSortedProperties();
 
-  // Handle refresh
+  // Handle refresh - AllNearbyProperties'deki gibi optimize edildi
   const onRefresh = async () => {
     setRefreshing(true);
+    setCurrentPage(1);
+    setAllData([]);
+    setHasNextPage(true);
+    setIsFilterChanging(false);
     try {
-      if (searchType === "byPost" && refetchSimilarByPost) {
-        await refetchSimilarByPost();
-      } else if (searchType === "byLandlord" && refetchSimilarByLandlord) {
-        await refetchSimilarByLandlord();
-      } else if (refetchNearby) {
-        await refetchNearby();
-      }
+      await refetch();
     } catch (error) {
       console.log("Refresh error:", error);
     } finally {
       setRefreshing(false);
     }
+  };
+
+  // Handle load more - AllNearbyProperties'deki gibi optimize edildi
+  const handleLoadMore = () => {
+    if (!isLoadingMore && hasNextPage && !isLoading && !isFilterChanging) {
+      setIsLoadingMore(true);
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
+
+  // Footer component for loading more - AllNearbyProperties'deki gibi skeleton kullan
+  const renderFooter = () => {
+    if (!isLoadingMore) return null;
+
+    return <PropertyListLoadingSkeleton count={2} />;
   };
 
   // Relative time function
@@ -344,6 +745,12 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
         label: "Oda",
       },
       {
+        id: "bedrooms",
+        icon: faBed,
+        value: item.yatakOdasiSayisi || "N/A",
+        label: "Y.Odası",
+      },
+      {
         id: "bathrooms",
         icon: faShower,
         value: item.banyoSayisi || "N/A",
@@ -376,7 +783,9 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
       {
         id: "deposit",
         icon: faCoins,
-        value: item.depozito ? `${item.depozito}₺` : "Yok",
+        value: item.depozito
+          ? `${item.depozito}${getCurrencyText(item.paraBirimi)}`
+          : "Yok",
         label: "Depozito",
       },
     ];
@@ -446,9 +855,8 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
 
     if (!images || images.length === 0) {
       return (
-        <View className="w-full h-80 bg-gradient-to-br from-gray-100 to-gray-200 justify-center items-center rounded-3xl">
-          <MaterialIcons name="home" size={32} color="#9CA3AF" />
-          <Text className="text-gray-500 mt-2 font-medium">Resim yok</Text>
+        <View className="w-full h-80 bg-gray-100 justify-center items-center rounded-3xl">
+          <FontAwesomeIcon icon={faHouse} size={50} color="#dee0ea" />
         </View>
       );
     }
@@ -482,21 +890,27 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
                 source={{ uri: item.postImageUrl }}
                 style={{ width: width - 32, height: 350 }}
                 contentFit="cover"
-                transition={150}
+                transition={0}
                 placeholder={{
                   uri: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y5ZmFmYiIvPjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Yw7xrbGVuaXlvcjwvdGV4dD48L3N2Zz4=",
                 }}
                 cachePolicy="memory-disk"
+                recyclingKey={`${postId}-${index}`}
               />
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        {/* Status badge */}
+        {/* Status badge - Sağ üstte */}
         <View className="absolute top-3 right-3">
           <BlurView
-            intensity={90}
-            style={{ overflow: "hidden", borderRadius: 100 }}
+            intensity={50}
+            tint="dark"
+            style={{
+              overflow: "hidden",
+              borderRadius: 100,
+              boxShadow: "0px 0px 12px #00000012",
+            }}
             className="px-3 py-1.5 rounded-full"
           >
             <Text className="text-white text-xs font-semibold">
@@ -545,7 +959,7 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
   const renderPropertyItem = ({ item }) => (
     <View
       style={{ marginHorizontal: 16 }}
-      className="overflow-hidden mb-4 pt-6 border-b border-gray-200"
+      className="overflow-hidden mb-4 pt-6 border-b border-gray-200 relative"
     >
       {/* Image slider */}
       <TouchableOpacity
@@ -587,7 +1001,7 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
           >
             {item.kiraFiyati || item.rent
               ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-                  item.paraBirimi || item.currency || "₺"
+                  getCurrencyText(item.paraBirimi) || "₺"
                 }`
               : "Fiyat belirtilmemiş"}
           </Text>
@@ -597,6 +1011,18 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
         {/* Property details slider */}
         <PropertyDetailsSlider item={item} />
       </View>
+
+      {/* Similarity Score Bar - AllMatchingUsers'daki gibi */}
+      {item.similarityScore && (
+        <View style={{ top: 32, left: 20 }} className=" absolute">
+          <SimilarityScoreBar
+            similarityScore={item.similarityScore}
+            showBar={true}
+            size="sm"
+          />
+        </View>
+      )}
+
       <View className="flex flex-col">
         <View className="mb-5 pl-1 mt-3">
           <TouchableOpacity
@@ -640,7 +1066,7 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
                   </Text>
                   <View className="flex flex-row items-center gap-1">
                     <Text style={{ fontSize: 12 }} className="text-gray-500">
-                      Rating
+                      Ev Sahibi
                     </Text>
                   </View>
                 </View>
@@ -658,32 +1084,63 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
     </View>
   );
 
-  // Render empty state
-  const renderEmptyState = () => (
-    <View className="flex-1 justify-center items-center p-8">
-      <MaterialIcons name="search-off" size={64} color="#9CA3AF" />
-      <Text className="text-xl font-semibold text-gray-700 mt-4 mb-2 text-center">
-        {searchQuery.trim()
-          ? "Arama sonucu bulunamadı"
-          : "Benzer ilan bulunamadı"}
-      </Text>
-      <Text className="text-base text-gray-500 text-center">
-        {searchQuery.trim()
-          ? "Farklı anahtar kelimeler deneyebilirsiniz"
-          : "Henüz benzer ilan bulunmuyor"}
-      </Text>
-      {searchQuery.trim() && (
-        <TouchableOpacity
-          className="bg-green-500 px-6 py-3 rounded-lg mt-4"
-          onPress={() => setSearchQuery("")}
-        >
-          <Text className="text-white font-semibold">Aramayı Temizle</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
+  // Render empty state - AllNearbyProperties'deki gibi skeleton ekledim
+  const renderEmptyState = () => {
+    // Show skeleton during filter changes or initial loading
+    if (isFilterChanging || (isLoading && currentPage === 1)) {
+      return <PropertyListLoadingSkeleton count={3} />;
+    }
 
-  // Show loading state
+    // Show empty state only when not loading and no results
+    return (
+      <View className="flex-1 justify-center items-center p-8">
+        <MaterialIcons name="search-off" size={64} color="#9CA3AF" />
+        <Text className="text-xl font-semibold text-gray-700 mt-4 mb-2 text-center">
+          {searchQuery.trim()
+            ? "Arama sonucu bulunamadı"
+            : "Benzer ilan bulunamadı"}
+        </Text>
+        <Text className="text-base text-gray-500 text-center">
+          {searchQuery.trim()
+            ? "Farklı anahtar kelimeler deneyebilirsiniz"
+            : "Henüz benzer ilan bulunmuyor"}
+        </Text>
+        {searchQuery.trim() && (
+          <TouchableOpacity
+            className="bg-green-500 px-6 py-3 rounded-lg mt-4"
+            onPress={() => setSearchQuery("")}
+          >
+            <Text className="text-white font-semibold">Aramayı Temizle</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
+  // landlordUserId yoksa error state göster
+  if (!landlordUserId) {
+    return (
+      <SafeAreaView className="flex-1 bg-white">
+        <View className="flex-1 justify-center items-center p-8">
+          <MaterialIcons name="error" size={64} color="#EF4444" />
+          <Text className="text-xl font-semibold text-gray-700 mt-4 mb-2 text-center">
+            Parametre Eksik
+          </Text>
+          <Text className="text-base text-gray-500 text-center mb-6">
+            Landlord ID'si gerekli.
+          </Text>
+          <TouchableOpacity
+            className="bg-green-500 px-6 py-3 rounded-lg"
+            onPress={() => navigation.goBack()}
+          >
+            <Text className="text-white font-semibold">Geri Dön</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Show loading state - AllNearbyProperties'deki gibi optimize edildi
   if (isLoading && allSimilarProperties.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-white">
@@ -755,7 +1212,7 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
           </View>
         </View>
 
-        {/* Sorting options */}
+        {/* Sorting options - AllNearbyProperties'deki gibi animasyonlu */}
         <Animated.View
           style={{
             height: containerHeight,
@@ -772,42 +1229,56 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
               transform: [{ translateY: filterTranslateY }],
             }}
           >
-            <View className="flex-row">
-              {[
-                { key: "date", label: "Tarih" },
-                { key: "price", label: "Fiyat" },
-                { key: "title", label: "Başlık" },
-              ].map((option) => (
-                <TouchableOpacity
-                  key={option.key}
-                  className={`mr-3 px-4 py-2 rounded-full border ${
-                    sortBy === option.key
-                      ? "bg-gray-900"
-                      : "bg-white border-white"
-                  }`}
-                  onPress={() => setSortBy(option.key)}
-                >
-                  <Text
-                    className={`text-sm font-medium ${
-                      sortBy === option.key ? "text-white" : "text-gray-700"
+            <ScrollView
+              horizontal={true}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{
+                alignItems: "center",
+                paddingHorizontal: 0,
+              }}
+              style={{ width: "100%" }}
+            >
+              <View className="flex-row">
+                {[
+                  { key: "date", label: "Tarih" },
+                  { key: "price", label: "Fiyat" },
+                  { key: "title", label: "Başlık" },
+                ].map((option) => (
+                  <TouchableOpacity
+                    activeOpacity={1}
+                    key={option.key}
+                    className={`mr-3 px-4 py-2 rounded-full border ${
+                      sortBy === option.key
+                        ? "bg-gray-900"
+                        : "bg-white border-white"
                     }`}
+                    onPress={() => setSortBy(option.key)}
                   >
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+                    <Text
+                      className={`text-sm font-medium ${
+                        sortBy === option.key ? "text-white" : "text-gray-700"
+                      }`}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
           </Animated.View>
         </Animated.View>
       </View>
 
-      {/* Properties list */}
+      {/* Properties list - AllNearbyProperties'deki gibi optimize edildi */}
       <Animated.FlatList
         data={filteredProperties}
         renderItem={renderPropertyItem}
         keyExtractor={(item, index) => `similar_${item.postId}_${index}`}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderEmptyState}
+        ListFooterComponent={renderFooter}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.1}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           {
@@ -827,7 +1298,7 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
           flexGrow: 1,
           paddingBottom: 16,
         }}
-        // Performance optimizations
+        // Performance optimizations - AllNearbyProperties'deki gibi
         removeClippedSubviews={true}
         maxToRenderPerBatch={10}
         updateCellsBatchingPeriod={100}
