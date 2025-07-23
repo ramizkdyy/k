@@ -521,7 +521,7 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
     {
       LandLordUserId: landlordUserId,
       page: currentPage,
-      pageSize: 10, // AllNearbyProperties ile aynı sayfa boyutu
+      pageSize: 5, // AllNearbyProperties ile aynı sayfa boyutu
       minSimilarityScore: 0.3,
     },
     {

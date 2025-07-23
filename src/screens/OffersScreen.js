@@ -11,6 +11,7 @@ import {
   SafeAreaView,
   Platform,
   Animated,
+  Dimensions,
 } from "react-native";
 import { useSelector } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
@@ -24,6 +25,9 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import { BlurView } from "expo-blur";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import { faChevronLeft } from "@fortawesome/pro-regular-svg-icons";
+import { faStar } from "@fortawesome/pro-solid-svg-icons";
+
+const { width } = Dimensions.get("window");
 
 const OffersScreen = () => {
   const navigation = useNavigation();
@@ -53,6 +57,156 @@ const OffersScreen = () => {
     outputRange: [50, 0], // Tabs container height animation
     extrapolate: "clamp",
   });
+
+  // Rating Score gösterim fonksiyonu
+  const getRatingScoreInfo = (rating) => {
+    if (rating >= 4.5)
+      return {
+        level: "excellent",
+        color: "#22c55e",
+        text: "Mükemmel",
+        bgColor: "#dcfce7",
+      };
+    if (rating >= 3.5)
+      return {
+        level: "good",
+        color: "#3b82f6",
+        text: "İyi",
+        bgColor: "#dbeafe",
+      };
+    if (rating >= 2.5)
+      return {
+        level: "medium",
+        color: "#f59e0b",
+        text: "Orta",
+        bgColor: "#fef3c7",
+      };
+    return {
+      level: "weak",
+      color: "#ef4444",
+      text: "Düşük",
+      bgColor: "#fee2e2",
+    };
+  };
+
+  // Rating Score Bar Component
+  const RatingScoreBar = ({ ratingScore, showBar = false, size = "xs" }) => {
+    const progressAnim = useRef(new Animated.Value(0)).current;
+    const timeoutRef = useRef(null);
+
+    const scoreInfo = getRatingScoreInfo(ratingScore);
+
+    // Boyut ayarları
+    const sizes = {
+      xs: {
+        barHeight: 2,
+        iconSize: 8,
+        textSize: 10,
+        containerPadding: 1,
+        barWidth: 40,
+      },
+      sm: {
+        barHeight: 3,
+        iconSize: 10,
+        textSize: 11,
+        containerPadding: 2,
+        barWidth: 50,
+      },
+      md: {
+        barHeight: 4,
+        iconSize: 12,
+        textSize: 12,
+        containerPadding: 3,
+        barWidth: 60,
+      },
+    };
+
+    const currentSize = sizes[size];
+
+    // Score değiştiğinde debounce ile animasyonu başlat
+    useEffect(() => {
+      // Önceki timeout'u temizle
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      // Yeni timeout ayarla
+      timeoutRef.current = setTimeout(() => {
+        Animated.timing(progressAnim, {
+          toValue: (ratingScore / 5) * 100, // 5 üzerinden puana göre yüzde hesapla
+          duration: 600,
+          useNativeDriver: false,
+        }).start();
+      }, 100);
+
+      // Cleanup function
+      return () => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+      };
+    }, [ratingScore]);
+
+    if (showBar) {
+      return (
+        <View style={{ marginTop: currentSize.containerPadding }}>
+          {/* Rating Barı */}
+          <View className="flex-row items-center">
+            <View
+              className="bg-gray-200 rounded-full overflow-hidden"
+              style={{
+                height: 4,
+                width: 100,
+                marginRight: 4,
+              }}
+            >
+              <Animated.View
+                style={{
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 100],
+                    outputRange: ["0%", "100%"],
+                    extrapolate: "clamp",
+                  }),
+                  backgroundColor: scoreInfo.color,
+                  height: "100%",
+                  borderRadius: currentSize.barHeight / 2,
+                }}
+              />
+            </View>
+            <Text
+              className="font-medium"
+              style={{
+                color: scoreInfo.color,
+                fontSize: currentSize.textSize,
+              }}
+            >
+              {ratingScore.toFixed(2) * 20}%
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    // Sadece skor gösterimi (bar olmadan)
+    return (
+      <View className="flex-row items-center">
+        <FontAwesomeIcon
+          color={scoreInfo.color}
+          icon={faStar}
+          size={currentSize.iconSize}
+        />
+        <Text
+          className="font-medium ml-1"
+          style={{
+            color: scoreInfo.color,
+            fontSize: currentSize.textSize,
+          }}
+        >
+          {ratingScore.toFixed(1)}
+        </Text>
+      </View>
+    );
+  };
 
   // Conditional query based on user role
   const isTenant = userRole === "KIRACI";
@@ -313,6 +467,11 @@ const OffersScreen = () => {
     const statusInfo = getStatusText(item.status);
     const post = item.post || {};
 
+    // Rating score hesaplama - eğer ratingCount varsa, örnek bir rating skoru oluştur
+    const ratingScore = item.offeringUser?.ratingCount
+      ? Math.min(5, Math.max(1, item.offeringUser.ratingCount / 10)) // 1-5 arası bir değer
+      : 0;
+
     return (
       <TouchableOpacity
         key={item.offerId?.toString() || index.toString()}
@@ -330,18 +489,49 @@ const OffersScreen = () => {
             {/* Post Image */}
             <View className="relative">
               {post.postImages && post.postImages.length > 0 ? (
-                <Image
-                  source={{ uri: post.postImages[0].postImageUrl }}
-                  style={{
-                    width: "100%",
-                    height: 280,
-                    borderRadius: 24,
-                  }}
-                  resizeMode="cover"
-                  onError={(e) =>
-                    console.log("Image load error:", e.nativeEvent.error)
-                  }
-                />
+                <View style={{ position: "relative" }}>
+                  <Image
+                    source={{ uri: post.postImages[0].postImageUrl }}
+                    style={{
+                      width: "100%",
+                      height: 280,
+                      borderRadius: 24,
+                    }}
+                    resizeMode="cover"
+                    onError={(e) =>
+                      console.log("Image load error:", e.nativeEvent.error)
+                    }
+                  />
+
+                  {/* Full Image Blur Overlay */}
+                  {Platform.OS === "ios" ? (
+                    <BlurView
+                      intensity={30}
+                      tint="dark"
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        borderRadius: 24,
+                        overflow: "hidden",
+                      }}
+                    />
+                  ) : (
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: "rgba(0, 0, 0, 0.3)",
+                        borderRadius: 24,
+                      }}
+                    />
+                  )}
+                </View>
               ) : (
                 <View
                   style={{
@@ -357,7 +547,6 @@ const OffersScreen = () => {
                 </View>
               )}
 
-              {/* Status Badge with Blur Effect */}
               {Platform.OS === "ios" ? (
                 <BlurView
                   intensity={50}
@@ -368,6 +557,7 @@ const OffersScreen = () => {
                     left: 12,
                     borderRadius: 16,
                     overflow: "hidden",
+                    zIndex: 2,
                   }}
                 >
                   <View
@@ -397,6 +587,7 @@ const OffersScreen = () => {
                     borderRadius: 16,
                     paddingHorizontal: 12,
                     paddingVertical: 6,
+                    zIndex: 2,
                   }}
                 >
                   <Text
@@ -411,51 +602,62 @@ const OffersScreen = () => {
                 </View>
               )}
 
-              {/* Offer Amount Badge */}
               {Platform.OS === "ios" ? (
                 <BlurView
-                  intensity={50}
+                  intensity={0}
                   tint="dark"
                   style={{
                     position: "absolute",
-                    top: 12,
-                    right: 12,
+                    top: "50%",
+                    left: "50%",
+                    transform: [{ translateX: -100 }, { translateY: -50 }],
                     borderRadius: 16,
                     overflow: "hidden",
+                    zIndex: 2,
+                    width: 200, // yazı uzunluğuna göre ayarlanabilir
+                    height: 100, // padding yerine sabit yükseklik daha iyi kontrol sağlar
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                 >
-                  <View
+                  <Text
                     style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
+                      color: "white",
+                      fontSize: 45,
+                      fontWeight: "400",
                     }}
                   >
-                    <Text
-                      style={{
-                        color: "white",
-                        fontSize: 14,
-                        fontWeight: "500",
-                      }}
-                    >
-                      {post.paraBirimi === "USD"
-                        ? "$"
-                        : post.paraBirimi === "EUR"
-                        ? "€"
-                        : "₺"}
-                      {item.offerAmount?.toLocaleString() || "0"}
-                    </Text>
-                  </View>
+                    {post.paraBirimi === "USD"
+                      ? "$"
+                      : post.paraBirimi === "EUR"
+                      ? "€"
+                      : "₺"}
+                    {item.offerAmount?.toLocaleString() || "0"}
+                  </Text>
+                  <Text
+                    className="text-gray-300"
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "500",
+                    }}
+                  >
+                    Gelen teklif
+                  </Text>
                 </BlurView>
               ) : (
                 <View
                   style={{
                     position: "absolute",
-                    top: 12,
-                    right: 12,
+                    top: "50%",
+                    left: "50%",
+                    transform: [{ translateX: -75 }, { translateY: -25 }],
                     backgroundColor: "rgba(0, 0, 0, 0.7)",
                     borderRadius: 16,
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
+                    zIndex: 2,
+                    width: 150,
+                    height: 50,
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                 >
                   <Text
@@ -474,6 +676,110 @@ const OffersScreen = () => {
                   </Text>
                 </View>
               )}
+
+              {/* Date Badge */}
+              {Platform.OS === "ios" ? (
+                <BlurView
+                  intensity={50}
+                  tint="dark"
+                  style={{
+                    position: "absolute",
+                    top: 12,
+                    right: 12,
+                    borderRadius: 16,
+                    overflow: "hidden",
+                    zIndex: 2,
+                  }}
+                >
+                  <View
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                    }}
+                  >
+                    <Text
+                      style={{ fontSize: 12, fontWeight: 500 }}
+                      className="text-white"
+                    >
+                      {item.offerTime
+                        ? new Date(item.offerTime).toLocaleDateString("tr-TR", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })
+                        : ""}
+                    </Text>
+                  </View>
+                </BlurView>
+              ) : (
+                <View
+                  style={{
+                    position: "absolute",
+                    top: 12,
+                    right: 12,
+                    backgroundColor: "rgba(0, 0, 0, 0.7)",
+                    borderRadius: 16,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    zIndex: 2,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "white",
+                      fontSize: 14,
+                      fontWeight: "700",
+                    }}
+                  >
+                    {post.paraBirimi === "USD"
+                      ? "$"
+                      : post.paraBirimi === "EUR"
+                      ? "€"
+                      : "₺"}
+                    {item.offerAmount?.toLocaleString() || "0"}
+                  </Text>
+                </View>
+              )}
+              <View
+                style={{ bottom: 10, left: 10 }}
+                className="items-center flex flex-row gap-1 mt-1 absolute"
+              >
+                {" "}
+                <View
+                  style={{ borderWidth: 1.5 }}
+                  className="w-10 h-10 rounded-full justify-center items-center mr-2 border border-white"
+                >
+                  {!!item.offeringUser?.profileImageUrl ? (
+                    <Image
+                      source={{ uri: item.offeringUser.profileImageUrl }}
+                      className="w-full h-full rounded-full"
+                    />
+                  ) : (
+                    <View>
+                      <Text className="text-xl font-bold text-gray-900">
+                        {item.offeringUser.user?.name?.charAt(0) || "E"}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <View>
+                  <Text className="text-sm font-medium text-white">
+                    {item.offeringUser.user?.name}
+                  </Text>{" "}
+                  {/* UPDATED: Rating bar with animation */}
+                  {ratingScore > 0 ? (
+                    <RatingScoreBar
+                      ratingScore={ratingScore}
+                      showBar={true}
+                      size="xs"
+                    />
+                  ) : (
+                    <Text className="text-xs text-gray-300">
+                      Henüz değerlendirilmedi
+                    </Text>
+                  )}
+                </View>
+              </View>
             </View>
 
             {/* Content Section */}
@@ -497,56 +803,6 @@ const OffersScreen = () => {
                   {post.ilce ? `, ${post.ilce}` : ""}
                   {post.mahalle ? `, ${post.mahalle}` : ""}
                 </Text>
-              </View>
-
-              <View className="items-center flex flex-row gap-1 mt-1">
-                {" "}
-                <View className="w-12 h-12 rounded-full justify-center items-center mr-3">
-                  {!!item.offeringUser?.profileImageUrl ? (
-                    <Image
-                      source={{ uri: item.offeringUser.profileImageUrl }}
-                      className="w-full h-full rounded-full"
-                    />
-                  ) : (
-                    <View>
-                      <Text className="text-xl font-bold text-gray-900">
-                        {item.offeringUser.user?.name?.charAt(0) || "E"}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-                <View className="flex flex-col">
-                  {/* User Info for Landlords */}
-                  {isLandlord && item.offeringUser && (
-                    <View className="rounded-2xl">
-                      <Text style={{ fontSize: 14 }} className="text-gray-900">
-                        {item.offeringUser.user.name}{" "}
-                        {item.offeringUser.user.surname}
-                      </Text>
-                    </View>
-                  )}
-                  {/* Offer Description */}
-                  {item.offerDescription && (
-                    <View style={{ marginTop: 2 }} className="rounded-2xl mb-1">
-                      <Text className="text-sm text-gray-500" numberOfLines={3}>
-                        {item.offerDescription}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Date */}
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-gray-400 text-xs">
-                      {item.offerTime
-                        ? new Date(item.offerTime).toLocaleDateString("tr-TR", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          })
-                        : ""}
-                    </Text>
-                  </View>
-                </View>
               </View>
             </View>
 
