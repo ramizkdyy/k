@@ -13,7 +13,8 @@ import {
   Modal,
   KeyboardAvoidingView,
   Switch,
-  Animated,
+  Dimensions,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser } from "../redux/slices/authSlice";
@@ -37,7 +38,16 @@ import {
 import LocationPicker from "../components/LocationPicker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 // Enum mapping functions
 const mapRentalPeriodToEnum = (value) => {
   const mapping = {
@@ -138,21 +148,21 @@ const CreatePostHeader = ({
 
       {/* Sağ taraf - Submit butonu */}
       <TouchableOpacity
-        className="px-6 items-center justify-center"
+        className="px-1 items-center justify-center"
         onPress={onSubmit}
         disabled={isLoading}
       >
         <Text
           style={{ fontSize: 16, color: "#6aeba9", borderColor: "#6aeba9" }}
-          className="font-normal border px-4 py-2 rounded-full"
+          className="font-semibold border px-4 py-2 rounded-full"
         >
           {isLoading
             ? propertyData
               ? "Güncelleniyor..."
               : "Oluşturuluyor..."
             : propertyData
-            ? "Güncelle"
-            : "Oluştur"}
+              ? "Güncelle"
+              : "Oluştur"}
         </Text>
       </TouchableOpacity>
     </View>
@@ -163,10 +173,10 @@ const CreatePostHeader = ({
         className="text-gray-500"
         style={{
           fontWeight: 500,
-          fontSize: 14,
+          fontSize: 16,
         }}
       >
-        {propertyData ? "İlanı Düzenle" : "Yeni İlan Oluştur"}
+        {propertyData ? "İlanı Düzenle" : "Yeni İlan"}
       </Text>
     </View>
   </View>
@@ -243,7 +253,6 @@ const SwitchField = ({ label, value, setValue, description = null }) => (
   </View>
 );
 
-// Custom Dropdown Component matching ProfileExpectationScreen
 const CustomDropdown = ({
   label,
   value,
@@ -254,49 +263,85 @@ const CustomDropdown = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Animation refs - same structure as RegisterScreen
-  const modalBackgroundOpacity = useRef(new Animated.Value(0)).current;
-  const modalSlideAnim = useRef(new Animated.Value(300)).current;
+  // Modal boyutları - Seçenek sayısına göre dinamik yükseklik
+  const getModalHeight = () => {
+    const headerHeight = 80; // Header + handle
+    const itemHeight = 50; // Her seçenek için yaklaşık yükseklik
+    const bottomPadding = 40; // Alt boşluk
+    const minHeight = SCREEN_HEIGHT * 0.25; // Minimum %25
+    const maxHeight = SCREEN_HEIGHT * 0.6; // Maximum %60
 
-  const openModal = () => {
-    setIsOpen(true);
-    // Start open animation
-    Animated.parallel([
-      Animated.timing(modalBackgroundOpacity, {
-        toValue: 1,
-        duration: 250,
-        useNativeDriver: false,
-      }),
-      Animated.timing(modalSlideAnim, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    const calculatedHeight = headerHeight + (options.length * itemHeight) + bottomPadding;
+
+    // Az seçenek varsa (3 veya daha az) küçük modal
+    if (options.length <= 3) {
+      return Math.min(calculatedHeight, SCREEN_HEIGHT * 0.35);
+    }
+
+    // Orta seçenek sayısı (4-7) için orta boyut
+    if (options.length <= 7) {
+      return Math.min(calculatedHeight, SCREEN_HEIGHT * 0.55);
+    }
+
+    // Çok seçenek varsa maksimum boyut
+    return maxHeight;
   };
 
-  const closeModal = () => {
-    // Close animation
-    Animated.parallel([
-      Animated.timing(modalBackgroundOpacity, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: false,
-      }),
-      Animated.timing(modalSlideAnim, {
-        toValue: 300,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setIsOpen(false);
+  const SNAP_POINTS = {
+    CLOSED: SCREEN_HEIGHT,
+    OPEN: SCREEN_HEIGHT - getModalHeight(),
+  };
+
+  // Animated values
+  const translateY = useSharedValue(SCREEN_HEIGHT);
+  const backdropOpacity = useSharedValue(0);
+
+  // Modal açılış/kapanış animasyonu
+  useEffect(() => {
+    if (isOpen) {
+      translateY.value = withSpring(SNAP_POINTS.OPEN, {
+        damping: 80,
+        stiffness: 400,
+      });
+      backdropOpacity.value = withTiming(0.5, { duration: 300 });
+    } else if (isOpen === false && translateY.value !== SCREEN_HEIGHT) {
+      translateY.value = withSpring(SCREEN_HEIGHT, {
+        damping: 80,
+        stiffness: 400,
+      });
+      backdropOpacity.value = withTiming(0, { duration: 250 });
+    }
+  }, [isOpen]);
+
+  // Close handler
+  const handleClose = () => {
+    translateY.value = withSpring(SCREEN_HEIGHT, {
+      damping: 80,
+      stiffness: 400,
     });
+    backdropOpacity.value = withTiming(0, { duration: 250 });
+    setTimeout(() => setIsOpen(false), 300);
   };
 
+  // Option select handler
   const handleOptionSelect = (option) => {
     setValue(option);
-    closeModal();
+    handleClose();
   };
+
+  // Backdrop press handler
+  const handleBackdropPress = () => {
+    handleClose();
+  };
+
+  // Animated styles
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const modalStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
 
   return (
     <View className="mb-6">
@@ -306,9 +351,10 @@ const CustomDropdown = ({
       >
         {label} {required && <Text className="text-red-500">*</Text>}
       </Text>
+
       <TouchableOpacity
         className="border border-gray-900 rounded-xl px-4 py-4 flex-row justify-between items-center"
-        onPress={openModal}
+        onPress={() => setIsOpen(true)}
       >
         <Text
           className={value ? "text-gray-900" : "text-gray-500"}
@@ -319,80 +365,100 @@ const CustomDropdown = ({
         <FontAwesomeIcon icon={faChevronDown} size={16} color="#6b7280" />
       </TouchableOpacity>
 
-      {/* Modal with same animation structure as ProfileExpectationScreen */}
-      <Modal
-        visible={isOpen}
-        transparent
-        animationType="none"
-        onRequestClose={closeModal}
-      >
-        <Animated.View
-          className="flex-1 justify-end"
-          style={{
-            backgroundColor: modalBackgroundOpacity.interpolate({
-              inputRange: [0, 1],
-              outputRange: ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.5)"],
-            }),
-          }}
+      {/* Modal */}
+      {isOpen && (
+        <Modal
+          visible={isOpen}
+          transparent
+          animationType="none"
+          statusBarTranslucent
+          onRequestClose={handleClose}
         >
-          <Animated.View
-            className="bg-white rounded-t-3xl max-h-[50%]"
-            style={{
-              transform: [{ translateY: modalSlideAnim }],
-            }}
-          >
-            {/* Header - same style as ProfileExpectationScreen */}
-            <View className="flex-row justify-between items-center px-6 py-4 bg-white rounded-t-3xl">
-              <Text
-                style={{ fontWeight: 600, fontSize: 18 }}
-                className="text-gray-800"
-              >
-                {label}
-              </Text>
-              <TouchableOpacity onPress={closeModal} className="px-2 py-2">
-                <Text
-                  style={{
-                    fontSize: 17,
-                    color: "#007AFF",
-                    fontWeight: "500",
-                  }}
-                >
-                  Kapat
-                </Text>
-              </TouchableOpacity>
-            </View>
+          <GestureHandlerRootView style={styles.container}>
+            {/* Backdrop */}
+            <Animated.View style={[styles.backdrop, backdropStyle]}>
+              <TouchableWithoutFeedback onPress={handleBackdropPress}>
+                <View style={styles.backdropTouchable} />
+              </TouchableWithoutFeedback>
+            </Animated.View>
 
-            {/* Options List */}
-            <ScrollView className="bg-white py-3">
-              {options.map((option, index) => (
-                <TouchableOpacity
-                  key={index}
-                  className={`py-4 px-7 flex-row items-center justify-between ${
-                    value === option ? "bg-gray-100" : ""
-                  }`}
-                  onPress={() => handleOptionSelect(option)}
-                >
+            {/* Modal Content */}
+            <Animated.View style={[styles.modal, modalStyle]}>
+              {/* Header */}
+              <View className="py-4 px-6 border-b border-gray-100 bg-white">
+                <View className="flex-row justify-between items-center">
                   <Text
-                    className={`text-lg ${
-                      value === option
-                        ? "text-gray-900 font-medium"
-                        : "text-gray-400"
-                    }`}
+                    style={{ fontWeight: 600, fontSize: 18 }}
+                    className="text-gray-800"
                   >
-                    {option}
+                    {label}
                   </Text>
-                  {value === option && (
-                    <FontAwesomeIcon icon={faCheck} size={16} color="#000" />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+                  <TouchableOpacity
+                    onPress={handleClose}
+                    className="px-2 py-2"
+                  >
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        color: "#007AFF",
+                        fontWeight: "500",
+                      }}
+                    >
+                      Kapat
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-            {/* Safe area for bottom - same as ProfileExpectationScreen */}
-            <View style={{ height: 34, backgroundColor: "#FFFFFF" }} />
-          </Animated.View>
-        </Animated.View>
-      </Modal>
+              {/* Scrollable Options */}
+              <ScrollView
+                className="flex-1"
+                style={{
+                  backgroundColor: 'white',
+                  maxHeight: options.length <= 3 ? undefined : SCREEN_HEIGHT * 0.5
+                }}
+                showsVerticalScrollIndicator={options.length > 5}
+                bounces={options.length > 3}
+                scrollEnabled={options.length > 3}
+                scrollEventThrottle={16}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{
+                  paddingBottom: options.length <= 3 ? 5 : 15,
+                  justifyContent: options.length <= 3 ? 'flex-start' : 'flex-start',
+                  flexGrow: 0
+                }}
+              >
+                {options.map((option, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    className={`py-4 px-7 flex-row items-center justify-between ${index !== options.length - 1 ? "border-b border-gray-50" : ""
+                      } ${value === option ? "bg-gray-100" : "bg-white"}`}
+                    onPress={() => handleOptionSelect(option)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      className={`text-lg flex-1 mr-3 ${value === option
+                        ? "text-gray-900 font-medium"
+                        : "text-gray-600"
+                        }`}
+                      numberOfLines={2}
+                      ellipsizeMode="tail"
+                    >
+                      {option}
+                    </Text>
+                    {value === option && (
+                      <FontAwesomeIcon icon={faCheck} size={16} color="#16a34a" />
+                    )}
+                  </TouchableOpacity>
+                ))}
+
+                {/* Bottom spacing for many options */}
+                {options.length > 7 && <View className="h-2" />}
+              </ScrollView>
+            </Animated.View>
+          </GestureHandlerRootView>
+        </Modal>
+      )}
     </View>
   );
 };
@@ -760,10 +826,8 @@ const CreatePostScreen = ({ navigation, route }) => {
         if (totalImages > maxImages) {
           Alert.alert(
             "Fotoğraf Limiti",
-            `En fazla ${maxImages} fotoğraf ekleyebilirsiniz. ${
-              newImages.length
-            } fotoğraf seçtiniz, ancak sadece ${
-              maxImages - images.length
+            `En fazla ${maxImages} fotoğraf ekleyebilirsiniz. ${newImages.length
+            } fotoğraf seçtiniz, ancak sadece ${maxImages - images.length
             } tanesi eklenecek.`
           );
           const allowedImages = newImages.slice(0, maxImages - images.length);
@@ -1129,7 +1193,7 @@ const CreatePostScreen = ({ navigation, route }) => {
       Alert.alert(
         "Hata",
         error.data?.message ||
-          "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin."
+        "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin."
       );
     }
   };
@@ -1244,7 +1308,7 @@ const CreatePostScreen = ({ navigation, route }) => {
                     value={paymentMethod}
                     setValue={setPaymentMethod}
                     options={paymentMethodOptions}
-                    placeholder="Ödeme yöntemi seçin"
+                    placeholder="Ödeme yöntemi"
                   />
                 </View>
               </View>
@@ -1564,5 +1628,36 @@ const CreatePostScreen = ({ navigation, route }) => {
     </View>
   );
 };
-
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  backdropTouchable: {
+    flex: 1,
+  },
+  modal: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: '#ffffff',
+    elevation: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    overflow: 'hidden',
+  },
+});
 export default CreatePostScreen;
