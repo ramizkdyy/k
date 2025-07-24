@@ -66,6 +66,7 @@ import {
   faQuestionCircle,
   faSignOutAlt,
   faChevronLeft,
+  faMagnifyingGlass as faMagnifyingGlassSolid,
 } from "@fortawesome/pro-solid-svg-icons";
 // Regular icons (for unselected state)
 import {
@@ -80,6 +81,7 @@ import {
   faComments as faCommentsRegular,
   faCog as faCogRegular,
   faQuestionCircle as faQuestionCircleRegular,
+  faMagnifyingGlass as faMagnifyingGlassLight,
   faSignOutAlt as faSignOutAltRegular,
 } from "@fortawesome/pro-regular-svg-icons";
 
@@ -744,6 +746,8 @@ const TenantProfileStack = () => {
 
 // Tab Navigator - Dynamic tab bar visibility
 const LandlordTabNavigator = () => {
+  const userProfile = useSelector(selectUserProfile);
+
   return (
     <View style={{ flex: 1 }}>
       <Tab.Navigator
@@ -772,21 +776,7 @@ const LandlordTabNavigator = () => {
               elevation: 8,
             };
           })(route),
-          tabBarBackground: () => (
-            <BlurView
-              intensity={100}
-              tint="light"
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                borderTopWidth: 0.5,
-                borderTopColor: "rgba(0, 0, 0, 0.13)",
-              }}
-            />
-          ),
+          tabBarBackground: () => <View className="bg-white flex-1"></View>,
           headerShown: false,
         })}
       >
@@ -795,10 +785,10 @@ const LandlordTabNavigator = () => {
           component={LandlordHomeStack}
           options={{
             title: "Ana Sayfa",
-            tabBarLabel: "Ana Sayfa",
+            tabBarLabel: "",
             tabBarIcon: ({ focused }) => (
               <FontAwesomeIcon
-                icon={faHouse}
+                icon={focused ? faMagnifyingGlassSolid : faMagnifyingGlassLight}
                 size={24}
                 color={focused ? "#000" : "#999999"}
               />
@@ -810,10 +800,10 @@ const LandlordTabNavigator = () => {
           component={LandlordPropertiesStack}
           options={{
             title: "Mülklerim",
-            tabBarLabel: "Mülklerim",
+            tabBarLabel: "",
             tabBarIcon: ({ focused }) => (
               <FontAwesomeIcon
-                icon={faBuilding}
+                icon={focused ? faHouseSolid : faHouseRegular}
                 size={24}
                 color={focused ? "#000" : "#999999"}
               />
@@ -828,10 +818,10 @@ const LandlordTabNavigator = () => {
           component={LandlordOffersStack}
           options={{
             title: "Teklifler",
-            tabBarLabel: "Teklifler",
+            tabBarLabel: "",
             tabBarIcon: ({ focused }) => (
               <FontAwesomeIcon
-                icon={faEnvelope}
+                icon={focused ? faEnvelopeSolid : faEnvelopeRegular}
                 size={24}
                 color={focused ? "#000" : "#999999"}
               />
@@ -843,13 +833,32 @@ const LandlordTabNavigator = () => {
           component={LandlordProfileStack}
           options={{
             title: "Profil",
-            tabBarLabel: "Profil",
+            tabBarLabel: "",
             tabBarIcon: ({ focused }) => (
-              <FontAwesomeIcon
-                icon={faUser}
-                size={24}
-                color={focused ? "#000" : "#999999"}
-              />
+              <View style={{ width: 28, height: 28 }}>
+                <Image
+                  source={{ uri: userProfile.profileImageUrl }}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 14,
+                  }}
+                />
+                {focused && (
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: -2,
+                      left: -2,
+                      right: -2,
+                      bottom: -2,
+                      borderRadius: 16, // 14 + 2
+                      borderWidth: 2,
+                      borderColor: "#000",
+                    }}
+                  />
+                )}
+              </View>
             ),
           }}
         />

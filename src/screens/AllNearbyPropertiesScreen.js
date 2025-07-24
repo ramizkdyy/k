@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, memo, useCallback } from "react";
 import {
   View,
   Text,
@@ -30,6 +30,7 @@ import {
   faCalendar,
   faBuilding,
   faCoins,
+  faBedBunk,
 } from "@fortawesome/pro-light-svg-icons";
 import { BlurView } from "expo-blur";
 import { faSearch } from "@fortawesome/pro-solid-svg-icons";
@@ -42,75 +43,76 @@ import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
 
-// Skeleton Components
-const ShimmerPlaceholder = ({ width, height, borderRadius = 8, style }) => {
-  const animatedValue = useRef(new Animated.Value(0)).current;
+// Memoized Skeleton Components
+const ShimmerPlaceholder = memo(
+  ({ width, height, borderRadius = 8, style }) => {
+    const animatedValue = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    const shimmerAnimation = Animated.loop(
-      Animated.timing(animatedValue, {
-        toValue: 1,
-        duration: 2000,
-        useNativeDriver: true,
-      }),
-      { iterations: -1 }
-    );
+    useEffect(() => {
+      const shimmerAnimation = Animated.loop(
+        Animated.timing(animatedValue, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        { iterations: -1 }
+      );
 
-    shimmerAnimation.start();
+      shimmerAnimation.start();
+      return () => shimmerAnimation.stop();
+    }, [animatedValue]);
 
-    return () => shimmerAnimation.stop();
-  }, [animatedValue]);
+    const translateX = animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: [-width * 1.5, width * 1.5],
+      extrapolate: "clamp",
+    });
 
-  const translateX = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-width * 1.5, width * 1.5],
-    extrapolate: "clamp",
-  });
-
-  return (
-    <View
-      style={[
-        {
-          width,
-          height,
-          borderRadius,
-          backgroundColor: "#E5E7EB",
-          overflow: "hidden",
-        },
-        style,
-      ]}
-    >
-      <Animated.View
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          transform: [{ translateX }],
-        }}
+    return (
+      <View
+        style={[
+          {
+            width,
+            height,
+            borderRadius,
+            backgroundColor: "#E5E7EB",
+            overflow: "hidden",
+          },
+          style,
+        ]}
       >
-        <LinearGradient
-          colors={[
-            "rgba(255, 255, 255, 0)",
-            "rgba(255, 255, 255, 0.4)",
-            "rgba(255, 255, 255, 0.8)",
-            "rgba(255, 255, 255, 0.4)",
-            "rgba(255, 255, 255, 0)",
-          ]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
+        <Animated.View
           style={{
-            width: width * 1.5,
-            height: "100%",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            transform: [{ translateX }],
           }}
-        />
-      </Animated.View>
-    </View>
-  );
-};
+        >
+          <LinearGradient
+            colors={[
+              "rgba(255, 255, 255, 0)",
+              "rgba(255, 255, 255, 0.4)",
+              "rgba(255, 255, 255, 0.8)",
+              "rgba(255, 255, 255, 0.4)",
+              "rgba(255, 255, 255, 0)",
+            ]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{
+              width: width * 1.5,
+              height: "100%",
+            }}
+          />
+        </Animated.View>
+      </View>
+    );
+  }
+);
 
-const PropertyListItemSkeleton = () => {
+const PropertyListItemSkeleton = memo(() => {
   return (
     <View
       style={{ marginHorizontal: 16 }}
@@ -150,7 +152,6 @@ const PropertyListItemSkeleton = () => {
       </View>
 
       <View className="mt-4 px-1">
-        {/* Title Skeleton */}
         <View className="items-start mb-1">
           <ShimmerPlaceholder
             width={width - 80}
@@ -165,12 +166,10 @@ const PropertyListItemSkeleton = () => {
           />
         </View>
 
-        {/* Location Skeleton */}
         <View className="mb-2 mt-2">
           <ShimmerPlaceholder width={150} height={14} borderRadius={7} />
         </View>
 
-        {/* Price Skeleton */}
         <View className="flex-row items-center mb-3">
           <ShimmerPlaceholder width={120} height={18} borderRadius={9} />
           <View className="ml-2">
@@ -178,7 +177,6 @@ const PropertyListItemSkeleton = () => {
           </View>
         </View>
 
-        {/* Property Details Slider Skeleton */}
         <View className="mt-3">
           <View className="flex-row">
             {[1, 2, 3, 4, 5].map((_, index) => (
@@ -191,18 +189,13 @@ const PropertyListItemSkeleton = () => {
                   height: 85,
                 }}
               >
-                {/* Icon skeleton */}
                 <ShimmerPlaceholder width={30} height={30} borderRadius={15} />
-
-                {/* Value skeleton */}
                 <ShimmerPlaceholder
                   width={40}
                   height={16}
                   borderRadius={8}
                   style={{ marginTop: 8 }}
                 />
-
-                {/* Label skeleton */}
                 <ShimmerPlaceholder
                   width={35}
                   height={11}
@@ -215,456 +208,151 @@ const PropertyListItemSkeleton = () => {
         </View>
       </View>
 
-      {/* User Profile Section Skeleton */}
       <View className="flex flex-col">
         <View className="mb-5 pl-1 mt-3">
           <View className="flex-1 flex-row justify-between items-center w-full">
-            {/* User info skeleton */}
             <View className="flex-row items-center">
-              {/* Profile image skeleton */}
               <ShimmerPlaceholder
                 width={48}
                 height={48}
                 borderRadius={24}
                 style={{ marginRight: 12 }}
               />
-
               <View className="flex-col">
-                {/* Name skeleton */}
                 <ShimmerPlaceholder
                   width={120}
                   height={14}
                   borderRadius={7}
                   style={{ marginBottom: 4 }}
                 />
-
-                {/* Rating skeleton */}
                 <ShimmerPlaceholder width={80} height={12} borderRadius={6} />
               </View>
             </View>
-
-            {/* Time skeleton */}
             <ShimmerPlaceholder width={60} height={12} borderRadius={6} />
           </View>
         </View>
       </View>
     </View>
   );
-};
+});
 
-const PropertyListLoadingSkeleton = ({ count = 2 }) => {
+const PropertyListLoadingSkeleton = memo(({ count = 2 }) => {
   return (
     <View>
       {Array.from({ length: count }).map((_, index) => (
-        <PropertyListItemSkeleton
-          className="hidden"
-          key={`property-skeleton-${index}`}
-        />
+        <PropertyListItemSkeleton key={`property-skeleton-${index}`} />
       ))}
     </View>
   );
-};
+});
 
-const AllNearbyPropertiesScreen = ({ navigation, route }) => {
-  const currentUser = useSelector(selectCurrentUser);
-  const userRole = useSelector(selectUserRole);
-
-  // Get initial location from route params if available
-  const initialLocation = route.params?.initialLocation;
-
-  const [userLocation, setUserLocation] = useState(initialLocation || null);
-  const [locationLoading, setLocationLoading] = useState(!initialLocation);
-  const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  // UPDATED: Backend SortBy enum değerleri
-  // 0: Distance, 1: PostTime, 2: KiraFiyati, 3: ViewCount, 4: UpdatedDate
-  const [sortBy, setSortBy] = useState(0);
-  const [sortDirection, setSortDirection] = useState(0); // 0: ASC, 1: DESC
-  const [isMapView, setIsMapView] = useState(false);
-  const [isMatch, setIsMatch] = useState(false);
-
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [allProperties, setAllProperties] = useState([]);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [hasNextPage, setHasNextPage] = useState(true);
-
-  // NEW: Filtre değişikliği loading state'i için
-  const [isFilterChanging, setIsFilterChanging] = useState(false);
-
-  // OPTIMIZE EDİLDİ: Native driver ile animated değerler
-  const scrollY = useRef(new Animated.Value(0)).current;
-
-  // Filter animasyonu için transform ve opacity kullanıyoruz (native driver için)
-  const filterTranslateY = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [0, -60], // Filtreyi yukarı kaydır
-    extrapolate: "clamp",
-  });
-
-  const filterOpacity = scrollY.interpolate({
-    inputRange: [0, 50, 100],
-    outputRange: [1, 0.5, 0],
-    extrapolate: "clamp",
-  });
-
-  // Container height animasyonu (JS thread'de çalışır ama gerekli)
-  const containerHeight = scrollY.interpolate({
-    inputRange: [0, 50],
-    outputRange: [45, 0], // Container yüksekliğini 60px'den 0'a küçült
-    extrapolate: "clamp",
-  });
-
-  // Get user's current location if not provided
-  useEffect(() => {
-    if (!initialLocation) {
-      getCurrentLocation();
-    }
-  }, [initialLocation]);
-
-  // Reset pagination when filters change
-  useEffect(() => {
-    // Filtre değişikliği başladığında loading state'i set et
-    setIsFilterChanging(true);
-    setCurrentPage(1);
-    setAllProperties([]);
-    setHasNextPage(true);
-
-    // Kısa bir delay ile loading state'i kaldır (API çağrısı başlayınca)
-    const timer = setTimeout(() => {
-      setIsFilterChanging(false);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [sortBy, sortDirection, isMatch, userLocation]);
-
-  const getCurrentLocation = async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-
-      if (status !== "granted") {
-        setUserLocation({
-          latitude: 41.0082,
-          longitude: 28.9784,
-        });
-        setLocationLoading(false);
-        return;
-      }
-
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-
-      setUserLocation({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-    } catch (error) {
-      console.log("Location error:", error);
-      setUserLocation({
-        latitude: 41.0082,
-        longitude: 28.9784,
-      });
-    } finally {
-      setLocationLoading(false);
-    }
-  };
-
-  // UPDATED: Fetch nearby properties with pagination and sortBy
-  const {
-    data: nearbyData,
-    isLoading: isLoadingNearby,
-    error,
-    refetch,
-  } = useGetNearbyPostsPaginatedQuery(
+// Memoized Property Details Slider
+const PropertyDetailsSlider = memo(({ item }) => {
+  const propertyDetails = [
+    { id: "rooms", icon: faBed, value: item.odaSayisi || "N/A", label: "Oda" },
     {
-      userId: currentUser?.id,
-      latitude: userLocation?.latitude,
-      longitude: userLocation?.longitude,
-      radiusKm: 50,
-      page: currentPage,
-      pageSize: 10,
-      sortBy: sortBy, // Backend'e gönderilen sortBy parametresi
-      sortDirection: sortDirection,
-      isMatch: isMatch,
+      id: "bedrooms",
+      icon: faBedBunk,
+      value: item.yatakOdasiSayisi || "N/A",
+      label: "Y.Odası",
     },
     {
-      skip: !userLocation || !currentUser?.id,
-      refetchOnMountOrArgChange: true,
-    }
-  );
-
-  // Update properties when new data arrives
-  useEffect(() => {
-    if (nearbyData?.data) {
-      const newProperties = nearbyData.data;
-      const pagination = nearbyData.pagination;
-
-      if (currentPage === 1) {
-        // First page or refresh - replace all data
-        setAllProperties(newProperties);
-        // İlk sayfa yüklendiğinde filter loading'i kapat
-        setIsFilterChanging(false);
-      } else {
-        // Subsequent pages - append to existing data
-        setAllProperties((prev) => {
-          // Remove duplicates based on postId
-          const existingIds = new Set(prev.map((item) => item.postId));
-          const uniqueNewItems = newProperties.filter(
-            (item) => !existingIds.has(item.postId)
-          );
-          return [...prev, ...uniqueNewItems];
-        });
-      }
-
-      // Update pagination state
-      setHasNextPage(pagination?.hasNextPage || false);
-    }
-  }, [nearbyData, currentPage]);
-
-  // UPDATED: Filter properties based on search query only
-  // Backend'den gelen veriler zaten sortBy'a göre sıralanmış olarak geliyor
-  const getFilteredProperties = () => {
-    let filteredProperties = [...allProperties];
-
-    // Apply search filter only - sorting is now handled by backend
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filteredProperties = filteredProperties.filter(
-        (property) =>
-          (property.ilanBasligi &&
-            property.ilanBasligi.toLowerCase().includes(query)) ||
-          (property.il && property.il.toLowerCase().includes(query)) ||
-          (property.ilce && property.ilce.toLowerCase().includes(query)) ||
-          (property.postDescription &&
-            property.postDescription.toLowerCase().includes(query))
-      );
-    }
-
-    // Backend'den gelen veriler zaten sıralanmış olarak geliyor
-    return filteredProperties;
-  };
-
-  const filteredProperties = getFilteredProperties();
-
-  // Handle load more
-  const handleLoadMore = () => {
-    if (
-      !isLoadingMore &&
-      hasNextPage &&
-      !isLoadingNearby &&
-      !isFilterChanging
-    ) {
-      setIsLoadingMore(true);
-      setCurrentPage((prev) => prev + 1);
-    }
-  };
-
-  // Handle refresh
-  const onRefresh = async () => {
-    setRefreshing(true);
-    setCurrentPage(1);
-    setAllProperties([]);
-    setHasNextPage(true);
-    setIsFilterChanging(false);
-    try {
-      await refetch();
-    } catch (error) {
-      console.log("Refresh error:", error);
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  // UPDATED: Sort handling
-  const handleSortChange = (newSortBy) => {
-    if (newSortBy === sortBy) {
-      // Same sort option - toggle direction
-      setSortDirection((prev) => (prev === 0 ? 1 : 0));
-    } else {
-      // Different sort option - set new sort and default direction
-      setSortBy(newSortBy);
-      setSortDirection(0); // Default to ascending
-    }
-  };
-
-  // UPDATED: Sort options mapping - Backend enum değerlerine göre
-  const sortOptions = [
-    { key: 0, label: "Uzaklık" }, // Distance
-    { key: 2, label: "Fiyat" }, // KiraFiyati
-    { key: 1, label: "Tarih" }, // PostTime
-    { key: 3, label: "Görüntülenme" }, // ViewCount
-    { key: 4, label: "Güncellenme" }, // UpdatedDate
+      id: "bathrooms",
+      icon: faShower,
+      value: item.banyoSayisi || "N/A",
+      label: "Banyo",
+    },
+    {
+      id: "area",
+      icon: faRuler,
+      value: item.brutMetreKare ? `${item.brutMetreKare} m²` : "N/A",
+      label: "Alan",
+    },
+    {
+      id: "floor",
+      icon: faBuilding,
+      value: item.bulunduguKat || "N/A",
+      label: "Kat",
+    },
+    {
+      id: "age",
+      icon: faCalendar,
+      value: item.binaYasi ? `${item.binaYasi}` : "N/A",
+      label: "Bina yaşı",
+    },
+    {
+      id: "dues",
+      icon: faMoneyBills,
+      value: item.aidat ? `${item.aidat}₺` : "Yok",
+      label: "Aidat",
+    },
+    {
+      id: "deposit",
+      icon: faCoins,
+      value: item.depozito ? `${item.depozito}₺` : "Yok",
+      label: "Depozito",
+    },
   ];
 
-  // Loading state effect
-  useEffect(() => {
-    if (currentPage > 1) {
-      setIsLoadingMore(false);
-    }
-  }, [nearbyData]);
-
-  // Relative time function
-  const getRelativeTime = (postTime) => {
-    if (!postTime) return "Tarih belirtilmemiş";
-
-    const now = new Date();
-    const postDate = new Date(postTime);
-
-    // Invalid date check
-    if (isNaN(postDate.getTime())) return "Geçersiz tarih";
-
-    // Milisaniye cinsinden fark
-    const diffMs = now.getTime() - postDate.getTime();
-
-    // Saniye cinsinden fark
-    const diffSeconds = Math.floor(diffMs / 1000);
-
-    // Dakika cinsinden fark
-    const diffMinutes = Math.floor(diffSeconds / 60);
-
-    // Saat cinsinden fark
-    const diffHours = Math.floor(diffMinutes / 60);
-
-    // Gün cinsinden fark
-    const diffDays = Math.floor(diffHours / 24);
-
-    // Hafta cinsinden fark
-    const diffWeeks = Math.floor(diffDays / 7);
-
-    // Ay cinsinden fark
-    const diffMonths = Math.floor(diffDays / 30);
-
-    // Yıl cinsinden fark
-    const diffYears = Math.floor(diffDays / 365);
-
-    if (diffYears > 0) {
-      return `${diffYears} yıl önce`;
-    } else if (diffMonths > 0) {
-      return `${diffMonths} ay önce`;
-    } else if (diffWeeks > 0) {
-      return `${diffWeeks} hafta önce`;
-    } else if (diffDays > 0) {
-      return `${diffDays} gün önce`;
-    } else if (diffHours > 0) {
-      return `${diffHours} saat önce`;
-    } else if (diffMinutes > 0) {
-      return `${diffMinutes} dakika önce`;
-    } else {
-      return "Az önce";
-    }
-  };
-
-  // Property Details Free Drag Slider Component
-  const PropertyDetailsSlider = ({ item }) => {
-    const propertyDetails = [
-      {
-        id: "rooms",
-        icon: faBed,
-        value: item.odaSayisi || "N/A",
-        label: "Oda",
-      },
-      {
-        id: "bathrooms",
-        icon: faShower,
-        value: item.banyoSayisi || "N/A",
-        label: "Banyo",
-      },
-      {
-        id: "area",
-        icon: faRuler,
-        value: item.brutMetreKare ? `${item.brutMetreKare} m²` : "N/A",
-        label: "Alan",
-      },
-      {
-        id: "floor",
-        icon: faBuilding,
-        value: item.bulunduguKat || "N/A",
-        label: "Kat",
-      },
-      {
-        id: "age",
-        icon: faCalendar,
-        value: item.binaYasi ? `${item.binaYasi}` : "N/A",
-        label: "Bina yaşı",
-      },
-      {
-        id: "dues",
-        icon: faMoneyBills,
-        value: item.aidat ? `${item.aidat}₺` : "Yok",
-        label: "Aidat",
-      },
-      {
-        id: "deposit",
-        icon: faCoins,
-        value: item.depozito ? `${item.depozito}₺` : "Yok",
-        label: "Depozito",
-      },
-    ];
-
-    return (
-      <View className="mt-3">
-        <ScrollView
-          horizontal={true}
-          showsHorizontalScrollIndicator={false}
-          scrollEventThrottle={16}
-          decelerationRate="normal"
-          bounces={true}
-          contentContainerStyle={{}}
-        >
-          {propertyDetails.map((detail, index) => (
-            <View
-              key={`${detail.id}-${index}`}
-              className="items-center justify-center rounded-2xl"
-              style={{
-                width: "fit-content",
-                marginRight: 46,
-                marginLeft: 3,
-                height: 85,
-              }}
+  return (
+    <View className="mt-3">
+      <ScrollView
+        horizontal={true}
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        decelerationRate="normal"
+        bounces={true}
+      >
+        {propertyDetails.map((detail, index) => (
+          <View
+            key={`${detail.id}-${index}`}
+            className="items-center justify-center rounded-2xl"
+            style={{
+              width: "fit-content",
+              marginRight: 46,
+              marginLeft: 3,
+              height: 85,
+            }}
+          >
+            <FontAwesomeIcon size={30} icon={detail.icon} color="#000" />
+            <Text
+              style={{ fontSize: 16, fontWeight: 600 }}
+              className="text-gray-800 mt-2 text-center"
+              numberOfLines={1}
             >
-              <FontAwesomeIcon size={30} icon={detail.icon} color="#000" />
-              <Text
-                style={{ fontSize: 16, fontWeight: 600 }}
-                className="text-gray-800 mt-2 text-center"
-                numberOfLines={1}
-              >
-                {detail.value}
-              </Text>
-              <Text
-                style={{ fontSize: 11 }}
-                className="text-gray-500 text-center"
-                numberOfLines={1}
-              >
-                {detail.label}
-              </Text>
-            </View>
-          ))}
-        </ScrollView>
-      </View>
-    );
-  };
+              {detail.value}
+            </Text>
+            <Text
+              style={{ fontSize: 11 }}
+              className="text-gray-500 text-center"
+              numberOfLines={1}
+            >
+              {detail.label}
+            </Text>
+          </View>
+        ))}
+      </ScrollView>
+    </View>
+  );
+});
 
-  // Simple and reliable image slider component
-  const PropertyImageSlider = ({ images, distance, status, postId }) => {
+// Memoized Image Slider
+const PropertyImageSlider = memo(
+  ({ images, distance, status, postId, onPress }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const scrollViewRef = useRef(null);
 
-    const handleScroll = (event) => {
+    const handleScroll = useCallback((event) => {
       const slideSize = width - 32;
       const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
       setCurrentIndex(index);
-    };
+    }, []);
 
-    const handleDotPress = (index) => {
+    const handleDotPress = useCallback((index) => {
       setCurrentIndex(index);
       const slideSize = width - 32;
-      scrollViewRef.current?.scrollTo({
-        x: slideSize * index,
-        animated: true,
-      });
-    };
+      scrollViewRef.current?.scrollTo({ x: slideSize * index, animated: true });
+    }, []);
 
     if (!images || images.length === 0) {
       return (
@@ -696,9 +384,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
               key={`image-${postId}-${index}`}
               style={{ width: width - 32 }}
               activeOpacity={1}
-              onPress={() =>
-                navigation.navigate("PostDetail", { postId: postId })
-              }
+              onPress={onPress}
             >
               <Image
                 source={{ uri: item.postImageUrl }}
@@ -737,11 +423,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
           <BlurView
             intensity={50}
             tint="dark"
-            style={{
-              overflow: "hidden",
-              borderRadius: 100,
-              boxShadow: "0px 0px 12px #00000012",
-            }}
+            style={{ overflow: "hidden", borderRadius: 100 }}
             className="px-3 py-1.5 rounded-full"
           >
             <Text className="text-white text-xs font-semibold">
@@ -784,145 +466,393 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
         )}
       </View>
     );
-  };
+  }
+);
 
-  console.log("filteredProperties:", filteredProperties);
+// Memoized Property Item - EN ÖNEMLİ PERFORMANCE OPTIMIZATION
+const PropertyItem = memo(
+  ({ item, navigation, getRelativeTime }) => {
+    const handleImagePress = useCallback(() => {
+      navigation.navigate("PostDetail", { postId: item.postId });
+    }, [item.postId, navigation]);
 
-  // Render property item
-  const renderPropertyItem = ({ item }) => (
-    <View
-      style={{ marginHorizontal: 16 }}
-      className="overflow-hidden mb-4 pt-6 border-b border-gray-200"
-    >
-      {/* Image slider */}
-      <TouchableOpacity
-        onPress={() =>
-          navigation.navigate("PostDetail", { postId: item.postId })
-        }
-        activeOpacity={1}
+    const handleProfilePress = useCallback(() => {
+      navigation.navigate("LandlordProfile", { userId: item.userId });
+    }, [item.userId, navigation]);
+
+    return (
+      <View
+        style={{ marginHorizontal: 16 }}
+        className="overflow-hidden mb-4 pt-6 border-b border-gray-200"
       >
+        {/* Image slider */}
         <PropertyImageSlider
           images={item.postImages}
           distance={item.distance}
           status={item.status}
           postId={item.postId}
+          onPress={handleImagePress}
         />
-      </TouchableOpacity>
 
-      <View className="mt-4 px-1">
-        {/* Title and Price */}
-        <View className="items-start mb-1">
-          <Text
-            style={{ fontSize: 18, fontWeight: 700 }}
-            className="text-gray-800 mb-"
-            numberOfLines={2}
-          >
-            {item.ilanBasligi || "İlan başlığı yok"}
-          </Text>
-        </View>
-        <View className="flex-row items-center mb-2">
-          <Text style={{ fontSize: 12 }} className=" text-gray-500">
-            {item.ilce && item.il
-              ? `${item.ilce}, ${item.il}`
-              : item.il || "Konum belirtilmemiş"}
-          </Text>
+        <View className="mt-4 px-1">
+          {/* Title and Price */}
+          <View className="items-start mb-1">
+            <Text
+              style={{ fontSize: 18, fontWeight: 700 }}
+              className="text-gray-800 mb-"
+              numberOfLines={2}
+            >
+              {item.ilanBasligi || "İlan başlığı yok"}
+            </Text>
+          </View>
+          <View className="flex-row items-center mb-2">
+            <Text style={{ fontSize: 12 }} className=" text-gray-500">
+              {item.ilce && item.il
+                ? `${item.ilce}, ${item.il}`
+                : item.il || "Konum belirtilmemiş"}
+            </Text>
+          </View>
+
+          <View className="flex-row items-center">
+            <Text
+              style={{ fontSize: 18, fontWeight: 500 }}
+              className="text-gray-900 underline"
+            >
+              {item.kiraFiyati || item.rent
+                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
+                    item.paraBirimi || item.currency || "₺"
+                  }`
+                : "Fiyat belirtilmemiş"}
+            </Text>
+            <Text className="text-sm text-gray-400 ml-1">/ay</Text>
+          </View>
+
+          {/* Property details slider */}
+          <PropertyDetailsSlider item={item} />
         </View>
 
-        <View className="flex-row items-center">
-          <Text
-            style={{ fontSize: 18, fontWeight: 500 }}
-            className="text-gray-900 underline"
-          >
-            {item.kiraFiyati || item.rent
-              ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-                  item.paraBirimi || item.currency || "₺"
-                }`
-              : "Fiyat belirtilmemiş"}
-          </Text>
-          <Text className="text-sm text-gray-400 ml-1">/ay</Text>
-        </View>
+        <View className="flex flex-col">
+          <View className="mb-5 pl-1 mt-3">
+            <TouchableOpacity
+              className="flex-row items-center"
+              onPress={handleProfilePress}
+            >
+              <View className="flex-1 flex-row justify-between items-center w-full">
+                <TouchableOpacity
+                  className="flex-row items-center"
+                  onPress={handleProfilePress}
+                >
+                  <View className="w-12 h-12 rounded-full justify-center items-center mr-3 border-gray-900 border">
+                    {!!item.user?.profileImageUrl ? (
+                      <Image
+                        source={{ uri: item.user.profileImageUrl }}
+                        className="w-full h-full rounded-full"
+                      />
+                    ) : (
+                      <View>
+                        <Text className="text-xl font-bold text-gray-900">
+                          {item.user?.name?.charAt(0) || "E"}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
 
-        {/* Property details slider */}
-        <PropertyDetailsSlider item={item} />
-      </View>
-      <View className="flex flex-col">
-        <View className="mb-5 pl-1 mt-3">
-          <TouchableOpacity
-            className="flex-row items-center"
-            onPress={() =>
-              navigation.navigate("LandlordProfile", {
-                userId: item.userId,
-              })
-            }
-          >
-            <View className="flex-1 flex-row justify-between items-center w-full">
-              <TouchableOpacity
-                className="flex-row items-center"
-                onPress={() =>
-                  navigation.navigate("LandlordProfile", {
-                    userId: item.userId,
-                  })
-                }
-              >
-                <View className="w-12 h-12 rounded-full justify-center items-center mr-3 border-gray-900 border">
-                  {!!item.user?.profileImageUrl ? (
-                    <Image
-                      source={{ uri: item.user.profileImageUrl }}
-                      className="w-full h-full rounded-full"
-                    />
-                  ) : (
-                    <View>
-                      <Text className="text-xl font-bold text-gray-900">
-                        {item.user?.name?.charAt(0) || "E"}
+                  <View className="flex-col gap-1">
+                    <Text
+                      style={{ fontSize: 14 }}
+                      className="font-semibold text-gray-800"
+                    >
+                      {item.user?.name} {item.user?.surname}
+                    </Text>
+                    <View className="flex flex-row items-center gap-1">
+                      <Text style={{ fontSize: 12 }} className="text-gray-500">
+                        {item.matchScore
+                          ? `Skor: ${item.matchScore.toFixed(1)}`
+                          : "Rating"}
                       </Text>
                     </View>
-                  )}
-                </View>
-
-                <View className="flex-col gap-1">
-                  <Text
-                    style={{ fontSize: 14 }}
-                    className="font-semibold text-gray-800"
-                  >
-                    {item.user?.name} {item.user?.surname}
-                  </Text>
-                  <View className="flex flex-row items-center gap-1">
-                    <Text style={{ fontSize: 12 }} className="text-gray-500">
-                      {item.matchScore
-                        ? `Skor: ${item.matchScore.toFixed(1)}`
-                        : "Rating"}
-                    </Text>
                   </View>
-                </View>
-              </TouchableOpacity>
-              <Text
-                className="mb-2 pl-1 text-gray-500"
-                style={{ fontSize: 12, fontWeight: 500 }}
-              >
-                {getRelativeTime(item.postTime)}
-              </Text>
-            </View>
-          </TouchableOpacity>
+                </TouchableOpacity>
+                <Text
+                  className="mb-2 pl-1 text-gray-500"
+                  style={{ fontSize: 12, fontWeight: 500 }}
+                >
+                  {getRelativeTime(item.postTime)}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </View>
-  );
+    );
+  },
+  (prevProps, nextProps) => {
+    // Custom comparison for better performance
+    return (
+      prevProps.item.postId === nextProps.item.postId &&
+      prevProps.item.matchScore === nextProps.item.matchScore
+    );
+  }
+);
 
-  // Render load more footer - UPDATED with skeleton
-  const renderFooter = () => {
-    if (!isLoadingMore) return null;
+const AllNearbyPropertiesScreen = ({ navigation, route }) => {
+  const currentUser = useSelector(selectCurrentUser);
+  const userRole = useSelector(selectUserRole);
+  const initialLocation = route.params?.initialLocation;
 
-    return <PropertyListLoadingSkeleton count={2} />;
+  // State
+  const [userLocation, setUserLocation] = useState(initialLocation || null);
+  const [locationLoading, setLocationLoading] = useState(!initialLocation);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState(0);
+  const [sortDirection, setSortDirection] = useState(0);
+  const [isMapView, setIsMapView] = useState(false);
+  const [isMatch, setIsMatch] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [allProperties, setAllProperties] = useState([]);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const [isFilterChanging, setIsFilterChanging] = useState(false);
+
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  // Memoized functions
+  const getRelativeTime = useCallback((postTime) => {
+    if (!postTime) return "Tarih belirtilmemiş";
+
+    const now = new Date();
+    const postDate = new Date(postTime);
+    if (isNaN(postDate.getTime())) return "Geçersiz tarih";
+
+    const diffMs = now.getTime() - postDate.getTime();
+    const diffSeconds = Math.floor(diffMs / 1000);
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    const diffWeeks = Math.floor(diffDays / 7);
+    const diffMonths = Math.floor(diffDays / 30);
+    const diffYears = Math.floor(diffDays / 365);
+
+    if (diffYears > 0) return `${diffYears} yıl önce`;
+    if (diffMonths > 0) return `${diffMonths} ay önce`;
+    if (diffWeeks > 0) return `${diffWeeks} hafta önce`;
+    if (diffDays > 0) return `${diffDays} gün önce`;
+    if (diffHours > 0) return `${diffHours} saat önce`;
+    if (diffMinutes > 0) return `${diffMinutes} dakika önce`;
+    return "Az önce";
+  }, []);
+
+  // Filter animations
+  const filterTranslateY = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [0, -60],
+    extrapolate: "clamp",
+  });
+
+  const filterOpacity = scrollY.interpolate({
+    inputRange: [0, 50, 100],
+    outputRange: [1, 0.5, 0],
+    extrapolate: "clamp",
+  });
+
+  const containerHeight = scrollY.interpolate({
+    inputRange: [0, 50],
+    outputRange: [45, 0],
+    extrapolate: "clamp",
+  });
+
+  // Get user's current location if not provided
+  useEffect(() => {
+    if (!initialLocation) {
+      getCurrentLocation();
+    }
+  }, [initialLocation]);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setIsFilterChanging(true);
+    setCurrentPage(1);
+    setAllProperties([]);
+    setHasNextPage(true);
+
+    const timer = setTimeout(() => setIsFilterChanging(false), 300);
+    return () => clearTimeout(timer);
+  }, [sortBy, sortDirection, isMatch, userLocation]);
+
+  const getCurrentLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+
+      if (status !== "granted") {
+        setUserLocation({ latitude: 41.0082, longitude: 28.9784 });
+        setLocationLoading(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      setUserLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+    } catch (error) {
+      console.log("Location error:", error);
+      setUserLocation({ latitude: 41.0082, longitude: 28.9784 });
+    } finally {
+      setLocationLoading(false);
+    }
   };
 
-  // UPDATED: Render empty state - Show skeleton during filter changes
-  const renderEmptyState = () => {
-    // Show skeleton during filter changes or initial loading
+  // API Query
+  const {
+    data: nearbyData,
+    isLoading: isLoadingNearby,
+    error,
+    refetch,
+  } = useGetNearbyPostsPaginatedQuery(
+    {
+      userId: currentUser?.id,
+      latitude: userLocation?.latitude,
+      longitude: userLocation?.longitude,
+      radiusKm: 50,
+      page: currentPage,
+      pageSize: 10,
+      sortBy: sortBy,
+      sortDirection: sortDirection,
+      isMatch: isMatch,
+    },
+    {
+      skip: !userLocation || !currentUser?.id,
+      refetchOnMountOrArgChange: true,
+    }
+  );
+
+  // Update properties when new data arrives
+  useEffect(() => {
+    if (nearbyData?.data) {
+      const newProperties = nearbyData.data;
+      const pagination = nearbyData.pagination;
+
+      if (currentPage === 1) {
+        setAllProperties(newProperties);
+        setIsFilterChanging(false);
+      } else {
+        setAllProperties((prev) => {
+          const existingIds = new Set(prev.map((item) => item.postId));
+          const uniqueNewItems = newProperties.filter(
+            (item) => !existingIds.has(item.postId)
+          );
+          return [...prev, ...uniqueNewItems];
+        });
+      }
+
+      setHasNextPage(pagination?.hasNextPage || false);
+    }
+  }, [nearbyData, currentPage]);
+
+  // Filter properties
+  const getFilteredProperties = useCallback(() => {
+    let filteredProperties = [...allProperties];
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filteredProperties = filteredProperties.filter(
+        (property) =>
+          (property.ilanBasligi &&
+            property.ilanBasligi.toLowerCase().includes(query)) ||
+          (property.il && property.il.toLowerCase().includes(query)) ||
+          (property.ilce && property.ilce.toLowerCase().includes(query)) ||
+          (property.postDescription &&
+            property.postDescription.toLowerCase().includes(query))
+      );
+    }
+
+    return filteredProperties;
+  }, [allProperties, searchQuery]);
+
+  const filteredProperties = getFilteredProperties();
+
+  // Handlers
+  const handleLoadMore = useCallback(() => {
+    if (
+      !isLoadingMore &&
+      hasNextPage &&
+      !isLoadingNearby &&
+      !isFilterChanging
+    ) {
+      setIsLoadingMore(true);
+      setCurrentPage((prev) => prev + 1);
+    }
+  }, [isLoadingMore, hasNextPage, isLoadingNearby, isFilterChanging]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setCurrentPage(1);
+    setAllProperties([]);
+    setHasNextPage(true);
+    setIsFilterChanging(false);
+    try {
+      await refetch();
+    } catch (error) {
+      console.log("Refresh error:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetch]);
+
+  const handleSortChange = useCallback(
+    (newSortBy) => {
+      if (newSortBy === sortBy) {
+        setSortDirection((prev) => (prev === 0 ? 1 : 0));
+      } else {
+        setSortBy(newSortBy);
+        setSortDirection(0);
+      }
+    },
+    [sortBy]
+  );
+
+  // Loading state effect
+  useEffect(() => {
+    if (currentPage > 1) {
+      setIsLoadingMore(false);
+    }
+  }, [nearbyData]);
+
+  // Sort options
+  const sortOptions = [
+    { key: 0, label: "Uzaklık" },
+    { key: 2, label: "Fiyat" },
+    { key: 1, label: "Tarih" },
+    { key: 3, label: "Görüntülenme" },
+    { key: 4, label: "Güncellenme" },
+  ];
+
+  // Render functions
+  const renderFooter = useCallback(() => {
+    if (!isLoadingMore) return null;
+    return <PropertyListLoadingSkeleton count={2} />;
+  }, [isLoadingMore]);
+
+  const renderPropertyItem = useCallback(
+    ({ item }) => (
+      <PropertyItem
+        item={item}
+        navigation={navigation}
+        getRelativeTime={getRelativeTime}
+      />
+    ),
+    [navigation, getRelativeTime]
+  );
+
+  const renderEmptyState = useCallback(() => {
     if (isFilterChanging || (isLoadingNearby && currentPage === 1)) {
       return <PropertyListLoadingSkeleton count={3} />;
     }
 
-    // Show empty state only when not loading and no results
     return (
       <View className="flex-1 justify-center items-center p-8">
         <MaterialIcons name="location-off" size={64} color="#CBD5E0" />
@@ -944,7 +874,30 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
         )}
       </View>
     );
-  };
+  }, [isFilterChanging, isLoadingNearby, currentPage, searchQuery]);
+
+  const keyExtractor = useCallback(
+    (item, index) => `nearby_${item.postId}_${index}`,
+    []
+  );
+
+  const getItemLayout = useCallback(
+    (data, index) => ({
+      length: 600, // Approximate item height
+      offset: 600 * index,
+      index,
+    }),
+    []
+  );
+
+  // Clear search handler
+  const clearSearch = useCallback(() => setSearchQuery(""), []);
+
+  // Navigation handlers
+  const goBack = useCallback(() => navigation.goBack(), [navigation]);
+
+  // Toggle match handler
+  const toggleMatch = useCallback(() => setIsMatch(!isMatch), [isMatch]);
 
   // Show loading state
   if (locationLoading || (!userLocation && isLoadingNearby)) {
@@ -990,10 +943,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
       {/* Fixed search bar */}
       <View className="bg-white border-b border-gray-200 z-10">
         <View className="flex flex-row items-center px-5">
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{ width: "8%" }}
-          >
+          <TouchableOpacity onPress={goBack} style={{ width: "8%" }}>
             <FontAwesomeIcon icon={faChevronLeft} color="black" size={25} />
           </TouchableOpacity>
 
@@ -1009,14 +959,14 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
                 onChangeText={setSearchQuery}
               />
               {searchQuery ? (
-                <TouchableOpacity onPress={() => setSearchQuery("")}>
+                <TouchableOpacity onPress={clearSearch}>
                   <MaterialIcons name="close" size={20} color="#9CA3AF" />
                 </TouchableOpacity>
               ) : null}
             </View>
           </View>
           <View style={{ width: "8%" }}>
-            <TouchableOpacity onPress={() => setIsMatch(!isMatch)}>
+            <TouchableOpacity onPress={toggleMatch}>
               <FontAwesomeIcon
                 icon={faSliders}
                 color={isMatch ? "#4A90E2" : "black"}
@@ -1084,11 +1034,12 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
         </Animated.View>
       </View>
 
-      {/* Properties list with pagination */}
+      {/* Properties list with all performance optimizations */}
       <Animated.FlatList
         data={filteredProperties}
         renderItem={renderPropertyItem}
-        keyExtractor={(item, index) => `nearby_${item.postId}_${index}`}
+        keyExtractor={keyExtractor}
+        getItemLayout={getItemLayout} // CRITICAL for performance
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderEmptyState}
         ListFooterComponent={renderFooter}
@@ -1096,28 +1047,37 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
         onEndReachedThreshold={0.1}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          {
-            useNativeDriver: false,
-          }
+          { useNativeDriver: false }
         )}
-        scrollEventThrottle={1}
+        scrollEventThrottle={16} // Optimized for performance
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
             colors={["#4A90E2"]}
+            tintColor="#4A90E2"
           />
         }
         contentContainerStyle={{
           flexGrow: 1,
           paddingBottom: 16,
         }}
-        // Performance optimizations
+        // CRITICAL Performance optimizations
         removeClippedSubviews={true}
-        maxToRenderPerBatch={10}
-        updateCellsBatchingPeriod={100}
-        initialNumToRender={8}
-        windowSize={10}
+        maxToRenderPerBatch={5} // Reduced from 10
+        updateCellsBatchingPeriod={50} // Reduced from 100
+        initialNumToRender={4} // Reduced from 8
+        windowSize={5} // Reduced from 10
+        // NEW performance optimizations
+        legacyImplementation={false}
+        disableVirtualization={false}
+        maintainVisibleContentPosition={{
+          minIndexForVisible: 0,
+          autoscrollToTopThreshold: 100,
+        }}
+        // Memory optimizations
+        recycleViewsOnNext={true}
+        enableFillRate={true}
       />
     </SafeAreaView>
   );
