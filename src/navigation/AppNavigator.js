@@ -576,11 +576,12 @@ const LandlordProfileStack = () => {
         name="LandlordProfileScreen"
         component={ProfileScreen}
         options={{
-          headerTitle: "Profil",
+          headerTitle: "",
           headerTitleStyle: { fontSize: 20, color: "black" },
-          headerShown: true,
+          headerShown: false,
           headerStyle: {
             backgroundColor: "#fff",
+            height: 60,
           },
           headerShadowVisible: false,
         }}
@@ -1055,10 +1056,10 @@ const ProfileLoader = ({ children }) => {
     isLoading,
     error,
   } = userRole === "EVSAHIBI"
-    ? useGetLandlordProfileQuery(currentUser?.id, {
+      ? useGetLandlordProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       })
-    : useGetTenantProfileQuery(currentUser?.id, {
+      : useGetTenantProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       });
 

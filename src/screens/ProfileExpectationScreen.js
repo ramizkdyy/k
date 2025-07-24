@@ -11,10 +11,11 @@ import {
   Platform,
   KeyboardAvoidingView,
   SafeAreaView,
-  Animated,
   Modal,
   Dimensions,
   Pressable,
+  StyleSheet, // Yeni eklendi
+  TouchableWithoutFeedback, // Yeni eklendi
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
@@ -34,8 +35,19 @@ import {
 } from "@fortawesome/pro-solid-svg-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-// Header component
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+
+
 const ProfileExpectationHeader = ({
   navigation,
   isExpectationCompleted,
@@ -69,13 +81,13 @@ const ProfileExpectationHeader = ({
         </TouchableOpacity>
       ) : (
         <TouchableOpacity
-          className="px-6 items-center justify-center"
+          className="px-1 items-center justify-center"
           onPress={onSubmit}
           disabled={isLoading}
         >
           <Text
             style={{ fontSize: 16, color: "#6aeba9", borderColor: "#6aeba9" }}
-            className="font-normal border px-4 py-2 rounded-full"
+            className="font-semibold border px-4 py-2 rounded-full"
           >
             {isLoading ? "Oluşturuluyor..." : "Oluştur"}
           </Text>
@@ -92,7 +104,7 @@ const ProfileExpectationHeader = ({
           fontSize: 14,
         }}
       >
-        Beklenti Profili Oluştur
+        Beklenti Profili
       </Text>
     </View>
   </View>
@@ -170,7 +182,6 @@ const SwitchField = ({ label, value, setValue, description = null }) => (
   </View>
 );
 
-// Dropdown component
 const CustomDropdown = ({
   label,
   value,
@@ -181,61 +192,98 @@ const CustomDropdown = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Animation refs - same structure as RegisterScreen
-  const modalBackgroundOpacity = useRef(new Animated.Value(0)).current;
-  const modalSlideAnim = useRef(new Animated.Value(300)).current;
+  // Modal boyutları - Seçenek sayısına göre dinamik yükseklik (padding düzeltildi)
+  const getModalHeight = () => {
+    const headerHeight = 80; // Header + handle (padding azaltıldı)
+    const itemHeight = 50; // Her seçenek için yaklaşık yükseklik
+    const bottomPadding = 40;// Alt boşluk (azaltıldı)
+    const minHeight = SCREEN_HEIGHT * 0.25; // Minimum %25 (azaltıldı)
+    const maxHeight = SCREEN_HEIGHT * 0.6; // Maximum %75
 
-  const openModal = () => {
-    setIsOpen(true);
-    // Start open animation - same as RegisterScreen
-    Animated.parallel([
-      Animated.timing(modalBackgroundOpacity, {
-        toValue: 1,
-        duration: 250,
-        useNativeDriver: false,
-      }),
-      Animated.timing(modalSlideAnim, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    const calculatedHeight = headerHeight + (options.length * itemHeight) + bottomPadding;
+
+    // Az seçenek varsa (3 veya daha az) küçük modal
+    if (options.length <= 3) {
+      return Math.min(calculatedHeight, SCREEN_HEIGHT * 0.35); // %40 -> %35
+    }
+
+    // Orta seçenek sayısı (4-7) için orta boyut
+    if (options.length <= 7) {
+      return Math.min(calculatedHeight, SCREEN_HEIGHT * 0.55); // %60 -> %55
+    }
+
+    // Çok seçenek varsa maksimum boyut
+    return maxHeight;
   };
 
-  const closeModal = () => {
-    // Close animation - same as RegisterScreen
-    Animated.parallel([
-      Animated.timing(modalBackgroundOpacity, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: false,
-      }),
-      Animated.timing(modalSlideAnim, {
-        toValue: 300,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setIsOpen(false);
+  const SNAP_POINTS = {
+    CLOSED: SCREEN_HEIGHT,
+    OPEN: SCREEN_HEIGHT - getModalHeight(),
+  };
+
+  // Animated values - PropertiesFilterModal'daki gibi
+  const translateY = useSharedValue(SCREEN_HEIGHT);
+  const backdropOpacity = useSharedValue(0);
+
+  // Modal açılış/kapanış animasyonu - PropertiesFilterModal'daki gibi
+  useEffect(() => {
+    if (isOpen) {
+      translateY.value = withSpring(SNAP_POINTS.OPEN, {
+        damping: 80,
+        stiffness: 400,
+      });
+      backdropOpacity.value = withTiming(0.5, { duration: 300 });
+    } else if (isOpen === false && translateY.value !== SCREEN_HEIGHT) {
+      translateY.value = withSpring(SCREEN_HEIGHT, {
+        damping: 80,
+        stiffness: 400,
+      });
+      backdropOpacity.value = withTiming(0, { duration: 250 });
+    }
+  }, [isOpen]);
+
+  // Close handler - PropertiesFilterModal'daki gibi
+  const handleClose = () => {
+    translateY.value = withSpring(SCREEN_HEIGHT, {
+      damping: 80,
+      stiffness: 400,
     });
+    backdropOpacity.value = withTiming(0, { duration: 250 });
+    setTimeout(() => setIsOpen(false), 300);
   };
 
+  // Option select handler
   const handleOptionSelect = (option) => {
     setValue(option);
-    closeModal();
+    handleClose();
   };
+
+  // Backdrop press handler
+  const handleBackdropPress = () => {
+    handleClose();
+  };
+
+  // Animated styles - PropertiesFilterModal'daki gibi
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const modalStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
 
   return (
     <View className="mb-6">
       <Text
         style={{ fontSize: 14 }}
-        className=" text-gray-900 font-semibold mb-3"
+        className="text-gray-900 font-semibold mb-3"
       >
         {label} {required && <Text className="text-red-500">*</Text>}
       </Text>
+
       <TouchableOpacity
         className="border border-gray-900 rounded-xl px-4 py-4 flex-row justify-between items-center"
-        onPress={openModal}
+        onPress={() => setIsOpen(true)}
       >
         <Text
           className={value ? "text-gray-900" : "text-gray-500"}
@@ -246,83 +294,105 @@ const CustomDropdown = ({
         <FontAwesomeIcon icon={faChevronDown} size={16} color="#6b7280" />
       </TouchableOpacity>
 
-      {/* Modal with same animation structure as RegisterScreen */}
-      <Modal
-        visible={isOpen}
-        transparent
-        animationType="none"
-        onRequestClose={closeModal}
-      >
-        <Animated.View
-          className="flex-1 justify-end"
-          style={{
-            backgroundColor: modalBackgroundOpacity.interpolate({
-              inputRange: [0, 1],
-              outputRange: ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.5)"],
-            }),
-          }}
+      {/* Modal - PropertiesFilterModal'daki gibi yapı */}
+      {isOpen && (
+        <Modal
+          visible={isOpen}
+          transparent
+          animationType="none"
+          statusBarTranslucent
+          onRequestClose={handleClose}
         >
-          <Animated.View
-            className="bg-white rounded-t-3xl max-h-[50%]"
-            style={{
-              transform: [{ translateY: modalSlideAnim }],
-            }}
-          >
-            {/* Header - same style as RegisterScreen */}
-            <View className="flex-row justify-between items-center px-6 py-4 bg-white rounded-t-3xl">
-              <Text
-                style={{ fontWeight: 600, fontSize: 18 }}
-                className="text-gray-800"
-              >
-                {label}
-              </Text>
-              <TouchableOpacity onPress={closeModal} className="px-2 py-2">
-                <Text
-                  style={{
-                    fontSize: 17,
-                    color: "#007AFF",
-                    fontWeight: "500",
-                  }}
-                >
-                  Kapat
-                </Text>
-              </TouchableOpacity>
-            </View>
+          <GestureHandlerRootView style={styles.container}>
+            {/* Backdrop - PropertiesFilterModal'daki gibi */}
+            <Animated.View style={[styles.backdrop, backdropStyle]}>
+              <TouchableWithoutFeedback onPress={handleBackdropPress}>
+                <View style={styles.backdropTouchable} />
+              </TouchableWithoutFeedback>
+            </Animated.View>
 
-            {/* Options List */}
-            <ScrollView className="bg-white py-3">
-              {options.map((option, index) => (
-                <TouchableOpacity
-                  key={index}
-                  className={`py-4 px-7 flex-row items-center justify-between ${
-                    value === option ? "bg-gray-100" : ""
-                  }`}
-                  onPress={() => handleOptionSelect(option)}
-                >
+            {/* Modal Content - Scroll için optimize edilmiş */}
+            <Animated.View style={[styles.modal, modalStyle]}>
+              {/* Header - Sabit */}
+              <View className="py-4 px-6 border-b border-gray-100 bg-white">
+                {/* <View className="w-10 h-1 bg-gray-300 rounded-sm mb-3 self-center" /> */}
+                <View className="flex-row justify-between items-center">
                   <Text
-                    className={`text-lg ${
-                      value === option
-                        ? "text-gray-900 font-medium"
-                        : "text-gray-400"
-                    }`}
+                    style={{ fontWeight: 600, fontSize: 18 }}
+                    className="text-gray-800"
                   >
-                    {option}
+                    {label}
                   </Text>
-                  {value === option && (
-                    <FontAwesomeIcon icon={faCheck} size={16} color="#000" />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+                  <TouchableOpacity
+                    onPress={handleClose}
+                    className="px-2 py-2"
+                  >
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        color: "#007AFF",
+                        fontWeight: "500",
+                      }}
+                    >
+                      Kapat
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-            {/* Safe area for bottom - same as RegisterScreen */}
-            <View style={{ height: 34, backgroundColor: "#FFFFFF" }} />
-          </Animated.View>
-        </Animated.View>
-      </Modal>
+              {/* Scrollable Options - Dinamik scroll davranışı */}
+              <ScrollView
+                className="flex-1"
+                style={{
+                  backgroundColor: 'white',
+                  maxHeight: options.length <= 3 ? undefined : SCREEN_HEIGHT * 0.5 // Az seçenek varsa scroll yok
+                }}
+                showsVerticalScrollIndicator={options.length > 5} // 5'ten fazla seçenek varsa indicator
+                bounces={options.length > 3} // Az seçenek varsa bounce yok
+                scrollEnabled={options.length > 3} // Az seçenek varsa scroll kapalı
+                scrollEventThrottle={16}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{
+                  paddingBottom: options.length <= 3 ? 5 : 15, // Padding azaltıldı
+                  justifyContent: options.length <= 3 ? 'flex-start' : 'flex-start', // Center kaldırıldı
+                  flexGrow: 0 // FlexGrow kaldırıldı - seçeneklerin gözükmesini engelliyor
+                }}
+              >
+                {options.map((option, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    className={`py-4 px-7 flex-row items-center justify-between ${index !== options.length - 1 ? "border-b border-gray-50" : ""
+                      } ${value === option ? "bg-gray-100" : "bg-white"}`}
+                    onPress={() => handleOptionSelect(option)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      className={`text-lg flex-1 mr-3 ${value === option
+                        ? "text-gray-900 font-medium"
+                        : "text-gray-600"
+                        }`}
+                      numberOfLines={2}
+                      ellipsizeMode="tail"
+                    >
+                      {option}
+                    </Text>
+                    {value === option && (
+                      <FontAwesomeIcon icon={faCheck} size={16} color="#16a34a" />
+                    )}
+                  </TouchableOpacity>
+                ))}
+
+                {/* Sadece çok seçenek varsa minimal bottom spacing */}
+                {options.length > 7 && <View className="h-2" />}
+              </ScrollView>
+            </Animated.View>
+          </GestureHandlerRootView>
+        </Modal>
+      )}
     </View>
   );
 };
+
 
 // Date picker component
 const CustomDatePicker = ({ label, value, setValue, required = false }) => {
@@ -672,7 +742,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
           label="Aidat Sorumluluğu"
           value={
             maintenanceFeeResponsibilityOptions[
-              maintenanceFeeResponsibility - 1
+            maintenanceFeeResponsibility - 1
             ]
           }
           setValue={(value) => {
@@ -1357,7 +1427,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
       Alert.alert(
         "Hata",
         error?.data?.message ||
-          "Beklenti profili oluşturulurken bir hata oluştu"
+        "Beklenti profili oluşturulurken bir hata oluştu"
       );
     }
   };
@@ -1483,7 +1553,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
       Alert.alert(
         "Hata",
         error?.data?.message ||
-          "Beklenti profili güncellenirken bir hata oluştu"
+        "Beklenti profili güncellenirken bir hata oluştu"
       );
     }
   };
@@ -1533,5 +1603,38 @@ const ProfileExpectationScreen = ({ navigation }) => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  backdropTouchable: {
+    flex: 1,
+  },
+  modal: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: '#ffffff',
+    elevation: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    overflow: 'hidden',
+  },
+});
 
 export default ProfileExpectationScreen;
