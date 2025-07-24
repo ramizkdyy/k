@@ -23,7 +23,7 @@ import {
 } from "../redux/slices/postSlice";
 import {
   useGetLandlordPropertyListingsQuery,
-  useGetAllPostsPaginatedQuery, // YENİ: Paginated hook kullanıyoruz
+  useGetAllPostsPaginatedQuery,
   useDeletePostMutation,
 } from "../redux/api/apiSlice";
 import { useFocusEffect } from "@react-navigation/native";
@@ -64,6 +64,7 @@ const PostsScreen = ({ navigation }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [allPostsData, setAllPostsData] = useState([]); // Tüm yüklenen postları tutacak
   const PAGE_SIZE = 10;
 
   // Log component mount
@@ -85,7 +86,7 @@ const PostsScreen = ({ navigation }) => {
     location: filters.location || "",
     priceMin: filters.priceMin ? String(filters.priceMin) : "",
     priceMax: filters.priceMax ? String(filters.priceMax) : "",
-    quickPrice: filters.quickPrice || null, // Hızlı fiyat seçenekleri için
+    quickPrice: filters.quickPrice || null,
     rooms: filters.rooms || null,
     propertyType: filters.propertyType || null,
     features: filters.features || {},
@@ -114,9 +115,9 @@ const PostsScreen = ({ navigation }) => {
     }
   }, [landlordListingsError]);
 
-  // YENİ: Paginated posts query - sadece tenant için
+  // Paginated posts query - sadece tenant için
   const {
-    data: allPostsData,
+    data: paginatedPostsResponse,
     isLoading: isLoadingAllPosts,
     isFetching: isFetchingAllPosts,
     refetch: refetchAllPosts,
@@ -157,19 +158,34 @@ const PostsScreen = ({ navigation }) => {
     }
   }, [landlordListingsData, userRole]);
 
+  // Paginated posts için veri yönetimi
   useEffect(() => {
-    if (userRole === "KIRACI" && allPostsData) {
-      Logger.info(COMPONENT_NAME, "All posts loaded", {
-        totalCount: allPostsData?.pagination?.totalCount || 0,
-        currentPage: allPostsData?.pagination?.currentPage || 1,
-        totalPages: allPostsData?.pagination?.totalPages || 1,
-        hasNextPage: allPostsData?.pagination?.hasNextPage || false,
+    if (userRole === "KIRACI" && paginatedPostsResponse) {
+      Logger.info(COMPONENT_NAME, "Paginated posts loaded", {
+        totalCount: paginatedPostsResponse?.pagination?.totalCount || 0,
+        currentPage: paginatedPostsResponse?.pagination?.currentPage || 1,
+        totalPages: paginatedPostsResponse?.pagination?.totalPages || 1,
+        hasNextPage: paginatedPostsResponse?.pagination?.hasNextPage || false,
+        newDataLength: paginatedPostsResponse?.data?.length || 0,
       });
 
-      // Update pagination state
-      setHasNextPage(allPostsData?.pagination?.hasNextPage || false);
+      // Pagination state güncelle
+      setHasNextPage(paginatedPostsResponse?.pagination?.hasNextPage || false);
+
+      // Eğer ilk sayfa ise, veriyi direkt set et
+      if (currentPage === 1) {
+        setAllPostsData(paginatedPostsResponse?.data || []);
+      } else {
+        // Sonraki sayfalar için veriyi mevcut veriye ekle
+        setAllPostsData((prevData) => [
+          ...prevData,
+          ...(paginatedPostsResponse?.data || []),
+        ]);
+      }
+
+      setIsLoadingMore(false);
     }
-  }, [allPostsData, userRole]);
+  }, [paginatedPostsResponse, userRole, currentPage]);
 
   // Refresh when screen is focused
   useFocusEffect(
@@ -179,6 +195,7 @@ const PostsScreen = ({ navigation }) => {
       // Reset pagination when screen is focused
       setCurrentPage(1);
       setHasNextPage(true);
+      setAllPostsData([]); // Önceki veriyi temizle
 
       if (userRole === "EVSAHIBI") {
         refetchLandlordListings();
@@ -193,8 +210,9 @@ const PostsScreen = ({ navigation }) => {
     Logger.event("refresh_posts_list", { userRole });
 
     setRefreshing(true);
-    setCurrentPage(1); // Reset to first page
+    setCurrentPage(1);
     setHasNextPage(true);
+    setAllPostsData([]); // Veriyi temizle
 
     try {
       if (userRole === "EVSAHIBI") {
@@ -210,8 +228,8 @@ const PostsScreen = ({ navigation }) => {
     }
   };
 
-  // YENİ: Load more posts function
-  const loadMorePosts = async () => {
+  // Load more posts function
+  const loadMorePosts = useCallback(() => {
     if (
       userRole !== "KIRACI" ||
       !hasNextPage ||
@@ -225,16 +243,7 @@ const PostsScreen = ({ navigation }) => {
 
     setIsLoadingMore(true);
     setCurrentPage((prevPage) => prevPage + 1);
-
-    try {
-      // RTK Query will automatically handle the new page request
-      // and merge the results based on our merge function in the API slice
-    } catch (error) {
-      Logger.error(COMPONENT_NAME, "Load more failed", error);
-    } finally {
-      setIsLoadingMore(false);
-    }
-  };
+  }, [userRole, hasNextPage, isLoadingMore, isFetchingAllPosts, currentPage]);
 
   // Apply filters
   const applyFilters = () => {
@@ -243,6 +252,7 @@ const PostsScreen = ({ navigation }) => {
     // Reset pagination when applying filters
     setCurrentPage(1);
     setHasNextPage(true);
+    setAllPostsData([]);
 
     dispatch(
       setPostFilters({
@@ -259,13 +269,13 @@ const PostsScreen = ({ navigation }) => {
     setIsFilterVisible(false);
   };
 
-  // Basitleştirilmiş resetFilters fonksiyonu
+  // Reset filters function
   const resetFilters = () => {
     Logger.event("reset_filters");
 
-    // Reset pagination when clearing filters
     setCurrentPage(1);
     setHasNextPage(true);
+    setAllPostsData([]);
 
     const emptyFilters = {
       location: "",
@@ -334,7 +344,7 @@ const PostsScreen = ({ navigation }) => {
     );
   };
 
-  // Log navigation actions
+  // Navigation handlers
   const handlePostNavigation = (postId) => {
     Logger.event("view_post_detail", { postId });
     navigation.navigate("PostDetail", { postId });
@@ -355,21 +365,19 @@ const PostsScreen = ({ navigation }) => {
     navigation.navigate("CreatePost");
   };
 
-  // Basitleştirilmiş filtreleme fonksiyonu - sadece temel filtreler
-  // Fixed getFilteredPosts function - replace the existing one
+  // Get filtered posts function
   const getFilteredPosts = () => {
     let filteredPosts = [];
 
     // Get the appropriate posts based on user role
     if (userRole === "EVSAHIBI") {
-      // Use API data for landlords, NOT Redux store
       filteredPosts = landlordListingsData?.result || [];
     } else {
-      // For tenants, use data from paginated posts query
-      filteredPosts = allPostsData?.data || [];
+      // For tenants, use accumulated posts data
+      filteredPosts = allPostsData || [];
     }
 
-    // Arama sorgusu filtresi
+    // Search query filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filteredPosts = filteredPosts.filter(
@@ -381,7 +389,7 @@ const PostsScreen = ({ navigation }) => {
       );
     }
 
-    // Konum filtresi
+    // Location filter
     if (filters.location) {
       const location = filters.location.toLowerCase();
       filteredPosts = filteredPosts.filter(
@@ -391,7 +399,7 @@ const PostsScreen = ({ navigation }) => {
       );
     }
 
-    // Fiyat aralığı filtresi
+    // Price range filter
     if (filters.priceMin || filters.priceMax) {
       filteredPosts = filteredPosts.filter((post) => {
         const price = post.kiraFiyati || 0;
@@ -401,7 +409,7 @@ const PostsScreen = ({ navigation }) => {
       });
     }
 
-    // Oda sayısı filtresi
+    // Room count filter
     if (filters.rooms) {
       filteredPosts = filteredPosts.filter((post) => {
         if (filters.rooms === "5+") {
@@ -411,7 +419,7 @@ const PostsScreen = ({ navigation }) => {
       });
     }
 
-    // Emlak tipi filtresi
+    // Property type filter
     if (filters.propertyType) {
       filteredPosts = filteredPosts.filter(
         (post) =>
@@ -420,7 +428,7 @@ const PostsScreen = ({ navigation }) => {
       );
     }
 
-    // Temel özellikler filtresi
+    // Features filter
     if (filters.features && Object.keys(filters.features).length > 0) {
       filteredPosts = filteredPosts.filter((post) => {
         if (filters.features.furnished && !post.esyali) return false;
@@ -431,14 +439,14 @@ const PostsScreen = ({ navigation }) => {
       });
     }
 
-    // Durum filtresi (ev sahibi için)
+    // Status filter (for landlords)
     if (userRole === "EVSAHIBI" && filters.status !== null) {
       filteredPosts = filteredPosts.filter(
         (post) => post.status === filters.status
       );
     }
 
-    // Basit sıralama
+    // Simple sorting
     if (filters.sortBy) {
       filteredPosts = [...filteredPosts].sort((a, b) => {
         switch (filters.sortBy) {
@@ -457,186 +465,192 @@ const PostsScreen = ({ navigation }) => {
     return filteredPosts;
   };
 
-  // Render post item
-  const renderPostItem = ({ item }) => {
-    return (
-      <TouchableOpacity
-        className="bg-white  overflow-hidden mb-4 "
-        onPress={() => handlePostNavigation(item.postId)}
-        activeOpacity={1}
-      >
-        <View style={{ borderRadius: 30 }} className="relative">
-          {/* Post image with Expo Image */}
-          {item.postImages && item.postImages.length > 0 ? (
-            <Image
-              source={{ uri: item.postImages[0].postImageUrl }}
+  // Render post item - Optimized for performance
+  const renderPostItem = useCallback(
+    ({ item, index }) => {
+      // Null check for item
+      if (!item || !item.postId) {
+        return null;
+      }
+
+      return (
+        <TouchableOpacity
+          className="bg-white overflow-hidden mb-4"
+          onPress={() => handlePostNavigation(item.postId)}
+          activeOpacity={1}
+        >
+          <View style={{ borderRadius: 30 }} className="relative">
+            {/* Post image with Expo Image */}
+            {item.postImages && item.postImages.length > 0 ? (
+              <Image
+                source={{ uri: item.postImages[0].postImageUrl }}
+                style={{
+                  width: "100%",
+                  height: 350,
+                  borderRadius: 30,
+                }}
+                contentFit="cover"
+                transition={200}
+                placeholder={{
+                  uri: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y5ZmFmYiIvPjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Yw7xrbGVuaXlvcjwvdGV4dD48L3N2Zz4=",
+                }}
+                cachePolicy="memory-disk"
+                onError={() =>
+                  Logger.error(COMPONENT_NAME, "Image load failed", {
+                    postId: item.postId,
+                    imageUrl: item.postImages[0]?.postImageUrl,
+                  })
+                }
+              />
+            ) : (
+              <View
+                style={{ height: 350, borderRadius: 30 }}
+                className="w-full bg-gray-100 justify-center items-center"
+              >
+                <FontAwesomeIcon size={50} color="#dee0ea" icon={faHomeAlt} />
+              </View>
+            )}
+
+            {/* Status badge */}
+            <BlurView
+              tint="dark"
+              intensity={50}
               style={{
-                width: "100%",
-                height: 350,
-                borderRadius: 30,
-              }} // h-52 = 208px
-              contentFit="cover"
-              transition={200} // Smooth transition
-              placeholder={{
-                uri: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y5ZmFmYiIvPjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Yw7xrbGVuaXlvcjwvdGV4dD48L3N2Zz4=",
+                boxShadow: "0px 0px 12px #00000014",
+                overflow: "hidden",
               }}
-              cachePolicy="memory-disk" // Aggressive caching
-              onError={() =>
-                Logger.error(COMPONENT_NAME, "Image load failed", {
-                  postId: item.postId,
-                  imageUrl: item.postImages[0].postImageUrl,
-                })
-              }
-            />
-          ) : (
-            <View
-              style={{ height: 350, borderRadius: 30 }}
-              className="w-full bg-gray-100 justify-center items-center"
+              className="absolute top-3 left-3 rounded-full"
             >
-              <FontAwesomeIcon size={50} color="#dee0ea" icon={faHomeAlt} />
-            </View>
-          )}
+              <View className="px-3 py-1.5 rounded-full">
+                <Text className="text-white text-sm font-semibold">
+                  {item.status === 0
+                    ? "Aktif"
+                    : item.status === 1
+                    ? "Kiralandı"
+                    : "Kapalı"}
+                </Text>
+              </View>
+            </BlurView>
 
-          {/* Status badge - improved design */}
-          <BlurView
-            tint="dark"
-            intensity={50}
-            style={{ boxShadow: "0px 0px 12px #00000014", overflow: "hidden" }}
-            className="absolute  top-3 left-3 rounded-full"
-          >
-            <View
-              className={`px-3 py-1.5 rounded-full ${
-                item.status === 0 ? "" : item.status === 1 ? "" : ""
-              }`}
-            >
-              <Text className="text-white text-sm font-semibold">
-                {item.status === 0
-                  ? "Aktif"
-                  : item.status === 1
-                  ? "Kiralandı"
-                  : "Kapalı"}
+            {/* Distance badge (if available) */}
+            {item.distance && (
+              <View className="absolute top-3 left-3">
+                <View className="bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full flex-row items-center">
+                  <MaterialIcons name="location-on" size={12} color="white" />
+                  <Text className="text-white text-xs font-medium ml-1">
+                    {item.distance}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Landlord action buttons */}
+            {userRole === "EVSAHIBI" && item.userId === currentUser?.id && (
+              <View className="flex-row absolute gap-2 top-3 right-3">
+                <BlurView
+                  style={{ boxShadow: "0px 0px 12px #00000014" }}
+                  tint="dark"
+                  intensity={50}
+                  className="overflow-hidden rounded-full"
+                >
+                  <TouchableOpacity
+                    className="flex justify-center items-center"
+                    onPress={() => handleOffersNavigation(item.postId)}
+                    activeOpacity={1}
+                  >
+                    <View className="flex-row items-center justify-center px-3 py-3">
+                      <Text className="text-white font-medium text-center text-sm">
+                        Teklifler ({item.offerCount || 0})
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </BlurView>
+
+                <BlurView
+                  style={{ boxShadow: "0px 0px 12px #00000014" }}
+                  intensity={50}
+                  tint="dark"
+                  className="overflow-hidden rounded-full"
+                >
+                  <TouchableOpacity
+                    className="flex justify-center items-center py-3 px-3"
+                    onPress={() => handleEditPostNavigation(item.postId)}
+                    activeOpacity={1}
+                  >
+                    <View className="flex-row items-center justify-center">
+                      <FontAwesomeIcon color="white" icon={faEdit} />
+                    </View>
+                  </TouchableOpacity>
+                </BlurView>
+
+                <BlurView
+                  style={{ boxShadow: "0px 0px 12px #00000014" }}
+                  intensity={50}
+                  tint="dark"
+                  className="overflow-hidden rounded-full"
+                >
+                  <TouchableOpacity
+                    className="flex justify-center items-center"
+                    onPress={() => handleDeletePost(item.postId)}
+                    disabled={isDeleting}
+                    activeOpacity={1}
+                  >
+                    <View className="flex-row items-center justify-center py-3 px-3">
+                      <FontAwesomeIcon color="#ff0040" icon={faTrash} />
+                    </View>
+                  </TouchableOpacity>
+                </BlurView>
+              </View>
+            )}
+          </View>
+
+          <View className="px-2 py-3">
+            {/* Title and Price */}
+            <View className="flex-col items-start mb-2">
+              <Text
+                className="text-lg font-bold text-gray-900 flex-1 mr-3"
+                numberOfLines={2}
+              >
+                {item.ilanBasligi || "İlan başlığı yok"}
               </Text>
-            </View>
-          </BlurView>
-
-          {/* Distance badge (if available) */}
-          {item.distance && (
-            <View className="absolute top-3 left-3">
-              <View className="bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full flex-row items-center">
-                <MaterialIcons name="location-on" size={12} color="white" />
-                <Text className="text-white text-xs font-medium ml-1">
-                  {item.distance}
+              <View className="flex flex-row items-center mb-3">
+                <Text style={{ fontSize: 12 }} className="text-gray-500">
+                  {[item.il, item.ilce, item.mahalle]
+                    .filter(Boolean)
+                    .join(", ") || "Konum belirtilmemiş"}
+                </Text>
+              </View>
+              <View className="py-1 rounded-lg mb-2">
+                <Text style={{ fontSize: 14 }} className="text-gray-500">
+                  <Text
+                    className="underline text-gray-900 font-medium"
+                    style={{ fontSize: 18 }}
+                  >
+                    {item.kiraFiyati
+                      ? item.kiraFiyati.toLocaleString("tr-TR")
+                      : "0"}{" "}
+                    <Text>{item.paraBirimi || "₺"}</Text>
+                  </Text>{" "}
+                  /ay
                 </Text>
               </View>
             </View>
-          )}
-          {userRole === "EVSAHIBI" && item.userId === currentUser?.id && (
-            <View className="flex-row absolute gap-2 top-3 right-3">
-              <BlurView
-                style={{ boxShadow: "0px 0px 12px #00000014" }}
-                tint="dark"
-                intensity={50}
-                className="overflow-hidden rounded-full"
-              >
-                {" "}
-                <TouchableOpacity
-                  className=" flex justify-center items-center"
-                  onPress={() => handleOffersNavigation(item.postId)}
-                  activeOpacity={1}
-                >
-                  <View className="flex-row items-center justify-center px-3 py-3">
-                    <Text className="text-white font-medium text-center text-sm ">
-                      Teklifler ({item.offerCount || 0})
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              </BlurView>
 
-              <BlurView
-                style={{ boxShadow: "0px 0px 12px #00000014" }}
-                intensity={50}
-                tint="dark"
-                className="overflow-hidden rounded-full"
-              >
-                {" "}
-                <TouchableOpacity
-                  className=" flex justify-center items-center py-3 px-3"
-                  onPress={() => handleEditPostNavigation(item.postId)}
-                  activeOpacity={1}
-                >
-                  <View className="flex-row items-center justify-center">
-                    <FontAwesomeIcon color="white" icon={faEdit} />
-                  </View>
-                </TouchableOpacity>
-              </BlurView>
-
-              <BlurView
-                style={{ boxShadow: "0px 0px 12px #00000014" }}
-                intensity={50}
-                tint="dark"
-                className="overflow-hidden rounded-full"
-              >
-                {" "}
-                <TouchableOpacity
-                  className=" flex justify-center items-center"
-                  onPress={() => handleDeletePost(item.postId)}
-                  disabled={isDeleting}
-                  activeOpacity={1}
-                >
-                  <View className="flex-row items-center justify-center py-3 px-3">
-                    <FontAwesomeIcon color="#ff0040" icon={faTrash} />
-                  </View>
-                </TouchableOpacity>
-              </BlurView>
-            </View>
-          )}
-        </View>
-
-        <View className="px-2 py-3">
-          {/* Title and Price */}
-          <View className="flex-col items-start mb-2">
+            {/* Description */}
             <Text
-              className="text-lg font-bold text-gray-900 flex-1 mr-3"
               numberOfLines={2}
+              className="text-gray-600 text-sm mb-4 leading-5"
             >
-              {item.ilanBasligi}
+              {item.postDescription || "Açıklama yok"}
             </Text>
-            <View className="flex flex-row items-center mb-3">
-              <Text style={{ fontSize: 12 }} className="text-gray-500">
-                {[item.il, item.ilce, item.mahalle]
-                  .filter(Boolean)
-                  .join(", ") || "Konum belirtilmemiş"}
-              </Text>
-            </View>
-            <View className=" py-1 rounded-lg mb-2">
-              <Text style={{ fontSize: 14 }} className="text-gray-500">
-                <Text
-                  className="underline text-gray-900 font-medium"
-                  style={{ fontSize: 18 }}
-                >
-                  {item.kiraFiyati
-                    ? item.kiraFiyati.toLocaleString("tr-TR")
-                    : "0"}{" "}
-                  <Text>{item.paraBirimi || "₺"}</Text>
-                </Text>{" "}
-                /ay
-              </Text>
-            </View>
           </View>
+        </TouchableOpacity>
+      );
+    },
+    [userRole, currentUser?.id, isDeleting]
+  );
 
-          {/* Description */}
-          <Text
-            numberOfLines={2}
-            className="text-gray-600 text-sm mb-4 leading-5"
-          >
-            {item.postDescription || "Açıklama yok"}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
-  // YENİ: Render loading more indicator
+  // Render loading more indicator
   const renderLoadingMore = () => {
     if (!isLoadingMore) return null;
 
@@ -652,7 +666,6 @@ const PostsScreen = ({ navigation }) => {
 
   // Render empty state
   const renderEmptyState = () => {
-    // Log when no posts are found
     Logger.info(COMPONENT_NAME, "No posts found", {
       userRole,
       hasFilters: Object.values(filters).some((val) => val !== null),
@@ -684,24 +697,18 @@ const PostsScreen = ({ navigation }) => {
     );
   };
 
-  // PostsScreen.js - Kompakt ve Verimli Filtre Sistemi
-
   // Header with title and filter toggle
   const renderHeader = () => (
     <View className="flex-row justify-between items-center mt-4 mb-4">
       <View className="flex-col">
-        <Text style={{ fontSize: 14 }} className=" font-medium text-gray-500">
+        <Text style={{ fontSize: 14 }} className="font-medium text-gray-500">
           {userRole === "EVSAHIBI" ? "Mülklerim" : "İlanlar"}
         </Text>
-        {/* YENİ: Pagination info for tenants */}
-        {userRole === "KIRACI" && allPostsData?.pagination && (
+        {/* Pagination info for tenants */}
+        {userRole === "KIRACI" && paginatedPostsResponse?.pagination && (
           <Text style={{ fontSize: 12 }} className="text-gray-400 mt-1">
-            {allPostsData.pagination.totalCount} ilanın{" "}
-            {Math.min(
-              currentPage * PAGE_SIZE,
-              allPostsData.pagination.totalCount
-            )}{" "}
-            tanesi gösteriliyor
+            {paginatedPostsResponse.pagination.totalCount} ilanın{" "}
+            {allPostsData.length} tanesi gösteriliyor
           </Text>
         )}
       </View>
@@ -806,6 +813,24 @@ const PostsScreen = ({ navigation }) => {
     userRole === "EVSAHIBI" ? isLoadingLandlordListings : isLoadingAllPosts;
   const filteredPosts = getFilteredPosts();
 
+  // Unique key extractor to prevent duplicate keys
+  const keyExtractor = useCallback((item, index) => {
+    if (item && item.postId) {
+      return `post_${item.postId}`;
+    }
+    return `post_index_${index}`;
+  }, []);
+
+  // Get item layout for better performance
+  const getItemLayout = useCallback(
+    (data, index) => ({
+      length: 500, // Approximate item height
+      offset: 500 * index,
+      index,
+    }),
+    []
+  );
+
   return (
     <SafeAreaView className="flex-1 bg-white">
       {/* Status Bar Configuration */}
@@ -820,14 +845,14 @@ const PostsScreen = ({ navigation }) => {
         <View className="">
           <View
             style={{ boxShadow: "0px 0px 12px #00000014" }}
-            className="bg-white rounded-3xl gap-2 px-4 flex-row items-center "
+            className="bg-white rounded-3xl gap-2 px-4 flex-row items-center"
           >
             <FontAwesomeIcon icon={faSearch} size={20} color="#000" />
             <TextInput
               className="w-full placeholder:text-gray-500 placeholder:text-[14px] py-4 text-normal"
               style={{
-                textAlignVertical: "center", // Android için
-                includeFontPadding: false, // Android için
+                textAlignVertical: "center",
+                includeFontPadding: false,
               }}
               placeholder={
                 userRole === "KIRACI"
@@ -854,31 +879,39 @@ const PostsScreen = ({ navigation }) => {
           <FlatList
             data={filteredPosts}
             renderItem={renderPostItem}
-            keyExtractor={(item, index) => `post_${item.postId}_${index}`}
+            keyExtractor={keyExtractor}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }}
             ListEmptyComponent={renderEmptyState}
-            ListFooterComponent={renderLoadingMore} // YENİ: Loading more indicator
+            ListFooterComponent={renderLoadingMore}
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
             }
-            onEndReached={loadMorePosts} // YENİ: Load more function
-            onEndReachedThreshold={0.3} // YENİ: Trigger earlier for better UX
-            // Performance optimizations for image loading
-            removeClippedSubviews={true}
-            maxToRenderPerBatch={10}
-            updateCellsBatchingPeriod={100}
-            initialNumToRender={5}
-            windowSize={10}
+            onEndReached={loadMorePosts}
+            onEndReachedThreshold={0.5}
+            // Performance optimizations - daha muhafazakar ayarlar
+            removeClippedSubviews={false} // Bu false yapıldı
+            maxToRenderPerBatch={5} // Azaltıldı
+            updateCellsBatchingPeriod={50} // Azaltıldı
+            initialNumToRender={8} // Artırıldı
+            windowSize={5} // Azaltıldı
+            // Memory optimization
+            disableVirtualization={false}
+            // Prevent text disappearing issues
+            getItemLayout={undefined} // getItemLayout kaldırıldı
+            // Improve stability
+            extraData={`${searchQuery}_${JSON.stringify(filters)}_${
+              allPostsData.length
+            }`}
           />
         )}
       </View>
-      {/* YENİ: PropertiesFilterModal */}
+
+      {/* Properties Filter Modal */}
       <PropertiesFilterModal
         visible={isFilterVisible}
         onClose={() => setIsFilterVisible(false)}
         onApply={(appliedFilters) => {
-          // Filtreleri uygula
           console.log("Applied filters:", appliedFilters);
           setIsFilterVisible(false);
         }}

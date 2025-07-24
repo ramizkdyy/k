@@ -223,7 +223,7 @@ export const apiSlice = createApi({
         pageSize = 10,
         sortBy,
         sortDirection,
-        isMatch = false,
+        isMatch = true,
       }) => {
         const params = new URLSearchParams();
         if (userId) params.append("userId", userId);

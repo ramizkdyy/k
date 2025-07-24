@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, memo, useCallback } from "react";
 import {
   View,
   Text,
@@ -46,12 +46,152 @@ import {
   faGraduationCap,
 } from "@fortawesome/pro-regular-svg-icons";
 import { useFocusEffect } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
 
-const AllMatchingUsers = ({ navigation, route }) => {
-  // Match Score gösterim fonksiyonu
-  const getMatchScoreInfo = (score) => {
+// Memoized Skeleton Components
+const ShimmerPlaceholder = memo(
+  ({ width, height, borderRadius = 8, style }) => {
+    const animatedValue = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+      const shimmerAnimation = Animated.loop(
+        Animated.timing(animatedValue, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        { iterations: -1 }
+      );
+
+      shimmerAnimation.start();
+      return () => shimmerAnimation.stop();
+    }, [animatedValue]);
+
+    const translateX = animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: [-width * 1.5, width * 1.5],
+      extrapolate: "clamp",
+    });
+
+    return (
+      <View
+        style={[
+          {
+            width,
+            height,
+            borderRadius,
+            backgroundColor: "#E5E7EB",
+            overflow: "hidden",
+          },
+          style,
+        ]}
+      >
+        <Animated.View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            transform: [{ translateX }],
+          }}
+        >
+          <LinearGradient
+            colors={[
+              "rgba(255, 255, 255, 0)",
+              "rgba(255, 255, 255, 0.4)",
+              "rgba(255, 255, 255, 0.8)",
+              "rgba(255, 255, 255, 0.4)",
+              "rgba(255, 255, 255, 0)",
+            ]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{
+              width: width * 1.5,
+              height: "100%",
+            }}
+          />
+        </Animated.View>
+      </View>
+    );
+  }
+);
+
+const TenantListItemSkeleton = memo(() => {
+  return (
+    <View
+      style={{ marginHorizontal: 16 }}
+      className="mb-4 pt-4 border-gray-200"
+    >
+      <View
+        className="bg-white border border-gray-200 p-4"
+        style={{ boxShadow: "0px 0px 12px #00000014", borderRadius: 25 }}
+      >
+        {/* Header with Profile Image and Basic Info */}
+        <View className="flex-row items-center mb-4">
+          <ShimmerPlaceholder width={60} height={60} borderRadius={30} />
+          <View className="flex-1 ml-4">
+            <ShimmerPlaceholder
+              width={150}
+              height={18}
+              borderRadius={9}
+              style={{ marginBottom: 8 }}
+            />
+            <ShimmerPlaceholder width={100} height={12} borderRadius={6} />
+          </View>
+        </View>
+
+        {/* Tenant Details Grid */}
+        <View className="space-y-3 gap-1">
+          {[1, 2, 3, 4, 5, 6].map((_, index) => (
+            <View key={index} className="flex-row justify-between items-center">
+              <View className="flex-row items-center">
+                <ShimmerPlaceholder width={18} height={18} borderRadius={9} />
+                <ShimmerPlaceholder
+                  width={80}
+                  height={14}
+                  borderRadius={7}
+                  style={{ marginLeft: 8 }}
+                />
+              </View>
+              <ShimmerPlaceholder width={60} height={14} borderRadius={7} />
+            </View>
+          ))}
+        </View>
+
+        {/* Compatibility Level */}
+        <View className="mt-4 pt-3 border-t border-gray-100">
+          <ShimmerPlaceholder
+            width={width * 0.8}
+            height={5}
+            borderRadius={2.5}
+            style={{ marginBottom: 8 }}
+          />
+          <ShimmerPlaceholder width={120} height={12} borderRadius={6} />
+        </View>
+      </View>
+    </View>
+  );
+});
+
+const TenantListLoadingSkeleton = memo(({ count = 2 }) => {
+  return (
+    <View>
+      {Array.from({ length: count }).map((_, index) => (
+        <TenantListItemSkeleton key={`tenant-skeleton-${index}`} />
+      ))}
+    </View>
+  );
+});
+
+// Memoized Match Score Bar Component
+const MatchScoreBar = memo(({ matchScore, showBar = false, size = "sm" }) => {
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const timeoutRef = useRef(null);
+
+  const getMatchScoreInfo = useCallback((score) => {
     if (score >= 80)
       return {
         level: "excellent",
@@ -79,163 +219,321 @@ const AllMatchingUsers = ({ navigation, route }) => {
       text: "Orta",
       bgColor: "#fee2e2",
     };
+  }, []);
+
+  const scoreInfo = getMatchScoreInfo(matchScore);
+
+  const sizes = {
+    xs: {
+      barHeight: 2,
+      iconSize: 10,
+      textSize: 11,
+      containerPadding: 1,
+      barWidth: width * 0.8,
+    },
+    sm: {
+      barHeight: 5,
+      iconSize: 12,
+      textSize: 12,
+      containerPadding: 2,
+      barWidth: width * 0.8,
+    },
+    md: {
+      barHeight: 4,
+      iconSize: 14,
+      textSize: 14,
+      containerPadding: 3,
+      barWidth: width * 0.8,
+    },
   };
 
-  // Match Score Bar Component
-  const MatchScoreBar = ({ matchScore, showBar = false, size = "sm" }) => {
-    const progressAnim = useRef(new Animated.Value(0)).current;
-    const timeoutRef = useRef(null);
+  const currentSize = sizes[size];
 
-    const scoreInfo = getMatchScoreInfo(matchScore);
+  useEffect(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      Animated.timing(progressAnim, {
+        toValue: matchScore,
+        duration: 800,
+        useNativeDriver: false,
+      }).start();
+    }, 200);
 
-    // Boyut ayarları
-    const sizes = {
-      xs: {
-        barHeight: 2,
-        iconSize: 10,
-        textSize: 11,
-        containerPadding: 1,
-        barWidth: width * 0.8,
-      },
-      sm: {
-        barHeight: 5,
-        iconSize: 12,
-        textSize: 12,
-        containerPadding: 2,
-        barWidth: width * 0.8,
-      },
-      md: {
-        barHeight: 4,
-        iconSize: 14,
-        textSize: 14,
-        containerPadding: 3,
-        barWidth: width * 0.8,
-      },
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
+  }, [matchScore]);
 
-    const currentSize = sizes[size];
-
-    // Score değiştiğinde debounce ile animasyonu başlat
-    useEffect(() => {
-      // Önceki timeout'u temizle
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-
-      // Yeni timeout ayarla
-      timeoutRef.current = setTimeout(() => {
-        Animated.timing(progressAnim, {
-          toValue: matchScore,
-          duration: 800,
-          useNativeDriver: false,
-        }).start();
-      }, 200);
-
-      // Cleanup function
-      return () => {
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-        }
-      };
-    }, [matchScore]);
-
-    if (showBar) {
-      return (
-        <View style={{ marginTop: currentSize.containerPadding * 2 }}>
-          {/* Uyum Barı */}
-          <View className="flex-row items-center">
-            <View
-              className="bg-gray-100 rounded-full overflow-hidden"
-              style={{
-                height: currentSize.barHeight,
-                width: currentSize.barWidth,
-                marginRight: 12,
-                maxWidth: width * 0.71, // Bar maksimum genişliği
-              }}
-            >
-              <Animated.View
-                style={{
-                  width: progressAnim.interpolate({
-                    inputRange: [0, 100],
-                    outputRange: ["0%", "100%"],
-                    extrapolate: "clamp",
-                  }),
-                  backgroundColor: scoreInfo.color,
-                  height: "100%",
-                  borderRadius: currentSize.barHeight / 2,
-                }}
-              />
-            </View>
-            <Text
-              className="font-medium ml-1"
-              style={{
-                color: scoreInfo.color,
-                fontSize: currentSize.textSize,
-              }}
-            >
-              {matchScore}%
-            </Text>
-          </View>
-        </View>
-      );
-    }
-
-    // Sadece skor gösterimi (bar olmadan)
+  if (showBar) {
     return (
-      <View className="flex-row items-center">
-        <FontAwesomeIcon
-          color={scoreInfo.color}
-          icon={faHeart}
-          size={currentSize.iconSize}
-        />
-        <Text
-          className="font-medium ml-1"
-          style={{
-            color: scoreInfo.color,
-            fontSize: currentSize.textSize,
-          }}
-        >
-          {matchScore}% {scoreInfo.text}
-        </Text>
+      <View style={{ marginTop: currentSize.containerPadding * 2 }}>
+        <View className="flex-row items-center">
+          <View
+            className="bg-gray-100 rounded-full overflow-hidden"
+            style={{
+              height: currentSize.barHeight,
+              width: currentSize.barWidth,
+              marginRight: 12,
+              maxWidth: width * 0.71,
+            }}
+          >
+            <Animated.View
+              style={{
+                width: progressAnim.interpolate({
+                  inputRange: [0, 100],
+                  outputRange: ["0%", "100%"],
+                  extrapolate: "clamp",
+                }),
+                backgroundColor: scoreInfo.color,
+                height: "100%",
+                borderRadius: currentSize.barHeight / 2,
+              }}
+            />
+          </View>
+          <Text
+            className="font-medium ml-1"
+            style={{
+              color: scoreInfo.color,
+              fontSize: currentSize.textSize,
+            }}
+          >
+            {matchScore}%
+          </Text>
+        </View>
       </View>
     );
-  };
+  }
 
+  return (
+    <View className="flex-row items-center">
+      <FontAwesomeIcon
+        color={scoreInfo.color}
+        icon={faHeart}
+        size={currentSize.iconSize}
+      />
+      <Text
+        className="font-medium ml-1"
+        style={{
+          color: scoreInfo.color,
+          fontSize: currentSize.textSize,
+        }}
+      >
+        {matchScore}% {scoreInfo.text}
+      </Text>
+    </View>
+  );
+});
+
+// Memoized Tenant Item - EN ÖNEMLİ PERFORMANCE OPTIMIZATION
+const TenantItem = memo(
+  ({ item, navigation }) => {
+    const handleTenantPress = useCallback(() => {
+      navigation.navigate("TenantProfile", {
+        tenantId: item.tenantProfileId,
+      });
+    }, [item.tenantProfileId, navigation]);
+
+    return (
+      <View
+        style={{ marginHorizontal: 16 }}
+        className="mb-4 pt-4 border-gray-200"
+      >
+        <TouchableOpacity onPress={handleTenantPress} activeOpacity={1}>
+          <View
+            className="bg-white p-4"
+            style={{ boxShadow: "0px 0px 12px #00000014", borderRadius: 25 }}
+          >
+            {/* Header with Profile Image and Basic Info */}
+            <View className="flex-row items-center mb-4">
+              <Image
+                className="border border-gray-100"
+                style={{
+                  width: 60,
+                  height: 60,
+                  boxShadow: "0px 0px 12px #00000020",
+                  borderRadius: 30,
+                }}
+                source={{
+                  uri: item.tenantURL || "https://via.placeholder.com/60x60",
+                }}
+                contentFit="cover"
+              />
+
+              <View className="flex-1 ml-4">
+                <Text
+                  style={{ fontSize: 18, fontWeight: 700 }}
+                  className="text-gray-800 mb-1"
+                  numberOfLines={1}
+                >
+                  {item.tenantName || "Kiracı"}
+                </Text>
+                <View className="flex flex-row items-center gap-1">
+                  <Text className="text-gray-500" style={{ fontSize: 12 }}>
+                    Profili görüntüle
+                  </Text>
+                  <FontAwesomeIcon
+                    size={12}
+                    color="#dee0ea"
+                    icon={faChevronRight}
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* Tenant Details Grid */}
+            <View className="space-y-3 gap-1">
+              {/* Budget */}
+              {item.details?.budget && (
+                <View className="flex-row justify-between items-center">
+                  <View className="flex-row items-center">
+                    <Text className="text-gray-600 text-sm ml-2">Bütçe:</Text>
+                  </View>
+                  <Text className="text-gray-800 text-sm font-semibold">
+                    {item.details.budget.toLocaleString()} ₺
+                  </Text>
+                </View>
+              )}
+
+              {/* Monthly Income */}
+              {item.details?.monthlyIncome && (
+                <View className="flex-row justify-between items-center">
+                  <View className="flex-row items-center">
+                    <Text className="text-gray-600 text-sm ml-2">
+                      Aylık Gelir:
+                    </Text>
+                  </View>
+                  <Text className="text-gray-800 text-sm font-semibold">
+                    {item.details.monthlyIncome.toLocaleString()} ₺
+                  </Text>
+                </View>
+              )}
+
+              {/* Preferred Location */}
+              {item.details?.preferredLocation && (
+                <View className="flex-row justify-between items-center">
+                  <View className="flex-row items-center">
+                    <Text className="text-gray-600 text-sm ml-2">
+                      Tercih Edilen Bölge:
+                    </Text>
+                  </View>
+                  <Text
+                    className="text-gray-800 text-sm font-medium"
+                    numberOfLines={1}
+                  >
+                    {item.details.preferredLocation}
+                  </Text>
+                </View>
+              )}
+
+              {/* Room Preference */}
+              {item.details?.minRooms && (
+                <View className="flex-row justify-between items-center">
+                  <View className="flex-row items-center">
+                    <Text className="text-gray-600 text-sm ml-2">
+                      Min. Oda Sayısı:
+                    </Text>
+                  </View>
+                  <Text className="text-gray-800 text-sm font-medium">
+                    {item.details.minRooms} oda
+                  </Text>
+                </View>
+              )}
+
+              {/* Student Status */}
+              {item.details?.isStudent !== undefined && (
+                <View className="flex-row justify-between items-center">
+                  <View className="flex-row items-center">
+                    <Text className="text-gray-600 text-sm ml-2">Öğrenci:</Text>
+                  </View>
+                  <Text className="text-gray-800 text-sm font-medium">
+                    {item.details.isStudent ? "Evet" : "Hayır"}
+                  </Text>
+                </View>
+              )}
+
+              {/* Pet Status */}
+              {item.details?.hasPets !== undefined && (
+                <View className="flex-row justify-between items-center">
+                  <View className="flex-row items-center">
+                    <Text className="text-gray-600 text-sm ml-2">
+                      Evcil Hayvan:
+                    </Text>
+                  </View>
+                  <Text className="text-gray-800 text-sm font-medium">
+                    {item.details.hasPets ? "Var" : "Yok"}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Compatibility Level */}
+            {item.matchScore && (
+              <View className="mt-4 pt-3 border-t border-gray-100">
+                <MatchScoreBar
+                  matchScore={item.matchScore}
+                  showBar={true}
+                  size="sm"
+                />
+
+                {/* Match Reasons */}
+                {item.matchReasons && item.matchReasons.length > 0 && (
+                  <Text className="text-xs text-gray-500 mt-2">
+                    {item.matchReasons[0]}
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+      </View>
+    );
+  },
+  (prevProps, nextProps) => {
+    // Custom comparison for better performance
+    return (
+      prevProps.item.tenantProfileId === nextProps.item.tenantProfileId &&
+      prevProps.item.matchScore === nextProps.item.matchScore
+    );
+  }
+);
+
+const AllMatchingUsers = ({ navigation, route }) => {
   const currentUser = useSelector(selectCurrentUser);
   const userRole = useSelector(selectUserRole);
 
   // State management
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("compatibility"); // compatibility, budget, date
+  const [sortBy, setSortBy] = useState("compatibility");
   const [isMapView, setIsMapView] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const [allTenants, setAllTenants] = useState([]);
   const [hasNextPage, setHasNextPage] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isFilterChanging, setIsFilterChanging] = useState(false);
 
-  // OPTIMIZE EDİLDİ: Native driver ile animated değerler
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  // Filter animasyonu için transform ve opacity kullanıyoruz (native driver için)
+  // Filter animations
   const filterTranslateY = scrollY.interpolate({
     inputRange: [0, 100],
-    outputRange: [0, -60], // Filter bar yukarı kayar
+    outputRange: [0, -60],
     extrapolate: "clamp",
   });
 
   const filterOpacity = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [1, 0], // Filter bar kaybolur
+    inputRange: [0, 50, 100],
+    outputRange: [1, 0.5, 0],
     extrapolate: "clamp",
   });
 
   const containerHeight = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [50, 0], // Container yüksekliği küçülür
+    inputRange: [0, 50],
+    outputRange: [45, 0],
     extrapolate: "clamp",
   });
 
-  // Component içinde, diğer useEffect'lerden sonra ekle:
+  // Tab bar visibility
   useFocusEffect(
     React.useCallback(() => {
       const parent = navigation.getParent();
@@ -245,12 +543,9 @@ const AllMatchingUsers = ({ navigation, route }) => {
         });
       }
 
-      // Show tabs when leaving this screen
       return () => {
         if (parent) {
-          // Restore the appropriate tab bar style based on user role
           if (userRole === "EVSAHIBI") {
-            // Landlord tab bar style
             parent.setOptions({
               tabBarStyle: {
                 backgroundColor: "rgba(255, 255, 255, 0.05)",
@@ -265,7 +560,6 @@ const AllMatchingUsers = ({ navigation, route }) => {
               },
             });
           } else if (userRole === "KIRACI") {
-            // Tenant tab bar style
             parent.setOptions({
               tabBarStyle: {
                 backgroundColor: "#fff",
@@ -280,6 +574,17 @@ const AllMatchingUsers = ({ navigation, route }) => {
     }, [navigation, userRole])
   );
 
+  // Reset pagination when search or sort changes
+  useEffect(() => {
+    setIsFilterChanging(true);
+    setCurrentPage(1);
+    setAllTenants([]);
+    setHasNextPage(true);
+
+    const timer = setTimeout(() => setIsFilterChanging(false), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, sortBy]);
+
   // Fetch tenant data using paginated API
   const {
     data: tenantData,
@@ -292,7 +597,7 @@ const AllMatchingUsers = ({ navigation, route }) => {
       landlordUserId: currentUser?.id,
       page: currentPage,
       pageSize: 10,
-      minMatchScore: 0.1, // Düşük threshold için daha fazla sonuç
+      minMatchScore: 0.1,
       includeFallback: true,
     },
     {
@@ -304,31 +609,32 @@ const AllMatchingUsers = ({ navigation, route }) => {
   // Update allTenants when new data comes
   useEffect(() => {
     if (tenantData?.data) {
+      const newTenants = tenantData.data;
+      const pagination = tenantData.pagination;
+
       if (currentPage === 1) {
-        // İlk sayfa - verileri değiştir
-        setAllTenants(tenantData.data);
+        setAllTenants(newTenants);
+        setIsFilterChanging(false);
       } else {
-        // Sonraki sayfa - verileri ekle
-        setAllTenants((prev) => [...prev, ...tenantData.data]);
+        setAllTenants((prev) => {
+          const existingIds = new Set(
+            prev.map((item) => item.tenantProfileId || item.id)
+          );
+          const uniqueNewItems = newTenants.filter(
+            (item) => !existingIds.has(item.tenantProfileId || item.id)
+          );
+          return [...prev, ...uniqueNewItems];
+        });
       }
 
-      // Pagination bilgilerini güncelle
-      setHasNextPage(tenantData.pagination?.hasNextPage || false);
+      setHasNextPage(pagination?.hasNextPage || false);
     }
   }, [tenantData, currentPage]);
 
-  // Reset pagination when search or sort changes
-  useEffect(() => {
-    setCurrentPage(1);
-    setAllTenants([]);
-    setHasNextPage(true);
-  }, [searchQuery, sortBy]);
-
   // Filter and sort tenants
-  const getFilteredAndSortedTenants = () => {
+  const getFilteredAndSortedTenants = useCallback(() => {
     let filteredTenants = [...allTenants];
 
-    // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filteredTenants = filteredTenants.filter(
@@ -342,27 +648,26 @@ const AllMatchingUsers = ({ navigation, route }) => {
       );
     }
 
-    // Apply sorting
     switch (sortBy) {
       case "compatibility":
         filteredTenants.sort((a, b) => {
           const scoreA = a.matchScore || 0;
           const scoreB = b.matchScore || 0;
-          return scoreB - scoreA; // Higher compatibility first
+          return scoreB - scoreA;
         });
         break;
       case "budget":
         filteredTenants.sort((a, b) => {
           const budgetA = a.details?.budget || 0;
           const budgetB = b.details?.budget || 0;
-          return budgetB - budgetA; // Higher budget first
+          return budgetB - budgetA;
         });
         break;
       case "date":
         filteredTenants.sort((a, b) => {
           const dateA = new Date(a.createdDate || 0);
           const dateB = new Date(b.createdDate || 0);
-          return dateB - dateA; // Newest first
+          return dateB - dateA;
         });
         break;
       default:
@@ -370,260 +675,109 @@ const AllMatchingUsers = ({ navigation, route }) => {
     }
 
     return filteredTenants;
-  };
+  }, [allTenants, searchQuery, sortBy]);
 
   const filteredTenants = getFilteredAndSortedTenants();
 
-  // Handle refresh
-  const onRefresh = async () => {
+  // Handlers
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
     setCurrentPage(1);
     setAllTenants([]);
     setHasNextPage(true);
+    setIsFilterChanging(false);
     try {
       await refetch();
     } catch (error) {
       console.error("Refresh error:", error);
-    }
-  };
-
-  // Handle load more
-  const handleLoadMore = async () => {
-    if (loadingMore || !hasNextPage || isFetching) return;
-
-    setLoadingMore(true);
-    try {
-      setCurrentPage((prev) => prev + 1);
-    } catch (error) {
-      console.error("Load more error:", error);
     } finally {
+      setRefreshing(false);
+    }
+  }, [refetch]);
+
+  const handleLoadMore = useCallback(() => {
+    if (
+      !loadingMore &&
+      hasNextPage &&
+      !isLoading &&
+      !isFilterChanging &&
+      !isFetching
+    ) {
+      setLoadingMore(true);
+      setCurrentPage((prev) => prev + 1);
+    }
+  }, [loadingMore, hasNextPage, isLoading, isFilterChanging, isFetching]);
+
+  // Loading state effect
+  useEffect(() => {
+    if (currentPage > 1) {
       setLoadingMore(false);
     }
-  };
+  }, [tenantData]);
 
-  // Render empty state
-  const renderEmptyState = () => (
-    <View className="flex-1 justify-center items-center p-8">
-      <FontAwesome name="users" size={64} color="#9CA3AF" />
-      <Text className="text-xl font-semibold text-gray-700 mt-4 mb-2 text-center">
-        {searchQuery.trim()
-          ? "Arama sonucu bulunamadı"
-          : "Henüz uygun kiracı bulunmuyor"}
-      </Text>
-      <Text className="text-base text-gray-500 text-center">
-        {searchQuery.trim()
-          ? "Farklı anahtar kelimeler deneyin"
-          : "Profilinizi güncelleyerek daha fazla eşleşme elde edebilirsiniz"}
-      </Text>
-      {searchQuery.trim() && (
-        <TouchableOpacity
-          className="bg-blue-500 px-6 py-3 rounded-lg mt-4"
-          onPress={() => setSearchQuery("")}
-        >
-          <Text className="text-white font-semibold">Aramayı Temizle</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-
-  // Render loading more footer
-  const renderLoadingFooter = () => {
-    if (!loadingMore) return null;
+  // Render functions
+  const renderEmptyState = useCallback(() => {
+    if (isFilterChanging || (isLoading && currentPage === 1)) {
+      return <TenantListLoadingSkeleton count={3} />;
+    }
 
     return (
-      <View className="py-4 items-center">
-        <ActivityIndicator size="small" color="#4A90E2" />
-        <Text className="text-gray-500 mt-2">
-          Daha fazla kiracı yükleniyor...
+      <View className="flex-1 justify-center items-center p-8">
+        <FontAwesome name="users" size={64} color="#9CA3AF" />
+        <Text className="text-xl font-semibold text-gray-700 mt-4 mb-2 text-center">
+          {searchQuery.trim()
+            ? "Arama sonucu bulunamadı"
+            : "Henüz uygun kiracı bulunmuyor"}
         </Text>
+        <Text className="text-base text-gray-500 text-center">
+          {searchQuery.trim()
+            ? "Farklı anahtar kelimeler deneyin"
+            : "Profilinizi güncelleyerek daha fazla eşleşme elde edebilirsiniz"}
+        </Text>
+        {searchQuery.trim() && (
+          <TouchableOpacity
+            className="bg-blue-500 px-6 py-3 rounded-lg mt-4"
+            onPress={() => setSearchQuery("")}
+          >
+            <Text className="text-white font-semibold">Aramayı Temizle</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
-  };
+  }, [isFilterChanging, isLoading, currentPage, searchQuery]);
 
-  // Render tenant item
-  const renderTenantItem = ({ item }) => (
-    <View
-      style={{ marginHorizontal: 16 }}
-      className="mb-4 pt-4 border-gray-200"
-    >
-      <TouchableOpacity
-        onPress={() => {
-          // Navigate to tenant profile or contact screen
-          navigation.navigate("TenantProfile", {
-            tenantId: item.tenantProfileId,
-          });
-        }}
-        activeOpacity={1}
-      >
-        {/* Tenant Profile Section */}
-        <View
-          className="bg-white border border-gray-200 p-4"
-          style={{ boxShadow: "0px 0px 12px #00000014", borderRadius: 25 }}
-        >
-          {/* Header with Profile Image and Basic Info */}
-          <View className="flex-row  items-center mb-4">
-            <Image
-              className="border border-gray-100"
-              style={{
-                width: 60,
-                height: 60,
-                boxShadow: "0px 0px 12px #00000020",
-                borderRadius: 30,
-              }}
-              source={{
-                uri: item.tenantURL || "https://via.placeholder.com/60x60",
-              }}
-              contentFit="cover"
-            />
+  const renderLoadingFooter = useCallback(() => {
+    if (!loadingMore) return null;
+    return <TenantListLoadingSkeleton count={2} />;
+  }, [loadingMore]);
 
-            <View className="flex-1 ml-4">
-              <Text
-                style={{ fontSize: 18, fontWeight: 700 }}
-                className="text-gray-800 mb-1"
-                numberOfLines={1}
-              >
-                {item.tenantName || "Kiracı"}
-              </Text>
-              <View className="flex flex-row items-center gap-1">
-                <Text className="text-gray-500" style={{ fontSize: 12 }}>
-                  Profili görüntüle
-                </Text>
-                <FontAwesomeIcon
-                  size={12}
-                  color="#dee0ea"
-                  icon={faChevronRight}
-                />
-              </View>
-            </View>
-          </View>
-
-          {/* Tenant Details Grid */}
-          <View className="space-y-3 gap-1">
-            {/* Budget */}
-            {item.details?.budget && (
-              <View className="flex-row justify-between items-center">
-                <View className="flex-row items-center">
-                  <FontAwesomeIcon
-                    icon={faMoneyBills}
-                    color="#6B7280"
-                    size={18}
-                  />
-                  <Text className="text-gray-600 text-sm ml-2">Bütçe:</Text>
-                </View>
-                <Text className="text-gray-800 text-sm font-semibold">
-                  {item.details.budget.toLocaleString()} ₺
-                </Text>
-              </View>
-            )}
-
-            {/* Monthly Income */}
-            {item.details?.monthlyIncome && (
-              <View className="flex-row justify-between items-center">
-                <View className="flex-row items-center">
-                  <FontAwesomeIcon icon={faCoins} color="#6B7280" size={18} />
-                  <Text className="text-gray-600 text-sm ml-2">
-                    Aylık Gelir:
-                  </Text>
-                </View>
-                <Text className="text-gray-800 text-sm font-semibold">
-                  {item.details.monthlyIncome.toLocaleString()} ₺
-                </Text>
-              </View>
-            )}
-
-            {/* Preferred Location */}
-            {item.details?.preferredLocation && (
-              <View className="flex-row justify-between items-center">
-                <View className="flex-row items-center">
-                  <FontAwesomeIcon
-                    icon={faMapMarked}
-                    color="#6B7280"
-                    size={18}
-                  />
-                  <Text className="text-gray-600 text-sm ml-2">
-                    Tercih Edilen Bölge:
-                  </Text>
-                </View>
-                <Text
-                  className="text-gray-800 text-sm font-medium"
-                  numberOfLines={1}
-                >
-                  {item.details.preferredLocation}
-                </Text>
-              </View>
-            )}
-
-            {/* Room Preference */}
-            {item.details?.minRooms && (
-              <View className="flex-row justify-between items-center">
-                <View className="flex-row items-center">
-                  <FontAwesomeIcon icon={faBed} color="#6B7280" size={18} />
-                  <Text className="text-gray-600 text-sm ml-2">
-                    Min. Oda Sayısı:
-                  </Text>
-                </View>
-                <Text className="text-gray-800 text-sm font-medium">
-                  {item.details.minRooms} oda
-                </Text>
-              </View>
-            )}
-
-            {/* Student Status */}
-            {item.details?.isStudent !== undefined && (
-              <View className="flex-row justify-between items-center">
-                <View className="flex-row items-center">
-                  <FontAwesomeIcon
-                    icon={faGraduationCap}
-                    color="#6B7280"
-                    size={18}
-                  />
-                  <Text className="text-gray-600 text-sm ml-2">Öğrenci:</Text>
-                </View>
-                <Text className="text-gray-800 text-sm font-medium">
-                  {item.details.isStudent ? "Evet" : "Hayır"}
-                </Text>
-              </View>
-            )}
-
-            {/* Pet Status */}
-            {item.details?.hasPets !== undefined && (
-              <View className="flex-row justify-between items-center">
-                <View className="flex-row items-center">
-                  <FontAwesomeIcon icon={faPaw} color="#6B7280" size={18} />
-                  <Text className="text-gray-600 text-sm ml-2">
-                    Evcil Hayvan:
-                  </Text>
-                </View>
-                <Text className="text-gray-800 text-sm font-medium">
-                  {item.details.hasPets ? "Var" : "Yok"}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* Compatibility Level */}
-          {item.matchScore && (
-            <View className="mt-4 pt-3 border-t border-gray-100">
-              <MatchScoreBar
-                matchScore={item.matchScore}
-                showBar={true}
-                size="sm"
-              />
-
-              {/* Match Reasons */}
-              {item.matchReasons && item.matchReasons.length > 0 && (
-                <Text className="text-xs text-gray-500 mt-2">
-                  {item.matchReasons[0]}
-                </Text>
-              )}
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
-    </View>
+  const renderTenantItem = useCallback(
+    ({ item }) => <TenantItem item={item} navigation={navigation} />,
+    [navigation]
   );
 
+  const keyExtractor = useCallback(
+    (item, index) => `tenant_${item.tenantProfileId || item.id}_${index}`,
+    []
+  );
+
+  const getItemLayout = useCallback(
+    (data, index) => ({
+      length: 300, // Approximate item height
+      offset: 300 * index,
+      index,
+    }),
+    []
+  );
+
+  // Clear search handler
+  const clearSearch = useCallback(() => setSearchQuery(""), []);
+
+  // Navigation handlers
+  const goBack = useCallback(() => navigation.goBack(), [navigation]);
+
   // Show loading state
-  if (isLoading && currentPage === 1) {
+  if (isLoading && currentPage === 1 && !isFilterChanging) {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center">
@@ -664,10 +818,7 @@ const AllMatchingUsers = ({ navigation, route }) => {
       {/* Fixed search bar */}
       <View className="bg-white border-b border-gray-200 z-10">
         <View className="flex flex-row items-center px-5">
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{ width: "8%" }}
-          >
+          <TouchableOpacity onPress={goBack} style={{ width: "8%" }}>
             <FontAwesomeIcon icon={faChevronLeft} color="black" size={25} />
           </TouchableOpacity>
 
@@ -683,7 +834,7 @@ const AllMatchingUsers = ({ navigation, route }) => {
                 onChangeText={setSearchQuery}
               />
               {searchQuery ? (
-                <TouchableOpacity onPress={() => setSearchQuery("")}>
+                <TouchableOpacity onPress={clearSearch}>
                   <MaterialIcons name="close" size={20} color="#9CA3AF" />
                 </TouchableOpacity>
               ) : null}
@@ -694,10 +845,10 @@ const AllMatchingUsers = ({ navigation, route }) => {
           </View>
         </View>
 
-        {/* OPTIMIZE EDİLDİ: Container height da animate ediliyor */}
+        {/* Filter container */}
         <Animated.View
           style={{
-            height: containerHeight, // Container yüksekliği de küçülür
+            height: containerHeight,
             overflow: "hidden",
           }}
         >
@@ -711,42 +862,51 @@ const AllMatchingUsers = ({ navigation, route }) => {
               transform: [{ translateY: filterTranslateY }],
             }}
           >
-            <View className="flex-row">
-              {[
-                { key: "compatibility", label: "Uyumluluk" },
-                { key: "budget", label: "Bütçe" },
-                { key: "date", label: "Tarih" },
-              ].map((option) => (
-                <TouchableOpacity
-                  key={option.key}
-                  className={`mr-3 px-4 py-2 rounded-full border ${
-                    sortBy === option.key
-                      ? "bg-gray-900"
-                      : "bg-white border-white"
-                  }`}
-                  onPress={() => setSortBy(option.key)}
-                >
-                  <Text
-                    className={`text-sm font-medium ${
-                      sortBy === option.key ? "text-white" : "text-gray-700"
+            <ScrollView
+              horizontal={true}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{
+                alignItems: "center",
+                paddingHorizontal: 0,
+              }}
+              style={{ width: "100%" }}
+            >
+              <View className="flex-row">
+                {[
+                  { key: "compatibility", label: "Uyumluluk" },
+                  { key: "budget", label: "Bütçe" },
+                  { key: "date", label: "Tarih" },
+                ].map((option) => (
+                  <TouchableOpacity
+                    key={option.key}
+                    className={`mr-3 px-4 py-2 rounded-full border ${
+                      sortBy === option.key
+                        ? "bg-gray-900"
+                        : "bg-white border-white"
                     }`}
+                    onPress={() => setSortBy(option.key)}
                   >
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+                    <Text
+                      className={`text-sm font-medium ${
+                        sortBy === option.key ? "text-white" : "text-gray-700"
+                      }`}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
           </Animated.View>
         </Animated.View>
       </View>
 
-      {/* OPTIMIZE EDİLDİ: Native driver ile scroll tracking */}
+      {/* Tenants list with all performance optimizations */}
       <Animated.FlatList
         data={filteredTenants}
         renderItem={renderTenantItem}
-        keyExtractor={(item, index) =>
-          `tenant_${item.tenantProfileId || item.id}_${index}`
-        }
+        keyExtractor={keyExtractor}
+        getItemLayout={getItemLayout} // CRITICAL for performance
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderEmptyState}
         ListFooterComponent={renderLoadingFooter}
@@ -754,28 +914,37 @@ const AllMatchingUsers = ({ navigation, route }) => {
         onEndReachedThreshold={0.1}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          {
-            useNativeDriver: false, // Height animasyonu için false gerekli
-          }
+          { useNativeDriver: false }
         )}
-        scrollEventThrottle={1} // Daha smooth animasyon için düşük değer
+        scrollEventThrottle={16} // Optimized for performance
         refreshControl={
           <RefreshControl
-            refreshing={isLoading && currentPage === 1}
+            refreshing={refreshing}
             onRefresh={onRefresh}
             colors={["#4A90E2"]}
+            tintColor="#4A90E2"
           />
         }
         contentContainerStyle={{
           flexGrow: 1,
           paddingBottom: 16,
         }}
-        // Performance optimizations
+        // CRITICAL Performance optimizations
         removeClippedSubviews={true}
-        maxToRenderPerBatch={5}
-        updateCellsBatchingPeriod={100}
-        initialNumToRender={10}
-        windowSize={10}
+        maxToRenderPerBatch={5} // Reduced from 10
+        updateCellsBatchingPeriod={50} // Reduced from 100
+        initialNumToRender={4} // Reduced from 8
+        windowSize={5} // Reduced from 10
+        // NEW performance optimizations
+        legacyImplementation={false}
+        disableVirtualization={false}
+        maintainVisibleContentPosition={{
+          minIndexForVisible: 0,
+          autoscrollToTopThreshold: 100,
+        }}
+        // Memory optimizations
+        recycleViewsOnNext={true}
+        enableFillRate={true}
       />
     </SafeAreaView>
   );

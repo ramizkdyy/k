@@ -129,6 +129,16 @@ const mapCurrencyTypeToEnum = (value) => {
   return mapping[value] || 1;
 };
 
+// NEW: MaintenanceFeeResponsibility enum mapping
+const mapMaintenanceFeeResponsibilityToEnum = (value) => {
+  const mapping = {
+    "Kiracıya Ait": 1,
+    "Ev Sahibine Ait": 2,
+    "Ortak Ödeme": 3,
+  };
+  return mapping[value] || 1;
+};
+
 // Header component matching ProfileExpectationScreen
 const CreatePostHeader = ({
   navigation,
@@ -481,6 +491,10 @@ const CreatePostScreen = ({ navigation, route }) => {
   const [paraBirimi, setParaBirimi] = useState("TL");
   const [paymentMethod, setPaymentMethod] = useState("");
 
+  // NEW: MaintenanceFeeResponsibility state
+  const [maintenanceFeeResponsibility, setMaintenanceFeeResponsibility] =
+    useState("");
+
   // Konum Bilgileri
   const [location, setLocation] = useState("");
   const [il, setIl] = useState("");
@@ -587,6 +601,13 @@ const CreatePostScreen = ({ navigation, route }) => {
     "Evet, İzin Veriyorum",
     "Hayır, İzin Vermiyorum",
     "Sadece Balkonda İçilebilir",
+  ];
+
+  // NEW: MaintenanceFeeResponsibility options
+  const maintenanceFeeResponsibilityOptions = [
+    "Kiracıya Ait",
+    "Ev Sahibine Ait",
+    "Ortak Ödeme",
   ];
 
   // Parse location string to extract il, ilce, and mahalle if available
@@ -1072,6 +1093,14 @@ const CreatePostScreen = ({ navigation, route }) => {
       formData.append("ParaBirimi", mapCurrencyTypeToEnum(paraBirimi));
       formData.append("IsitmaTipi", mapHeatingTypeToEnum(isitmaTipi));
 
+      // NEW: Add MaintenanceFeeResponsibility if selected
+      if (maintenanceFeeResponsibility) {
+        formData.append(
+          "MaintenanceFeeResponsibility",
+          mapMaintenanceFeeResponsibilityToEnum(maintenanceFeeResponsibility)
+        );
+      }
+
       // Optional enum mappings
       if (propertyType) {
         formData.append("PropertyType", mapPropertyTypeToEnum(propertyType));
@@ -1144,6 +1173,12 @@ const CreatePostScreen = ({ navigation, route }) => {
       console.log(
         "PropertyType enum:",
         propertyType ? mapPropertyTypeToEnum(propertyType) : "Not set"
+      );
+      console.log(
+        "MaintenanceFeeResponsibility enum:",
+        maintenanceFeeResponsibility
+          ? mapMaintenanceFeeResponsibilityToEnum(maintenanceFeeResponsibility)
+          : "Not set"
       );
       console.log("Total images being sent:", newImages.length);
       console.log("Selected coordinates:", selectedCoordinates);
@@ -1226,6 +1261,7 @@ const CreatePostScreen = ({ navigation, route }) => {
         paraBirimi,
         kullanimDurumu,
         bulunduguKat,
+        maintenanceFeeResponsibility, // NEW: Save MaintenanceFeeResponsibility
         // Save coordinates
         latitude: selectedCoordinates?.latitude,
         longitude: selectedCoordinates?.longitude,
@@ -1607,6 +1643,14 @@ const CreatePostScreen = ({ navigation, route }) => {
                 setValue={setSmokingPolicy}
                 options={smokingPolicyOptions}
                 placeholder="Sigara politikası seçin"
+              />
+              {/* NEW: MaintenanceFeeResponsibility Dropdown */}
+              <CustomDropdown
+                label="Aidat Ödeme Sorumluluğu"
+                value={maintenanceFeeResponsibility}
+                setValue={setMaintenanceFeeResponsibility}
+                options={maintenanceFeeResponsibilityOptions}
+                placeholder="Aidat sorumluluğu seçin"
               />
             </FormSection>
           </View>
