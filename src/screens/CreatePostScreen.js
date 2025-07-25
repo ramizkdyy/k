@@ -46,6 +46,14 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import {
+  getCities,
+  getDistrictsAndNeighbourhoodsByCityCode,
+  isCityCode,
+  getCityCodes,
+  getNeighbourhoodsByCityCodeAndDistrict
+} from 'turkey-neighbourhoods';
+
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 // Enum mapping functions
@@ -256,7 +264,7 @@ const SwitchField = ({ label, value, setValue, description = null }) => (
       <Switch
         value={value}
         onValueChange={setValue}
-        trackColor={{ false: "#e5e7eb", true: "#97e8bc" }}
+        trackColor={{ false: "#e5e7eb", true: "#000" }}
         thumbColor={value ? "#fff" : "#f4f3f4"}
       />
     </View>
@@ -270,6 +278,7 @@ const CustomDropdown = ({
   options,
   placeholder,
   required = false,
+  disabled = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -540,6 +549,155 @@ const CreatePostScreen = ({ navigation, route }) => {
   const [images, setImages] = useState([]);
   const [uploadStatus, setUploadStatus] = useState("idle");
   const [showLocationPicker, setShowLocationPicker] = useState(false);
+
+
+  const [allCities, setAllCities] = useState([]);
+  const [districtOptions, setDistrictOptions] = useState([]);
+  const [cityCodeMap, setCityCodeMap] = useState({});
+  const [neighbourhoodOptions, setNeighbourhoodOptions] = useState([]);
+
+
+
+  useEffect(() => {
+    loadAllTurkeyCities();
+  }, []);
+
+  // İl seçildiğinde ilçeleri yükle
+  useEffect(() => {
+    if (il) {
+      loadDistrictsForCity(il);
+      setIlce(""); // İl değiştiğinde ilçe seçimini sıfırla
+    } else {
+      setDistrictOptions([]);
+      setIlce("");
+    }
+  }, [il]);
+  useEffect(() => {
+    if (il && ilce) {
+      loadNeighbourhoodsForDistrict(il, ilce);
+      setMahalle(""); // İlçe değiştiğinde mahalle seçimini sıfırla
+    } else {
+      setNeighbourhoodOptions([]);
+      setMahalle("");
+    }
+  }, [il, ilce]);
+
+  const loadNeighbourhoodsForDistrict = (selectedCity, selectedDistrict) => {
+    try {
+      const cityCode = cityCodeMap[selectedCity];
+
+      if (!cityCode) {
+        console.log(`${selectedCity} için şehir kodu bulunamadı`);
+        setNeighbourhoodOptions([]);
+        return;
+      }
+
+      // Seçilen şehir ve ilçenin mahallelerini al
+      const neighbourhoods = getNeighbourhoodsByCityCodeAndDistrict(cityCode, selectedDistrict);
+
+      if (neighbourhoods && Array.isArray(neighbourhoods)) {
+        const sortedNeighbourhoods = neighbourhoods.sort((a, b) => a.localeCompare(b, 'tr'));
+        setNeighbourhoodOptions(sortedNeighbourhoods);
+        console.log(`${selectedCity} ${selectedDistrict} için ${sortedNeighbourhoods.length} mahalle yüklendi`);
+      } else {
+        setNeighbourhoodOptions([]);
+        console.log(`${selectedCity} ${selectedDistrict} için mahalle bulunamadı`);
+      }
+    } catch (error) {
+      console.error('Mahalleler yüklenirken hata:', error);
+      setNeighbourhoodOptions([]);
+    }
+  };
+
+
+  // Tüm Türkiye şehirlerini yükle
+  const loadAllTurkeyCities = () => {
+    try {
+      const cities = getCities(); // [{code: "01", name: "Adana"}, ...]
+
+      if (cities && Array.isArray(cities)) {
+        const cityNames = cities.map(city => city.name).sort((a, b) => a.localeCompare(b, 'tr'));
+        setAllCities(cityNames);
+
+        // Şehir adı -> kod mapping oluştur
+        const codeMap = {};
+        cities.forEach(city => {
+          codeMap[city.name] = city.code;
+        });
+        setCityCodeMap(codeMap);
+
+        console.log(`CreatePost: Toplam ${cityNames.length} şehir yüklendi`);
+      } else {
+        throw new Error('Cities array not found');
+      }
+    } catch (error) {
+      console.error('CreatePost şehirler yüklenirken hata:', error);
+      // Hata durumunda fallback liste kullan
+      loadFallbackCities();
+    }
+  };
+
+  // Fallback şehir listesi
+  const loadFallbackCities = () => {
+    const fallbackCities = [
+      "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya",
+      "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir",
+      "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis",
+      "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum",
+      "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan",
+      "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane",
+      "Hakkâri", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir",
+      "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu",
+      "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis",
+      "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin",
+      "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu",
+      "Osmaniye", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop",
+      "Sivas", "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon",
+      "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"
+    ];
+    setAllCities(fallbackCities);
+  };
+
+  // Seçilen şehrin ilçelerini yükle
+  const loadDistrictsForCity = (selectedCity) => {
+    try {
+      // Şehir kodunu bul
+      const cityCode = cityCodeMap[selectedCity];
+
+      if (!cityCode) {
+        console.log(`CreatePost: ${selectedCity} için şehir kodu bulunamadı`);
+        setDistrictOptions([]);
+        return;
+      }
+
+      // turkey-neighbourhoods paketinden ilçeleri al
+      const districtsData = getDistrictsAndNeighbourhoodsByCityCode(cityCode);
+
+      if (districtsData && typeof districtsData === 'object') {
+        const districtNames = Object.keys(districtsData).sort((a, b) => a.localeCompare(b, 'tr'));
+        setDistrictOptions(districtNames);
+        console.log(`CreatePost: ${selectedCity} için ${districtNames.length} ilçe yüklendi`);
+      } else {
+        setDistrictOptions([]);
+        console.log(`CreatePost: ${selectedCity} için ilçe bulunamadı`);
+      }
+    } catch (error) {
+      console.error('CreatePost ilçeler yüklenirken hata:', error);
+      setDistrictOptions([]);
+    }
+  };
+
+
+  const kitchenTypes = [
+    "Amerikan Mutfak", "Normal", "Diğer"
+  ]
+
+  const flatSizes = [
+    "1+0", "1+1", "2+0",
+    "2+1", "2+2", "3+0"
+    , "3+1", "3+2", "3+3",
+    "4+1", "4+2", "5+2"
+  ]
 
   // Property type options
   const propertyTypes = [
@@ -1394,33 +1552,50 @@ const CreatePostScreen = ({ navigation, route }) => {
 
               <View className="flex-row justify-between mb-2">
                 <View className="w-[48%]">
-                  <CustomTextInput
+                  <CustomDropdown
                     label="İl"
                     value={il}
-                    onChangeText={setIl}
-                    placeholder="İstanbul"
+                    placeholder="İl seçin"
                     required
+                    setValue={setIl}
+                    options={allCities} // Turkey-neighbourhoods'dan gelen şehirler
                   />
                 </View>
                 <View className="w-[48%]">
-                  <CustomTextInput
+                  <CustomDropdown
                     label="İlçe"
                     value={ilce}
-                    onChangeText={setIlce}
-                    placeholder="Kadıköy"
+                    placeholder={il ? "İlçe seçin" : "Önce il seçin"}
                     required
+                    setValue={setIlce} // Düzeltildi!
+                    options={districtOptions} // Seçilen şehrin ilçeleri
+                    disabled={!il || districtOptions.length === 0} // Disabled prop ekleyin
                   />
                 </View>
               </View>
 
               <View className="flex-row justify-between">
                 <View className="w-[48%]">
-                  <CustomTextInput
+                  {/* <CustomTextInput
                     label="Mahalle"
                     value={mahalle}
                     onChangeText={setMahalle}
                     placeholder="Caferağa"
                     required
+                  /> */}
+
+                  <CustomDropdown
+                    label="Mahalle"
+                    value={mahalle}
+                    setValue={setMahalle}
+                    options={neighbourhoodOptions}
+                    placeholder={
+                      !il ? "Önce il seçiniz" :
+                        !ilce ? "Önce ilçe seçiniz" :
+                          "Mahalle seçiniz"
+                    }
+                    required
+                    disabled={!il || !ilce || neighbourhoodOptions.length === 0} // İl veya ilçe seçilmemişse disabled
                   />
                 </View>
                 <View className="w-[48%]">
@@ -1429,7 +1604,6 @@ const CreatePostScreen = ({ navigation, route }) => {
                     value={siteAdi}
                     onChangeText={setSiteAdi}
                     placeholder="Örnek Site"
-                    required
                   />
                 </View>
               </View>
@@ -1439,12 +1613,13 @@ const CreatePostScreen = ({ navigation, route }) => {
             <FormSection title="Emlak Özellikleri">
               <View className="flex-row justify-between mb-2">
                 <View className="w-[30%]">
-                  <CustomTextInput
+                  <CustomDropdown
                     label="Oda Sayısı"
                     value={odaSayisi}
-                    onChangeText={setOdaSayisi}
+                    setValue={setOdaSayisi}
                     placeholder="2+1"
                     required
+                    options={flatSizes}
                   />
                 </View>
                 <View className="w-[30%]">
@@ -1488,12 +1663,13 @@ const CreatePostScreen = ({ navigation, route }) => {
                 </View>
               </View>
 
-              <CustomTextInput
+              <CustomDropdown
                 label="Mutfak"
                 value={mutfak}
-                onChangeText={setMutfak}
-                placeholder="Amerikan Mutfak"
+                setValue={setMutfak}
+                placeholder="Mutfak tipi seçin"
                 required
+                options={kitchenTypes}
               />
 
               <CustomDropdown
