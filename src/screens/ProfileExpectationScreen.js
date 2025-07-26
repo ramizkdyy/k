@@ -40,16 +40,14 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
-} from 'react-native-reanimated';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+} from "react-native-reanimated";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   getCities,
   getDistrictsAndNeighbourhoodsByCityCode,
   isCityCode,
-  getCityCodes
-} from 'turkey-neighbourhoods';
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
+  getCityCodes,
+} from "turkey-neighbourhoods";
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const ProfileExpectationHeader = ({
@@ -247,8 +245,6 @@ const CustomDropdown = ({
       backdropOpacity.value = withTiming(0, { duration: 250 });
     }
   }, [isOpen]);
-
-
 
   // Close handler - PropertiesFilterModal'daki gibi
   const handleClose = () => {
@@ -494,22 +490,24 @@ const ProfileExpectationScreen = ({ navigation }) => {
       const cities = getCities(); // [{code: "01", name: "Adana"}, ...]
 
       if (cities && Array.isArray(cities)) {
-        const cityNames = cities.map(city => city.name).sort((a, b) => a.localeCompare(b, 'tr'));
+        const cityNames = cities
+          .map((city) => city.name)
+          .sort((a, b) => a.localeCompare(b, "tr"));
         setAllCities(cityNames);
 
         // Şehir adı -> kod mapping oluştur
         const codeMap = {};
-        cities.forEach(city => {
+        cities.forEach((city) => {
           codeMap[city.name] = city.code;
         });
         setCityCodeMap(codeMap);
 
         console.log(`Toplam ${cityNames.length} şehir yüklendi`);
       } else {
-        throw new Error('Cities array not found');
+        throw new Error("Cities array not found");
       }
     } catch (error) {
-      console.error('Şehirler yüklenirken hata:', error);
+      console.error("Şehirler yüklenirken hata:", error);
       // Hata durumunda fallback liste kullan
       loadFallbackCities();
     }
@@ -518,20 +516,87 @@ const ProfileExpectationScreen = ({ navigation }) => {
   // Fallback şehir listesi
   const loadFallbackCities = () => {
     const fallbackCities = [
-      "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya",
-      "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir",
-      "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis",
-      "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum",
-      "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan",
-      "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane",
-      "Hakkâri", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir",
-      "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu",
-      "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis",
-      "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin",
-      "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu",
-      "Osmaniye", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop",
-      "Sivas", "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon",
-      "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"
+      "Adana",
+      "Adıyaman",
+      "Afyonkarahisar",
+      "Ağrı",
+      "Aksaray",
+      "Amasya",
+      "Ankara",
+      "Antalya",
+      "Ardahan",
+      "Artvin",
+      "Aydın",
+      "Balıkesir",
+      "Bartın",
+      "Batman",
+      "Bayburt",
+      "Bilecik",
+      "Bingöl",
+      "Bitlis",
+      "Bolu",
+      "Burdur",
+      "Bursa",
+      "Çanakkale",
+      "Çankırı",
+      "Çorum",
+      "Denizli",
+      "Diyarbakır",
+      "Düzce",
+      "Edirne",
+      "Elazığ",
+      "Erzincan",
+      "Erzurum",
+      "Eskişehir",
+      "Gaziantep",
+      "Giresun",
+      "Gümüşhane",
+      "Hakkâri",
+      "Hatay",
+      "Iğdır",
+      "Isparta",
+      "İstanbul",
+      "İzmir",
+      "Kahramanmaraş",
+      "Karabük",
+      "Karaman",
+      "Kars",
+      "Kastamonu",
+      "Kayseri",
+      "Kırıkkale",
+      "Kırklareli",
+      "Kırşehir",
+      "Kilis",
+      "Kocaeli",
+      "Konya",
+      "Kütahya",
+      "Malatya",
+      "Manisa",
+      "Mardin",
+      "Mersin",
+      "Muğla",
+      "Muş",
+      "Nevşehir",
+      "Niğde",
+      "Ordu",
+      "Osmaniye",
+      "Rize",
+      "Sakarya",
+      "Samsun",
+      "Siirt",
+      "Sinop",
+      "Sivas",
+      "Şanlıurfa",
+      "Şırnak",
+      "Tekirdağ",
+      "Tokat",
+      "Trabzon",
+      "Tunceli",
+      "Uşak",
+      "Van",
+      "Yalova",
+      "Yozgat",
+      "Zonguldak",
     ];
     setAllCities(fallbackCities);
   };
@@ -551,20 +616,23 @@ const ProfileExpectationScreen = ({ navigation }) => {
       // turkey-neighbourhoods paketinden ilçeleri al
       const districtsData = getDistrictsAndNeighbourhoodsByCityCode(cityCode);
 
-      if (districtsData && typeof districtsData === 'object') {
-        const districtNames = Object.keys(districtsData).sort((a, b) => a.localeCompare(b, 'tr'));
+      if (districtsData && typeof districtsData === "object") {
+        const districtNames = Object.keys(districtsData).sort((a, b) =>
+          a.localeCompare(b, "tr")
+        );
         setDistrictOptions(districtNames);
-        console.log(`${selectedCity} için ${districtNames.length} ilçe yüklendi`);
+        console.log(
+          `${selectedCity} için ${districtNames.length} ilçe yüklendi`
+        );
       } else {
         setDistrictOptions([]);
         console.log(`${selectedCity} için ilçe bulunamadı`);
       }
     } catch (error) {
-      console.error('İlçeler yüklenirken hata:', error);
+      console.error("İlçeler yüklenirken hata:", error);
       setDistrictOptions([]);
     }
   };
-
 
   useFocusEffect(
     React.useCallback(() => {
@@ -618,7 +686,6 @@ const ProfileExpectationScreen = ({ navigation }) => {
   console.log("isExpectationCompleted:", isExpectationCompleted);
 
   // Common state
-
 
   // State for Landlord Expectations (EVSAHIBI)
   const [rentAmount, setRentAmount] = useState("5000");
@@ -807,7 +874,6 @@ const ProfileExpectationScreen = ({ navigation }) => {
           options={cityOptions}
           placeholder="Şehir seçiniz"
           required
-
         />
 
         <CustomDropdown
