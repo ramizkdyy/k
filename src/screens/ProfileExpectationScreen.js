@@ -40,13 +40,10 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
-} from 'react-native-reanimated';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+} from "react-native-reanimated";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const ProfileExpectationHeader = ({
   navigation,
@@ -196,11 +193,12 @@ const CustomDropdown = ({
   const getModalHeight = () => {
     const headerHeight = 80; // Header + handle (padding azaltıldı)
     const itemHeight = 50; // Her seçenek için yaklaşık yükseklik
-    const bottomPadding = 40;// Alt boşluk (azaltıldı)
+    const bottomPadding = 40; // Alt boşluk (azaltıldı)
     const minHeight = SCREEN_HEIGHT * 0.25; // Minimum %25 (azaltıldı)
     const maxHeight = SCREEN_HEIGHT * 0.6; // Maximum %75
 
-    const calculatedHeight = headerHeight + (options.length * itemHeight) + bottomPadding;
+    const calculatedHeight =
+      headerHeight + options.length * itemHeight + bottomPadding;
 
     // Az seçenek varsa (3 veya daha az) küçük modal
     if (options.length <= 3) {
@@ -323,10 +321,7 @@ const CustomDropdown = ({
                   >
                     {label}
                   </Text>
-                  <TouchableOpacity
-                    onPress={handleClose}
-                    className="px-2 py-2"
-                  >
+                  <TouchableOpacity onPress={handleClose} className="px-2 py-2">
                     <Text
                       style={{
                         fontSize: 15,
@@ -344,8 +339,9 @@ const CustomDropdown = ({
               <ScrollView
                 className="flex-1"
                 style={{
-                  backgroundColor: 'white',
-                  maxHeight: options.length <= 3 ? undefined : SCREEN_HEIGHT * 0.5 // Az seçenek varsa scroll yok
+                  backgroundColor: "white",
+                  maxHeight:
+                    options.length <= 3 ? undefined : SCREEN_HEIGHT * 0.5, // Az seçenek varsa scroll yok
                 }}
                 showsVerticalScrollIndicator={options.length > 5} // 5'ten fazla seçenek varsa indicator
                 bounces={options.length > 3} // Az seçenek varsa bounce yok
@@ -354,30 +350,39 @@ const CustomDropdown = ({
                 keyboardShouldPersistTaps="handled"
                 contentContainerStyle={{
                   paddingBottom: options.length <= 3 ? 5 : 15, // Padding azaltıldı
-                  justifyContent: options.length <= 3 ? 'flex-start' : 'flex-start', // Center kaldırıldı
-                  flexGrow: 0 // FlexGrow kaldırıldı - seçeneklerin gözükmesini engelliyor
+                  justifyContent:
+                    options.length <= 3 ? "flex-start" : "flex-start", // Center kaldırıldı
+                  flexGrow: 0, // FlexGrow kaldırıldı - seçeneklerin gözükmesini engelliyor
                 }}
               >
                 {options.map((option, index) => (
                   <TouchableOpacity
                     key={index}
-                    className={`py-4 px-7 flex-row items-center justify-between ${index !== options.length - 1 ? "border-b border-gray-50" : ""
-                      } ${value === option ? "bg-gray-100" : "bg-white"}`}
+                    className={`py-4 px-7 flex-row items-center justify-between ${
+                      index !== options.length - 1
+                        ? "border-b border-gray-50"
+                        : ""
+                    } ${value === option ? "bg-gray-100" : "bg-white"}`}
                     onPress={() => handleOptionSelect(option)}
                     activeOpacity={0.7}
                   >
                     <Text
-                      className={`text-lg flex-1 mr-3 ${value === option
-                        ? "text-gray-900 font-medium"
-                        : "text-gray-600"
-                        }`}
+                      className={`text-lg flex-1 mr-3 ${
+                        value === option
+                          ? "text-gray-900 font-medium"
+                          : "text-gray-600"
+                      }`}
                       numberOfLines={2}
                       ellipsizeMode="tail"
                     >
                       {option}
                     </Text>
                     {value === option && (
-                      <FontAwesomeIcon icon={faCheck} size={16} color="#16a34a" />
+                      <FontAwesomeIcon
+                        icon={faCheck}
+                        size={16}
+                        color="#16a34a"
+                      />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -392,7 +397,6 @@ const CustomDropdown = ({
     </View>
   );
 };
-
 
 // Date picker component
 const CustomDatePicker = ({ label, value, setValue, required = false }) => {
@@ -742,7 +746,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
           label="Aidat Sorumluluğu"
           value={
             maintenanceFeeResponsibilityOptions[
-            maintenanceFeeResponsibility - 1
+              maintenanceFeeResponsibility - 1
             ]
           }
           setValue={(value) => {
@@ -1306,12 +1310,54 @@ const ProfileExpectationScreen = ({ navigation }) => {
     </View>
   );
 
+  // Add this to your ProfileExpectationScreen component
+  // Replace the existing handleSubmit function
+
   const handleSubmit = async () => {
+    // VALIDATION: Ensure we have current user data
+    if (!currentUser || !currentUser.id) {
+      console.error("No current user found in Redux state:", currentUser);
+      Alert.alert(
+        "Hata",
+        "Kullanıcı bilgileri bulunamadı. Lütfen tekrar giriş yapın.",
+        [
+          {
+            text: "Tamam",
+            onPress: () => {
+              // Navigate back to login or role selection
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "Auth" }],
+              });
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    // VALIDATION: Ensure we have user role
+    if (!userRole) {
+      console.error("No user role found:", { userRole, currentUser });
+      Alert.alert(
+        "Hata",
+        "Kullanıcı rolü bulunamadı. Lütfen rol seçimini tekrar yapın."
+      );
+      return;
+    }
+
+    console.log("Starting expectation submission:", {
+      userId: currentUser.id,
+      userRole,
+      userName: currentUser.userName || currentUser.email,
+      currentUserData: currentUser,
+    });
+
     try {
       if (userRole === "EVSAHIBI") {
         // Create landlord expectations
         const expectationData = {
-          userId: currentUser.id,
+          userId: currentUser.id, // Use the current user ID explicitly
           city,
           district,
           rentAmount: parseFloat(rentAmount) || 0,
@@ -1341,15 +1387,20 @@ const ProfileExpectationScreen = ({ navigation }) => {
           buildingApprovalPolicy,
         };
 
+        console.log("Sending landlord expectation data:", expectationData);
+
         const response = await createLandlordExpectation(
           expectationData
         ).unwrap();
+
+        console.log("Landlord expectation response:", response);
 
         if (response && response.isSuccess) {
           Alert.alert("Başarılı", "Beklenti profili başarıyla oluşturuldu", [
             { text: "Tamam", onPress: () => navigation.goBack() },
           ]);
         } else {
+          console.error("Landlord expectation creation failed:", response);
           Alert.alert(
             "Hata",
             response?.message || "Beklenti profili oluşturulamadı"
@@ -1358,7 +1409,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
       } else if (userRole === "KIRACI") {
         // Create tenant expectations
         const expectationData = {
-          userId: currentUser.id,
+          userId: currentUser.id, // Use the current user ID explicitly
           city,
           district,
           alternativeDistricts,
@@ -1407,15 +1458,20 @@ const ProfileExpectationScreen = ({ navigation }) => {
           additionalNotes,
         };
 
+        console.log("Sending tenant expectation data:", expectationData);
+
         const response = await createTenantExpectation(
           expectationData
         ).unwrap();
+
+        console.log("Tenant expectation response:", response);
 
         if (response && response.isSuccess) {
           Alert.alert("Başarılı", "Beklenti profili başarıyla oluşturuldu", [
             { text: "Tamam", onPress: () => navigation.goBack() },
           ]);
         } else {
+          console.error("Tenant expectation creation failed:", response);
           Alert.alert(
             "Hata",
             response?.message || "Beklenti profili oluşturulamadı"
@@ -1423,11 +1479,18 @@ const ProfileExpectationScreen = ({ navigation }) => {
         }
       }
     } catch (error) {
-      console.error("Beklenti profili oluşturma hatası:", error);
+      console.error("Beklenti profili oluşturma hatası:", {
+        error,
+        errorData: error?.data,
+        currentUser,
+        userRole,
+      });
+
       Alert.alert(
         "Hata",
         error?.data?.message ||
-        "Beklenti profili oluşturulurken bir hata oluştu"
+          error?.message ||
+          "Beklenti profili oluşturulurken bir hata oluştu"
       );
     }
   };
@@ -1553,7 +1616,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
       Alert.alert(
         "Hata",
         error?.data?.message ||
-        "Beklenti profili güncellenirken bir hata oluştu"
+          "Beklenti profili güncellenirken bir hata oluştu"
       );
     }
   };
@@ -1609,31 +1672,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   backdrop: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   backdropTouchable: {
     flex: 1,
   },
   modal: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     top: 0,
     bottom: 0,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     elevation: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
 });
 

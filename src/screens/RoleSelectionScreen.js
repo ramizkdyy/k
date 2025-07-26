@@ -26,81 +26,117 @@ const RoleSelectionScreen = ({ navigation }) => {
   // Use the assign role mutation
   const [assignRole, { isLoading }] = useAssignRoleMutation();
 
+  // Replace the handleRoleSelection function in RoleSelectionScreen
+
   const handleRoleSelection = async () => {
     if (!selectedRole) {
       Alert.alert("Hata", "Lütfen bir rol seçin");
       return;
     }
 
-    try {
-      console.log("Rol atama isteği gönderiliyor:", {
-        userName: user?.userName || user?.email || "",
-        role: selectedRole,
-      });
+    if (!user || !user.id) {
+      console.error("No user found for role assignment:", user);
+      Alert.alert(
+        "Hata",
+        "Kullanıcı bilgileri bulunamadı. Lütfen tekrar giriş yapın."
+      );
+      return;
+    }
 
-      // Manuel olarak Redux'ta rolü güncelle (API başarısız olsa bile)
+    console.log("Starting role assignment:", {
+      selectedRole,
+      currentUser: user,
+      userId: user.id,
+      userName: user.userName || user.email,
+    });
+
+    try {
+      // First, update Redux state immediately
       dispatch(setRole(selectedRole));
-      console.log("Rol Redux'a kaydedildi:", selectedRole);
+      console.log("Role updated in Redux:", selectedRole);
+
+      // Prepare role assignment data
+      const roleAssignmentData = {
+        userName: user.userName || user.email || "",
+        role: selectedRole,
+        email: user.email || "",
+      };
+
+      console.log("Sending role assignment request:", roleAssignmentData);
 
       // Call the assignRole API
-      const response = await assignRole({
-        userName: user?.userName || user?.email || "",
-        role: selectedRole,
-        email: user?.email || "",
-      }).unwrap();
+      const response = await assignRole(roleAssignmentData).unwrap();
 
-      console.log("API yanıtı:", response);
+      console.log("Role assignment API response:", response);
 
-      // Rol seçildikten sonra profil kontrolü yap
+      // After successful role assignment, check for existing profile
       try {
-        const userId = user?.id;
+        const userId = user.id;
 
         if (selectedRole === "EVSAHIBI") {
-          // Ev sahibi profili sorgula
-          const profileResponse = await dispatch(
-            apiSlice.endpoints.getLandlordProfile.initiate(userId)
-          ).unwrap();
+          console.log("Checking for existing landlord profile...");
 
-          if (profileResponse?.isSuccess && profileResponse.result) {
-            // Profil var, ana sayfaya yönlendir
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "Main" }],
-            });
-            return;
+          try {
+            const profileResponse = await dispatch(
+              apiSlice.endpoints.getLandlordProfile.initiate(userId)
+            ).unwrap();
+
+            console.log("Landlord profile check response:", profileResponse);
+
+            if (profileResponse?.isSuccess && profileResponse.result) {
+              console.log(
+                "Existing landlord profile found, navigating to Main"
+              );
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "Main" }],
+              });
+              return;
+            }
+          } catch (profileError) {
+            console.log("No existing landlord profile found:", profileError);
+            // This is expected if no profile exists
           }
         } else if (selectedRole === "KIRACI") {
-          // Kiracı profili sorgula
-          const profileResponse = await dispatch(
-            apiSlice.endpoints.getTenantProfile.initiate(userId)
-          ).unwrap();
+          console.log("Checking for existing tenant profile...");
 
-          if (profileResponse?.isSuccess && profileResponse.result) {
-            // Profil var, ana sayfaya yönlendir
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "Main" }],
-            });
-            return;
+          try {
+            const profileResponse = await dispatch(
+              apiSlice.endpoints.getTenantProfile.initiate(userId)
+            ).unwrap();
+
+            console.log("Tenant profile check response:", profileResponse);
+
+            if (profileResponse?.isSuccess && profileResponse.result) {
+              console.log("Existing tenant profile found, navigating to Main");
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "Main" }],
+              });
+              return;
+            }
+          } catch (profileError) {
+            console.log("No existing tenant profile found:", profileError);
+            // This is expected if no profile exists
           }
         }
 
-        // Profil bulunamadı veya oluşturulmamış, profil oluşturmaya yönlendir
+        // No existing profile found, navigate to profile creation
+        console.log("No existing profile found, navigating to CreateProfile");
         navigation.navigate("CreateProfile");
       } catch (profileError) {
-        console.error("Profil sorgulama hatası:", profileError);
-        // Hata durumunda profil oluşturmaya yönlendir
+        console.error("Error checking existing profile:", profileError);
+        // Continue to profile creation even if check fails
         navigation.navigate("CreateProfile");
       }
     } catch (error) {
-      console.error("Role selection error:", error);
+      console.error("Role assignment error:", error);
 
-      // Hata olsa bile profil oluşturmaya yönlendir çünkü Redux'ta rol ayarlandı
+      // Even if API fails, continue to profile creation since Redux state is updated
       console.log(
-        "API hatası olmasına rağmen devam ediliyor - Redux'ta rol güncellendi"
+        "API failed but Redux state updated, continuing to profile creation"
       );
 
-      // Kullanıcıya bilgi ver ama işlemi kesme
       Alert.alert(
         "Uyarı",
         "Rol seçimi kaydedildi ancak sunucuyla iletişimde bir hata oluştu. İşleminize devam edebilirsiniz.",
@@ -109,7 +145,6 @@ const RoleSelectionScreen = ({ navigation }) => {
             text: "Devam Et",
             onPress: () => navigation.navigate("CreateProfile"),
           },
-          (className = "w-20 h-20"),
         ]
       );
     }
