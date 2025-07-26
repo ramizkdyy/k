@@ -36,6 +36,7 @@ import {
   faCog,
   faQuestionCircle,
   faSignOut,
+  faUserEdit,
 } from "@fortawesome/pro-regular-svg-icons";
 
 const ProfileScreen = ({ navigation }) => {
@@ -45,26 +46,25 @@ const ProfileScreen = ({ navigation }) => {
   const userProfile = useSelector(selectUserProfile);
   const [refreshing, setRefreshing] = useState(false);
 
-  // ADDED: Animation setup similar to AllNearbyProperties
+  // Animation setup
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  // Header animation transforms - adjust values to your liking
+  // Header animation transforms
   const headerTranslateY = scrollY.interpolate({
     inputRange: [0, 100],
-    outputRange: [0, -70], // Move header up
+    outputRange: [0, -70],
     extrapolate: "clamp",
   });
 
   const headerOpacity = scrollY.interpolate({
     inputRange: [0, 50, 100],
-    outputRange: [1, 0.5, 0], // Fade out header
+    outputRange: [1, 0.5, 0],
     extrapolate: "clamp",
   });
 
-  // Container height animation for smooth transition
   const headerContainerHeight = scrollY.interpolate({
     inputRange: [0, 50],
-    outputRange: [50, 0], // Collapse header container
+    outputRange: [50, 0],
     extrapolate: "clamp",
   });
 
@@ -74,8 +74,8 @@ const ProfileScreen = ({ navigation }) => {
     isLoading,
     refetch,
   } = userRole === "EVSAHIBI"
-      ? useGetLandlordProfileQuery(currentUser?.id)
-      : useGetTenantProfileQuery(currentUser?.id);
+    ? useGetLandlordProfileQuery(currentUser?.id)
+    : useGetTenantProfileQuery(currentUser?.id);
 
   useEffect(() => {
     if (profileData && profileData.isSuccess && profileData.result) {
@@ -96,25 +96,16 @@ const ProfileScreen = ({ navigation }) => {
         text: "Çıkış Yap",
         onPress: () => {
           dispatch(logout());
-          // Navigation is handled by AppNavigator automatically
         },
         style: "destructive",
       },
     ]);
   };
 
-  // Navigate to edit profile screen or profile expectations based on completion status
-  const handleEditProfile = () => {
-    // Check if the user has completed the expectations
-    if (
-      currentUser?.isTenantExpectationCompleted ||
-      currentUser?.isLandlordExpectationCompleted
-    ) {
-      navigation.navigate("EditProfile");
-    } else {
-      navigation.navigate("ProfileExpectation");
-    }
-  };
+  // Check if expectations are completed
+  const isExpectationCompleted =
+    currentUser?.isTenantExpectationCompleted ||
+    currentUser?.isLandlordExpectationCompleted;
 
   // Render loading state
   if (isLoading && !userProfile) {
@@ -130,13 +121,12 @@ const ProfileScreen = ({ navigation }) => {
 
   console.log("CurrentUser:", currentUser);
   console.log("userProfile:", userProfile);
-  console.log("profilimage:", userProfile?.profileImageUrl);
+  console.log("isExpectationCompleted:", isExpectationCompleted);
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* ADDED: Animated Header */}
+      {/* Animated Header */}
       <View className="bg-white z-10">
-        {/* Header container with animation */}
         <Animated.View
           style={{
             height: headerContainerHeight,
@@ -161,21 +151,20 @@ const ProfileScreen = ({ navigation }) => {
         </Animated.View>
       </View>
 
-      {/* UPDATED: Use Animated.ScrollView for animation */}
+      {/* Animated ScrollView */}
       <Animated.ScrollView
         contentContainerStyle={{ paddingBottom: 100 }}
         className="flex-1 bg-white px-5"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        // ADDED: Scroll event for animation
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           {
-            useNativeDriver: false, // We're animating height which requires JS thread
+            useNativeDriver: false,
           }
         )}
-        scrollEventThrottle={1} // Smooth animation
+        scrollEventThrottle={1}
         showsVerticalScrollIndicator={false}
       >
         {/* Profile Header */}
@@ -189,14 +178,20 @@ const ProfileScreen = ({ navigation }) => {
           >
             {userProfile?.profileImageUrl !== "default_profile_image_url" ? (
               <Image
-                style={{ borderRadius: 100, boxShadow: "0px 0px 12px #00000014" }}
+                style={{
+                  borderRadius: 100,
+                  boxShadow: "0px 0px 12px #00000014",
+                }}
                 source={{ uri: userProfile.profileImageUrl }}
                 className="w-full h-full rounded-full"
                 resizeMode="cover"
               />
             ) : (
               <View
-                style={{ borderRadius: 100, boxShadow: "0px 0px 12px #00000014" }}
+                style={{
+                  borderRadius: 100,
+                  boxShadow: "0px 0px 12px #00000014",
+                }}
                 className="w-full h-full rounded-full bg-gray-100 justify-center items-center"
               >
                 <Text
@@ -208,7 +203,10 @@ const ProfileScreen = ({ navigation }) => {
               </View>
             )}
           </View>
-          <Text style={{ fontSize: 20 }} className="font-bold text-gray-900 mb-1">
+          <Text
+            style={{ fontSize: 20 }}
+            className="font-bold text-gray-900 mb-1"
+          >
             {userProfile?.user?.name || currentUser?.name || ""}{" "}
             {userProfile?.user?.surname || currentUser?.surname || ""}
           </Text>
@@ -222,8 +220,10 @@ const ProfileScreen = ({ navigation }) => {
           <Text className="mt-6 mb-4" style={{ fontSize: 20, fontWeight: 600 }}>
             Hesap
           </Text>
+
           {/* User Profile Card */}
           <View className="bg-white rounded-xl">
+            {/* Settings Button */}
             <TouchableOpacity
               className="py-4 rounded-lg flex flex-row justify-between items-center"
               onPress={() => {
@@ -239,96 +239,81 @@ const ProfileScreen = ({ navigation }) => {
                   Ayarlar
                 </Text>
               </View>
-              <FontAwesomeIcon icon={faChevronRight} size={15} color="#cfcfcf" />
+              <FontAwesomeIcon
+                icon={faChevronRight}
+                size={15}
+                color="#cfcfcf"
+              />
             </TouchableOpacity>
-            {/* Profile Expectations Button */}
-            {currentUser?.isTenantExpectationCompleted &&
-              currentUser?.isLandlordExpectationCompleted && (
-                <TouchableOpacity
-                  className="py-4 rounded-lg flex flex-row justify-between items-center"
-                  onPress={() => {
-                    navigation.navigate("ProfileExpectation");
-                  }}
+
+            {/* Profile Edit Button - Always visible */}
+            <TouchableOpacity
+              className="py-4 rounded-lg flex flex-row justify-between items-center"
+              onPress={() => navigation.navigate("EditProfile")}
+            >
+              <View className="flex-row items-center gap-4">
+                <FontAwesomeIcon icon={faUserEdit} size={25} color="black" />
+                <Text
+                  style={{ fontSize: 16 }}
+                  className="text-gray-900 font-medium"
                 >
-                  <View className="flex-row items-center gap-4">
-                    <FontAwesomeIcon icon={faEdit} size={25} color="black" />
-                    <Text
-                      style={{ fontSize: 16 }}
-                      className="text-gray-900 font-medium"
-                    >
-                      Beklenti Profili Düzenle
-                    </Text>
-                  </View>
-                  <View className="flex flex-row gap-1 items-center">
-                    <FontAwesomeIcon
-                      icon={faChevronRight}
-                      size={15}
-                      color="#cfcfcf"
-                    />
-                  </View>
-                </TouchableOpacity>
-              )}
-            {/* Fix the condition check - use proper property names */}
-            {currentUser?.isTenantExpectationCompleted ||
-              currentUser?.isLandlordExpectationCompleted ? (
-              <TouchableOpacity
-                className="py-4 rounded-lg flex flex-row justify-between items-center"
-                onPress={handleEditProfile}
-              >
-                <View className="flex-row items-center gap-4">
-                  <FontAwesomeIcon icon={faEdit} size={25} color="black" />
+                  Profili Düzenle
+                </Text>
+              </View>
+              <FontAwesomeIcon
+                icon={faChevronRight}
+                size={15}
+                color="#cfcfcf"
+              />
+            </TouchableOpacity>
+
+            {/* Expectation Profile Button - Always visible with conditional warning */}
+            <TouchableOpacity
+              className="py-4 rounded-lg flex flex-row justify-between items-center"
+              onPress={() => navigation.navigate("ProfileExpectation")}
+            >
+              <View className="flex-row items-center gap-4">
+                <FontAwesomeIcon icon={faEdit} size={25} color="black" />
+                <View className="flex flex-col gap-1">
                   <Text
                     style={{ fontSize: 16 }}
-                    className="text-gray-900 font-semibold"
+                    className="text-gray-900 font-medium"
                   >
-                    Profili düzenle
+                    {isExpectationCompleted
+                      ? "Beklenti Profili Düzenle"
+                      : "Beklenti Profili Oluştur"}
                   </Text>
-                </View>
-                <FontAwesomeIcon icon={faChevronRight} size={20} color="black" />
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                activeOpacity={0.7}
-                className="py-3 rounded-lg flex flex-row justify-between"
-                onPress={handleEditProfile}
-              >
-                <View className="flex flex-row gap-4 items-center">
-                  <FontAwesomeIcon icon={faEdit} size={25} color="black" />
-                  <View className="flex flex-col gap-1">
-                    {" "}
-                    <Text
-                      style={{ fontSize: 16 }}
-                      className="text-gray-900 font-medium"
-                    >
-                      Profili Tamamla
-                    </Text>
+                  {!isExpectationCompleted && (
                     <Text
                       style={{ fontSize: 12 }}
                       className="text-gray-500 font-medium"
                     >
                       Lütfen devam etmeden önce beklenti profilini oluştur.
                     </Text>
-                  </View>
-                </View>
-
-                <View className="flex flex-row gap-1 items-center">
-                  {currentUser?.isTenantExpectationCompleted ||
-                    currentUser?.isLandlordExpectationCompleted ? null : (
-                    <View className="bg-red-500 w-3 h-3 rounded-full"></View>
                   )}
-                  <FontAwesomeIcon
-                    icon={faChevronRight}
-                    size={15}
-                    color="#cfcfcf"
-                  />
                 </View>
-              </TouchableOpacity>
-            )}
+              </View>
+
+              <View className="flex flex-row gap-1 items-center">
+                {/* Red warning dot - only visible if expectations not completed */}
+                {!isExpectationCompleted && (
+                  <View className="bg-red-500 w-3 h-3 rounded-full mr-2"></View>
+                )}
+                <FontAwesomeIcon
+                  icon={faChevronRight}
+                  size={15}
+                  color="#cfcfcf"
+                />
+              </View>
+            </TouchableOpacity>
           </View>
 
           {/* Quick Actions */}
           <View className="bg-white rounded-xl">
-            <Text className="mt-6 mb-4" style={{ fontSize: 20, fontWeight: 600 }}>
+            <Text
+              className="mt-6 mb-4"
+              style={{ fontSize: 20, fontWeight: 600 }}
+            >
               İlanlar
             </Text>
             <TouchableOpacity
@@ -348,7 +333,11 @@ const ProfileScreen = ({ navigation }) => {
                   {userRole === "EVSAHIBI" ? "Mülklerim" : "İlan Ara"}
                 </Text>
               </View>
-              <FontAwesomeIcon icon={faChevronRight} size={15} color="#cfcfcf" />
+              <FontAwesomeIcon
+                icon={faChevronRight}
+                size={15}
+                color="#cfcfcf"
+              />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -368,7 +357,11 @@ const ProfileScreen = ({ navigation }) => {
                   {userRole === "EVSAHIBI" ? "Teklifler" : "Tekliflerim"}
                 </Text>
               </View>
-              <FontAwesomeIcon icon={faChevronRight} size={15} color="#cfcfcf" />
+              <FontAwesomeIcon
+                icon={faChevronRight}
+                size={15}
+                color="#cfcfcf"
+              />
             </TouchableOpacity>
 
             {userRole === "KIRACI" && (
@@ -422,7 +415,10 @@ const ProfileScreen = ({ navigation }) => {
 
           {/* Settings and Logout */}
           <View className="bg-white rounded-xl">
-            <Text className="mt-4 mb-4" style={{ fontSize: 20, fontWeight: 600 }}>
+            <Text
+              className="mt-4 mb-4"
+              style={{ fontSize: 20, fontWeight: 600 }}
+            >
               Daha fazla
             </Text>
             <TouchableOpacity
@@ -444,11 +440,15 @@ const ProfileScreen = ({ navigation }) => {
                   Yardım & Destek
                 </Text>
               </View>
-              <FontAwesomeIcon icon={faChevronRight} size={15} color="#cfcfcf" />
+              <FontAwesomeIcon
+                icon={faChevronRight}
+                size={15}
+                color="#cfcfcf"
+              />
             </TouchableOpacity>
 
             <TouchableOpacity
-              className="py-6  mt-2 flex flex-row justify-between items-center border-t border-gray-200"
+              className="py-6 mt-2 flex flex-row justify-between items-center border-t border-gray-200"
               onPress={handleLogout}
             >
               <View className="flex-row items-center gap-4">
@@ -460,7 +460,11 @@ const ProfileScreen = ({ navigation }) => {
                   Çıkış Yap
                 </Text>
               </View>
-              <FontAwesomeIcon icon={faChevronRight} size={15} color="#cfcfcf" />
+              <FontAwesomeIcon
+                icon={faChevronRight}
+                size={15}
+                color="#cfcfcf"
+              />
             </TouchableOpacity>
           </View>
         </View>

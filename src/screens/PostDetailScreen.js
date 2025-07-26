@@ -14,6 +14,7 @@ import {
   Platform,
   StatusBar,
   Animated,
+  FlatList,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
@@ -21,6 +22,8 @@ import {
   useGetPostQuery,
   useCreateOfferMutation,
   useToggleFavoritePropertyMutation,
+  useGetSimilarPostsByPostIdPaginatedQuery,
+  useGetLandlordTenantsPaginatedQuery, // YENİ: Kiracı eşleşmeleri için
 } from "../redux/api/apiSlice";
 import { setCurrentPost } from "../redux/slices/postSlice";
 import {
@@ -42,6 +45,10 @@ import {
   faChevronLeft,
   faBed,
   faBedBunk,
+  faChevronRight,
+  faLocationDot,
+  faHeart,
+  faUser, // YENİ: Kiracı iconu için
 } from "@fortawesome/pro-light-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import * as Haptics from "expo-haptics";
@@ -95,6 +102,156 @@ const getCurrencyText = (value) => {
   return mapping[value] || "₺";
 };
 
+// YENİ: Match Score gösterim fonksiyonu
+const getMatchScoreInfo = (score) => {
+  if (score >= 80)
+    return {
+      level: "excellent",
+      color: "#86efac",
+      text: "Mükemmel",
+      bgColor: "#dcfce7",
+    };
+  if (score >= 60)
+    return {
+      level: "good",
+      color: "#9cf0ba",
+      text: "Çok İyi",
+      bgColor: "#dbeafe",
+    };
+  if (score >= 40)
+    return {
+      level: "medium",
+      color: "#f59e0b",
+      text: "İyi",
+      bgColor: "#fef3c7",
+    };
+  return {
+    level: "weak",
+    color: "#ef4444",
+    text: "Orta",
+    bgColor: "#fee2e2",
+  };
+};
+
+// YENİ: Match Score Bar Component
+const MatchScoreBar = ({ matchScore, showBar = false, size = "sm" }) => {
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const timeoutRef = useRef(null);
+
+  const scoreInfo = getMatchScoreInfo(matchScore);
+
+  // Boyut ayarları
+  const sizes = {
+    xs: {
+      barHeight: 2,
+      iconSize: 10,
+      textSize: 11,
+      containerPadding: 1,
+      barWidth: 140,
+    },
+    sm: {
+      barHeight: 4,
+      iconSize: 12,
+      textSize: 12,
+      containerPadding: 2,
+      barWidth: 160,
+    },
+    md: {
+      barHeight: 6,
+      iconSize: 14,
+      textSize: 14,
+      containerPadding: 3,
+      barWidth: 180,
+    },
+  };
+
+  const currentSize = sizes[size];
+
+  // Score değiştiğinde debounce ile animasyonu başlat
+  useEffect(() => {
+    // Önceki timeout'u temizle
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Yeni timeout ayarla
+    timeoutRef.current = setTimeout(() => {
+      Animated.timing(progressAnim, {
+        toValue: matchScore,
+        duration: 800,
+        useNativeDriver: false,
+      }).start();
+    }, 200);
+
+    // Cleanup function
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [matchScore]);
+
+  if (showBar) {
+    return (
+      <View style={{ marginTop: currentSize.containerPadding * 2 }}>
+        {/* Uyum Barı */}
+        <View className="flex-row items-center">
+          <View
+            className="bg-gray-100 rounded-full overflow-hidden"
+            style={{
+              height: currentSize.barHeight,
+              width: currentSize.barWidth,
+              marginRight: 6,
+            }}
+          >
+            <Animated.View
+              style={{
+                width: progressAnim.interpolate({
+                  inputRange: [0, 100],
+                  outputRange: ["0%", "100%"],
+                  extrapolate: "clamp",
+                }),
+                backgroundColor: scoreInfo.color,
+                height: "100%",
+                borderRadius: currentSize.barHeight / 2,
+              }}
+            />
+          </View>
+          <Text
+            className="font-medium ml-1"
+            style={{
+              color: scoreInfo.color,
+              fontSize: currentSize.textSize,
+            }}
+          >
+            {matchScore}%
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Sadece skor gösterimi (bar olmadan)
+  return (
+    <View className="flex-row items-center">
+      <FontAwesomeIcon
+        color={scoreInfo.color}
+        icon={faHeart}
+        size={currentSize.iconSize}
+      />
+      <Text
+        className="font-medium ml-1"
+        style={{
+          color: scoreInfo.color,
+          fontSize: currentSize.textSize,
+        }}
+      >
+        {matchScore}% {scoreInfo.text}
+      </Text>
+    </View>
+  );
+};
+
 const PostDetailScreen = ({ route, navigation }) => {
   const { postId } = route.params;
   const dispatch = useDispatch();
@@ -126,16 +283,51 @@ const PostDetailScreen = ({ route, navigation }) => {
     userId: currentUser.id,
   });
 
+  // Get similar posts
+  const { data: similarPostsData, isLoading: isLoadingSimilarPosts } =
+    useGetSimilarPostsByPostIdPaginatedQuery(
+      {
+        postId: postId,
+        page: 1,
+        pageSize: 6,
+        minSimilarityScore: 0.3,
+      },
+      {
+        skip: !postId,
+      }
+    );
+
+  // Extract post and images safely
+  const post = data?.result.post;
+  const images = Array.isArray(post?.postImages) ? post.postImages : [];
+  const similarPosts = similarPostsData?.data || [];
+
+  // YENİ: Get matching tenants for this property (only if current user is the landlord)
+  const isOwner = userRole === "EVSAHIBI" && post?.userId === currentUser?.id;
+
+  const { data: matchingTenantsData, isLoading: isLoadingMatchingTenants } =
+    useGetLandlordTenantsPaginatedQuery(
+      {
+        landlordUserId: currentUser?.id,
+        page: 1,
+        pageSize: 6,
+        minMatchScore: 0.3,
+        propertyId: postId, // Bu ilana özel kiracı eşleşmeleri
+      },
+      {
+        skip: !isOwner || !postId || !currentUser?.id,
+      }
+    );
+
+  const matchingTenants = matchingTenantsData?.data || [];
+
   // Mutations
   const [createOffer, { isLoading: isCreatingOffer }] =
     useCreateOfferMutation();
   const [toggleFavoriteProperty] = useToggleFavoritePropertyMutation();
 
-  // Extract post and images safely
-  const post = data?.result.post;
-  console.log("RESULT:", data?.result);
-
-  const images = Array.isArray(post?.postImages) ? post.postImages : [];
+  console.log("similar:", similarPostsData);
+  console.log("matching tenants:", matchingTenantsData); // YENİ: Debug için
 
   useEffect(() => {
     if (data && data.isSuccess && data.result && data.result.post) {
@@ -239,6 +431,209 @@ const PostDetailScreen = ({ route, navigation }) => {
         />
       </View>
     );
+  };
+
+  // Render similar post card
+  const renderSimilarPostCard = ({ item }) => (
+    <TouchableOpacity
+      activeOpacity={1}
+      className="overflow-hidden w-72 flex flex-col px-3 py-3"
+      onPress={() => {
+        navigation.navigate("PostDetail", { postId: item.postId });
+      }}
+    >
+      {/* Image Container */}
+      <View className="relative">
+        <Image
+          style={{
+            height: 220,
+            borderRadius: 25,
+            boxShadow: "0px 0px 12px #00000024",
+          }}
+          source={{
+            uri:
+              item.postImages && item.postImages.length > 0
+                ? item.postImages[0].postImageUrl
+                : item.firstPostİmageURL ||
+                  "https://via.placeholder.com/300x200",
+          }}
+          className="w-full"
+          resizeMode="cover"
+        />
+
+        {/* Similarity Score Badge */}
+        {/* {item.similarityScore && (
+          <BlurView
+            intensity={60}
+            tint="dark"
+            className="absolute top-3 right-3 rounded-full overflow-hidden"
+          >
+            <View className="px-3 py-1.5 flex-row items-center gap-1">
+              <FontAwesome name="clone" size={14} color="white" />
+              <Text className="text-white text-xs font-semibold">
+                {Math.round(item.similarityScore)}% benzer
+              </Text>
+            </View>
+          </BlurView>
+        )} */}
+      </View>
+
+      {/* Property Details */}
+      <View className="py-3 px-1">
+        <Text
+          style={{ fontSize: 16, fontWeight: 600 }}
+          className="text-gray-800"
+          numberOfLines={2}
+        >
+          {item.ilanBasligi ||
+            `${item.il} ${item.ilce} ${item.odaSayisi} Kiralık Daire`}
+        </Text>
+
+        <View className="flex justify-between flex-row items-center mt-1">
+          <View className="flex-row items-center">
+            <Text
+              style={{ fontSize: 14, fontWeight: 400 }}
+              className="text-gray-500"
+            >
+              {item.kiraFiyati
+                ? `${item.kiraFiyati.toLocaleString()} ${
+                    item.paraBirimi || "₺"
+                  }`
+                : "Fiyat belirtilmemiş"}
+            </Text>
+            <Text className="text-sm text-gray-400 ml-1">/ay</Text>
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  // YENİ: Render matching tenant card
+  const renderMatchingTenantCard = ({ item, index }) => (
+    <TouchableOpacity
+      style={{
+        borderRightWidth: index === matchingTenants.length - 1 ? 0 : 0.5,
+        marginRight: index === matchingTenants.length - 1 ? 0 : 16,
+        paddingRight: 30,
+        borderColor: "#dee0ea",
+      }}
+      activeOpacity={1}
+      className="mr-4 mb-3 overflow-hidden w-72 flex flex-col bg-white p-4"
+      onPress={() => {
+        // Navigate to tenant profile
+        navigation.navigate("TenantProfile", {
+          tenantId: item.tenantProfileId || item.userId,
+        });
+      }}
+    >
+      {/* Tenant Image and Basic Info */}
+      <View className="flex-row items-center mb-3">
+        <Image
+          style={{ width: 60, height: 60, boxShadow: "0px 0px 12px #00000020" }}
+          source={{
+            uri:
+              item.tenantURL ||
+              item.profilePictureUrl ||
+              "https://via.placeholder.com/60x60",
+          }}
+          className="rounded-full border border-gray-100"
+          resizeMode="cover"
+        />
+
+        <View className="flex-1 ml-3">
+          <Text
+            style={{ fontSize: 16, fontWeight: 700 }}
+            className="text-gray-800 mb-1"
+            numberOfLines={1}
+          >
+            {item.tenantName ||
+              `${item.name || ""} ${item.surname || ""}` ||
+              "Kiracı"}
+          </Text>
+          <View className="flex flex-row items-center gap-1">
+            <Text className="text-gray-500" style={{ fontSize: 12 }}>
+              Profili görüntüle
+            </Text>
+            <FontAwesomeIcon size={12} color="#dee0ea" icon={faChevronRight} />
+          </View>
+        </View>
+      </View>
+
+      {/* Tenant Details */}
+      <View className="space-y-2">
+        {/* Budget */}
+        {(item.details?.budget || item.budget) && (
+          <View className="flex-row justify-between">
+            <Text className="text-gray-600 text-sm">Bütçe:</Text>
+            <Text className="text-gray-800 text-sm font-medium">
+              {(item.details?.budget || item.budget)?.toLocaleString()} ₺
+            </Text>
+          </View>
+        )}
+
+        {/* Preferred Location */}
+        {(item.details?.preferredLocation || item.preferredLocation) && (
+          <View className="flex-row justify-between">
+            <Text className="text-gray-600 text-sm">Tercih Edilen Bölge:</Text>
+            <Text
+              className="text-gray-800 text-sm font-medium"
+              numberOfLines={1}
+            >
+              {item.details?.preferredLocation ||
+                item.preferredLocation ||
+                "Belirtilmemiş"}
+            </Text>
+          </View>
+        )}
+
+        {/* Room Preference */}
+        {(item.details?.minRooms || item.minRooms) && (
+          <View className="flex-row justify-between">
+            <Text className="text-gray-600 text-sm">Min. Oda Sayısı:</Text>
+            <Text className="text-gray-800 text-sm font-medium">
+              {item.details?.minRooms || item.minRooms || "Belirtilmemiş"}
+            </Text>
+          </View>
+        )}
+
+        {/* Compatibility Level */}
+        {item.matchScore && (
+          <View className="py-1">
+            <MatchScoreBar
+              matchScore={item.matchScore}
+              showBar={true}
+              size="sm"
+            />
+
+            {/* Match Reasons */}
+            {item.matchReasons && item.matchReasons.length > 0 && (
+              <Text style={{ fontSize: 12 }} className="text-gray-500 mt-2">
+                {item.matchReasons[0]}
+              </Text>
+            )}
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+
+  // Handle see all similar posts
+  const handleSeeAllSimilarPosts = () => {
+    navigation.navigate("AllSimilarProperties", {
+      postId: postId,
+      searchType: "byPost",
+      title: "Benzer İlanlar",
+    });
+  };
+
+  // YENİ: Handle see all matching tenants
+  const handleSeeAllMatchingTenants = () => {
+    navigation.navigate("AllMatchingUsers", {
+      searchType: "bestTenants",
+      landlordUserId: currentUser?.id,
+      propertyId: postId,
+      title: "Bu İlan İçin Uygun Kiracılar",
+    });
   };
 
   const handleCreateOffer = async () => {
@@ -782,9 +1177,9 @@ const PostDetailScreen = ({ route, navigation }) => {
                   style={{ boxShadow: "0px 0px 12px #00000020" }}
                   className="w-14 h-14 rounded-full bg-gray-100 justify-center items-center mr-3 border-gray-200 border"
                 >
-                  {post.user?.profileImageUrl ? (
+                  {post.user?.profilePictureUrl ? (
                     <Image
-                      source={{ uri: post.user.profileImageUrl }}
+                      source={{ uri: post.user.profilePictureUrl }}
                       className="w-full h-full rounded-full"
                     />
                   ) : (
@@ -835,7 +1230,7 @@ const PostDetailScreen = ({ route, navigation }) => {
             <LocationSection post={post} />
 
             {/* Property Details */}
-            <View className="mb-5">
+            <View className="">
               <Text
                 style={{ fontSize: 14 }}
                 className="font-medium text-center text-gray-500 mb-4 mt-1"
@@ -1206,6 +1601,127 @@ const PostDetailScreen = ({ route, navigation }) => {
               </View>
             </View>
           </View>
+
+          {/* YENİ: Matching Tenants Section - Sadece ilanın sahibi için */}
+          {isOwner && matchingTenants.length > 0 && (
+            <View
+              style={{
+                paddingTop: 16,
+                borderTopWidth: 0.4,
+                borderTopColor: "#dee0ea",
+              }}
+              className="mb-5"
+            >
+              {/* Header */}
+              <View className="flex-row justify-center items-center mb-6 px-6">
+                <Text
+                  style={{ fontSize: 14 }}
+                  className="text-gray-500 font-medium"
+                >
+                  Önerilen Kiracılar
+                </Text>
+              </View>
+
+              {/* Matching Tenants Horizontal Scroll */}
+              {isLoadingMatchingTenants ? (
+                <View className="items-center py-8">
+                  <ActivityIndicator size="small" color="#4A90E2" />
+                  <Text className="text-center text-gray-500 mt-2">
+                    Uygun kiracılar yükleniyor...
+                  </Text>
+                </View>
+              ) : (
+                <FlatList
+                  style={{ paddingLeft: 16 }}
+                  data={matchingTenants}
+                  renderItem={renderMatchingTenantCard}
+                  keyExtractor={(item, index) =>
+                    `tenant_${item.tenantProfileId || item.userId}_${index}`
+                  }
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  showsVerticalScrollIndicator={false}
+                  scrollEnabled={true}
+                  contentContainerStyle={{ paddingRight: 20 }}
+                  onScrollBeginDrag={() => {
+                    navigation.getParent()?.setOptions({
+                      swipeEnabled: false,
+                    });
+                  }}
+                  onScrollEndDrag={() => {
+                    navigation.getParent()?.setOptions({
+                      swipeEnabled: true,
+                    });
+                  }}
+                  onMomentumScrollEnd={() => {
+                    navigation.getParent()?.setOptions({
+                      swipeEnabled: true,
+                    });
+                  }}
+                />
+              )}
+            </View>
+          )}
+
+          {/* Similar Posts Section */}
+          {similarPosts.length > 0 && (
+            <View
+              style={{
+                paddingTop: 16,
+                borderTopWidth: 0.4,
+                borderTopColor: "#dee0ea",
+              }}
+              className="mb-5"
+            >
+              {/* Header */}
+              <View className="flex-row justify-center items-center mb-4 px-6">
+                <Text
+                  style={{ fontSize: 14 }}
+                  className="text-gray-500 font-medium"
+                >
+                  Benzer İlanlar
+                </Text>
+              </View>
+
+              {/* Similar Posts Horizontal Scroll */}
+              {isLoadingSimilarPosts ? (
+                <View className="items-center py-8">
+                  <ActivityIndicator size="small" color="#4A90E2" />
+                  <Text className="text-center text-gray-500 mt-2">
+                    Benzer ilanlar yükleniyor...
+                  </Text>
+                </View>
+              ) : (
+                <FlatList
+                  data={similarPosts}
+                  renderItem={renderSimilarPostCard}
+                  keyExtractor={(item, index) =>
+                    `similar_${item.postId}_${index}`
+                  }
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  showsVerticalScrollIndicator={false}
+                  scrollEnabled={true}
+                  contentContainerStyle={{ paddingHorizontal: 6 }}
+                  onScrollBeginDrag={() => {
+                    navigation.getParent()?.setOptions({
+                      swipeEnabled: false,
+                    });
+                  }}
+                  onScrollEndDrag={() => {
+                    navigation.getParent()?.setOptions({
+                      swipeEnabled: true,
+                    });
+                  }}
+                  onMomentumScrollEnd={() => {
+                    navigation.getParent()?.setOptions({
+                      swipeEnabled: true,
+                    });
+                  }}
+                />
+              )}
+            </View>
+          )}
         </Animated.View>
 
         {/* Bottom Action Bar */}
@@ -1235,7 +1751,6 @@ const PostDetailScreen = ({ route, navigation }) => {
               </TouchableOpacity>
             </>
           )}
-
           {userRole === "EVSAHIBI" && post.userId === currentUser?.id && (
             <>
               <TouchableOpacity
