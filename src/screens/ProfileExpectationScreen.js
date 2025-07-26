@@ -40,8 +40,15 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
-} from "react-native-reanimated";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+} from 'react-native-reanimated';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import {
+  getCities,
+  getDistrictsAndNeighbourhoodsByCityCode,
+  isCityCode,
+  getCityCodes
+} from 'turkey-neighbourhoods';
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -186,6 +193,7 @@ const CustomDropdown = ({
   options,
   placeholder,
   required = false,
+  disabled = false, // Yeni prop
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -239,6 +247,8 @@ const CustomDropdown = ({
       backdropOpacity.value = withTiming(0, { duration: 250 });
     }
   }, [isOpen]);
+
+
 
   // Close handler - PropertiesFilterModal'daki gibi
   const handleClose = () => {
@@ -453,6 +463,108 @@ const ProfileExpectationScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const currentUser = useSelector(selectCurrentUser);
   const userRole = useSelector(selectUserRole);
+  const [city, setCity] = useState("");
+  const [district, setDistrict] = useState("");
+
+  // Turkey-neighbourhoods için yeni state'ler
+  const [allCities, setAllCities] = useState([]);
+  const [districtOptions, setDistrictOptions] = useState([]);
+  const [cityCodeMap, setCityCodeMap] = useState({}); // Şehir adı -> kod mapping
+
+  // Component mount olduğunda çalışacak
+  useEffect(() => {
+    loadAllTurkeyCities();
+  }, []);
+
+  // Şehir seçildiğinde ilçeleri yükle
+  useEffect(() => {
+    if (city) {
+      loadDistrictsForCity(city);
+      setDistrict("");
+    } else {
+      setDistrictOptions([]);
+      setDistrict("");
+    }
+  }, [city]);
+
+  // Tüm Türkiye şehirlerini yükle
+  const loadAllTurkeyCities = () => {
+    try {
+      // turkey-neighbourhoods paketinden şehirleri al
+      const cities = getCities(); // [{code: "01", name: "Adana"}, ...]
+
+      if (cities && Array.isArray(cities)) {
+        const cityNames = cities.map(city => city.name).sort((a, b) => a.localeCompare(b, 'tr'));
+        setAllCities(cityNames);
+
+        // Şehir adı -> kod mapping oluştur
+        const codeMap = {};
+        cities.forEach(city => {
+          codeMap[city.name] = city.code;
+        });
+        setCityCodeMap(codeMap);
+
+        console.log(`Toplam ${cityNames.length} şehir yüklendi`);
+      } else {
+        throw new Error('Cities array not found');
+      }
+    } catch (error) {
+      console.error('Şehirler yüklenirken hata:', error);
+      // Hata durumunda fallback liste kullan
+      loadFallbackCities();
+    }
+  };
+
+  // Fallback şehir listesi
+  const loadFallbackCities = () => {
+    const fallbackCities = [
+      "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya",
+      "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir",
+      "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis",
+      "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum",
+      "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan",
+      "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane",
+      "Hakkâri", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir",
+      "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu",
+      "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis",
+      "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin",
+      "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu",
+      "Osmaniye", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop",
+      "Sivas", "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon",
+      "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"
+    ];
+    setAllCities(fallbackCities);
+  };
+
+  // Seçilen şehrin ilçelerini yükle
+  const loadDistrictsForCity = (selectedCity) => {
+    try {
+      // Şehir kodunu bul
+      const cityCode = cityCodeMap[selectedCity];
+
+      if (!cityCode) {
+        console.log(`${selectedCity} için şehir kodu bulunamadı`);
+        setDistrictOptions([]);
+        return;
+      }
+
+      // turkey-neighbourhoods paketinden ilçeleri al
+      const districtsData = getDistrictsAndNeighbourhoodsByCityCode(cityCode);
+
+      if (districtsData && typeof districtsData === 'object') {
+        const districtNames = Object.keys(districtsData).sort((a, b) => a.localeCompare(b, 'tr'));
+        setDistrictOptions(districtNames);
+        console.log(`${selectedCity} için ${districtNames.length} ilçe yüklendi`);
+      } else {
+        setDistrictOptions([]);
+        console.log(`${selectedCity} için ilçe bulunamadı`);
+      }
+    } catch (error) {
+      console.error('İlçeler yüklenirken hata:', error);
+      setDistrictOptions([]);
+    }
+  };
+
 
   useFocusEffect(
     React.useCallback(() => {
@@ -506,8 +618,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
   console.log("isExpectationCompleted:", isExpectationCompleted);
 
   // Common state
-  const [city, setCity] = useState("İstanbul");
-  const [district, setDistrict] = useState("");
+
 
   // State for Landlord Expectations (EVSAHIBI)
   const [rentAmount, setRentAmount] = useState("5000");
@@ -604,19 +715,9 @@ const ProfileExpectationScreen = ({ navigation }) => {
     tenantIsLoading ||
     updateLandlordIsLoading ||
     updateTenantIsLoading;
+  // Tüm Türkiye şehirlerini yükle
 
-  // Enum options
-  const cityOptions = [
-    "İstanbul",
-    "Ankara",
-    "İzmir",
-    "Bursa",
-    "Antalya",
-    "Adana",
-    "Konya",
-    "Gaziantep",
-    "Diğer",
-  ];
+  const cityOptions = allCities;
 
   const maintenanceFeeResponsibilityOptions = [
     "Kiracıya Ait", // 1
@@ -706,13 +807,16 @@ const ProfileExpectationScreen = ({ navigation }) => {
           options={cityOptions}
           placeholder="Şehir seçiniz"
           required
+
         />
 
-        <CustomTextInput
+        <CustomDropdown
           label="İlçe"
           value={district}
-          onChangeText={setDistrict}
-          placeholder="İlçe girin"
+          setValue={setDistrict}
+          options={districtOptions}
+          placeholder={city ? "İlçe seçiniz" : "Önce şehir seçiniz"}
+          disabled={!city || districtOptions.length === 0}
         />
 
         <CustomTextInput
@@ -943,16 +1047,18 @@ const ProfileExpectationScreen = ({ navigation }) => {
           label="Şehir"
           value={city}
           setValue={setCity}
-          options={cityOptions}
+          options={cityOptions} // Artık tüm Türkiye şehirleri
           placeholder="Şehir seçiniz"
           required
         />
 
-        <CustomTextInput
+        <CustomDropdown
           label="Tercih Edilen İlçe"
           value={district}
-          onChangeText={setDistrict}
-          placeholder="Örn: Kadıköy"
+          setValue={setDistrict}
+          options={districtOptions} // Seçilen şehrin ilçeleri
+          placeholder={city ? "İlçe seçiniz" : "Önce şehir seçiniz"}
+          disabled={!city || districtOptions.length === 0}
         />
 
         <CustomTextInput
