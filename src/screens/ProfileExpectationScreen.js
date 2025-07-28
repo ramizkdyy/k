@@ -364,20 +364,18 @@ const CustomDropdown = ({
                 {options.map((option, index) => (
                   <TouchableOpacity
                     key={index}
-                    className={`py-4 px-7 flex-row items-center justify-between ${
-                      index !== options.length - 1
-                        ? "border-b border-gray-50"
-                        : ""
-                    } ${value === option ? "bg-gray-100" : "bg-white"}`}
+                    className={`py-4 px-7 flex-row items-center justify-between ${index !== options.length - 1
+                      ? "border-b border-gray-50"
+                      : ""
+                      } ${value === option ? "bg-gray-100" : "bg-white"}`}
                     onPress={() => handleOptionSelect(option)}
                     activeOpacity={0.7}
                   >
                     <Text
-                      className={`text-lg flex-1 mr-3 ${
-                        value === option
-                          ? "text-gray-900 font-medium"
-                          : "text-gray-600"
-                      }`}
+                      className={`text-lg flex-1 mr-3 ${value === option
+                        ? "text-gray-900 font-medium"
+                        : "text-gray-600"
+                        }`}
                       numberOfLines={2}
                       ellipsizeMode="tail"
                     >
@@ -404,17 +402,88 @@ const CustomDropdown = ({
   );
 };
 
-// Date picker component
 const CustomDatePicker = ({ label, value, setValue, required = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(value || new Date());
 
-  const onChange = (event, selectedDate) => {
-    const currentDate = selectedDate || value;
-    setIsOpen(Platform.OS === "ios");
-    setSelectedDate(currentDate);
-    setValue(currentDate);
+  // Modal boyutları - DatePicker için sabit yükseklik
+  const getModalHeight = () => {
+    const headerHeight = 50; // Header + handle
+    const datePickerHeight = 216; // iOS DateTimePicker standart yüksekliği
+    const buttonHeight = 60; // Tamam butonu alanı
+    const bottomPadding = 10; // Alt boşluk
+
+    return headerHeight + datePickerHeight + buttonHeight + bottomPadding;
   };
+
+  const SNAP_POINTS = {
+    CLOSED: SCREEN_HEIGHT,
+    OPEN: SCREEN_HEIGHT - getModalHeight(),
+  };
+
+  // Animated values - CustomDropdown'daki gibi
+  const translateY = useSharedValue(SCREEN_HEIGHT);
+  const backdropOpacity = useSharedValue(0);
+
+  // Modal açılış/kapanış animasyonu - CustomDropdown'daki gibi
+  useEffect(() => {
+    if (isOpen) {
+      translateY.value = withSpring(SNAP_POINTS.OPEN, {
+        damping: 80,
+        stiffness: 400,
+      });
+      backdropOpacity.value = withTiming(0.5, { duration: 300 });
+    } else if (isOpen === false && translateY.value !== SCREEN_HEIGHT) {
+      translateY.value = withSpring(SCREEN_HEIGHT, {
+        damping: 80,
+        stiffness: 400,
+      });
+      backdropOpacity.value = withTiming(0, { duration: 250 });
+    }
+  }, [isOpen]);
+
+  // Close handler - CustomDropdown'daki gibi
+  const handleClose = () => {
+    translateY.value = withSpring(SCREEN_HEIGHT, {
+      damping: 80,
+      stiffness: 400,
+    });
+    backdropOpacity.value = withTiming(0, { duration: 250 });
+    setTimeout(() => setIsOpen(false), 300);
+  };
+
+  // Date change handler
+  const onChange = (event, selectedDate) => {
+    if (Platform.OS === 'android') {
+      setIsOpen(false);
+      if (event.type === 'set' && selectedDate) {
+        setSelectedDate(selectedDate);
+        setValue(selectedDate);
+      }
+    } else if (selectedDate) {
+      setSelectedDate(selectedDate);
+    }
+  };
+
+  // Tamam butonu handler (iOS için)
+  const handleDonePress = () => {
+    setValue(selectedDate);
+    handleClose();
+  };
+
+  // Backdrop press handler
+  const handleBackdropPress = () => {
+    handleClose();
+  };
+
+  // Animated styles - CustomDropdown'daki gibi
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const modalStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
 
   const formatDate = (date) => {
     if (!date) return "";
@@ -426,6 +495,8 @@ const CustomDatePicker = ({ label, value, setValue, required = false }) => {
       <Text className="text-lg font-semibold text-gray-800 mb-3">
         {label} {required && <Text className="text-red-500">*</Text>}
       </Text>
+
+      {/* Date picker trigger button */}
       <TouchableOpacity
         className="border border-gray-900 rounded-xl px-4 py-4 flex-row justify-between items-center"
         onPress={() => setIsOpen(true)}
@@ -439,17 +510,109 @@ const CustomDatePicker = ({ label, value, setValue, required = false }) => {
             {value ? formatDate(value) : "Tarih seçin"}
           </Text>
         </View>
-        <FontAwesomeIcon icon={faChevronDown} size={16} color="#6b7280" />
       </TouchableOpacity>
 
+      {/* Date Picker Modal - CustomDropdown yapısında */}
       {isOpen && (
-        <DateTimePicker
-          value={selectedDate}
-          mode="date"
-          display="default"
-          onChange={onChange}
-          minimumDate={new Date()}
-        />
+        <Modal
+          visible={isOpen}
+          transparent
+          animationType="none"
+          statusBarTranslucent
+          onRequestClose={handleClose}
+        >
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            {/* Backdrop - CustomDropdown'daki gibi */}
+            <Animated.View
+              style={[
+                {
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                },
+                backdropStyle
+              ]}
+            >
+              <TouchableWithoutFeedback onPress={handleBackdropPress}>
+                <View style={{ flex: 1 }} />
+              </TouchableWithoutFeedback>
+            </Animated.View>
+
+            {/* Modal Content - CustomDropdown'daki gibi */}
+            <Animated.View
+              style={[
+                {
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  backgroundColor: '#ffffff',
+                  elevation: 20,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: -3 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 10,
+                  borderTopLeftRadius: 16,
+                  borderTopRightRadius: 16,
+                  overflow: 'hidden',
+                },
+                modalStyle
+              ]}
+            >
+              {/* Header with handle - CustomDropdown'daki gibi */}
+              <View className="items-center py-4 px-6 bg-white">
+                <View className="w-10 h-1 bg-gray-300 rounded-sm mb-3" />
+                <View className="flex-row justify-between items-center w-full">
+                  <Text className="text-lg font-semibold text-gray-800">
+                    Tarih Seçin
+                  </Text>
+                  {Platform.OS === 'ios' && (
+                    <TouchableOpacity
+                      onPress={handleDonePress}
+                      className="px-4 py-2"
+                    >
+                      <Text
+                        style={{
+                          fontSize: 17,
+                          color: "#007AFF",
+                          fontWeight: "500",
+                        }}
+                      >
+                        Tamam
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+
+              {/* Date Picker Container - RegisterScreen'deki gibi */}
+              <View className="bg-white px-4">
+                <DateTimePicker
+                  value={selectedDate}
+                  mode="date"
+                  display="spinner"
+                  onChange={onChange}
+                  maximumDate={new Date(2030, 11, 31)} // İleride bir tarih
+                  minimumDate={new Date()} // Bugünden başlayarak
+                  locale="tr-TR"
+                  textColor="#000000"
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    width: "100%",
+                    height: 216,
+                  }}
+                />
+              </View>
+
+              {/* Safe area for bottom - RegisterScreen'deki gibi */}
+              <View style={{ height: 34, backgroundColor: "#FFFFFF" }} />
+            </Animated.View>
+          </GestureHandlerRootView>
+        </Modal>
       )}
     </View>
   );
@@ -916,7 +1079,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
           label="Aidat Sorumluluğu"
           value={
             maintenanceFeeResponsibilityOptions[
-              maintenanceFeeResponsibility - 1
+            maintenanceFeeResponsibility - 1
             ]
           }
           setValue={(value) => {
@@ -1661,8 +1824,8 @@ const ProfileExpectationScreen = ({ navigation }) => {
       Alert.alert(
         "Hata",
         error?.data?.message ||
-          error?.message ||
-          "Beklenti profili oluşturulurken bir hata oluştu"
+        error?.message ||
+        "Beklenti profili oluşturulurken bir hata oluştu"
       );
     }
   };
@@ -1788,7 +1951,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
       Alert.alert(
         "Hata",
         error?.data?.message ||
-          "Beklenti profili güncellenirken bir hata oluştu"
+        "Beklenti profili güncellenirken bir hata oluştu"
       );
     }
   };
