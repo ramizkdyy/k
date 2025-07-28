@@ -23,7 +23,7 @@ import {
   useCreateOfferMutation,
   useToggleFavoritePropertyMutation,
   useGetSimilarPostsByPostIdPaginatedQuery,
-  useGetLandlordTenantsPaginatedQuery, // YENİ: Kiracı eşleşmeleri için
+  useGetLandlordTenantsPaginatedQuery,
 } from "../redux/api/apiSlice";
 import { setCurrentPost } from "../redux/slices/postSlice";
 import {
@@ -48,7 +48,7 @@ import {
   faChevronRight,
   faLocationDot,
   faHeart,
-  faUser, // YENİ: Kiracı iconu için
+  faUser,
 } from "@fortawesome/pro-light-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import * as Haptics from "expo-haptics";
@@ -102,19 +102,19 @@ const getCurrencyText = (value) => {
   return mapping[value] || "₺";
 };
 
-// YENİ: Match Score gösterim fonksiyonu
+// Match Score gösterim fonksiyonu
 const getMatchScoreInfo = (score) => {
   if (score >= 80)
     return {
       level: "excellent",
-      color: "#86efac",
+      color: "#10b981",
       text: "Mükemmel",
       bgColor: "#dcfce7",
     };
   if (score >= 60)
     return {
       level: "good",
-      color: "#9cf0ba",
+      color: "#3b82f6",
       text: "Çok İyi",
       bgColor: "#dbeafe",
     };
@@ -133,7 +133,7 @@ const getMatchScoreInfo = (score) => {
   };
 };
 
-// YENİ: Match Score Bar Component
+// Match Score Bar Component
 const MatchScoreBar = ({ matchScore, showBar = false, size = "sm" }) => {
   const progressAnim = useRef(new Animated.Value(0)).current;
   const timeoutRef = useRef(null);
@@ -147,17 +147,17 @@ const MatchScoreBar = ({ matchScore, showBar = false, size = "sm" }) => {
       iconSize: 10,
       textSize: 11,
       containerPadding: 1,
-      barWidth: 140,
+      barWidth: 180,
     },
     sm: {
-      barHeight: 4,
+      barHeight: 5,
       iconSize: 12,
       textSize: 12,
       containerPadding: 2,
-      barWidth: 160,
+      barWidth: 180,
     },
     md: {
-      barHeight: 6,
+      barHeight: 4,
       iconSize: 14,
       textSize: 14,
       containerPadding: 3,
@@ -301,8 +301,9 @@ const PostDetailScreen = ({ route, navigation }) => {
   const post = data?.result.post;
   const images = Array.isArray(post?.postImages) ? post.postImages : [];
   const similarPosts = similarPostsData?.data || [];
+  const matchDetails = data?.result.matchDetails; // Match details from API
 
-  // YENİ: Get matching tenants for this property (only if current user is the landlord)
+  // Get matching tenants for this property (only if current user is the landlord)
   const isOwner = userRole === "EVSAHIBI" && post?.userId === currentUser?.id;
 
   const { data: matchingTenantsData, isLoading: isLoadingMatchingTenants } =
@@ -312,7 +313,7 @@ const PostDetailScreen = ({ route, navigation }) => {
         page: 1,
         pageSize: 6,
         minMatchScore: 0.3,
-        propertyId: postId, // Bu ilana özel kiracı eşleşmeleri
+        propertyId: postId,
       },
       {
         skip: !isOwner || !postId || !currentUser?.id,
@@ -327,7 +328,8 @@ const PostDetailScreen = ({ route, navigation }) => {
   const [toggleFavoriteProperty] = useToggleFavoritePropertyMutation();
 
   console.log("similar:", similarPostsData);
-  console.log("matching tenants:", matchingTenantsData); // YENİ: Debug için
+  console.log("matching tenants:", matchingTenantsData);
+  console.log("match details:", matchDetails); // Debug için match details
 
   useEffect(() => {
     if (data && data.isSuccess && data.result && data.result.post) {
@@ -460,22 +462,6 @@ const PostDetailScreen = ({ route, navigation }) => {
           className="w-full"
           resizeMode="cover"
         />
-
-        {/* Similarity Score Badge */}
-        {/* {item.similarityScore && (
-          <BlurView
-            intensity={60}
-            tint="dark"
-            className="absolute top-3 right-3 rounded-full overflow-hidden"
-          >
-            <View className="px-3 py-1.5 flex-row items-center gap-1">
-              <FontAwesome name="clone" size={14} color="white" />
-              <Text className="text-white text-xs font-semibold">
-                {Math.round(item.similarityScore)}% benzer
-              </Text>
-            </View>
-          </BlurView>
-        )} */}
       </View>
 
       {/* Property Details */}
@@ -508,7 +494,7 @@ const PostDetailScreen = ({ route, navigation }) => {
     </TouchableOpacity>
   );
 
-  // YENİ: Render matching tenant card
+  // Render matching tenant card
   const renderMatchingTenantCard = ({ item, index }) => (
     <TouchableOpacity
       style={{
@@ -626,7 +612,7 @@ const PostDetailScreen = ({ route, navigation }) => {
     });
   };
 
-  // YENİ: Handle see all matching tenants
+  // Handle see all matching tenants
   const handleSeeAllMatchingTenants = () => {
     navigation.navigate("AllMatchingUsers", {
       searchType: "bestTenants",
@@ -1077,6 +1063,29 @@ const PostDetailScreen = ({ route, navigation }) => {
                 {post.ilanBasligi || "İlan Başlığı"}
               </Text>
             </View>
+
+            {/* MATCH SCORE BAR - Sadece KIRACI için */}
+            {userRole === "KIRACI" &&
+              matchDetails &&
+              matchDetails.matchScore && (
+                <View className="mt-3 mb-1">
+                  <MatchScoreBar
+                    matchScore={Math.round(matchDetails.matchScore)}
+                    showBar={true}
+                    size="md"
+                  />
+                  {/* Match reason/message */}
+                  {matchDetails.message && (
+                    <Text
+                      style={{ fontSize: 12 }}
+                      className="text-gray-500 mt-2"
+                    >
+                      {matchDetails.message}
+                    </Text>
+                  )}
+                </View>
+              )}
+
             <View className="flex flex-col gap-4 mt-1">
               <View className="flex flex-row items-center">
                 <Text style={{ fontSize: 12 }} className="text-gray-500">
@@ -1403,7 +1412,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                   </Text>
                 </View>
 
-                {/* YENİ: Bulunduğu Kat */}
+                {/* Bulunduğu Kat */}
                 <View className="flex-row justify-between py-2 border-gray-200">
                   <Text
                     style={{ fontSize: 16 }}
@@ -1602,7 +1611,7 @@ const PostDetailScreen = ({ route, navigation }) => {
             </View>
           </View>
 
-          {/* YENİ: Matching Tenants Section - Sadece ilanın sahibi için */}
+          {/* Matching Tenants Section - Sadece ilanın sahibi için */}
           {isOwner && matchingTenants.length > 0 && (
             <View
               style={{

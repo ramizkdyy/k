@@ -18,7 +18,7 @@ import NearbyProperties from "../components/NearbyProperties";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import { faBarsFilter, faSearch } from "@fortawesome/pro-solid-svg-icons";
 import { StatusBar } from "expo-status-bar";
-import { faEdit } from "@fortawesome/pro-regular-svg-icons";
+import { faEdit, faMessage } from "@fortawesome/pro-regular-svg-icons";
 
 const HomeScreen = ({ navigation }) => {
   const userRole = useSelector(selectUserRole);
@@ -52,6 +52,10 @@ const HomeScreen = ({ navigation }) => {
     navigation.navigate("ProfileExpectation");
   };
 
+  const handleMessagesPress = () => {
+    navigation.navigate("Messages");
+  };
+
   return (
     <View className="flex-1 bg-white">
       <SafeAreaView style={{ flex: 0, backgroundColor: "#fff" }} />
@@ -78,31 +82,20 @@ const HomeScreen = ({ navigation }) => {
           <View className="flex-row flex- w-full justify-between items-center">
             <View className="flex flex-col gap-1">
               <Text
-                style={{ fontSize: 20 }}
+                style={{ fontSize: 30 }}
                 className="text-gray-900 font-semibold"
               >
-                Merhaba, {currentUser?.name || "Kullanıcı"}
-              </Text>
-              <Text
-                style={{ fontSize: 12 }}
-                className="text-gray-500 opacity-80"
-              >
-                {userRole === "EVSAHIBI" ? "Ev Sahibi" : "Kiracı"} hesabı
+                kiraX
               </Text>
             </View>
             <TouchableOpacity
-              style={{ boxShadow: "0px 0px 12px #00000020" }}
-              onPress={() => {
-                navigation.navigate(
-                  userRole === "EVSAHIBI" ? "LandlordProfile" : "TenantProfile"
-                );
-              }}
-              className="w-12 h-12 rounded-full bg-white justify-center items-center"
+              className="rounded-full justify-center items-center flex flex-col relative"
+              onPress={handleMessagesPress}
             >
-              {/* Profile avatar or icon */}
-              <Text className="text-gray-900 font-bold">
-                {currentUser?.name?.charAt(0) || "P"}
-              </Text>
+              <FontAwesomeIcon icon={faMessage} size={20} />
+              <View className="bg-red-500 rounded-full w-7 h-6 absolute -top-3 -right-3 flex justify-center items-center">
+                <Text className="text-white font-semibold">12</Text>
+              </View>
             </TouchableOpacity>
           </View>
 
@@ -129,108 +122,6 @@ const HomeScreen = ({ navigation }) => {
               />
             </View>
           </View>
-
-          {/* Categories Section for Tenants */}
-          {userRole === "KIRACI" && (
-            <View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <TouchableOpacity
-                  onPress={() => setSelectedCategory("house")}
-                  className={`mr-4 px-5 py-2 rounded-full ${
-                    selectedCategory === "house"
-                      ? "bg-[#A0E79E]"
-                      : "bg-gray-100"
-                  }`}
-                >
-                  <Text
-                    className={`text-sm font-medium ${
-                      selectedCategory === "house"
-                        ? "text-white"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    Ev
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => setSelectedCategory("apartment")}
-                  className={`mr-4 px-5 py-2 rounded-full ${
-                    selectedCategory === "apartment"
-                      ? "bg-[#A0E79E]"
-                      : "bg-gray-100"
-                  }`}
-                >
-                  <Text
-                    className={`text-sm font-medium ${
-                      selectedCategory === "apartment"
-                        ? "text-white"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    Apartman
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => setSelectedCategory("hotel")}
-                  className={`mr-4 px-5 py-2 rounded-full ${
-                    selectedCategory === "hotel"
-                      ? "bg-[#A0E79E]"
-                      : "bg-gray-100"
-                  }`}
-                >
-                  <Text
-                    className={`text-sm font-medium ${
-                      selectedCategory === "hotel"
-                        ? "text-white"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    Otel
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => setSelectedCategory("villa")}
-                  className={`mr-4 px-5 py-2 rounded-full ${
-                    selectedCategory === "villa"
-                      ? "bg-[#A0E79E]"
-                      : "bg-gray-100"
-                  }`}
-                >
-                  <Text
-                    className={`text-sm font-medium ${
-                      selectedCategory === "villa"
-                        ? "text-white"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    Villa
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => setSelectedCategory("beach")}
-                  className={`px-5 py-2 rounded-full ${
-                    selectedCategory === "beach"
-                      ? "bg-[#A0E79E]"
-                      : "bg-gray-100"
-                  }`}
-                >
-                  <Text
-                    className={`text-sm font-medium ${
-                      selectedCategory === "beach"
-                        ? "text-white"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    Sahil
-                  </Text>
-                </TouchableOpacity>
-              </ScrollView>
-            </View>
-          )}
         </View>
 
         {/* Main Content */}

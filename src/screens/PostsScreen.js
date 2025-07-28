@@ -673,24 +673,27 @@ const PostsScreen = ({ navigation }) => {
     });
 
     return (
-      <View className="flex-1 justify-center items-center p-5">
-        <MaterialIcons name="home" size={60} color="#CBD5E0" />
-        <Text className="text-lg font-semibold text-gray-700 mt-4 mb-2">
+      <View
+        style={{ marginBottom: 120 }}
+        className="flex-1 justify-center items-center "
+      >
+        <FontAwesomeIcon icon={faHomeAlt} size={60} />
+        <Text className="text-lg font-semibold text-gray-500 mt-2 mb-1">
           {userRole === "EVSAHIBI"
             ? "Henüz ilan oluşturmadınız"
             : "İlan bulunamadı"}
         </Text>
-        <Text className="text-base text-gray-500 text-center mb-6">
+        <Text className="text-gray-400 text-sm text-center px-8">
           {userRole === "EVSAHIBI"
             ? "Mülkünüzü kiralamak için yeni ilan oluşturun."
             : "Arama kriterlerinize uygun ilan bulunamadı. Filtreleri değiştirerek tekrar deneyin."}
         </Text>
         {userRole === "EVSAHIBI" && (
           <TouchableOpacity
-            className="bg-green-500 px-6 py-3 rounded-lg"
+            className="bg-gray-900 px-6 py-2 rounded-full"
             onPress={handleCreatePostNavigation}
           >
-            <Text className="text-white font-semibold">Yeni İlan Oluştur</Text>
+            <Text className="text-white font-semibold">Yeni ilan oluştur</Text>
           </TouchableOpacity>
         )}
       </View>

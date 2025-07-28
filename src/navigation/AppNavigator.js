@@ -47,6 +47,8 @@ import PostsScreen from "../screens/PostsScreen";
 import CreatePostScreen from "../screens/CreatePostScreen";
 import ProfileExpectationScreen from "../screens/ProfileExpectationScreen";
 import OffersScreen from "../screens/OffersScreen";
+import MessagesScreen from "../screens/MessagesScreen";
+import ChatDetailScreen from "../screens/ChatDetailScreen";
 
 // Import icons
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
@@ -406,11 +408,76 @@ const OnboardingNavigator = () => {
 // Landlord Stack Navigators for each tab
 const LandlordHomeStack = () => {
   return (
-    <LandlordStack.Navigator>
+    <LandlordStack.Navigator
+      screenOptions={{
+        cardStyleInterpolator: ({ current, next, layouts }) => {
+          return {
+            cardStyle: {
+              transform: [
+                {
+                  translateX: current.progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [layouts.screen.width, 0],
+                  }),
+                },
+              ],
+            },
+            overlayStyle: {
+              opacity: current.progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 0.5],
+              }),
+            },
+          };
+        },
+      }}
+    >
       <LandlordStack.Screen
         name="LandlordHomeScreen"
         component={HomeScreen}
         options={{ headerShown: false }}
+      />
+      <LandlordStack.Screen
+        name="Messages"
+        component={MessagesScreen}
+        options={{
+          headerShown: false,
+          cardStyleInterpolator: ({ current, layouts }) => {
+            return {
+              cardStyle: {
+                transform: [
+                  {
+                    translateX: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [layouts.screen.width, 0],
+                    }),
+                  },
+                ],
+              },
+            };
+          },
+        }}
+      />
+      <LandlordStack.Screen
+        name="ChatDetail"
+        component={ChatDetailScreen}
+        options={{
+          headerShown: false,
+          cardStyleInterpolator: ({ current, layouts }) => {
+            return {
+              cardStyle: {
+                transform: [
+                  {
+                    translateX: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [layouts.screen.width, 0],
+                    }),
+                  },
+                ],
+              },
+            };
+          },
+        }}
       />
       <LandlordStack.Screen
         name="PostDetail"
@@ -628,11 +695,76 @@ const LandlordProfileStack = () => {
 
 const TenantHomeStack = () => {
   return (
-    <TenantStack.Navigator>
+    <TenantStack.Navigator
+      screenOptions={{
+        cardStyleInterpolator: ({ current, next, layouts }) => {
+          return {
+            cardStyle: {
+              transform: [
+                {
+                  translateX: current.progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [layouts.screen.width, 0],
+                  }),
+                },
+              ],
+            },
+            overlayStyle: {
+              opacity: current.progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 0.5],
+              }),
+            },
+          };
+        },
+      }}
+    >
       <TenantStack.Screen
         name="TenantHomeScreen"
         component={HomeScreen}
         options={{ headerShown: false }}
+      />
+      <TenantStack.Screen
+        name="Messages"
+        component={MessagesScreen}
+        options={{
+          headerShown: false,
+          cardStyleInterpolator: ({ current, layouts }) => {
+            return {
+              cardStyle: {
+                transform: [
+                  {
+                    translateX: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [layouts.screen.width, 0],
+                    }),
+                  },
+                ],
+              },
+            };
+          },
+        }}
+      />
+      <TenantStack.Screen
+        name="ChatDetail"
+        component={ChatDetailScreen}
+        options={{
+          headerShown: false,
+          cardStyleInterpolator: ({ current, layouts }) => {
+            return {
+              cardStyle: {
+                transform: [
+                  {
+                    translateX: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [layouts.screen.width, 0],
+                    }),
+                  },
+                ],
+              },
+            };
+          },
+        }}
       />
       <TenantStack.Screen
         name="PostDetail"
@@ -673,7 +805,7 @@ const TenantPropertiesStack = () => {
       <TenantStack.Screen
         name="FindPropertiesList"
         component={PostsScreen}
-        options={{ title: "İlanlar" }}
+        options={{ title: "İlanlar", headerShown: false }}
       />
       <TenantStack.Screen
         name="PostDetail"
@@ -697,7 +829,7 @@ const TenantOffersStack = () => {
       <TenantStack.Screen
         name="SentOffersList"
         component={OffersScreen}
-        options={{ title: "Gönderilen Teklifler" }}
+        options={{ title: "Gönderilen Teklifler", headerShown: false }}
       />
       <TenantStack.Screen
         name="PostDetail"
@@ -717,7 +849,7 @@ const TenantProfileStack = () => {
         name="Profil"
         component={ProfileScreen}
         options={{
-          headerShown: true,
+          headerShown: false,
           headerStyle: {
             display: "flex",
           },
@@ -835,32 +967,70 @@ const LandlordTabNavigator = () => {
           options={{
             title: "Profil",
             tabBarLabel: "",
-            tabBarIcon: ({ focused }) => (
-              <View style={{ width: 28, height: 28 }}>
-                <Image
-                  source={{ uri: userProfile.profileImageUrl }}
+            tabBarIcon: ({ focused }) => {
+              return userProfile?.profileImageUrl !==
+                "default_profile_image_url" ? (
+                <View style={{ width: 28, height: 28 }}>
+                  <Image
+                    source={{ uri: userProfile.profileImageUrl }}
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 14,
+                    }}
+                  />
+                  {focused && (
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: -2,
+                        left: -2,
+                        right: -2,
+                        bottom: -2,
+                        borderRadius: 16, // 14 + 2
+                        borderWidth: 2,
+                        borderColor: "#000",
+                      }}
+                    />
+                  )}
+                </View>
+              ) : (
+                <View
                   style={{
                     width: 28,
                     height: 28,
-                    borderRadius: 14,
+                    borderRadius: 100,
+                    backgroundColor: "#f3f4f6", // bg-gray-100
+                    justifyContent: "center",
+                    alignItems: "center",
                   }}
-                />
-                {focused && (
-                  <View
+                >
+                  <Text
                     style={{
-                      position: "absolute",
-                      top: -2,
-                      left: -2,
-                      right: -2,
-                      bottom: -2,
-                      borderRadius: 16, // 14 + 2
-                      borderWidth: 2,
-                      borderColor: "#000",
+                      fontSize: 14,
+                      color: "#111827", // text-gray-900
+                      fontWeight: "bold",
                     }}
-                  />
-                )}
-              </View>
-            ),
+                  >
+                    {userProfile.user.name.charAt(0) || "P"}
+                  </Text>
+                  {focused && (
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: -2,
+                        left: -2,
+                        right: -2,
+                        bottom: -2,
+                        borderRadius: 16, // 14 + 2
+                        borderWidth: 2,
+                        borderColor: "#000",
+                      }}
+                    />
+                  )}
+                </View>
+              );
+            },
           }}
         />
       </Tab.Navigator>
@@ -869,33 +1039,53 @@ const LandlordTabNavigator = () => {
 };
 
 // Tenant tab navigator
+// Tenant tab navigator
 const TenantTabNavigator = () => {
+  const userProfile = useSelector(selectUserProfile);
+
   return (
-    <View style={{ flex: 1, backgroundColor: "#A0E79E" }}>
+    <View style={{ flex: 1 }}>
       <Tab.Navigator
-        screenOptions={{
-          tabBarActiveTintColor: "#45CC42",
-          tabBarInactiveTintColor: "#666",
-          tabBarStyle: {
-            backgroundColor: "#fff",
-            borderTopColor: "#e0e0e0",
-            paddingTop: 5,
-            paddingBottom: 5,
-          },
+        screenOptions={({ route, navigation }) => ({
+          headerBackgroundContainerStyle: "",
+          tabBarActiveTintColor: "#000",
+          tabBarInactiveTintColor: "#999999",
+          tabBarStyle: ((route) => {
+            const routeName = getFocusedRouteNameFromRoute(route) ?? "";
+
+            // CreatePost ve EditPost ekranlarında tab bar'ı gizle (eğer tenant'ta da varsa)
+            if (routeName === "CreatePost" || routeName === "EditPost") {
+              return { display: "none" };
+            }
+
+            // Normal tab bar style - landlord ile aynı
+            return {
+              backgroundColor: "rgba(255, 255, 255, 0.05)",
+              borderTopColor: "rgba(224, 224, 224, 0.2)",
+              paddingTop: 5,
+              paddingBottom: 5,
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              elevation: 8,
+            };
+          })(route),
+          tabBarBackground: () => <View className="bg-white flex-1"></View>,
           headerShown: false,
-        }}
+        })}
       >
         <Tab.Screen
           name="TenantHome"
           component={TenantHomeStack}
           options={{
             title: "Ana Sayfa",
-            tabBarLabel: "Ana Sayfa",
+            tabBarLabel: "",
             tabBarIcon: ({ focused }) => (
               <FontAwesomeIcon
-                icon={focused ? faHouseSolid : faHouseRegular}
+                icon={focused ? faSearchSolid : faSearchRegular}
                 size={24}
-                color="#A0E79E"
+                color={focused ? "#000" : "#999999"}
               />
             ),
           }}
@@ -905,12 +1095,12 @@ const TenantTabNavigator = () => {
           component={TenantPropertiesStack}
           options={{
             title: "İlanlar",
-            tabBarLabel: "İlanlar",
+            tabBarLabel: "",
             tabBarIcon: ({ focused }) => (
               <FontAwesomeIcon
-                icon={focused ? faSearchSolid : faSearchRegular}
+                icon={focused ? faHouseSolid : faHouseRegular}
                 size={24}
-                color="#A0E79E"
+                color={focused ? "#000" : "#999999"}
               />
             ),
           }}
@@ -920,12 +1110,12 @@ const TenantTabNavigator = () => {
           component={TenantOffersStack}
           options={{
             title: "Tekliflerim",
-            tabBarLabel: "Tekliflerim",
+            tabBarLabel: "",
             tabBarIcon: ({ focused }) => (
               <FontAwesomeIcon
                 icon={focused ? faEnvelopeSolid : faEnvelopeRegular}
                 size={24}
-                color="#A0E79E"
+                color={focused ? "#000" : "#999999"}
               />
             ),
           }}
@@ -935,14 +1125,71 @@ const TenantTabNavigator = () => {
           component={TenantProfileStack}
           options={{
             title: "Profil",
-            tabBarLabel: "Profil",
-            tabBarIcon: ({ focused }) => (
-              <FontAwesomeIcon
-                icon={focused ? faUserSolid : faUserRegular}
-                size={24}
-                color="#A0E79E"
-              />
-            ),
+            tabBarLabel: "",
+            tabBarIcon: ({ focused }) => {
+              return userProfile?.profileImageUrl !==
+                "default_profile_image_url" ? (
+                <View style={{ width: 28, height: 28 }}>
+                  <Image
+                    source={{ uri: userProfile.profileImageUrl }}
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 14,
+                    }}
+                  />
+                  {focused && (
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: -2,
+                        left: -2,
+                        right: -2,
+                        bottom: -2,
+                        borderRadius: 16, // 14 + 2
+                        borderWidth: 2,
+                        borderColor: "#000",
+                      }}
+                    />
+                  )}
+                </View>
+              ) : (
+                <View
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 100,
+                    backgroundColor: "#f3f4f6", // bg-gray-100
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      color: "#111827", // text-gray-900
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {userProfile?.user?.name?.charAt(0) || "P"}
+                  </Text>
+                  {focused && (
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: -2,
+                        left: -2,
+                        right: -2,
+                        bottom: -2,
+                        borderRadius: 16, // 14 + 2
+                        borderWidth: 2,
+                        borderColor: "#000",
+                      }}
+                    />
+                  )}
+                </View>
+              );
+            },
           }}
         />
       </Tab.Navigator>
@@ -1025,7 +1272,7 @@ const TenantDrawerNavigator = () => {
           },
           drawerActiveTintColor: "white",
           drawerInactiveTintColor: "rgba(255,255,255,0.8)",
-          swipeEnabled: true,
+          swipeEnabled: false,
           swipeEdgeWidth: screenWidth,
           swipeMinDistance: 10,
           drawerType: "slide",
@@ -1065,10 +1312,10 @@ const ProfileLoader = ({ children }) => {
     isLoading,
     error,
   } = userRole === "EVSAHIBI"
-      ? useGetLandlordProfileQuery(currentUser?.id, {
+    ? useGetLandlordProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       })
-      : useGetTenantProfileQuery(currentUser?.id, {
+    : useGetTenantProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       });
 
@@ -1097,10 +1344,6 @@ const AppNavigator = () => {
 
   console.log("Navigation State:", {
     currentUser,
-    isAuthenticated,
-    userProfile,
-    userRole,
-    hasUserProfile,
   });
 
   // More reliable profile check

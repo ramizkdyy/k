@@ -288,9 +288,7 @@ const LoginScreen = ({ navigation }) => {
 
               {/* Hata Mesajı */}
               {errorlogin ? (
-                <Text className="text-red-500 text-center my-2">
-                  {errorlogin}
-                </Text>
+                <Text className="text-red-500 text-center">{errorlogin}</Text>
               ) : null}
 
               <View className="flex flex-row items-center w-full my-2">

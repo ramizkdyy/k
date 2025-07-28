@@ -24,7 +24,7 @@ import {
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { BlurView } from "expo-blur";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faChevronLeft } from "@fortawesome/pro-regular-svg-icons";
+import { faChevronLeft, faEnvelope } from "@fortawesome/pro-regular-svg-icons";
 import { faStar } from "@fortawesome/pro-solid-svg-icons";
 
 const { width } = Dimensions.get("window");
@@ -887,14 +887,23 @@ const OffersScreen = () => {
   };
 
   const renderEmptyState = () => (
-    <View className="flex-1 justify-center items-center py-20">
-      <Icon name="inbox" size={80} color="#ddd" />
-      <Text className="text-gray-500 text-lg mt-4 text-center">
+    <View
+      style={{
+        height: Dimensions.get("window").height / 2,
+        justifyContent: "center",
+        alignItems: "center",
+        paddingHorizontal: 16,
+        marginTop: 20,
+      }}
+      className="bg-white" // varsa zemin rengi vs.
+    >
+      <FontAwesomeIcon icon={faEnvelope} size={60} />
+      <Text className="text-gray-500 text-lg font-semibold mt-2 text-center">
         {selectedTab === "pending" && "Bekleyen teklif bulunmuyor"}
         {selectedTab === "accepted" && "Kabul edilen teklif bulunmuyor"}
         {selectedTab === "rejected" && "Reddedilen teklif bulunmuyor"}
       </Text>
-      <Text className="text-gray-400 text-sm mt-2 text-center px-8">
+      <Text className="text-gray-400 text-sm mt-1 text-center px-8">
         {isTenant
           ? "Henüz hiç teklif göndermediniz. İlanları inceleyin ve teklif verin."
           : "Henüz size hiç teklif gelmedi. İlanlarınızı kontrol edin."}

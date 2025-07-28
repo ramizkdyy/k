@@ -1037,25 +1037,30 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
             nearbyProperties.length === 0 &&
             (userRole !== "KIRACI" || bestLandlordMatches.length === 0) &&
             (userRole !== "EVSAHIBI" || similarPosts.length === 0) && (
-              <View className="rounded-xl p-6">
-                <View className="items-center">
-                  <FontAwesomeIcon
-                    size={50}
-                    icon={userRole === "KIRACI" ? faList : faUser}
-                  />
-                  <Text
-                    style={{ fontSize: 16 }}
-                    className="text-gray-900 text-center font-medium mb-1 mt-2"
-                  >
-                    {userRole === "KIRACI"
-                      ? "Yakınınızda henüz ilan bulunmuyor"
-                      : "Henüz size uygun kiracı bulunmuyor"}
-                  </Text>
-                  <Text className="text-gray-400 text-center text-sm">
-                    {userRole === "KIRACI"
-                      ? "Arama kriterlerinizi genişletmeyi deneyin"
-                      : "Profilinizi güncelleyerek daha fazla eşleşme elde edebilirsiniz"}
-                  </Text>
+              <View
+                style={{ marginTop: 180 }}
+                className="flex-1 justify-center items-center"
+              >
+                <View className="rounded-xl p-6 bg-white">
+                  <View className="items-center">
+                    <FontAwesomeIcon
+                      size={60}
+                      icon={userRole === "KIRACI" ? faList : faUser}
+                    />
+                    <Text
+                      style={{ fontSize: 16 }}
+                      className="text-gray-500 text-center font-semibold mb-1 mt-2"
+                    >
+                      {userRole === "KIRACI"
+                        ? "Yakınınızda henüz ilan bulunmuyor"
+                        : "Henüz size uygun kiracı bulunmuyor"}
+                    </Text>
+                    <Text className="text-gray-400 text-center text-sm">
+                      {userRole === "KIRACI"
+                        ? "Arama kriterlerinizi genişletmeyi deneyin"
+                        : "Profilinizi güncelleyerek daha fazla eşleşme elde edebilirsiniz"}
+                    </Text>
+                  </View>
                 </View>
               </View>
             )}
