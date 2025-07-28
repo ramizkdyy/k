@@ -158,7 +158,6 @@ const PostsScreen = ({ navigation }) => {
     }
   }, [landlordListingsData, userRole]);
 
-  // Paginated posts için veri yönetimi
   useEffect(() => {
     if (userRole === "KIRACI" && paginatedPostsResponse) {
       Logger.info(COMPONENT_NAME, "Paginated posts loaded", {
@@ -176,11 +175,20 @@ const PostsScreen = ({ navigation }) => {
       if (currentPage === 1) {
         setAllPostsData(paginatedPostsResponse?.data || []);
       } else {
-        // Sonraki sayfalar için veriyi mevcut veriye ekle
-        setAllPostsData((prevData) => [
-          ...prevData,
-          ...(paginatedPostsResponse?.data || []),
-        ]);
+        // Sonraki sayfalar için - DUPLICATE KONTROLÜ EKLENDİ
+        setAllPostsData((prevData) => {
+          const newData = paginatedPostsResponse?.data || [];
+          const existingPostIds = new Set(prevData.map(item => item.postId));
+
+          // Sadece daha önce eklenmemiş postları ekle
+          const uniqueNewData = newData.filter(item =>
+            item && item.postId && !existingPostIds.has(item.postId)
+          );
+
+          console.log(`Adding ${uniqueNewData.length} new unique posts out of ${newData.length} total`);
+
+          return [...prevData, ...uniqueNewData];
+        });
       }
 
       setIsLoadingMore(false);
@@ -365,7 +373,6 @@ const PostsScreen = ({ navigation }) => {
     navigation.navigate("CreatePost");
   };
 
-  // Get filtered posts function
   const getFilteredPosts = () => {
     let filteredPosts = [];
 
@@ -376,6 +383,19 @@ const PostsScreen = ({ navigation }) => {
       // For tenants, use accumulated posts data
       filteredPosts = allPostsData || [];
     }
+
+    // DUPLICATE POST KONTROLÜ EKLENDİ
+    const uniquePosts = [];
+    const seenPostIds = new Set();
+
+    filteredPosts.forEach(post => {
+      if (post && post.postId && !seenPostIds.has(post.postId)) {
+        seenPostIds.add(post.postId);
+        uniquePosts.push(post);
+      }
+    });
+
+    filteredPosts = uniquePosts;
 
     // Search query filter
     if (searchQuery.trim()) {
@@ -466,6 +486,8 @@ const PostsScreen = ({ navigation }) => {
   };
 
   // Render post item - Optimized for performance
+  // renderPostItem fonksiyonu - TAM HALİ (Title kısmı düzeltildi)
+
   const renderPostItem = useCallback(
     ({ item, index }) => {
       // Null check for item
@@ -526,8 +548,8 @@ const PostsScreen = ({ navigation }) => {
                   {item.status === 0
                     ? "Aktif"
                     : item.status === 1
-                    ? "Kiralandı"
-                    : "Kapalı"}
+                      ? "Kiralandı"
+                      : "Kapalı"}
                 </Text>
               </View>
             </BlurView>
@@ -605,33 +627,48 @@ const PostsScreen = ({ navigation }) => {
           </View>
 
           <View className="px-2 py-3">
-            {/* Title and Price */}
-            <View className="flex-col items-start mb-2">
+            {/* Title and Price - DÜZELTİLDİ */}
+            <View className="mb-2">
+              {/* Title - Sadeleştirildi */}
               <Text
-                className="text-lg font-bold text-gray-900 flex-1 mr-3"
+                style={{
+                  fontSize: 18,
+                  fontWeight: 'bold',
+                  color: '#111827',
+                  lineHeight: 24
+                }}
                 numberOfLines={2}
+                ellipsizeMode="tail"
               >
                 {item.ilanBasligi || "İlan başlığı yok"}
               </Text>
-              <View className="flex flex-row items-center mb-3">
-                <Text style={{ fontSize: 12 }} className="text-gray-500">
+
+              {/* Location */}
+              <View className="mt-2 mb-3">
+                <Text style={{ fontSize: 12, color: '#6B7280' }}>
                   {[item.il, item.ilce, item.mahalle]
                     .filter(Boolean)
                     .join(", ") || "Konum belirtilmemiş"}
                 </Text>
               </View>
-              <View className="py-1 rounded-lg mb-2">
-                <Text style={{ fontSize: 14 }} className="text-gray-500">
+
+              {/* Price - Sadeleştirildi */}
+              <View className="mb-2">
+                <Text style={{ fontSize: 14, color: '#6B7280' }}>
                   <Text
-                    className="underline text-gray-900 font-medium"
-                    style={{ fontSize: 18 }}
+                    style={{
+                      fontSize: 18,
+                      fontWeight: '600',
+                      color: '#111827',
+                      textDecorationLine: 'underline'
+                    }}
                   >
                     {item.kiraFiyati
                       ? item.kiraFiyati.toLocaleString("tr-TR")
                       : "0"}{" "}
-                    <Text>{item.paraBirimi || "₺"}</Text>
-                  </Text>{" "}
-                  /ay
+                    {item.paraBirimi || "₺"}
+                  </Text>
+                  {" /ay"}
                 </Text>
               </View>
             </View>
@@ -639,7 +676,12 @@ const PostsScreen = ({ navigation }) => {
             {/* Description */}
             <Text
               numberOfLines={2}
-              className="text-gray-600 text-sm mb-4 leading-5"
+              ellipsizeMode="tail"
+              style={{
+                fontSize: 14,
+                color: '#6B7280',
+                lineHeight: 20
+              }}
             >
               {item.postDescription || "Açıklama yok"}
             </Text>
@@ -729,12 +771,11 @@ const PostsScreen = ({ navigation }) => {
 
         <TouchableOpacity
           style={{ boxShadow: "0px 0px 12px #00000014" }}
-          className={`p-3 rounded-full ${
-            isFilterVisible ||
+          className={`p-3 rounded-full ${isFilterVisible ||
             Object.values(filters).some((val) => val !== null)
-              ? "bg-gray-700"
-              : "bg-white"
-          }`}
+            ? "bg-gray-700"
+            : "bg-white"
+            }`}
           onPress={() => {
             Logger.event("toggle_filter_panel", { show: !isFilterVisible });
             setIsFilterVisible(!isFilterVisible);
@@ -745,7 +786,7 @@ const PostsScreen = ({ navigation }) => {
             size={18}
             color={
               isFilterVisible ||
-              Object.values(filters).some((val) => val !== null)
+                Object.values(filters).some((val) => val !== null)
                 ? "lightgray"
                 : "#000"
             }
@@ -787,8 +828,8 @@ const PostsScreen = ({ navigation }) => {
               {filters.status === 0
                 ? "Aktif"
                 : filters.status === 1
-                ? "Kiralandı"
-                : "Kapalı"}
+                  ? "Kiralandı"
+                  : "Kapalı"}
             </Text>
             <TouchableOpacity
               onPress={() => {
@@ -816,10 +857,9 @@ const PostsScreen = ({ navigation }) => {
     userRole === "EVSAHIBI" ? isLoadingLandlordListings : isLoadingAllPosts;
   const filteredPosts = getFilteredPosts();
 
-  // Unique key extractor to prevent duplicate keys
   const keyExtractor = useCallback((item, index) => {
     if (item && item.postId) {
-      return `post_${item.postId}`;
+      return `post_${item.postId}_${index}`; // ← INDEX EKLENDİ
     }
     return `post_index_${index}`;
   }, []);
@@ -903,9 +943,8 @@ const PostsScreen = ({ navigation }) => {
             // Prevent text disappearing issues
             getItemLayout={undefined} // getItemLayout kaldırıldı
             // Improve stability
-            extraData={`${searchQuery}_${JSON.stringify(filters)}_${
-              allPostsData.length
-            }`}
+            extraData={`${searchQuery}_${JSON.stringify(filters)}_${allPostsData.length
+              }`}
           />
         )}
       </View>
