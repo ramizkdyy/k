@@ -1074,15 +1074,6 @@ const PostDetailScreen = ({ route, navigation }) => {
                     showBar={true}
                     size="md"
                   />
-                  {/* Match reason/message */}
-                  {matchDetails.message && (
-                    <Text
-                      style={{ fontSize: 12 }}
-                      className="text-gray-500 mt-2"
-                    >
-                      {matchDetails.message}
-                    </Text>
-                  )}
                 </View>
               )}
 

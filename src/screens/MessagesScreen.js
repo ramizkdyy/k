@@ -13,10 +13,10 @@ import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
   faArrowLeft,
   faSearch,
-  faEdit,
   faCircle,
 } from "@fortawesome/pro-solid-svg-icons";
 import { StatusBar } from "expo-status-bar";
+import { faEdit } from "@fortawesome/pro-regular-svg-icons";
 
 const MessagesScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -138,21 +138,23 @@ const MessagesScreen = ({ navigation }) => {
           source={{ uri: item.avatar }}
           className="w-14 h-14 rounded-full"
         />
-        {item.isOnline && (
-          <View className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
-        )}
       </View>
 
       {/* Message content */}
       <View className="flex-1 mr-2">
         <View className="flex-row justify-between items-center">
-          <Text className="text-base font-semibold text-gray-900 flex-1">
+          <Text
+            style={{
+              fontWeight: item.unreadCount > 0 ? 700 : 500,
+            }}
+            className="text-base text-gray-900 flex-1"
+          >
             {item.name}
           </Text>
           <Text
             style={{
               fontSize: 13,
-              color: item.unreadCount > 0 ? "#54ff65" : "#8c8c8c",
+              color: item.unreadCount > 0 ? "black" : "#8c8c8c",
             }}
             className="ml-2"
           >
@@ -162,10 +164,9 @@ const MessagesScreen = ({ navigation }) => {
 
         <View className="flex-row justify-between items-center">
           <Text
-            className={`text-sm flex-1 ${
-              item.unreadCount > 0
-                ? "text-gray-900 font-medium"
-                : "text-gray-600"
+            style={{ fontSize: 14 }}
+            className={` flex-1 ${
+              item.unreadCount > 0 ? "text-gray-900 font-bold" : "text-gray-600"
             }`}
             numberOfLines={1}
           >
@@ -173,7 +174,7 @@ const MessagesScreen = ({ navigation }) => {
           </Text>
 
           {item.unreadCount > 0 && (
-            <View className="bg-green-300 rounded-full w-6 h-6 justify-center items-center ml-2">
+            <View className="bg-gray-900 rounded-full w-6 h-6 justify-center items-center ml-2">
               <Text
                 style={{ fontSize: 13 }}
                 className="text-white font-semibold"
@@ -210,10 +211,13 @@ const MessagesScreen = ({ navigation }) => {
         </View>
 
         {/* Search Bar */}
-        <View className="bg-gray-100 rounded-full px-4 py-2 flex-row items-center">
-          <FontAwesomeIcon icon={faSearch} size={16} color="#666" />
+        <View
+          style={{ boxShadow: "0px 0px 12px #00000014" }}
+          className=" rounded-full px-4 py-3 flex-row items-center"
+        >
+          <FontAwesomeIcon icon={faSearch} size={16} color="black" />
           <TextInput
-            className="flex-1 ml-2 text-base"
+            className="flex-1 ml-3 text-base"
             placeholder="Mesajlarda ara..."
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -229,9 +233,6 @@ const MessagesScreen = ({ navigation }) => {
         keyExtractor={(item) => item.id}
         className="flex-1"
         showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => (
-          <View className="h-px bg-gray-100 ml-16" />
-        )}
         ListEmptyComponent={() => (
           <View className="flex-1 justify-center items-center py-20">
             <FontAwesomeIcon icon={faSearch} size={40} color="#ccc" />

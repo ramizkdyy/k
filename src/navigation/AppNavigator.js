@@ -781,6 +781,7 @@ const TenantHomeStack = () => {
           headerStyle: {
             backgroundColor: "#4A90E2",
           },
+          headerShown: false,
           headerTintColor: "#fff",
           headerTitleStyle: {
             fontWeight: "bold",
@@ -1054,7 +1055,11 @@ const TenantTabNavigator = () => {
             const routeName = getFocusedRouteNameFromRoute(route) ?? "";
 
             // CreatePost ve EditPost ekranlarında tab bar'ı gizle (eğer tenant'ta da varsa)
-            if (routeName === "CreatePost" || routeName === "EditPost") {
+            if (
+              routeName === "PostDetail" ||
+              routeName === "CreatePost" ||
+              routeName === "EditPost"
+            ) {
               return { display: "none" };
             }
 
