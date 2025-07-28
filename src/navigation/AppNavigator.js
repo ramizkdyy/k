@@ -788,6 +788,34 @@ const TenantHomeStack = () => {
           },
         }}
       />
+      {/* ✅ AllMatchingUsers - Tenant için eklendi */}
+      <TenantStack.Screen
+        name="AllMatchingUsers"
+        component={AllMatchingUsers}
+        options={{
+          title: "Size Uygun Ev Sahipleri",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+          headerTintColor: "#000",
+          headerShown: false,
+          headerTitleStyle: {
+            fontWeight: 600,
+          },
+          headerBackTitle: "",
+          headerShadowVisible: false,
+          tabBarStyle: { display: "none" }, // BottomTabs'ı gizle
+        }}
+      />
+      {/* ✅ AllSimilarProperties - Eğer tenant tarafında da kullanılacaksa */}
+      <TenantStack.Screen
+        name="AllSimilarProperties"
+        component={AllSimilarPropertiesScreen}
+        options={{
+          title: "Benzer İlanlar",
+          headerShown: false,
+        }}
+      />
       <TenantStack.Screen
         name="ProfileExpectation"
         component={ProfileExpectationScreen}

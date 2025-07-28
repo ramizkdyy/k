@@ -733,10 +733,8 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
       navigation.navigate("AllSimilarProperties", {
         userLocation: userLocation,
         similarPosts: similarPosts,
-        searchType: "general", // ✅ Açık olarak belirt
-        landlordUserId: currentUser?.id, // ✅ Mevcut kullanıcının ID'si
-        // postId genellikle belirli bir post'a benzer ilanlar için kullanılır
-        // Bu durumda genel benzer ilanlar olduğu için gerek yok
+        searchType: "general", //
+        landlordUserId: currentUser?.id,
       });
     } else if (type === "bestTenants") {
       // Size uygun kiracılar için AllMatchingUsers (landlord için)

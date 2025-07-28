@@ -16,7 +16,10 @@ import {
 import { Image } from "expo-image";
 import { useSelector } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
-import { useGetLandlordTenantsWithFallbackQuery } from "../redux/api/apiSlice";
+import {
+  useGetLandlordTenantsWithFallbackQuery,
+  useGetTenantLandlordsPaginatedQuery,
+} from "../redux/api/apiSlice";
 import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
@@ -119,7 +122,7 @@ const ShimmerPlaceholder = memo(
   }
 );
 
-const TenantListItemSkeleton = memo(() => {
+const UserListItemSkeleton = memo(() => {
   return (
     <View
       style={{ marginHorizontal: 16 }}
@@ -143,7 +146,7 @@ const TenantListItemSkeleton = memo(() => {
           </View>
         </View>
 
-        {/* Tenant Details Grid */}
+        {/* User Details Grid */}
         <View className="space-y-3 gap-1">
           {[1, 2, 3, 4, 5, 6].map((_, index) => (
             <View key={index} className="flex-row justify-between items-center">
@@ -176,11 +179,11 @@ const TenantListItemSkeleton = memo(() => {
   );
 });
 
-const TenantListLoadingSkeleton = memo(({ count = 2 }) => {
+const UserListLoadingSkeleton = memo(({ count = 2 }) => {
   return (
     <View>
       {Array.from({ length: count }).map((_, index) => (
-        <TenantListItemSkeleton key={`tenant-skeleton-${index}`} />
+        <UserListItemSkeleton key={`user-skeleton-${index}`} />
       ))}
     </View>
   );
@@ -324,7 +327,7 @@ const MatchScoreBar = memo(({ matchScore, showBar = false, size = "sm" }) => {
   );
 });
 
-// Memoized Tenant Item - EN ÖNEMLİ PERFORMANCE OPTIMIZATION
+// Memoized Tenant Item
 const TenantItem = memo(
   ({ item, navigation }) => {
     const handleTenantPress = useCallback(() => {
@@ -489,9 +492,183 @@ const TenantItem = memo(
     );
   },
   (prevProps, nextProps) => {
-    // Custom comparison for better performance
     return (
       prevProps.item.tenantProfileId === nextProps.item.tenantProfileId &&
+      prevProps.item.matchScore === nextProps.item.matchScore
+    );
+  }
+);
+
+// Memoized Landlord Item
+const LandlordItem = memo(
+  ({ item, navigation }) => {
+    const handleLandlordPress = useCallback(() => {
+      navigation.navigate("LandlordProfile", {
+        userId: item.landlordProfileId || item.userId,
+      });
+    }, [item.landlordProfileId, item.userId, navigation]);
+
+    return (
+      <View
+        style={{ marginHorizontal: 16 }}
+        className="mb-4 pt-4 border-gray-200"
+      >
+        <TouchableOpacity onPress={handleLandlordPress} activeOpacity={1}>
+          <View
+            className="bg-white p-4"
+            style={{ boxShadow: "0px 0px 12px #00000014", borderRadius: 25 }}
+          >
+            {/* Header with Profile Image and Basic Info */}
+            <View className="flex-row items-center mb-4">
+              <Image
+                className="border border-gray-100"
+                style={{
+                  width: 60,
+                  height: 60,
+                  boxShadow: "0px 0px 12px #00000020",
+                  borderRadius: 30,
+                }}
+                source={{
+                  uri:
+                    item.landlordProfileURL ||
+                    item.profilePictureUrl ||
+                    "https://via.placeholder.com/60x60",
+                }}
+                contentFit="cover"
+              />
+
+              <View className="flex-1 ml-4">
+                <Text
+                  style={{ fontSize: 18, fontWeight: 700 }}
+                  className="text-gray-800 mb-1"
+                  numberOfLines={1}
+                >
+                  {item.landlordName || item.name || "Ev Sahibi"}
+                </Text>
+                <View className="flex flex-row items-center gap-1">
+                  <Text className="text-gray-500" style={{ fontSize: 12 }}>
+                    Profili görüntüle
+                  </Text>
+                  <FontAwesomeIcon
+                    size={12}
+                    color="#dee0ea"
+                    icon={faChevronRight}
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* Landlord Details Grid */}
+            <View className="space-y-3 gap-1">
+              {/* Property Title */}
+              {item.propertyTitle && (
+                <View className="flex-row justify-between items-center">
+                  <View className="flex-row items-center">
+                    <Text className="text-gray-600 text-sm ml-2">Mülk:</Text>
+                  </View>
+                  <Text
+                    className="text-gray-800 text-sm font-semibold"
+                    numberOfLines={1}
+                  >
+                    {item.propertyTitle}
+                  </Text>
+                </View>
+              )}
+
+              {/* Rent */}
+              {item.rent && (
+                <View className="flex-row justify-between items-center">
+                  <View className="flex-row items-center">
+                    <Text className="text-gray-600 text-sm ml-2">Kira:</Text>
+                  </View>
+                  <Text className="text-gray-800 text-sm font-semibold">
+                    {item.rent.toLocaleString()} {item.currency || "₺"}
+                  </Text>
+                </View>
+              )}
+
+              {/* Location */}
+              {item.location && (
+                <View className="flex-row justify-between items-center">
+                  <View className="flex-row items-center">
+                    <Text className="text-gray-600 text-sm ml-2">Konum:</Text>
+                  </View>
+                  <Text
+                    className="text-gray-800 text-sm font-medium"
+                    numberOfLines={1}
+                  >
+                    {item.location}
+                  </Text>
+                </View>
+              )}
+
+              {/* Property Details */}
+              {item.propertyDetails && (
+                <View className="flex-row justify-between items-center">
+                  <View className="flex-row items-center">
+                    <Text className="text-gray-600 text-sm ml-2">
+                      Detaylar:
+                    </Text>
+                  </View>
+                  <Text className="text-gray-800 text-sm font-medium">
+                    {item.propertyDetails.rooms || "N/A"} oda •{" "}
+                    {item.propertyDetails.size || "N/A"}m²
+                  </Text>
+                </View>
+              )}
+
+              {/* Experience */}
+              {item.experience !== undefined && (
+                <View className="flex-row justify-between items-center">
+                  <View className="flex-row items-center">
+                    <Text className="text-gray-600 text-sm ml-2">Deneyim:</Text>
+                  </View>
+                  <Text className="text-gray-800 text-sm font-medium">
+                    {item.experience} yıl
+                  </Text>
+                </View>
+              )}
+
+              {/* Property Count */}
+              {item.propertyCount !== undefined && (
+                <View className="flex-row justify-between items-center">
+                  <View className="flex-row items-center">
+                    <Text className="text-gray-600 text-sm ml-2">
+                      Mülk Sayısı:
+                    </Text>
+                  </View>
+                  <Text className="text-gray-800 text-sm font-medium">
+                    {item.propertyCount} mülk
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Compatibility Level */}
+            {item.matchScore && (
+              <View className="mt-4 pt-3 border-t border-gray-100">
+                <MatchScoreBar
+                  matchScore={item.matchScore}
+                  showBar={true}
+                  size="sm"
+                />
+
+                {/* Match Reasons */}
+                {item.matchReasons && item.matchReasons.length > 0 && (
+                  <Text className="text-xs text-gray-500 mt-2">
+                    {item.matchReasons[0]}
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+      </View>
+    );
+  },
+  (prevProps, nextProps) => {
+    return (
+      prevProps.item.landlordProfileId === nextProps.item.landlordProfileId &&
       prevProps.item.matchScore === nextProps.item.matchScore
     );
   }
@@ -507,12 +684,16 @@ const AllMatchingUsers = ({ navigation, route }) => {
   const [isMapView, setIsMapView] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [allTenants, setAllTenants] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isFilterChanging, setIsFilterChanging] = useState(false);
 
   const scrollY = useRef(new Animated.Value(0)).current;
+
+  // Determine which API to use based on user role
+  const isLandlord = userRole === "EVSAHIBI";
+  const isTenant = userRole === "KIRACI";
 
   // Filter animations
   const filterTranslateY = scrollY.interpolate({
@@ -578,20 +759,20 @@ const AllMatchingUsers = ({ navigation, route }) => {
   useEffect(() => {
     setIsFilterChanging(true);
     setCurrentPage(1);
-    setAllTenants([]);
+    setAllUsers([]);
     setHasNextPage(true);
 
     const timer = setTimeout(() => setIsFilterChanging(false), 300);
     return () => clearTimeout(timer);
   }, [searchQuery, sortBy]);
 
-  // Fetch tenant data using paginated API
+  // API calls based on user role
   const {
     data: tenantData,
-    isLoading,
-    error,
-    refetch,
-    isFetching,
+    isLoading: isLoadingTenants,
+    error: tenantError,
+    refetch: refetchTenants,
+    isFetching: isFetchingTenants,
   } = useGetLandlordTenantsWithFallbackQuery(
     {
       landlordUserId: currentUser?.id,
@@ -601,27 +782,62 @@ const AllMatchingUsers = ({ navigation, route }) => {
       includeFallback: true,
     },
     {
-      skip: !currentUser?.id,
+      skip: !currentUser?.id || !isLandlord,
       refetchOnMountOrArgChange: true,
     }
   );
 
-  // Update allTenants when new data comes
+  const {
+    data: landlordData,
+    isLoading: isLoadingLandlords,
+    error: landlordError,
+    refetch: refetchLandlords,
+    isFetching: isFetchingLandlords,
+  } = useGetTenantLandlordsPaginatedQuery(
+    {
+      tenantUserId: currentUser?.id,
+      page: currentPage,
+      pageSize: 10,
+      minMatchScore: 0.1,
+    },
+    {
+      skip: !currentUser?.id || !isTenant,
+      refetchOnMountOrArgChange: true,
+    }
+  );
+
+  // Determine current data, loading, error states
+  const currentData = isLandlord ? tenantData : landlordData;
+  const isLoading = isLandlord ? isLoadingTenants : isLoadingLandlords;
+  const error = isLandlord ? tenantError : landlordError;
+  const refetch = isLandlord ? refetchTenants : refetchLandlords;
+  const isFetching = isLandlord ? isFetchingTenants : isFetchingLandlords;
+
+  // Update allUsers when new data comes
   useEffect(() => {
-    if (tenantData?.data) {
-      const newTenants = tenantData.data;
-      const pagination = tenantData.pagination;
+    if (currentData?.data) {
+      const newUsers = currentData.data;
+      const pagination = currentData.pagination;
 
       if (currentPage === 1) {
-        setAllTenants(newTenants);
+        setAllUsers(newUsers);
         setIsFilterChanging(false);
       } else {
-        setAllTenants((prev) => {
+        setAllUsers((prev) => {
           const existingIds = new Set(
-            prev.map((item) => item.tenantProfileId || item.id)
+            prev.map((item) =>
+              isLandlord
+                ? item.tenantProfileId || item.id
+                : item.landlordProfileId || item.userId || item.id
+            )
           );
-          const uniqueNewItems = newTenants.filter(
-            (item) => !existingIds.has(item.tenantProfileId || item.id)
+          const uniqueNewItems = newUsers.filter(
+            (item) =>
+              !existingIds.has(
+                isLandlord
+                  ? item.tenantProfileId || item.id
+                  : item.landlordProfileId || item.userId || item.id
+              )
           );
           return [...prev, ...uniqueNewItems];
         });
@@ -629,42 +845,64 @@ const AllMatchingUsers = ({ navigation, route }) => {
 
       setHasNextPage(pagination?.hasNextPage || false);
     }
-  }, [tenantData, currentPage]);
+  }, [currentData, currentPage, isLandlord]);
 
-  // Filter and sort tenants
-  const getFilteredAndSortedTenants = useCallback(() => {
-    let filteredTenants = [...allTenants];
+  // Filter and sort users
+  const getFilteredAndSortedUsers = useCallback(() => {
+    let filteredUsers = [...allUsers];
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filteredTenants = filteredTenants.filter(
-        (tenant) =>
-          (tenant.tenantName &&
-            tenant.tenantName.toLowerCase().includes(query)) ||
-          (tenant.details?.preferredLocation &&
-            tenant.details.preferredLocation.toLowerCase().includes(query)) ||
-          (tenant.details?.description &&
-            tenant.details.description.toLowerCase().includes(query))
-      );
+      filteredUsers = filteredUsers.filter((user) => {
+        if (isLandlord) {
+          // Filtering tenants
+          return (
+            (user.tenantName &&
+              user.tenantName.toLowerCase().includes(query)) ||
+            (user.details?.preferredLocation &&
+              user.details.preferredLocation.toLowerCase().includes(query)) ||
+            (user.details?.description &&
+              user.details.description.toLowerCase().includes(query))
+          );
+        } else {
+          // Filtering landlords
+          return (
+            (user.landlordName &&
+              user.landlordName.toLowerCase().includes(query)) ||
+            (user.name && user.name.toLowerCase().includes(query)) ||
+            (user.location && user.location.toLowerCase().includes(query)) ||
+            (user.propertyTitle &&
+              user.propertyTitle.toLowerCase().includes(query))
+          );
+        }
+      });
     }
 
     switch (sortBy) {
       case "compatibility":
-        filteredTenants.sort((a, b) => {
+        filteredUsers.sort((a, b) => {
           const scoreA = a.matchScore || 0;
           const scoreB = b.matchScore || 0;
           return scoreB - scoreA;
         });
         break;
       case "budget":
-        filteredTenants.sort((a, b) => {
-          const budgetA = a.details?.budget || 0;
-          const budgetB = b.details?.budget || 0;
-          return budgetB - budgetA;
-        });
+        if (isLandlord) {
+          filteredUsers.sort((a, b) => {
+            const budgetA = a.details?.budget || 0;
+            const budgetB = b.details?.budget || 0;
+            return budgetB - budgetA;
+          });
+        } else {
+          filteredUsers.sort((a, b) => {
+            const rentA = a.rent || 0;
+            const rentB = b.rent || 0;
+            return rentB - rentA;
+          });
+        }
         break;
       case "date":
-        filteredTenants.sort((a, b) => {
+        filteredUsers.sort((a, b) => {
           const dateA = new Date(a.createdDate || 0);
           const dateB = new Date(b.createdDate || 0);
           return dateB - dateA;
@@ -674,16 +912,16 @@ const AllMatchingUsers = ({ navigation, route }) => {
         break;
     }
 
-    return filteredTenants;
-  }, [allTenants, searchQuery, sortBy]);
+    return filteredUsers;
+  }, [allUsers, searchQuery, sortBy, isLandlord]);
 
-  const filteredTenants = getFilteredAndSortedTenants();
+  const filteredUsers = getFilteredAndSortedUsers();
 
   // Handlers
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     setCurrentPage(1);
-    setAllTenants([]);
+    setAllUsers([]);
     setHasNextPage(true);
     setIsFilterChanging(false);
     try {
@@ -713,26 +951,42 @@ const AllMatchingUsers = ({ navigation, route }) => {
     if (currentPage > 1) {
       setLoadingMore(false);
     }
-  }, [tenantData]);
+  }, [currentData]);
 
   // Render functions
   const renderEmptyState = useCallback(() => {
     if (isFilterChanging || (isLoading && currentPage === 1)) {
-      return <TenantListLoadingSkeleton count={3} />;
+      return <UserListLoadingSkeleton count={3} />;
     }
+
+    const emptyTitle = isLandlord
+      ? searchQuery.trim()
+        ? "Arama sonucu bulunamadı"
+        : "Henüz uygun kiracı bulunmuyor"
+      : searchQuery.trim()
+      ? "Arama sonucu bulunamadı"
+      : "Henüz uygun ev sahibi bulunmuyor";
+
+    const emptyDescription = isLandlord
+      ? searchQuery.trim()
+        ? "Farklı anahtar kelimeler deneyin"
+        : "Profilinizi güncelleyerek daha fazla eşleşme elde edebilirsiniz"
+      : searchQuery.trim()
+      ? "Farklı anahtar kelimeler deneyin"
+      : "Beklenti profilinizi güncelleyerek daha fazla eşleşme elde edebilirsiniz";
 
     return (
       <View className="flex-1 justify-center items-center p-8">
-        <FontAwesome name="users" size={64} color="#9CA3AF" />
+        <FontAwesome
+          name={isLandlord ? "users" : "home"}
+          size={64}
+          color="#9CA3AF"
+        />
         <Text className="text-xl font-semibold text-gray-700 mt-4 mb-2 text-center">
-          {searchQuery.trim()
-            ? "Arama sonucu bulunamadı"
-            : "Henüz uygun kiracı bulunmuyor"}
+          {emptyTitle}
         </Text>
         <Text className="text-base text-gray-500 text-center">
-          {searchQuery.trim()
-            ? "Farklı anahtar kelimeler deneyin"
-            : "Profilinizi güncelleyerek daha fazla eşleşme elde edebilirsiniz"}
+          {emptyDescription}
         </Text>
         {searchQuery.trim() && (
           <TouchableOpacity
@@ -744,21 +998,35 @@ const AllMatchingUsers = ({ navigation, route }) => {
         )}
       </View>
     );
-  }, [isFilterChanging, isLoading, currentPage, searchQuery]);
+  }, [isFilterChanging, isLoading, currentPage, searchQuery, isLandlord]);
 
   const renderLoadingFooter = useCallback(() => {
     if (!loadingMore) return null;
-    return <TenantListLoadingSkeleton count={2} />;
+    return <UserListLoadingSkeleton count={2} />;
   }, [loadingMore]);
 
-  const renderTenantItem = useCallback(
-    ({ item }) => <TenantItem item={item} navigation={navigation} />,
-    [navigation]
+  const renderUserItem = useCallback(
+    ({ item }) => {
+      if (isLandlord) {
+        return <TenantItem item={item} navigation={navigation} />;
+      } else {
+        return <LandlordItem item={item} navigation={navigation} />;
+      }
+    },
+    [navigation, isLandlord]
   );
 
   const keyExtractor = useCallback(
-    (item, index) => `tenant_${item.tenantProfileId || item.id}_${index}`,
-    []
+    (item, index) => {
+      if (isLandlord) {
+        return `tenant_${item.tenantProfileId || item.id}_${index}`;
+      } else {
+        return `landlord_${
+          item.landlordProfileId || item.userId || item.id
+        }_${index}`;
+      }
+    },
+    [isLandlord]
   );
 
   const getItemLayout = useCallback(
@@ -778,13 +1046,15 @@ const AllMatchingUsers = ({ navigation, route }) => {
 
   // Show loading state
   if (isLoading && currentPage === 1 && !isFilterChanging) {
+    const loadingText = isLandlord
+      ? "Uygun kiracılar yükleniyor..."
+      : "Uygun ev sahipleri yükleniyor...";
+
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#4A90E2" />
-          <Text className="text-gray-600 mt-4 text-center">
-            Uygun kiracılar yükleniyor...
-          </Text>
+          <Text className="text-gray-600 mt-4 text-center">{loadingText}</Text>
         </View>
       </SafeAreaView>
     );
@@ -792,6 +1062,10 @@ const AllMatchingUsers = ({ navigation, route }) => {
 
   // Show error state
   if (error) {
+    const errorTitle = isLandlord
+      ? "Uygun kiracılar yüklenirken bir sorun oluştu."
+      : "Uygun ev sahipleri yüklenirken bir sorun oluştu.";
+
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center p-8">
@@ -800,7 +1074,7 @@ const AllMatchingUsers = ({ navigation, route }) => {
             Bir hata oluştu
           </Text>
           <Text className="text-base text-gray-500 text-center mb-6">
-            Uygun kiracılar yüklenirken bir sorun oluştu.
+            {errorTitle}
           </Text>
           <TouchableOpacity
             className="bg-green-500 px-6 py-3 rounded-lg"
@@ -812,6 +1086,27 @@ const AllMatchingUsers = ({ navigation, route }) => {
       </SafeAreaView>
     );
   }
+
+  // Dynamic title and placeholder based on user role
+  const screenTitle = isLandlord
+    ? "Size uygun kiracılar"
+    : "Size uygun ev sahipleri";
+  const searchPlaceholder = isLandlord
+    ? "Size uygun kiracılar"
+    : "Size uygun ev sahipleri";
+
+  // Dynamic sort options based on user role
+  const sortOptions = isLandlord
+    ? [
+        { key: "compatibility", label: "Uyumluluk" },
+        { key: "budget", label: "Bütçe" },
+        { key: "date", label: "Tarih" },
+      ]
+    : [
+        { key: "compatibility", label: "Uyumluluk" },
+        { key: "budget", label: "Kira" },
+        { key: "date", label: "Tarih" },
+      ];
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -829,7 +1124,7 @@ const AllMatchingUsers = ({ navigation, route }) => {
             >
               <TextInput
                 className="w-full px-2 placeholder:text-gray-400 placeholder:text-[14px] py-4 text-normal"
-                placeholder="Size uygun kiracılar"
+                placeholder={searchPlaceholder}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
@@ -872,11 +1167,7 @@ const AllMatchingUsers = ({ navigation, route }) => {
               style={{ width: "100%" }}
             >
               <View className="flex-row">
-                {[
-                  { key: "compatibility", label: "Uyumluluk" },
-                  { key: "budget", label: "Bütçe" },
-                  { key: "date", label: "Tarih" },
-                ].map((option) => (
+                {sortOptions.map((option) => (
                   <TouchableOpacity
                     key={option.key}
                     className={`mr-3 px-4 py-2 rounded-full border ${
@@ -901,10 +1192,10 @@ const AllMatchingUsers = ({ navigation, route }) => {
         </Animated.View>
       </View>
 
-      {/* Tenants list with all performance optimizations */}
+      {/* Users list with all performance optimizations */}
       <Animated.FlatList
-        data={filteredTenants}
-        renderItem={renderTenantItem}
+        data={filteredUsers}
+        renderItem={renderUserItem}
         keyExtractor={keyExtractor}
         getItemLayout={getItemLayout} // CRITICAL for performance
         showsVerticalScrollIndicator={false}
