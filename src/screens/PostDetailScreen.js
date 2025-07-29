@@ -55,6 +55,7 @@ import * as Haptics from "expo-haptics";
 import Carousel from "react-native-reanimated-carousel";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import LocationSection from "../components/LocationSection";
+import OfferModal from "../modals/OfferModal";
 
 const { width, height } = Dimensions.get("window");
 
@@ -261,8 +262,7 @@ const PostDetailScreen = ({ route, navigation }) => {
   const insets = useSafeAreaInsets();
 
   const [isOfferModalVisible, setIsOfferModalVisible] = useState(false);
-  const [offerAmount, setOfferAmount] = useState("");
-  const [offerMessage, setOfferMessage] = useState("");
+
   const [isFavorite, setIsFavorite] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isProcessingFavorite, setIsProcessingFavorite] = useState(false);
@@ -457,7 +457,7 @@ const PostDetailScreen = ({ route, navigation }) => {
               item.postImages && item.postImages.length > 0
                 ? item.postImages[0].postImageUrl
                 : item.firstPostİmageURL ||
-                  "https://via.placeholder.com/300x200",
+                "https://via.placeholder.com/300x200",
           }}
           className="w-full"
           resizeMode="cover"
@@ -482,9 +482,8 @@ const PostDetailScreen = ({ route, navigation }) => {
               className="text-gray-500"
             >
               {item.kiraFiyati
-                ? `${item.kiraFiyati.toLocaleString()} ${
-                    item.paraBirimi || "₺"
-                  }`
+                ? `${item.kiraFiyati.toLocaleString()} ${item.paraBirimi || "₺"
+                }`
                 : "Fiyat belirtilmemiş"}
             </Text>
             <Text className="text-sm text-gray-400 ml-1">/ay</Text>
@@ -622,28 +621,17 @@ const PostDetailScreen = ({ route, navigation }) => {
     });
   };
 
-  const handleCreateOffer = async () => {
-    if (!offerAmount.trim()) {
-      Alert.alert("Hata", "Lütfen bir teklif tutarı giriniz.");
-      return;
-    }
-
+  const handleCreateOffer = async (offerData) => {
     try {
-      const amount = parseFloat(offerAmount.replace(/[^0-9.]/g, ""));
-      if (isNaN(amount)) {
-        Alert.alert("Hata", "Geçerli bir tutar giriniz.");
-        return;
-      }
-
-      const offerData = {
+      const offerPayload = {
         postId,
         userId: currentUser.id,
-        offerAmount: amount,
+        offerAmount: offerData.amount,
         actionType: 2,
-        description: offerMessage.trim() || null,
+        description: offerData.message || null,
       };
 
-      const response = await createOffer(offerData).unwrap();
+      const response = await createOffer(offerPayload).unwrap();
 
       if (response && response.isSuccess) {
         Alert.alert("Başarılı", "Teklifiniz başarıyla gönderildi.", [
@@ -660,7 +648,7 @@ const PostDetailScreen = ({ route, navigation }) => {
       Alert.alert(
         "Hata",
         error.data?.message ||
-          "Teklif gönderilirken bir hata oluştu. Lütfen tekrar deneyin."
+        "Teklif gönderilirken bir hata oluştu. Lütfen tekrar deneyin."
       );
     }
   };
@@ -1012,11 +1000,10 @@ const PostDetailScreen = ({ route, navigation }) => {
                       {images.map((_, index) => (
                         <TouchableOpacity
                           key={`dot-${index}`}
-                          className={`mx-1 h-2 w-2 rounded-full ${
-                            index === currentImageIndex
-                              ? "bg-white"
-                              : "bg-gray-400"
-                          }`}
+                          className={`mx-1 h-2 w-2 rounded-full ${index === currentImageIndex
+                            ? "bg-white"
+                            : "bg-gray-400"
+                            }`}
                           onPress={() => handleThumbnailPress(index)}
                         />
                       ))}
@@ -1285,8 +1272,8 @@ const PostDetailScreen = ({ route, navigation }) => {
                     {post.status === 0
                       ? "Aktif"
                       : post.status === 1
-                      ? "Kiralandı"
-                      : "Kapalı"}
+                        ? "Kiralandı"
+                        : "Kapalı"}
                   </Text>
                 </View>
 
@@ -1977,74 +1964,13 @@ const PostDetailScreen = ({ route, navigation }) => {
       </Modal>
 
       {/* Offer Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
+      <OfferModal
         visible={isOfferModalVisible}
-        onRequestClose={() => setIsOfferModalVisible(false)}
-      >
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-          <View
-            className="flex-1 justify-end"
-            style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
-          >
-            <View className="bg-white rounded-t-xl p-5">
-              <View className="flex-row justify-between items-center mb-5">
-                <Text className="text-xl font-bold text-gray-800">
-                  Teklif Ver
-                </Text>
-                <TouchableOpacity onPress={() => setIsOfferModalVisible(false)}>
-                  <Text className="text-gray-500 text-xl">✕</Text>
-                </TouchableOpacity>
-              </View>
-
-              <View className="mb-4">
-                <Text className="text-gray-600 mb-2">
-                  Teklif Tutarı ({getCurrencyText(post.paraBirimi)})
-                </Text>
-                <TextInput
-                  className="bg-gray-100 p-3 rounded-lg text-base"
-                  placeholder="Ör: 3500"
-                  keyboardType="numeric"
-                  value={offerAmount}
-                  onChangeText={setOfferAmount}
-                />
-              </View>
-
-              <View className="mb-5">
-                <Text className="text-gray-600 mb-2">Mesaj (Opsiyonel)</Text>
-                <TextInput
-                  className="bg-gray-100 p-3 rounded-lg text-base h-24"
-                  placeholder="Ev sahibine mesajınız..."
-                  multiline
-                  textAlignVertical="top"
-                  value={offerMessage}
-                  onChangeText={setOfferMessage}
-                />
-              </View>
-
-              <TouchableOpacity
-                className={`py-3 rounded-lg mb-3 ${
-                  isCreatingOffer ? "bg-green-300" : "bg-green-500"
-                }`}
-                onPress={handleCreateOffer}
-                disabled={isCreatingOffer}
-              >
-                {isCreatingOffer ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <Text className="text-white font-semibold text-center">
-                    Teklifi Gönder
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+        onClose={() => setIsOfferModalVisible(false)}
+        onSubmit={handleCreateOffer}
+        isLoading={isCreatingOffer}
+        postData={post}
+      />
     </View>
   );
 };
