@@ -1,3 +1,4 @@
+// navigation/AppNavigator.js
 import React, { useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
@@ -31,6 +32,9 @@ import {
 } from "../redux/api/apiSlice";
 import { BlurView } from "expo-blur";
 
+// ✅ SignalR Provider import eklendi
+import { SignalRProvider } from "../contexts/SignalRContext";
+
 // Import screens
 import AllNearbyPropertiesScreen from "../screens/AllNearbyPropertiesScreen";
 import AllMatchingUsers from "../screens/AllMatchingUsers";
@@ -47,6 +51,7 @@ import PostsScreen from "../screens/PostsScreen";
 import CreatePostScreen from "../screens/CreatePostScreen";
 import ProfileExpectationScreen from "../screens/ProfileExpectationScreen";
 import OffersScreen from "../screens/OffersScreen";
+// ✅ Enhanced Chat screens import
 import MessagesScreen from "../screens/MessagesScreen";
 import ChatDetailScreen from "../screens/ChatDetailScreen";
 import AllRecommendedPostsScreen from "../screens/AllRecommendedPostsScreen";
@@ -223,10 +228,16 @@ const CustomDrawerContent = (props) => {
             )}
           />
 
+          {/* ✅ Message drawer item - Messages screen'e yönlendirme eklendi */}
           <DrawerItem
             label="Message"
             onPress={() => {
-              /* Navigate to messages page */
+              props.navigation.navigate("MainTabs", {
+                screen: "LandlordHome",
+                params: {
+                  screen: "Messages",
+                },
+              });
             }}
             labelStyle={{ color: "white", fontSize: 16 }}
             icon={({ focused, size }) => (
@@ -464,6 +475,7 @@ const LandlordHomeStack = () => {
         component={ChatDetailScreen}
         options={{
           headerShown: false,
+          tabBarStyle: { display: "none" }, // ✅ Eklendi - Bottom tab'ı gizler
           cardStyleInterpolator: ({ current, layouts }) => {
             return {
               cardStyle: {
@@ -493,7 +505,7 @@ const LandlordHomeStack = () => {
         options={({ navigation }) => ({
           title: "Yeni İlan Oluştur",
           headerShown: false,
-          tabBarStyle: { display: "none" }, // Tab bar'ı gizle
+          tabBarStyle: { display: "none" },
         })}
       />
       <LandlordStack.Screen
@@ -528,7 +540,7 @@ const LandlordHomeStack = () => {
           },
           headerBackTitle: "",
           headerShadowVisible: false,
-          tabBarStyle: { display: "none" }, // BottomTabs'ı gizle
+          tabBarStyle: { display: "none" },
         }}
       />
       <LandlordStack.Screen
@@ -555,7 +567,7 @@ const LandlordPropertiesStack = () => {
   return (
     <LandlordStack.Navigator
       screenOptions={{
-        headerShown: false, // Add this to ensure all screens have no header by default
+        headerShown: false,
       }}
     >
       <LandlordStack.Screen
@@ -583,7 +595,7 @@ const LandlordPropertiesStack = () => {
         options={({ navigation }) => ({
           title: "Yeni İlan Oluştur",
           headerShown: false,
-          tabBarStyle: { display: "none" }, // Tab bar'ı gizle
+          tabBarStyle: { display: "none" },
         })}
       />
       <LandlordStack.Screen
@@ -592,15 +604,14 @@ const LandlordPropertiesStack = () => {
         options={({ navigation }) => ({
           title: "İlan Düzenle",
           headerShown: false,
-          tabBarStyle: { display: "none" }, // Tab bar'ı gizle
+          tabBarStyle: { display: "none" },
         })}
       />
       <LandlordStack.Screen
         name="Offers"
         component={OffersScreen}
         options={{
-          headerShown: false, // Explicitly set to false
-          // Remove any headerStyle that might be causing issues
+          headerShown: false,
         }}
       />
     </LandlordStack.Navigator>
@@ -679,7 +690,7 @@ const LandlordProfileStack = () => {
         options={({ navigation }) => ({
           title: "Yeni İlan Oluştur",
           headerShown: false,
-          tabBarStyle: { display: "none" }, // Tab bar'ı gizle
+          tabBarStyle: { display: "none" },
         })}
       />
       <LandlordStack.Screen
@@ -751,6 +762,7 @@ const TenantHomeStack = () => {
         component={ChatDetailScreen}
         options={{
           headerShown: false,
+          tabBarStyle: { display: "none" }, // ✅ Eklendi - Bottom tab'ı gizler
           cardStyleInterpolator: ({ current, layouts }) => {
             return {
               cardStyle: {
@@ -789,7 +801,6 @@ const TenantHomeStack = () => {
           },
         }}
       />
-      {/* ✅ AllMatchingUsers - Tenant için eklendi */}
       <TenantStack.Screen
         name="AllMatchingUsers"
         component={AllMatchingUsers}
@@ -805,10 +816,9 @@ const TenantHomeStack = () => {
           },
           headerBackTitle: "",
           headerShadowVisible: false,
-          tabBarStyle: { display: "none" }, // BottomTabs'ı gizle
+          tabBarStyle: { display: "none" },
         }}
       />
-      {/* ✅ AllSimilarProperties - Eğer tenant tarafında da kullanılacaksa */}
       <TenantStack.Screen
         name="AllSimilarProperties"
         component={AllSimilarPropertiesScreen}
@@ -930,7 +940,13 @@ const LandlordTabNavigator = () => {
             const routeName = getFocusedRouteNameFromRoute(route) ?? "";
 
             // CreatePost ve EditPost ekranlarında tab bar'ı gizle
-            if (routeName === "CreatePost" || routeName === "EditPost") {
+            if (
+              routeName === "PostDetail" ||
+              routeName === "CreatePost" ||
+              routeName === "ChatDetail" ||
+              routeName === "Messages" ||
+              routeName === "EditPost"
+            ) {
               return { display: "none" };
             }
 
@@ -1025,7 +1041,7 @@ const LandlordTabNavigator = () => {
                         left: -2,
                         right: -2,
                         bottom: -2,
-                        borderRadius: 16, // 14 + 2
+                        borderRadius: 16,
                         borderWidth: 2,
                         borderColor: "#000",
                       }}
@@ -1038,7 +1054,7 @@ const LandlordTabNavigator = () => {
                     width: 28,
                     height: 28,
                     borderRadius: 100,
-                    backgroundColor: "#f3f4f6", // bg-gray-100
+                    backgroundColor: "#f3f4f6",
                     justifyContent: "center",
                     alignItems: "center",
                   }}
@@ -1046,7 +1062,7 @@ const LandlordTabNavigator = () => {
                   <Text
                     style={{
                       fontSize: 14,
-                      color: "#111827", // text-gray-900
+                      color: "#111827",
                       fontWeight: "bold",
                     }}
                   >
@@ -1060,7 +1076,7 @@ const LandlordTabNavigator = () => {
                         left: -2,
                         right: -2,
                         bottom: -2,
-                        borderRadius: 16, // 14 + 2
+                        borderRadius: 16,
                         borderWidth: 2,
                         borderColor: "#000",
                       }}
@@ -1076,7 +1092,6 @@ const LandlordTabNavigator = () => {
   );
 };
 
-// Tenant tab navigator
 // Tenant tab navigator
 const TenantTabNavigator = () => {
   const userProfile = useSelector(selectUserProfile);
@@ -1094,6 +1109,8 @@ const TenantTabNavigator = () => {
             if (
               routeName === "PostDetail" ||
               routeName === "CreatePost" ||
+              routeName === "ChatDetail" ||
+              routeName === "Messages" ||
               routeName === "EditPost"
             ) {
               return { display: "none" };
@@ -1187,7 +1204,7 @@ const TenantTabNavigator = () => {
                         left: -2,
                         right: -2,
                         bottom: -2,
-                        borderRadius: 16, // 14 + 2
+                        borderRadius: 16,
                         borderWidth: 2,
                         borderColor: "#000",
                       }}
@@ -1200,7 +1217,7 @@ const TenantTabNavigator = () => {
                     width: 28,
                     height: 28,
                     borderRadius: 100,
-                    backgroundColor: "#f3f4f6", // bg-gray-100
+                    backgroundColor: "#f3f4f6",
                     justifyContent: "center",
                     alignItems: "center",
                   }}
@@ -1208,7 +1225,7 @@ const TenantTabNavigator = () => {
                   <Text
                     style={{
                       fontSize: 14,
-                      color: "#111827", // text-gray-900
+                      color: "#111827",
                       fontWeight: "bold",
                     }}
                   >
@@ -1222,7 +1239,7 @@ const TenantTabNavigator = () => {
                         left: -2,
                         right: -2,
                         bottom: -2,
-                        borderRadius: 16, // 14 + 2
+                        borderRadius: 16,
                         borderWidth: 2,
                         borderColor: "#000",
                       }}
@@ -1375,8 +1392,8 @@ const ProfileLoader = ({ children }) => {
   return children;
 };
 
-// Main navigator
-const AppNavigator = () => {
+// ✅ SignalR ile sarılmış Ana Navigator
+const AppNavigatorContent = () => {
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const userRole = useSelector(selectUserRole);
   const hasUserProfile = useSelector(selectHasUserProfile);
@@ -1423,6 +1440,15 @@ const AppNavigator = () => {
       </NavigationContainer>
       <SafeAreaView style={{ flex: 0 }} />
     </View>
+  );
+};
+
+// ✅ Main navigator - SignalR Provider ile sarılmış
+const AppNavigator = () => {
+  return (
+    <SignalRProvider>
+      <AppNavigatorContent />
+    </SignalRProvider>
   );
 };
 
