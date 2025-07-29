@@ -1,4 +1,4 @@
-// redux/api/chatApiSlice.js - Updated with Better Error Handling
+// redux/api/chatApiSlice.js - Optimized to Reduce API Calls
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const CHAT_BASE_URL = "https://20053fb3ffb3.ngrok-free.app";
@@ -19,11 +19,9 @@ export const chatApiSlice = createApi({
 
       return headers;
     },
-    // ✅ Response transformer - Backend response'unu standardize et
+    // Response transformer - Backend response'unu standardize et
     transformResponse: (response, meta, arg) => {
       console.log("API Response:", response);
-      console.log("API Meta:", meta);
-      console.log("API Arg:", arg);
 
       // Eğer response direkt array veya primitive ise, doğrudan döndür
       if (Array.isArray(response) || typeof response !== "object") {
@@ -42,10 +40,9 @@ export const chatApiSlice = createApi({
       // Default olarak response'u döndür
       return response;
     },
-    // ✅ Error handler
+    // Error handler
     transformErrorResponse: (response, meta, arg) => {
       console.error("API Error Response:", response);
-      console.error("API Error Meta:", meta);
 
       // Backend error response'unu handle et
       if (response.data?.message) {
@@ -60,8 +57,13 @@ export const chatApiSlice = createApi({
     },
   }),
   tagTypes: ["ChatMessage", "ChatPartner", "UnreadCount"],
+  // ✅ Global cache settings to reduce API calls
+  keepUnusedDataFor: 300, // 5 minutes cache for unused data
+  refetchOnMountOrArgChange: false, // Don't refetch on component mount
+  refetchOnFocus: false, // Don't refetch when window gains focus
+  refetchOnReconnect: false, // Don't refetch on network reconnect
   endpoints: (builder) => ({
-    // Chat geçmişini getir
+    // Chat geçmişini getir - SADECE İLK YÜKLEMEDE
     getChatHistory: builder.query({
       query: ({ partnerId, page = 1 }) => ({
         url: `/api/chat/history/${partnerId}?page=${page}`,
@@ -70,6 +72,8 @@ export const chatApiSlice = createApi({
       providesTags: (result, error, { partnerId }) => [
         { type: "ChatMessage", id: partnerId },
       ],
+      // ✅ Prevent automatic refetching
+      keepUnusedDataFor: 600, // 10 minutes cache
       // ✅ Transform response için ek processing
       transformResponse: (response) => {
         console.log("Chat History Response:", response);
@@ -95,7 +99,11 @@ export const chatApiSlice = createApi({
         // Eğer hiç mesaj yoksa boş array döndür
         return [];
       },
-      // Pagination için cache merge stratejisi
+      // ✅ Only refetch when explicitly requested or partnerId changes
+      forceRefetch({ currentArg, previousArg }) {
+        return currentArg?.partnerId !== previousArg?.partnerId;
+      },
+      // ✅ Pagination için cache merge stratejisi (sadece gerekirse)
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         return `${endpointName}-${queryArgs.partnerId}`;
       },
@@ -106,15 +114,13 @@ export const chatApiSlice = createApi({
         // Yeni sayfanın verilerini mevcut cache'e ekle (eski mesajlar)
         return [...newItems, ...(currentCache || [])];
       },
-      forceRefetch({ currentArg, previousArg }) {
-        return currentArg !== previousArg;
-      },
     }),
 
     // Chat partnerlarını getir
     getChatPartners: builder.query({
       query: () => "/api/chat/partners",
       providesTags: ["ChatPartner"],
+      keepUnusedDataFor: 600, // 10 minutes cache
       // ✅ Partners için özel transform
       transformResponse: (response) => {
         console.log("Chat Partners Response:", response);
@@ -150,6 +156,7 @@ export const chatApiSlice = createApi({
     getUnreadCount: builder.query({
       query: () => "/api/chat/unread-count",
       providesTags: ["UnreadCount"],
+      keepUnusedDataFor: 60, // 1 minute cache for unread count
       // ✅ Unread count için özel transform
       transformResponse: (response) => {
         console.log("Unread Count Response:", response);
@@ -177,7 +184,7 @@ export const chatApiSlice = createApi({
       },
     }),
 
-    // Mesaj gönder
+    // ✅ Mesaj gönder - Optimistic update KALDIRILDI (SignalR handles this)
     sendMessage: builder.mutation({
       query: (messageData) => ({
         url: "/api/chat/send-message",
@@ -187,70 +194,13 @@ export const chatApiSlice = createApi({
           content: messageData.content,
         },
       }),
+      // ✅ Sadece unread count'u invalidate et, chat messages'ı değil
       invalidatesTags: (result, error, { receiverUserId }) => [
-        { type: "ChatMessage", id: receiverUserId },
-        "ChatPartner",
-        "UnreadCount",
+        "ChatPartner", // Partner listesini güncelle
+        "UnreadCount", // Unread count'u güncelle
+        // ChatMessage invalidate etme - SignalR hallediyor
       ],
-      // ✅ Optimistic update with better error handling
-      async onQueryStarted(
-        messageData,
-        { dispatch, queryFulfilled, getState }
-      ) {
-        const { receiverUserId, content } = messageData;
-        const state = getState();
-        const currentUserId = state.auth.user?.id || state.auth.user?.userId;
-
-        if (!currentUserId || !receiverUserId || !content) {
-          console.error("Invalid message data:", {
-            currentUserId,
-            receiverUserId,
-            content,
-          });
-          return;
-        }
-
-        // Optimistic update - mesajı hemen göster
-        const patchResult = dispatch(
-          chatApiSlice.util.updateQueryData(
-            "getChatHistory",
-            { partnerId: receiverUserId },
-            (draft) => {
-              if (Array.isArray(draft)) {
-                const optimisticMessage = {
-                  id: `temp-${Date.now()}`,
-                  senderUserId: currentUserId,
-                  receiverUserId: receiverUserId,
-                  content: content,
-                  sentAt: new Date().toISOString(),
-                  isRead: false,
-                  isOptimistic: true,
-                };
-                draft.push(optimisticMessage);
-              }
-            }
-          )
-        );
-
-        try {
-          const result = await queryFulfilled;
-          console.log("Message sent successfully:", result);
-
-          // Başarılı olursa optimistic update'i kaldır ve gerçek veriyi yükle
-          dispatch(
-            chatApiSlice.util.invalidateTags([
-              { type: "ChatMessage", id: receiverUserId },
-            ])
-          );
-        } catch (error) {
-          console.error("Failed to send message:", error);
-          // Hata durumunda optimistic update'i geri al
-          patchResult.undo();
-
-          // Hata mesajını throw et ki component'ta handle edilebilsin
-          throw error;
-        }
-      },
+      // ✅ Optimistic update kaldırıldı - SignalR real-time handling yapıyor
     }),
 
     // Mesajları okundu olarak işaretle
@@ -260,8 +210,8 @@ export const chatApiSlice = createApi({
         method: "POST",
       }),
       invalidatesTags: (result, error, partnerId) => [
-        { type: "ChatMessage", id: partnerId },
-        "UnreadCount",
+        "UnreadCount", // Sadece unread count'u güncelle
+        // ChatMessage invalidate etme - SignalR hallediyor
       ],
     }),
 
@@ -269,6 +219,93 @@ export const chatApiSlice = createApi({
     chatHealthCheck: builder.query({
       query: () => "/health",
       keepUnusedDataFor: 0, // Cache'leme
+    }),
+
+    // ✅ Manuel refresh için endpoint (pull-to-refresh için)
+    refreshChatHistory: builder.query({
+      query: ({ partnerId }) => ({
+        url: `/api/chat/history/${partnerId}?page=1&refresh=true`,
+        method: "GET",
+      }),
+      // Bu endpoint cache'lenmesin, her zaman fresh data getirsin
+      keepUnusedDataFor: 0,
+      transformResponse: (response) => {
+        console.log("Refreshed Chat History Response:", response);
+
+        if (Array.isArray(response)) {
+          return response;
+        }
+
+        if (response?.result && Array.isArray(response.result)) {
+          return response.result;
+        }
+
+        if (response?.data && Array.isArray(response.data)) {
+          return response.data;
+        }
+
+        if (response?.messages && Array.isArray(response.messages)) {
+          return response.messages;
+        }
+
+        return [];
+      },
+    }),
+
+    // ✅ Eski mesajları yükle (pagination için)
+    loadOlderMessages: builder.query({
+      query: ({ partnerId, page }) => ({
+        url: `/api/chat/history/${partnerId}?page=${page}`,
+        method: "GET",
+      }),
+      keepUnusedDataFor: 300, // 5 minutes cache
+      transformResponse: (response) => {
+        console.log("Older Messages Response:", response);
+
+        if (Array.isArray(response)) {
+          return response;
+        }
+
+        if (response?.result && Array.isArray(response.result)) {
+          return response.result;
+        }
+
+        if (response?.data && Array.isArray(response.data)) {
+          return response.data;
+        }
+
+        if (response?.messages && Array.isArray(response.messages)) {
+          return response.messages;
+        }
+
+        return [];
+      },
+    }),
+
+    // ✅ Belirli bir kullanıcının online durumunu kontrol et
+    getUserOnlineStatus: builder.query({
+      query: (userId) => `/api/chat/user-status/${userId}`,
+      keepUnusedDataFor: 30, // 30 seconds cache
+      transformResponse: (response) => {
+        return {
+          userId: response.userId || response.UserId,
+          isOnline: response.isOnline || response.IsOnline || false,
+          lastSeen: response.lastSeen || response.LastSeen,
+        };
+      },
+    }),
+
+    // ✅ Chat istatistikleri getir (optional)
+    getChatStats: builder.query({
+      query: () => "/api/chat/stats",
+      keepUnusedDataFor: 300, // 5 minutes cache
+      transformResponse: (response) => {
+        return {
+          totalChats: response.totalChats || response.TotalChats || 0,
+          unreadCount: response.unreadCount || response.UnreadCount || 0,
+          onlineUsers: response.onlineUsers || response.OnlineUsers || 0,
+        };
+      },
     }),
   }),
 });
@@ -280,4 +317,154 @@ export const {
   useSendMessageMutation,
   useMarkMessagesAsReadMutation,
   useChatHealthCheckQuery,
+  useRefreshChatHistoryQuery, // Manuel refresh için
+  useLoadOlderMessagesQuery, // Pagination için
+  useGetUserOnlineStatusQuery, // User status için
+  useGetChatStatsQuery, // Chat istatistikleri için
 } = chatApiSlice;
+
+// ✅ SignalR ile real-time mesaj yönetimi için helper functions
+export const chatApiHelpers = {
+  // SignalR'dan gelen mesajı cache'e manuel ekle (gerekirse kullan)
+  addMessageToCache: (dispatch, partnerId, messageData) => {
+    dispatch(
+      chatApiSlice.util.updateQueryData(
+        "getChatHistory",
+        { partnerId, page: 1 },
+        (draft) => {
+          if (Array.isArray(draft)) {
+            const newMessage = {
+              id: messageData.Id || `msg-${Date.now()}`,
+              senderUserId: messageData.SenderUserId,
+              receiverUserId: messageData.ReceiverUserId,
+              content: messageData.Content,
+              sentAt: messageData.SentAt,
+              isRead: messageData.IsRead || false,
+            };
+
+            // Duplicate kontrolü
+            const exists = draft.some(
+              (msg) =>
+                msg.id === newMessage.id ||
+                (msg.content === newMessage.content &&
+                  msg.senderUserId === newMessage.senderUserId &&
+                  Math.abs(new Date(msg.sentAt) - new Date(newMessage.sentAt)) <
+                    1000)
+            );
+
+            if (!exists) {
+              draft.push(newMessage);
+            }
+          }
+        }
+      )
+    );
+  },
+
+  // Cache'deki mesajları okundu olarak işaretle
+  markCacheMessagesAsRead: (dispatch, partnerId, currentUserId) => {
+    dispatch(
+      chatApiSlice.util.updateQueryData(
+        "getChatHistory",
+        { partnerId, page: 1 },
+        (draft) => {
+          if (Array.isArray(draft)) {
+            draft.forEach((msg) => {
+              if (msg.senderUserId === currentUserId) {
+                msg.isRead = true;
+              }
+            });
+          }
+        }
+      )
+    );
+  },
+
+  // Optimistic mesajı cache'e ekle
+  addOptimisticMessage: (dispatch, partnerId, messageData, currentUserId) => {
+    const optimisticMessage = {
+      id: `temp-${Date.now()}`,
+      senderUserId: currentUserId,
+      receiverUserId: partnerId,
+      content: messageData.content,
+      sentAt: new Date().toISOString(),
+      isRead: false,
+      isOptimistic: true,
+    };
+
+    dispatch(
+      chatApiSlice.util.updateQueryData(
+        "getChatHistory",
+        { partnerId, page: 1 },
+        (draft) => {
+          if (Array.isArray(draft)) {
+            draft.push(optimisticMessage);
+          }
+        }
+      )
+    );
+
+    return optimisticMessage.id;
+  },
+
+  // Optimistic mesajı kaldır (hata durumunda)
+  removeOptimisticMessage: (dispatch, partnerId, messageId) => {
+    dispatch(
+      chatApiSlice.util.updateQueryData(
+        "getChatHistory",
+        { partnerId, page: 1 },
+        (draft) => {
+          if (Array.isArray(draft)) {
+            const index = draft.findIndex((msg) => msg.id === messageId);
+            if (index !== -1) {
+              draft.splice(index, 1);
+            }
+          }
+        }
+      )
+    );
+  },
+
+  // Optimistic mesajı gerçek mesajla değiştir
+  replaceOptimisticMessage: (dispatch, partnerId, tempId, realMessage) => {
+    dispatch(
+      chatApiSlice.util.updateQueryData(
+        "getChatHistory",
+        { partnerId, page: 1 },
+        (draft) => {
+          if (Array.isArray(draft)) {
+            const index = draft.findIndex((msg) => msg.id === tempId);
+            if (index !== -1) {
+              draft[index] = {
+                ...realMessage,
+                isOptimistic: false,
+              };
+            }
+          }
+        }
+      )
+    );
+  },
+
+  // Cache'i temizle (çıkış yaparken)
+  clearChatCache: (dispatch) => {
+    dispatch(chatApiSlice.util.resetApiState());
+  },
+
+  // Belirli bir chat'in cache'ini temizle
+  clearSpecificChatCache: (dispatch, partnerId) => {
+    dispatch(
+      chatApiSlice.util.invalidateTags([{ type: "ChatMessage", id: partnerId }])
+    );
+  },
+
+  // Partner listesini manuel güncelle
+  updatePartnersList: (dispatch) => {
+    dispatch(chatApiSlice.util.invalidateTags(["ChatPartner"]));
+  },
+
+  // Unread count'u manuel güncelle
+  updateUnreadCount: (dispatch) => {
+    dispatch(chatApiSlice.util.invalidateTags(["UnreadCount"]));
+  },
+};

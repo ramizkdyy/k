@@ -1,4 +1,4 @@
-// screens/ChatDetailScreen.js - Complete Enhanced Version
+// screens/ChatDetailScreen.js - Optimized with Socket Integration
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
@@ -31,47 +31,226 @@ import { StatusBar } from "expo-status-bar";
 import {
   useGetChatHistoryQuery,
   useSendMessageMutation,
+  chatApiHelpers,
 } from "../redux/api/chatApiSlice";
 import { useSignalR } from "../contexts/SignalRContext";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 
 const ChatDetailScreen = ({ navigation, route }) => {
   const { partnerId, partnerName } = route.params || {};
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [page, setPage] = useState(1);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [messages, setMessages] = useState([]); // Local state for messages
+  const [hasLoadedInitialMessages, setHasLoadedInitialMessages] =
+    useState(false);
   const flatListRef = useRef();
   const typingTimeoutRef = useRef();
   const textInputRef = useRef();
 
   const { user } = useSelector((state) => state.auth);
   const currentUserId = user?.id || user?.userId;
+  const dispatch = useDispatch();
 
   const {
     isConnected,
+    isConnecting,
+    connectionError,
     onlineUsers,
     typingUsers,
     sendMessage: sendSignalRMessage,
     startTyping,
     stopTyping,
     markMessagesAsRead,
+    connection,
+    reconnect,
   } = useSignalR();
 
-  // API calls
+  // Only load initial chat history once
   const {
-    data: chatHistory = [],
+    data: initialChatHistory = [],
     isLoading,
     error,
     refetch,
-    isFetching,
-  } = useGetChatHistoryQuery({ partnerId, page }, { skip: !partnerId });
+  } = useGetChatHistoryQuery(
+    { partnerId, page: 1 },
+    {
+      skip: !partnerId,
+      refetchOnMountOrArgChange: true, // ✅ Her seferinde yeni data yükle
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
+    }
+  );
 
   const [sendMessage, { isLoading: isSending }] = useSendMessageMutation();
 
   // Partner online status
   const isPartnerOnline = onlineUsers.has(partnerId);
   const isPartnerTyping = typingUsers.has(partnerId);
+
+  // Set initial messages when chat history is loaded
+  useEffect(() => {
+    if (initialChatHistory.length > 0 && !hasLoadedInitialMessages) {
+      setMessages(initialChatHistory);
+      setHasLoadedInitialMessages(true);
+      console.log(
+        "Initial chat history loaded:",
+        initialChatHistory.length,
+        "messages"
+      );
+    }
+  }, [initialChatHistory, hasLoadedInitialMessages]);
+
+  // SignalR message listeners
+  useEffect(() => {
+    if (!connection || !isConnected) return;
+
+    console.log("Setting up SignalR listeners for chat:", partnerId);
+
+    // Listen for new messages
+    const handleReceiveMessage = (messageData) => {
+      console.log(
+        "📨 Received new message via SignalR:",
+        JSON.stringify(messageData, null, 2)
+      );
+
+      // Only add message if it's from our current chat partner OR if it's TO our current partner
+      if (
+        messageData.SenderUserId === partnerId ||
+        messageData.ReceiverUserId === partnerId
+      ) {
+        const newMessage = {
+          id: messageData.Id || messageData.id || `msg-${Date.now()}`,
+          senderUserId: messageData.SenderUserId || messageData.senderUserId,
+          receiverUserId:
+            messageData.ReceiverUserId ||
+            messageData.receiverUserId ||
+            currentUserId,
+          content: messageData.Content || messageData.content,
+          sentAt:
+            messageData.SentAt ||
+            messageData.sentAt ||
+            new Date().toISOString(),
+          isRead: messageData.IsRead || messageData.isRead || false,
+        };
+
+        console.log(
+          "🔄 Processed message:",
+          JSON.stringify(newMessage, null, 2)
+        );
+
+        setMessages((prevMessages) => {
+          // Avoid duplicates
+          const exists = prevMessages.some(
+            (msg) =>
+              msg.id === newMessage.id ||
+              (msg.content === newMessage.content &&
+                msg.senderUserId === newMessage.senderUserId &&
+                Math.abs(new Date(msg.sentAt) - new Date(newMessage.sentAt)) <
+                  2000)
+          );
+
+          if (!exists) {
+            console.log("✅ Adding new message to local state");
+            return [...prevMessages, newMessage];
+          } else {
+            console.log("⚠️ Duplicate message, not adding");
+          }
+          return prevMessages;
+        });
+
+        // Mark as read if it's from partner and we're in the chat
+        if (messageData.SenderUserId === partnerId && isConnected) {
+          setTimeout(() => {
+            markMessagesAsRead(partnerId);
+          }, 500);
+        }
+      } else {
+        console.log("🚫 Message not for current chat:", {
+          messageSender: messageData.SenderUserId,
+          messageReceiver: messageData.ReceiverUserId,
+          currentPartner: partnerId,
+        });
+      }
+    };
+
+    // Listen for message sent confirmation
+    const handleMessageSent = (confirmationData) => {
+      console.log(
+        "✅ Message sent confirmation:",
+        JSON.stringify(confirmationData, null, 2)
+      );
+
+      // Update optimistic messages to show as delivered
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) => {
+          if (msg.isOptimistic) {
+            console.log("🔄 Updating optimistic message to delivered");
+            return {
+              ...msg,
+              isOptimistic: false,
+              sentAt:
+                confirmationData.SentAt ||
+                confirmationData.sentAt ||
+                msg.sentAt,
+              id: msg.id.startsWith("temp-") ? `msg-${Date.now()}` : msg.id,
+            };
+          }
+          return msg;
+        })
+      );
+    };
+
+    // Listen for message read status
+    const handleMessagesRead = (readData) => {
+      console.log("Messages marked as read:", readData);
+
+      if (readData.ReadByUserId === partnerId) {
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) =>
+            msg.senderUserId === currentUserId ? { ...msg, isRead: true } : msg
+          )
+        );
+      }
+    };
+
+    // Listen for message errors
+    const handleMessageError = (errorData) => {
+      console.error("❌ Message error:", JSON.stringify(errorData, null, 2));
+
+      // Remove failed optimistic messages
+      setMessages((prevMessages) => {
+        const filteredMessages = prevMessages.filter(
+          (msg) => !msg.isOptimistic
+        );
+        console.log(
+          `🗑️ Removed ${
+            prevMessages.length - filteredMessages.length
+          } optimistic messages due to error`
+        );
+        return filteredMessages;
+      });
+
+      Alert.alert(
+        "Message Failed",
+        errorData.Error || errorData.error || "Failed to send message"
+      );
+    };
+
+    // Register SignalR listeners
+    connection.on("ReceiveMessage", handleReceiveMessage);
+    connection.on("MessageSent", handleMessageSent);
+    connection.on("MessagesRead", handleMessagesRead);
+    connection.on("MessageError", handleMessageError);
+
+    // Cleanup listeners
+    return () => {
+      connection.off("ReceiveMessage", handleReceiveMessage);
+      connection.off("MessageSent", handleMessageSent);
+      connection.off("MessagesRead", handleMessagesRead);
+      connection.off("MessageError", handleMessageError);
+    };
+  }, [connection, isConnected, partnerId, currentUserId, markMessagesAsRead]);
 
   // Keyboard listeners
   useEffect(() => {
@@ -99,19 +278,28 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
-    if (chatHistory.length > 0) {
+    if (messages.length > 0) {
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     }
-  }, [chatHistory.length]);
+  }, [messages.length]);
 
   // Mark messages as read when entering chat
   useEffect(() => {
-    if (partnerId && isConnected) {
+    if (partnerId && isConnected && hasLoadedInitialMessages) {
       markMessagesAsRead(partnerId);
     }
-  }, [partnerId, isConnected]);
+  }, [partnerId, isConnected, hasLoadedInitialMessages, markMessagesAsRead]);
+
+  // Debug: Messages state changes
+  useEffect(() => {
+    console.log("📊 Messages state updated:", {
+      count: messages.length,
+      lastMessage: messages[messages.length - 1],
+      optimisticCount: messages.filter((m) => m.isOptimistic).length,
+    });
+  }, [messages]);
 
   // Cleanup typing timeout
   useEffect(() => {
@@ -143,9 +331,13 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
   // Send message handler
   const handleSendMessage = async () => {
-    if (!message.trim() || !partnerId) return;
+    if (!message.trim() || !partnerId) {
+      console.log("❌ Empty message or no partnerId");
+      return;
+    }
 
     const messageText = message.trim();
+    console.log("📤 Sending message:", { partnerId, messageText, isConnected });
     setMessage("");
 
     // Stop typing
@@ -159,27 +351,73 @@ const ChatDetailScreen = ({ navigation, route }) => {
       clearTimeout(typingTimeoutRef.current);
     }
 
+    // Add optimistic message immediately
+    const optimisticMessage = {
+      id: `temp-${Date.now()}`,
+      senderUserId: currentUserId,
+      receiverUserId: partnerId,
+      content: messageText,
+      sentAt: new Date().toISOString(),
+      isRead: false,
+      isOptimistic: true,
+    };
+
+    console.log("🔮 Adding optimistic message:", optimisticMessage);
+    setMessages((prevMessages) => {
+      const newMessages = [...prevMessages, optimisticMessage];
+      console.log("🔮 Messages after optimistic add:", newMessages.length);
+      return newMessages;
+    });
+
+    // Scroll to bottom
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+
     try {
-      // Önce SignalR ile göndermeyi dene
+      // SignalR bağlantısı varsa önce onu dene
       if (isConnected) {
+        console.log("📡 Sending message via SignalR...");
         await sendSignalRMessage(partnerId, messageText);
+        console.log("✅ Message sent via SignalR successfully");
       } else {
+        console.log("🌐 SignalR not connected, using REST API...");
         // SignalR bağlantısı yoksa REST API kullan
-        await sendMessage({
+        const result = await sendMessage({
           receiverUserId: partnerId,
           content: messageText,
         }).unwrap();
-      }
 
-      // Scroll to bottom
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+        console.log("✅ Message sent via REST API:", result);
+
+        // REST API başarılı olursa optimistic mesajı güncelle
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) =>
+            msg.id === optimisticMessage.id
+              ? { ...msg, isOptimistic: false, id: `msg-${Date.now()}` }
+              : msg
+          )
+        );
+      }
     } catch (error) {
-      console.error("Mesaj gönderme hatası:", error);
+      console.error("❌ Failed to send message:", error);
+
+      // Başarısız optimistic mesajı kaldır
+      setMessages((prevMessages) => {
+        const filteredMessages = prevMessages.filter(
+          (msg) => msg.id !== optimisticMessage.id
+        );
+        console.log(
+          `🗑️ Removed optimistic message, remaining: ${filteredMessages.length}`
+        );
+        return filteredMessages;
+      });
+
       Alert.alert(
         "Message Failed",
-        "Failed to send message. Please try again.",
+        `Failed to send message${
+          !isConnected ? " (chat disconnected)" : ""
+        }. Please try again.`,
         [
           { text: "Cancel", style: "cancel" },
           {
@@ -194,12 +432,12 @@ const ChatDetailScreen = ({ navigation, route }) => {
     }
   };
 
-  // Load more messages (pagination)
-  const loadMoreMessages = () => {
-    if (!isLoading && !isFetching && chatHistory.length >= 20) {
-      setPage((prev) => prev + 1);
-    }
-  };
+  // Refresh messages manually (pull to refresh or retry)
+  const refreshMessages = useCallback(() => {
+    setHasLoadedInitialMessages(false);
+    setMessages([]);
+    refetch();
+  }, [refetch]);
 
   // Format timestamp
   const formatTimestamp = (timestamp) => {
@@ -222,10 +460,10 @@ const ChatDetailScreen = ({ navigation, route }) => {
   // Message renderer
   const renderMessage = ({ item, index }) => {
     const isSent = item.senderUserId === currentUserId;
-    const isLastMessage = index === chatHistory.length - 1;
-    const prevMessage = index > 0 ? chatHistory[index - 1] : null;
+    const isLastMessage = index === messages.length - 1;
+    const prevMessage = index > 0 ? messages[index - 1] : null;
     const nextMessage =
-      index < chatHistory.length - 1 ? chatHistory[index + 1] : null;
+      index < messages.length - 1 ? messages[index + 1] : null;
 
     const showAvatar =
       !isSent &&
@@ -307,7 +545,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
   };
 
   // Loading state
-  if (isLoading && page === 1) {
+  if (isLoading && !hasLoadedInitialMessages) {
     return (
       <View className="flex-1 bg-white justify-center items-center">
         <ActivityIndicator size="large" color="#0ea5e9" />
@@ -317,7 +555,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
   }
 
   // Error state
-  if (error) {
+  if (error && !hasLoadedInitialMessages) {
     return (
       <KeyboardAvoidingView
         className="flex-1 bg-white"
@@ -353,7 +591,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
           </Text>
           <TouchableOpacity
             className="mt-4 bg-blue-500 px-6 py-3 rounded-lg"
-            onPress={refetch}
+            onPress={refreshMessages}
           >
             <Text className="text-white font-semibold">Try Again</Text>
           </TouchableOpacity>
@@ -429,7 +667,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
       {/* Messages */}
       <FlatList
         ref={flatListRef}
-        data={chatHistory}
+        data={messages}
         renderItem={renderMessage}
         keyExtractor={(item) =>
           item.id?.toString() || `${item.senderUserId}-${item.sentAt}`
@@ -440,18 +678,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
         onContentSizeChange={() =>
           flatListRef.current?.scrollToEnd({ animated: false })
         }
-        onEndReached={loadMoreMessages}
-        onEndReachedThreshold={0.1}
-        ListHeaderComponent={
-          isFetching && page > 1 ? (
-            <View className="py-4 items-center">
-              <ActivityIndicator size="small" color="#0ea5e9" />
-              <Text className="text-gray-500 text-xs mt-1">
-                Loading older messages...
-              </Text>
-            </View>
-          ) : null
-        }
         ListEmptyComponent={() => (
           <View className="flex-1 justify-center items-center py-20">
             <Text className="text-gray-500 text-base text-center">
@@ -460,6 +686,34 @@ const ChatDetailScreen = ({ navigation, route }) => {
           </View>
         )}
       />
+
+      {/* Connection Status Indicator */}
+      {!isConnected && (
+        <View className="bg-yellow-100 px-4 py-2 border-t border-yellow-200">
+          <View className="flex-row items-center justify-between">
+            <Text className="text-yellow-600 text-sm">
+              {isConnecting
+                ? "Connecting to chat..."
+                : connectionError
+                ? "Chat disconnected"
+                : "Reconnecting to chat..."}
+            </Text>
+            {!isConnecting && (
+              <TouchableOpacity
+                onPress={reconnect}
+                className="bg-yellow-500 px-3 py-1 rounded"
+              >
+                <Text className="text-white text-xs font-medium">Retry</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {connectionError && (
+            <Text className="text-yellow-500 text-xs mt-1">
+              Using fallback messaging
+            </Text>
+          )}
+        </View>
+      )}
 
       {/* Input Area */}
       <View
