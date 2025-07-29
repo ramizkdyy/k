@@ -713,7 +713,6 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
     }
   );
 
-  console.log("recommendedData:", recommendedData.data[0]);
 
   // Update properties when new data arrives
   useEffect(() => {
