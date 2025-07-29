@@ -58,11 +58,11 @@ import {
     useGetLandlordProfileQuery,
     useGetTenantProfileQuery,
 } from "../redux/api/apiSlice";
-import useHideTabBar from "../hooks/useHideTabBar";
+
 const { width: screenWidth } = Dimensions.get('window');
 
 const UserProfileScreen = ({ navigation, route }) => {
-    useHideTabBar(navigation, true);
+
     const { userId, userRole } = route.params;
     const [isFavorite, setIsFavorite] = useState(false);
     const [activeTab, setActiveTab] = useState('general');
