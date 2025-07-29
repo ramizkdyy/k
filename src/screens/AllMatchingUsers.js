@@ -331,10 +331,14 @@ const MatchScoreBar = memo(({ matchScore, showBar = false, size = "sm" }) => {
 const TenantItem = memo(
   ({ item, navigation }) => {
     const handleTenantPress = useCallback(() => {
-      navigation.navigate("TenantProfile", {
-        tenantId: item.tenantProfileId,
+      console.log("TENANT ITEM DATA:", JSON.stringify(item, null, 2));
+      console.log("item.userId:", item.userId); // UUID'yi logla
+
+      navigation.navigate("UserProfile", {
+        userId: item.userId,  // ✅ UUID kullan
+        userRole: "KIRACI"
       });
-    }, [item.tenantProfileId, navigation]);
+    }, [item.userId, navigation]);  // dependency'yi de değiştir
 
     return (
       <View
@@ -503,10 +507,16 @@ const TenantItem = memo(
 const LandlordItem = memo(
   ({ item, navigation }) => {
     const handleLandlordPress = useCallback(() => {
-      navigation.navigate("LandlordProfile", {
-        userId: item.landlordProfileId || item.userId,
+      console.log("LANDLORD ITEM DATA:", JSON.stringify(item, null, 2));
+      console.log("Available keys:", Object.keys(item));
+      console.log("item.userId:", item.userId);
+      console.log("item.landlordProfileId:", item.landlordProfileId);
+
+      navigation.navigate("UserProfile", {
+        userId: item.userId,
+        userRole: "EVSAHIBI"
       });
-    }, [item.landlordProfileId, item.userId, navigation]);
+    }, [item.userId, navigation]);
 
     return (
       <View
@@ -964,16 +974,16 @@ const AllMatchingUsers = ({ navigation, route }) => {
         ? "Arama sonucu bulunamadı"
         : "Henüz uygun kiracı bulunmuyor"
       : searchQuery.trim()
-      ? "Arama sonucu bulunamadı"
-      : "Henüz uygun ev sahibi bulunmuyor";
+        ? "Arama sonucu bulunamadı"
+        : "Henüz uygun ev sahibi bulunmuyor";
 
     const emptyDescription = isLandlord
       ? searchQuery.trim()
         ? "Farklı anahtar kelimeler deneyin"
         : "Profilinizi güncelleyerek daha fazla eşleşme elde edebilirsiniz"
       : searchQuery.trim()
-      ? "Farklı anahtar kelimeler deneyin"
-      : "Beklenti profilinizi güncelleyerek daha fazla eşleşme elde edebilirsiniz";
+        ? "Farklı anahtar kelimeler deneyin"
+        : "Beklenti profilinizi güncelleyerek daha fazla eşleşme elde edebilirsiniz";
 
     return (
       <View className="flex-1 justify-center items-center p-8">
@@ -1021,9 +1031,8 @@ const AllMatchingUsers = ({ navigation, route }) => {
       if (isLandlord) {
         return `tenant_${item.tenantProfileId || item.id}_${index}`;
       } else {
-        return `landlord_${
-          item.landlordProfileId || item.userId || item.id
-        }_${index}`;
+        return `landlord_${item.landlordProfileId || item.userId || item.id
+          }_${index}`;
       }
     },
     [isLandlord]
@@ -1098,15 +1107,15 @@ const AllMatchingUsers = ({ navigation, route }) => {
   // Dynamic sort options based on user role
   const sortOptions = isLandlord
     ? [
-        { key: "compatibility", label: "Uyumluluk" },
-        { key: "budget", label: "Bütçe" },
-        { key: "date", label: "Tarih" },
-      ]
+      { key: "compatibility", label: "Uyumluluk" },
+      { key: "budget", label: "Bütçe" },
+      { key: "date", label: "Tarih" },
+    ]
     : [
-        { key: "compatibility", label: "Uyumluluk" },
-        { key: "budget", label: "Kira" },
-        { key: "date", label: "Tarih" },
-      ];
+      { key: "compatibility", label: "Uyumluluk" },
+      { key: "budget", label: "Kira" },
+      { key: "date", label: "Tarih" },
+    ];
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -1170,17 +1179,15 @@ const AllMatchingUsers = ({ navigation, route }) => {
                 {sortOptions.map((option) => (
                   <TouchableOpacity
                     key={option.key}
-                    className={`mr-3 px-4 py-2 rounded-full border ${
-                      sortBy === option.key
-                        ? "bg-gray-900"
-                        : "bg-white border-white"
-                    }`}
+                    className={`mr-3 px-4 py-2 rounded-full border ${sortBy === option.key
+                      ? "bg-gray-900"
+                      : "bg-white border-white"
+                      }`}
                     onPress={() => setSortBy(option.key)}
                   >
                     <Text
-                      className={`text-sm font-medium ${
-                        sortBy === option.key ? "text-white" : "text-gray-700"
-                      }`}
+                      className={`text-sm font-medium ${sortBy === option.key ? "text-white" : "text-gray-700"
+                        }`}
                     >
                       {option.label}
                     </Text>
