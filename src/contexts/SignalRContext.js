@@ -42,7 +42,7 @@ export const SignalRProvider = ({ children }) => {
   const maxReconnectAttempts = 5;
 
   // ✅ Güncel ngrok URL'ini dinamik olarak al veya manuel güncelle
-  const SIGNALR_BASE_URL = "https://20053fb3ffb3.ngrok-free.app"; // Bu URL'yi güncelleyin
+  const SIGNALR_BASE_URL = "https://chatapi.justkey.online/"; // Bu URL'yi güncelleyin
 
   // SignalR bağlantısını başlat
   const startConnection = useCallback(async () => {

@@ -1,5 +1,5 @@
-// screens/MessagesScreen.js - Updated Version with Last Message and Profile Image
-import React, { useState, useEffect } from "react";
+// screens/MessagesScreen.js - Fixed with Real-time Updates
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -28,11 +28,12 @@ import {
 } from "../redux/api/chatApiSlice";
 import { useSignalR } from "../contexts/SignalRContext";
 import { useSelector } from "react-redux";
+import { useFocusEffect } from "@react-navigation/native";
 
 const MessagesScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const { user } = useSelector((state) => state.auth);
-  const { isConnected, onlineUsers } = useSignalR();
+  const { isConnected, onlineUsers, connection } = useSignalR();
 
   // API calls
   const {
@@ -40,13 +41,21 @@ const MessagesScreen = ({ navigation }) => {
     isLoading: partnersLoading,
     error: partnersError,
     refetch: refetchPartners,
-  } = useGetChatPartnersQuery();
+  } = useGetChatPartnersQuery(undefined, {
+    // ✅ Enable refetch when screen gains focus
+    refetchOnFocus: true,
+    refetchOnMountOrArgChange: true,
+  });
 
   const {
     data: unreadData,
     isLoading: unreadLoading,
     refetch: refetchUnread,
-  } = useGetUnreadCountQuery();
+  } = useGetUnreadCountQuery(undefined, {
+    // ✅ Enable refetch when screen gains focus
+    refetchOnFocus: true,
+    refetchOnMountOrArgChange: true,
+  });
 
   // ✅ API response'dan chat partners'ı al (direkt array geliyor)
   const chatPartners = React.useMemo(() => {
@@ -60,11 +69,70 @@ const MessagesScreen = ({ navigation }) => {
     return unreadData?.count || 0;
   }, [unreadData]);
 
+  // ✅ Focus effect - Screen her görüldüğünde data'yı yenile
+  useFocusEffect(
+    useCallback(() => {
+      console.log("📱 MessagesScreen focused, refreshing data...");
+      refetchPartners();
+      refetchUnread();
+    }, [refetchPartners, refetchUnread])
+  );
+
+  // ✅ SignalR message listener for real-time updates
+  useEffect(() => {
+    if (!connection || !isConnected) return;
+
+    console.log("🔔 Setting up SignalR listeners for MessagesScreen");
+
+    // Listen for new messages to update partners list
+    const handleReceiveMessage = (messageData) => {
+      console.log("📨 New message received in MessagesScreen:", messageData);
+
+      // Refetch partners to show latest message
+      refetchPartners();
+      refetchUnread();
+    };
+
+    // Listen for message sent confirmations
+    const handleMessageSent = (confirmationData) => {
+      console.log(
+        "✅ Message sent confirmation in MessagesScreen:",
+        confirmationData
+      );
+
+      // Refetch partners to show sent message
+      refetchPartners();
+      refetchUnread();
+    };
+
+    // Listen for messages read status
+    const handleMessagesRead = (readData) => {
+      console.log("👁️ Messages read in MessagesScreen:", readData);
+
+      // Refetch unread count
+      refetchUnread();
+    };
+
+    // Register SignalR listeners
+    connection.on("ReceiveMessage", handleReceiveMessage);
+    connection.on("MessageSent", handleMessageSent);
+    connection.on("MessagesRead", handleMessagesRead);
+
+    // Cleanup listeners
+    return () => {
+      console.log("🧹 Cleaning up SignalR listeners for MessagesScreen");
+      connection.off("ReceiveMessage", handleReceiveMessage);
+      connection.off("MessageSent", handleMessageSent);
+      connection.off("MessagesRead", handleMessagesRead);
+    };
+  }, [connection, isConnected, refetchPartners, refetchUnread]);
+
   // Refresh handler
-  const onRefresh = () => {
+  const onRefresh = useCallback(() => {
+    console.log("🔄 Manual refresh requested");
     refetchPartners();
     refetchUnread();
-  };
+  }, [refetchPartners, refetchUnread]);
 
   // ✅ Partner listesini arama ile filtrele
   const filteredPartners = React.useMemo(() => {
@@ -168,6 +236,7 @@ const MessagesScreen = ({ navigation }) => {
       <TouchableOpacity
         className="flex-row items-center px-4 py-3 bg-white"
         onPress={() => {
+          console.log("🚀 Navigating to chat with:", partnerId, partnerName);
           navigation.navigate("ChatDetail", {
             partnerId: partnerId,
             partnerName: partnerName,
@@ -282,6 +351,21 @@ const MessagesScreen = ({ navigation }) => {
 
           <View className="flex-1 items-center">
             <Text className="text-xl font-bold text-gray-900">Mesajlar</Text>
+            {/* ✅ Connection status indicator */}
+            <View className="flex-row items-center mt-1">
+              <FontAwesomeIcon
+                icon={isConnected ? faWifi : faWifiSlash}
+                size={12}
+                color={isConnected ? "#10b981" : "#ef4444"}
+              />
+              <Text
+                className={`text-xs ml-1 ${
+                  isConnected ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {isConnected ? "Connected" : "Offline"}
+              </Text>
+            </View>
           </View>
 
           <View className="flex-row items-center">
@@ -322,7 +406,12 @@ const MessagesScreen = ({ navigation }) => {
         className="flex-1"
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={partnersLoading} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={partnersLoading}
+            onRefresh={onRefresh}
+            colors={["#0ea5e9"]}
+            tintColor="#0ea5e9"
+          />
         }
         ListEmptyComponent={() => (
           <View className="flex-1 justify-center items-center py-20">
@@ -346,6 +435,9 @@ const MessagesScreen = ({ navigation }) => {
             )}
           </View>
         )}
+        // ✅ Pull to refresh ekle
+        onRefresh={onRefresh}
+        refreshing={partnersLoading}
       />
 
       {/* Quick Actions */}
@@ -362,6 +454,7 @@ const MessagesScreen = ({ navigation }) => {
                   text: "Start Chat",
                   onPress: (userId) => {
                     if (userId && userId.trim()) {
+                      console.log("🚀 Starting new chat with:", userId.trim());
                       navigation.navigate("ChatDetail", {
                         partnerId: userId.trim(),
                         partnerName: userId.trim(),

@@ -1,4 +1,4 @@
-// screens/ChatDetailScreen.js - Optimized with Socket Integration
+// screens/ChatDetailScreen.js - Fixed with Proper Pagination
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
@@ -41,9 +41,15 @@ const ChatDetailScreen = ({ navigation, route }) => {
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const [messages, setMessages] = useState([]); // Local state for messages
+  const [messages, setMessages] = useState([]); // Local state for combined messages
   const [hasLoadedInitialMessages, setHasLoadedInitialMessages] =
     useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [shouldScrollToEnd, setShouldScrollToEnd] = useState(false);
+  const [loadedPages, setLoadedPages] = useState(new Set([1])); // ✅ Yüklenen sayfaları takip et
+
   const flatListRef = useRef();
   const typingTimeoutRef = useRef();
   const textInputRef = useRef();
@@ -66,19 +72,32 @@ const ChatDetailScreen = ({ navigation, route }) => {
     reconnect,
   } = useSignalR();
 
-  // Only load initial chat history once
+  // ✅ FIXED: İlk sayfayı yükle (Page 1)
   const {
-    data: initialChatHistory = [],
-    isLoading,
-    error,
-    refetch,
+    data: firstPageData = [],
+    isLoading: isLoadingFirstPage,
+    error: firstPageError,
+    refetch: refetchFirstPage,
   } = useGetChatHistoryQuery(
     { partnerId, page: 1 },
     {
       skip: !partnerId,
-      refetchOnMountOrArgChange: true, // ✅ Her seferinde yeni data yükle
+      refetchOnMountOrArgChange: true,
       refetchOnFocus: false,
       refetchOnReconnect: false,
+    }
+  );
+
+  // ✅ FIXED: Dinamik sayfa yükleme - Sadece gerekli sayfayı yükle
+  const {
+    data: currentPageData = [],
+    isLoading: isLoadingCurrentPage,
+    error: currentPageError,
+    refetch: refetchCurrentPage,
+  } = useGetChatHistoryQuery(
+    { partnerId, page: currentPage },
+    {
+      skip: !partnerId || currentPage === 1 || loadedPages.has(currentPage), // ✅ Zaten yüklü sayfaları atla
     }
   );
 
@@ -88,18 +107,144 @@ const ChatDetailScreen = ({ navigation, route }) => {
   const isPartnerOnline = onlineUsers.has(partnerId);
   const isPartnerTyping = typingUsers.has(partnerId);
 
-  // Set initial messages when chat history is loaded
+  // ✅ İlk sayfa yüklendiğinde mesajları set et
   useEffect(() => {
-    if (initialChatHistory.length > 0 && !hasLoadedInitialMessages) {
-      setMessages(initialChatHistory);
-      setHasLoadedInitialMessages(true);
+    if (firstPageData.length > 0 && !hasLoadedInitialMessages) {
       console.log(
-        "Initial chat history loaded:",
-        initialChatHistory.length,
-        "messages"
+        "📖 Setting initial messages from page 1:",
+        firstPageData.length
       );
+      setMessages(firstPageData);
+      setHasLoadedInitialMessages(true);
+      setShouldScrollToEnd(true);
+
+      // Eğer 20'den az mesaj varsa (sayfa boyutu 20 ise), daha fazla sayfa yok
+      if (firstPageData.length < 20) {
+        setHasMoreMessages(false);
+        console.log("🔚 No more messages to load (first page < 20)");
+      }
     }
-  }, [initialChatHistory, hasLoadedInitialMessages]);
+  }, [firstPageData, hasLoadedInitialMessages]);
+
+  // ✅ FIXED: Yeni sayfa yüklendiğinde mesajları birleştir
+  useEffect(() => {
+    if (
+      currentPageData.length > 0 &&
+      currentPage > 1 &&
+      !loadedPages.has(currentPage)
+    ) {
+      console.log(
+        `📖 Loading page ${currentPage} with ${currentPageData.length} messages`
+      );
+
+      setMessages((prevMessages) => {
+        // Yeni sayfadaki mesajları eskilerle birleştir (eski mesajlar sonda)
+        const combinedMessages = [...prevMessages, ...currentPageData];
+
+        // Duplicate kontrolü - ID ve timestamp'e göre
+        const uniqueMessages = combinedMessages.filter(
+          (message, index, self) =>
+            index ===
+            self.findIndex(
+              (m) =>
+                m.id === message.id ||
+                (m.content === message.content &&
+                  m.senderUserId === message.senderUserId &&
+                  Math.abs(new Date(m.sentAt) - new Date(message.sentAt)) <
+                    2000)
+            )
+        );
+
+        console.log(
+          `📖 Combined messages: ${combinedMessages.length} -> ${
+            uniqueMessages.length
+          } (removed ${
+            combinedMessages.length - uniqueMessages.length
+          } duplicates)`
+        );
+        return uniqueMessages;
+      });
+
+      // Bu sayfayı yüklü olarak işaretle
+      setLoadedPages((prev) => new Set([...prev, currentPage]));
+
+      // Eğer 20'den az mesaj varsa, daha fazla sayfa yok
+      if (currentPageData.length < 20) {
+        setHasMoreMessages(false);
+        console.log("🔚 No more messages to load");
+      }
+
+      setIsLoadingMore(false);
+    }
+  }, [currentPageData, currentPage, loadedPages]);
+
+  // ✅ Auto scroll to bottom after messages are loaded
+  useEffect(() => {
+    if (shouldScrollToEnd && messages.length > 0 && flatListRef.current) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false });
+        setShouldScrollToEnd(false);
+      }, 100);
+    }
+  }, [shouldScrollToEnd, messages]);
+
+  // ✅ FIXED: Load more messages - Doğru sayfa numarasını kullan
+  const handleLoadMore = useCallback(async () => {
+    if (isLoadingMore || !hasMoreMessages || isLoadingCurrentPage) {
+      console.log("⚠️ Skipping load more:", {
+        isLoadingMore,
+        hasMoreMessages,
+        isLoadingCurrentPage,
+      });
+      return;
+    }
+
+    const nextPage = currentPage + 1;
+
+    // Eğer bu sayfa zaten yüklenmiş ise atla
+    if (loadedPages.has(nextPage)) {
+      console.log(`⚠️ Page ${nextPage} already loaded, skipping`);
+      return;
+    }
+
+    console.log(`📖 Loading page ${nextPage}...`);
+    setIsLoadingMore(true);
+    setCurrentPage(nextPage);
+  }, [
+    isLoadingMore,
+    hasMoreMessages,
+    isLoadingCurrentPage,
+    currentPage,
+    loadedPages,
+  ]);
+
+  // Handle scroll event to detect when user reaches top
+  const handleScroll = useCallback(
+    (event) => {
+      const { contentOffset, contentSize, layoutMeasurement } =
+        event.nativeEvent;
+
+      // Normal FlatList - check if user scrolled to top
+      const isAtTop = contentOffset.y <= 50;
+
+      if (isAtTop && hasMoreMessages && !isLoadingMore) {
+        handleLoadMore();
+      }
+    },
+    [hasMoreMessages, isLoadingMore, handleLoadMore]
+  );
+
+  // ✅ Function to sync message to cache
+  const syncMessageToCache = useCallback(
+    (messageData) => {
+      console.log("🔄 Syncing message to cache:", messageData);
+      chatApiHelpers.addMessageToCache(dispatch, partnerId, messageData);
+
+      // Also update partners list to show latest message
+      chatApiHelpers.updatePartnersList(dispatch);
+    },
+    [dispatch, partnerId]
+  );
 
   // SignalR message listeners
   useEffect(() => {
@@ -151,13 +296,22 @@ const ChatDetailScreen = ({ navigation, route }) => {
           );
 
           if (!exists) {
-            console.log("✅ Adding new message to local state");
-            return [...prevMessages, newMessage];
+            console.log("✅ Adding new message to local state at index 0");
+            // Add new message at the beginning (index 0) since latest messages come first
+            return [newMessage, ...prevMessages];
           } else {
             console.log("⚠️ Duplicate message, not adding");
           }
           return prevMessages;
         });
+
+        // ✅ Sync to cache for MessagesScreen to see
+        syncMessageToCache(messageData);
+
+        // ✅ Yeni mesaj geldiğinde scroll et
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
 
         // Mark as read if it's from partner and we're in the chat
         if (messageData.SenderUserId === partnerId && isConnected) {
@@ -186,7 +340,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
         prevMessages.map((msg) => {
           if (msg.isOptimistic) {
             console.log("🔄 Updating optimistic message to delivered");
-            return {
+            const updatedMessage = {
               ...msg,
               isOptimistic: false,
               sentAt:
@@ -195,6 +349,18 @@ const ChatDetailScreen = ({ navigation, route }) => {
                 msg.sentAt,
               id: msg.id.startsWith("temp-") ? `msg-${Date.now()}` : msg.id,
             };
+
+            // ✅ Sync confirmed message to cache
+            syncMessageToCache({
+              Id: updatedMessage.id,
+              SenderUserId: updatedMessage.senderUserId,
+              ReceiverUserId: updatedMessage.receiverUserId,
+              Content: updatedMessage.content,
+              SentAt: updatedMessage.sentAt,
+              IsRead: updatedMessage.isRead,
+            });
+
+            return updatedMessage;
           }
           return msg;
         })
@@ -210,6 +376,13 @@ const ChatDetailScreen = ({ navigation, route }) => {
           prevMessages.map((msg) =>
             msg.senderUserId === currentUserId ? { ...msg, isRead: true } : msg
           )
+        );
+
+        // ✅ Update cache for read status
+        chatApiHelpers.markCacheMessagesAsRead(
+          dispatch,
+          partnerId,
+          currentUserId
         );
       }
     };
@@ -250,7 +423,15 @@ const ChatDetailScreen = ({ navigation, route }) => {
       connection.off("MessagesRead", handleMessagesRead);
       connection.off("MessageError", handleMessageError);
     };
-  }, [connection, isConnected, partnerId, currentUserId, markMessagesAsRead]);
+  }, [
+    connection,
+    isConnected,
+    partnerId,
+    currentUserId,
+    markMessagesAsRead,
+    syncMessageToCache,
+    dispatch,
+  ]);
 
   // Keyboard listeners
   useEffect(() => {
@@ -258,6 +439,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
       "keyboardDidShow",
       (e) => {
         setKeyboardHeight(e.endCoordinates.height);
+        // ✅ Klavye açıldığında da scroll et
         setTimeout(() => {
           flatListRef.current?.scrollToEnd({ animated: true });
         }, 100);
@@ -276,15 +458,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
     };
   }, []);
 
-  // Scroll to bottom when new messages arrive
-  useEffect(() => {
-    if (messages.length > 0) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    }
-  }, [messages.length]);
-
   // Mark messages as read when entering chat
   useEffect(() => {
     if (partnerId && isConnected && hasLoadedInitialMessages) {
@@ -292,14 +465,27 @@ const ChatDetailScreen = ({ navigation, route }) => {
     }
   }, [partnerId, isConnected, hasLoadedInitialMessages, markMessagesAsRead]);
 
+  // ✅ Update partners list when leaving chat (so MessagesScreen shows latest message)
+  useEffect(() => {
+    return () => {
+      // When component unmounts, update partners list
+      console.log("🔄 Chat screen unmounting, updating partners list");
+      chatApiHelpers.updatePartnersList(dispatch);
+      chatApiHelpers.updateUnreadCount(dispatch);
+    };
+  }, [dispatch]);
+
   // Debug: Messages state changes
   useEffect(() => {
     console.log("📊 Messages state updated:", {
       count: messages.length,
-      lastMessage: messages[messages.length - 1],
+      latestMessage: messages[0], // Latest message is now at index 0
       optimisticCount: messages.filter((m) => m.isOptimistic).length,
+      currentPage,
+      hasMoreMessages,
+      loadedPages: Array.from(loadedPages),
     });
-  }, [messages]);
+  }, [messages, currentPage, hasMoreMessages, loadedPages]);
 
   // Cleanup typing timeout
   useEffect(() => {
@@ -351,7 +537,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    // Add optimistic message immediately
+    // Add optimistic message at the beginning (index 0)
     const optimisticMessage = {
       id: `temp-${Date.now()}`,
       senderUserId: currentUserId,
@@ -362,14 +548,14 @@ const ChatDetailScreen = ({ navigation, route }) => {
       isOptimistic: true,
     };
 
-    console.log("🔮 Adding optimistic message:", optimisticMessage);
+    console.log("🔮 Adding optimistic message at index 0:", optimisticMessage);
     setMessages((prevMessages) => {
-      const newMessages = [...prevMessages, optimisticMessage];
+      const newMessages = [optimisticMessage, ...prevMessages];
       console.log("🔮 Messages after optimistic add:", newMessages.length);
       return newMessages;
     });
 
-    // Scroll to bottom
+    // ✅ Mesaj gönderildikten sonra scroll et
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
     }, 100);
@@ -390,14 +576,28 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
         console.log("✅ Message sent via REST API:", result);
 
-        // REST API başarılı olursa optimistic mesajı güncelle
+        // REST API başarılı olursa optimistic mesajı güncelle ve cache'e sync et
+        const confirmedMessage = {
+          ...optimisticMessage,
+          isOptimistic: false,
+          id: `msg-${Date.now()}`,
+        };
+
         setMessages((prevMessages) =>
           prevMessages.map((msg) =>
-            msg.id === optimisticMessage.id
-              ? { ...msg, isOptimistic: false, id: `msg-${Date.now()}` }
-              : msg
+            msg.id === optimisticMessage.id ? confirmedMessage : msg
           )
         );
+
+        // ✅ Sync to cache
+        syncMessageToCache({
+          Id: confirmedMessage.id,
+          SenderUserId: confirmedMessage.senderUserId,
+          ReceiverUserId: confirmedMessage.receiverUserId,
+          Content: confirmedMessage.content,
+          SentAt: confirmedMessage.sentAt,
+          IsRead: confirmedMessage.isRead,
+        });
       }
     } catch (error) {
       console.error("❌ Failed to send message:", error);
@@ -432,12 +632,18 @@ const ChatDetailScreen = ({ navigation, route }) => {
     }
   };
 
-  // Refresh messages manually (pull to refresh or retry)
+  // ✅ FIXED: Refresh messages manually - Reset pagination state
   const refreshMessages = useCallback(() => {
+    console.log("🔄 Refreshing messages - resetting pagination state");
     setHasLoadedInitialMessages(false);
     setMessages([]);
-    refetch();
-  }, [refetch]);
+    setCurrentPage(1);
+    setHasMoreMessages(true);
+    setIsLoadingMore(false);
+    setShouldScrollToEnd(true);
+    setLoadedPages(new Set([1])); // ✅ Reset loaded pages
+    refetchFirstPage();
+  }, [refetchFirstPage]);
 
   // Format timestamp
   const formatTimestamp = (timestamp) => {
@@ -457,10 +663,12 @@ const ChatDetailScreen = ({ navigation, route }) => {
     }
   };
 
-  // Message renderer
+  // Message renderer - Normal order (newest at bottom)
   const renderMessage = ({ item, index }) => {
     const isSent = item.senderUserId === currentUserId;
-    const isLastMessage = index === messages.length - 1;
+    const isLatestMessage = index === messages.length - 1; // Latest message is now at the end
+
+    // For normal list order
     const prevMessage = index > 0 ? messages[index - 1] : null;
     const nextMessage =
       index < messages.length - 1 ? messages[index + 1] : null;
@@ -468,6 +676,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
     const showAvatar =
       !isSent &&
       (!nextMessage || nextMessage.senderUserId !== item.senderUserId);
+
     const showTimestamp =
       !prevMessage ||
       new Date(item.sentAt) - new Date(prevMessage.sentAt) > 5 * 60 * 1000; // 5 minutes
@@ -521,8 +730,8 @@ const ChatDetailScreen = ({ navigation, route }) => {
                 {formatTimestamp(item.sentAt)}
               </Text>
 
-              {/* Message status for sent messages */}
-              {isSent && isLastMessage && (
+              {/* Message status for sent messages (only show for latest message) */}
+              {isSent && isLatestMessage && (
                 <View className="ml-2 flex-row items-center">
                   {item.isOptimistic ? (
                     <View className="w-2 h-2 bg-blue-200 rounded-full animate-pulse" />
@@ -545,7 +754,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
   };
 
   // Loading state
-  if (isLoading && !hasLoadedInitialMessages) {
+  if (isLoadingFirstPage && !hasLoadedInitialMessages) {
     return (
       <View className="flex-1 bg-white justify-center items-center">
         <ActivityIndicator size="large" color="#0ea5e9" />
@@ -555,7 +764,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
   }
 
   // Error state
-  if (error && !hasLoadedInitialMessages) {
+  if (firstPageError && !hasLoadedInitialMessages) {
     return (
       <KeyboardAvoidingView
         className="flex-1 bg-white"
@@ -601,10 +810,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
   }
 
   return (
-    <View
-      className="flex-1 bg-white"
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
+    <View className="flex-1 bg-white">
       <SafeAreaView style={{ flex: 0, backgroundColor: "#fff" }} />
       <StatusBar style="dark" backgroundColor="#fff" />
 
@@ -664,19 +870,36 @@ const ChatDetailScreen = ({ navigation, route }) => {
         </View>
       </View>
 
-      {/* Messages */}
+      {/* Messages - Normal FlatList with pagination at top */}
       <FlatList
         ref={flatListRef}
-        data={messages}
-        renderItem={renderMessage}
+        data={messages.slice().reverse()} // Reverse to show oldest at top, newest at bottom
+        renderItem={({ item, index }) =>
+          renderMessage({
+            item,
+            index: messages.length - 1 - index, // Adjust index for reversed array
+          })
+        }
         keyExtractor={(item) =>
           item.id?.toString() || `${item.senderUserId}-${item.sentAt}`
         }
         className="flex-1 px-4"
         contentContainerStyle={{ paddingVertical: 16 }}
         showsVerticalScrollIndicator={false}
-        onContentSizeChange={() =>
-          flatListRef.current?.scrollToEnd({ animated: false })
+        onScroll={handleScroll}
+        scrollEventThrottle={100}
+        maintainVisibleContentPosition={{
+          minIndexForVisible: 0,
+        }}
+        ListHeaderComponent={() =>
+          isLoadingMore && hasMoreMessages ? (
+            <View className="py-4 items-center">
+              <ActivityIndicator size="small" color="#0ea5e9" />
+              <Text className="text-xs text-gray-500 mt-1">
+                Loading page {currentPage}...
+              </Text>
+            </View>
+          ) : null
         }
         ListEmptyComponent={() => (
           <View className="flex-1 justify-center items-center py-20">
@@ -716,52 +939,56 @@ const ChatDetailScreen = ({ navigation, route }) => {
       )}
 
       {/* Input Area */}
-      <View
-        className="bg-white px-4 py-3 border-t border-gray-100"
-        style={{
-          paddingBottom:
-            Platform.OS === "ios" ? Math.max(keyboardHeight, 16) : 16,
-        }}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
-        <View className="flex-row items-end bg-gray-100 rounded-full px-4 py-2">
-          <TextInput
-            ref={textInputRef}
-            className="flex-1 text-base py-2 max-h-20"
-            placeholder="Type a message..."
-            value={message}
-            onChangeText={(text) => {
-              setMessage(text);
-              if (text.trim()) {
-                handleTypingStart();
-              }
-            }}
-            multiline
-            maxLength={500}
-            placeholderTextColor="#999"
-            editable={!isSending}
-            onSubmitEditing={handleSendMessage}
-            blurOnSubmit={false}
-          />
+        <View
+          className="bg-white px-4 py-3 border-t border-gray-100"
+          style={{
+            paddingBottom: Platform.OS === "ios" ? 16 : 16,
+          }}
+        >
+          <View className="flex-row items-end bg-gray-100 rounded-full px-4 py-2">
+            <TextInput
+              ref={textInputRef}
+              className="flex-1 text-base py-2 max-h-20"
+              placeholder="Type a message..."
+              value={message}
+              onChangeText={(text) => {
+                setMessage(text);
+                if (text.trim()) {
+                  handleTypingStart();
+                }
+              }}
+              multiline
+              maxLength={500}
+              placeholderTextColor="#999"
+              editable={!isSending}
+              onSubmitEditing={handleSendMessage}
+              blurOnSubmit={false}
+            />
 
-          <TouchableOpacity
-            onPress={handleSendMessage}
-            className={`ml-2 w-8 h-8 rounded-full items-center justify-center ${
-              message.trim() && !isSending ? "bg-blue-500" : "bg-gray-300"
-            }`}
-            disabled={!message.trim() || isSending}
-          >
-            {isSending ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <FontAwesomeIcon
-                icon={faPaperPlane}
-                size={14}
-                color={message.trim() ? "#fff" : "#666"}
-              />
-            )}
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleSendMessage}
+              className={`ml-2 w-8 h-8 rounded-full items-center justify-center ${
+                message.trim() && !isSending ? "bg-blue-500" : "bg-gray-300"
+              }`}
+              disabled={!message.trim() || isSending}
+            >
+              {isSending ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <FontAwesomeIcon
+                  icon={faPaperPlane}
+                  size={14}
+                  color={message.trim() ? "#fff" : "#666"}
+                />
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
 
       <SafeAreaView style={{ flex: 0, backgroundColor: "transparent" }} />
     </View>
