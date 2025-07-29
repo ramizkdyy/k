@@ -562,8 +562,9 @@ const PropertyItem = memo(
     }, [item.postId, navigation]);
 
     const handleProfilePress = useCallback(() => {
-      navigation.navigate("LandlordProfile", {
+      navigation.navigate("UserProfile", {
         userId: item.landlordId || item.userId,
+        userRole: "EVSAHIBI"
       });
     }, [item.landlordId, item.userId, navigation]);
 
@@ -605,9 +606,8 @@ const PropertyItem = memo(
               className="text-gray-900 underline"
             >
               {item.kiraFiyati || item.rent
-                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-                    getCurrencyText(item.paraBirimi) || "₺"
-                  }`
+                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${getCurrencyText(item.paraBirimi) || "₺"
+                }`
                 : "Fiyat belirtilmemiş"}
             </Text>
             <Text className="text-sm text-gray-400 ml-1">/ay</Text>

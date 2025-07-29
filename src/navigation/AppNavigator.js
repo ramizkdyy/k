@@ -55,6 +55,7 @@ import OffersScreen from "../screens/OffersScreen";
 import MessagesScreen from "../screens/MessagesScreen";
 import ChatDetailScreen from "../screens/ChatDetailScreen";
 import AllRecommendedPostsScreen from "../screens/AllRecommendedPostsScreen";
+import UserProfileScreen from "../screens/UserProfileScreen";
 
 // Import icons
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
@@ -559,6 +560,11 @@ const LandlordHomeStack = () => {
           headerShown: false,
         }}
       />
+      <LandlordStack.Screen
+        name="UserProfile"
+        component={UserProfileScreen}
+        options={{ headerShown: false }}
+      />
     </LandlordStack.Navigator>
   );
 };
@@ -614,6 +620,11 @@ const LandlordPropertiesStack = () => {
           headerShown: false,
         }}
       />
+      <LandlordStack.Screen
+        name="UserProfile"
+        component={UserProfileScreen}
+        options={{ headerShown: false }}
+      />
     </LandlordStack.Navigator>
   );
 };
@@ -632,6 +643,11 @@ const LandlordOffersStack = () => {
         options={{
           headerShown: false,
         }}
+      />
+      <LandlordStack.Screen
+        name="UserProfile"
+        component={UserProfileScreen}
+        options={{ headerShown: false }}
       />
     </LandlordStack.Navigator>
   );
@@ -700,6 +716,11 @@ const LandlordProfileStack = () => {
           title: "Beklenti Profili Oluştur",
           headerShown: false,
         }}
+      />
+      <LandlordStack.Screen
+        name="UserProfile"
+        component={UserProfileScreen}
+        options={{ headerShown: false }}
       />
     </LandlordStack.Navigator>
   );
@@ -843,6 +864,11 @@ const TenantHomeStack = () => {
           headerShown: false,
         }}
       />
+      <TenantStack.Screen
+        name="UserProfile"
+        component={UserProfileScreen}
+        options={{ headerShown: false }}
+      />
     </TenantStack.Navigator>
   );
 };
@@ -867,6 +893,11 @@ const TenantPropertiesStack = () => {
         component={OffersScreen}
         options={{ title: "Teklifler" }}
       />
+      <TenantStack.Screen
+        name="UserProfile"
+        component={UserProfileScreen}
+        options={{ headerShown: false }}
+      />
     </TenantStack.Navigator>
   );
 };
@@ -885,6 +916,11 @@ const TenantOffersStack = () => {
         options={{
           headerShown: false,
         }}
+      />
+      <TenantStack.Screen
+        name="UserProfile"
+        component={UserProfileScreen}
+        options={{ headerShown: false }}
       />
     </TenantStack.Navigator>
   );
@@ -920,6 +956,11 @@ const TenantProfileStack = () => {
           title: "Beklenti Profili Oluştur",
           headerShown: false,
         }}
+      />
+      <TenantStack.Screen
+        name="UserProfile"
+        component={UserProfileScreen}
+        options={{ headerShown: false }}
       />
     </TenantStack.Navigator>
   );
@@ -1370,10 +1411,10 @@ const ProfileLoader = ({ children }) => {
     isLoading,
     error,
   } = userRole === "EVSAHIBI"
-    ? useGetLandlordProfileQuery(currentUser?.id, {
+      ? useGetLandlordProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       })
-    : useGetTenantProfileQuery(currentUser?.id, {
+      : useGetTenantProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       });
 

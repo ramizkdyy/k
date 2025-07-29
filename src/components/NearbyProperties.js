@@ -354,7 +354,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
               item.postImages && item.postImages.length > 0
                 ? item.postImages[0].postImageUrl
                 : item.firstPostİmageURL ||
-                  "https://via.placeholder.com/120x120",
+                "https://via.placeholder.com/120x120",
           }}
           className="rounded-2xl border border-gray-100"
           resizeMode="cover"
@@ -385,9 +385,8 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
             ellipsizeMode="tail"
           >
             {item.kiraFiyati || item.rent
-              ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-                  item.paraBirimi || item.currency || "₺"
-                }`
+              ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
+              }`
               : "Fiyat belirtilmemiş"}
           </Text>
 
@@ -455,7 +454,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
               item.postImages && item.postImages.length > 0
                 ? item.postImages[0].postImageUrl
                 : item.firstPostİmageURL ||
-                  "https://via.placeholder.com/300x200",
+                "https://via.placeholder.com/300x200",
           }}
           className="w-full "
           resizeMode="cover"
@@ -474,8 +473,8 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
                 {item.distanceInKM
                   ? item.distanceInKM.toFixed(1)
                   : item.distance !== undefined
-                  ? item.distance.toFixed(1)
-                  : "0.0"}{" "}
+                    ? item.distance.toFixed(1)
+                    : "0.0"}{" "}
                 km
               </Text>
             </View>
@@ -519,9 +518,8 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
               className="text-gray-500"
             >
               {item.kiraFiyati || item.rent
-                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-                    item.paraBirimi || item.currency || "₺"
-                  }`
+                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
+                }`
                 : "Fiyat belirtilmemiş"}
             </Text>
             <Text className="text-sm text-gray-400 ml-1">/ay</Text>
@@ -549,9 +547,10 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
       activeOpacity={1}
       className="mr-4 mb-3 overflow-hidden w-72 flex flex-col bg-white border border-gray-200 p-4"
       onPress={() => {
-        // Navigate to tenant profile or contact screen
-        navigation.navigate("TenantProfile", {
-          tenantId: item.tenantProfileId,
+        // Navigate to user profile screen with tenant role
+        navigation.navigate("UserProfile", {
+          userId: item.userId,
+          userRole: "KIRACI"
         });
       }}
     >
