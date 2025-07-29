@@ -1,4 +1,4 @@
-// screens/MessagesScreen.js - Fixed Version
+// screens/MessagesScreen.js - Updated Version with Last Message and Profile Image
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -48,64 +48,16 @@ const MessagesScreen = ({ navigation }) => {
     refetch: refetchUnread,
   } = useGetUnreadCountQuery();
 
-  // ✅ API response'dan doğru şekilde chat partners'ı al
+  // ✅ API response'dan chat partners'ı al (direkt array geliyor)
   const chatPartners = React.useMemo(() => {
     console.log("Chat Partners Response:", chatPartnersResponse);
-
-    // Eğer response direkt array ise
-    if (Array.isArray(chatPartnersResponse)) {
-      return chatPartnersResponse;
-    }
-
-    // Eğer response object içinde data varsa
-    if (
-      chatPartnersResponse?.data &&
-      Array.isArray(chatPartnersResponse.data)
-    ) {
-      return chatPartnersResponse.data;
-    }
-
-    // Eğer response object içinde result varsa
-    if (
-      chatPartnersResponse?.result &&
-      Array.isArray(chatPartnersResponse.result)
-    ) {
-      return chatPartnersResponse.result;
-    }
-
-    // Eğer response object içinde chatPartners varsa
-    if (
-      chatPartnersResponse?.chatPartners &&
-      Array.isArray(chatPartnersResponse.chatPartners)
-    ) {
-      return chatPartnersResponse.chatPartners;
-    }
-
-    // Default empty array
-    return [];
+    return Array.isArray(chatPartnersResponse) ? chatPartnersResponse : [];
   }, [chatPartnersResponse]);
 
-  // ✅ Unread count'u doğru şekilde al
+  // ✅ Unread count'u al (response.count geliyor)
   const totalUnreadCount = React.useMemo(() => {
     console.log("Unread Data Response:", unreadData);
-
-    if (typeof unreadData === "number") {
-      return unreadData;
-    }
-
-    if (unreadData?.count !== undefined) {
-      return unreadData.count;
-    }
-
-    if (unreadData?.data?.count !== undefined) {
-      return unreadData.data.count;
-    }
-
-    if (unreadData?.result?.count !== undefined) {
-      return unreadData.result.count;
-    }
-
-    return 0;
+    return unreadData?.count || 0;
   }, [unreadData]);
 
   // Refresh handler
@@ -114,84 +66,107 @@ const MessagesScreen = ({ navigation }) => {
     refetchUnread();
   };
 
-  // ✅ Partner listesini arama ile filtrele - güvenli string kontrolleri ile
+  // ✅ Partner listesini arama ile filtrele
   const filteredPartners = React.useMemo(() => {
-    if (!Array.isArray(chatPartners)) {
-      return [];
-    }
-
     return chatPartners.filter((partner) => {
-      // Partner string ise direkt kullan
-      if (typeof partner === "string") {
-        return partner.toLowerCase().includes(searchQuery.toLowerCase());
-      }
-
-      // Partner object ise içinden string alanları bul
-      if (typeof partner === "object" && partner !== null) {
-        const partnerName =
-          partner.name ||
-          partner.partnerId ||
-          partner.userId ||
-          partner.id ||
-          "";
-        return partnerName
-          .toString()
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase());
-      }
-
-      return false;
+      const partnerName = partner.name || partner.userName || "";
+      return partnerName.toLowerCase().includes(searchQuery.toLowerCase());
     });
   }, [chatPartners, searchQuery]);
 
-  // ✅ Partner ID'sini güvenli şekilde al
+  // ✅ Partner ID'sini al
   const getPartnerId = (partner) => {
-    if (typeof partner === "string") {
-      return partner;
-    }
-
-    if (typeof partner === "object" && partner !== null) {
-      return (
-        partner.partnerId ||
-        partner.userId ||
-        partner.id ||
-        partner.name ||
-        "Unknown"
-      );
-    }
-
-    return "Unknown";
+    return partner.id;
   };
 
-  // ✅ Partner name'ini güvenli şekilde al
+  // ✅ Partner name'ini al
   const getPartnerName = (partner) => {
-    if (typeof partner === "string") {
-      return partner;
-    }
+    return partner.name || partner.userName || "Unknown User";
+  };
 
+  // ✅ Partner profil resmini al
+  const getPartnerImage = (partner) => {
     if (typeof partner === "object" && partner !== null) {
-      return (
-        partner.name ||
-        partner.displayName ||
-        partner.partnerId ||
-        partner.userId ||
-        partner.id ||
-        "Unknown User"
-      );
+      // Eğer profileImageUrl varsa ve default değil ise kullan
+      if (
+        partner.profileImageUrl &&
+        partner.profileImageUrl !== "default_profile_image_url" &&
+        partner.profileImageUrl.startsWith("http")
+      ) {
+        return partner.profileImageUrl;
+      }
     }
 
-    return "Unknown User";
+    // Fallback olarak avatar generator kullan
+    const partnerName = getPartnerName(partner);
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      partnerName
+    )}&background=0ea5e9&color=fff&size=56`;
+  };
+
+  // ✅ Son mesajı al
+  const getLastMessage = (partner) => {
+    if (
+      typeof partner === "object" &&
+      partner !== null &&
+      partner.lastMessage
+    ) {
+      return partner.lastMessage.content || "";
+    }
+    return "";
+  };
+
+  // ✅ Son mesaj zamanını formatla
+  const formatMessageTime = (sentAt) => {
+    if (!sentAt) return "";
+
+    try {
+      const messageDate = new Date(sentAt);
+      const now = new Date();
+      const diffInHours = (now - messageDate) / (1000 * 60 * 60);
+
+      if (diffInHours < 1) {
+        const diffInMinutes = Math.floor((now - messageDate) / (1000 * 60));
+        return diffInMinutes <= 1 ? "now" : `${diffInMinutes}m`;
+      } else if (diffInHours < 24) {
+        return `${Math.floor(diffInHours)}h`;
+      } else if (diffInHours < 24 * 7) {
+        return `${Math.floor(diffInHours / 24)}d`;
+      } else {
+        return messageDate.toLocaleDateString();
+      }
+    } catch (error) {
+      return "";
+    }
+  };
+
+  // ✅ Mesajın okunmadığını kontrol et
+  const isMessageUnread = (partner) => {
+    if (
+      typeof partner === "object" &&
+      partner !== null &&
+      partner.lastMessage
+    ) {
+      return !partner.lastMessage.isRead && !partner.lastMessage.isFromMe;
+    }
+    return false;
   };
 
   // Partner item renderer
   const renderPartner = ({ item: partner }) => {
     const partnerId = getPartnerId(partner);
     const partnerName = getPartnerName(partner);
+    const partnerImage = getPartnerImage(partner);
+    const lastMessage = getLastMessage(partner);
     const isOnline = onlineUsers.has(partnerId);
+    const messageTime = partner.lastMessage
+      ? formatMessageTime(partner.lastMessage.sentAt)
+      : "";
+    const isUnread = isMessageUnread(partner);
 
     return (
       <TouchableOpacity
-        className="flex-row items-center px-4 py-3 bg-white border-b border-gray-100"
+        className="flex-row items-center px-4 py-3 bg-white"
         onPress={() => {
           navigation.navigate("ChatDetail", {
             partnerId: partnerId,
@@ -202,12 +177,13 @@ const MessagesScreen = ({ navigation }) => {
         {/* Avatar with online indicator */}
         <View className="relative mr-3">
           <Image
-            source={{
+            source={{ uri: partnerImage }}
+            className="w-14 h-14 rounded-full"
+            defaultSource={{
               uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(
                 partnerName
               )}&background=0ea5e9&color=fff&size=56`,
             }}
-            className="w-14 h-14 rounded-full"
           />
           {/* Online status indicator */}
           <View
@@ -220,29 +196,39 @@ const MessagesScreen = ({ navigation }) => {
         {/* Partner info */}
         <View className="flex-1">
           <View className="flex-row justify-between items-center">
-            <Text className="text-base font-semibold text-gray-900 flex-1">
+            <Text
+              className={`text-base text-gray-900 flex-1 ${
+                isUnread ? "font-bold" : " font-medium"
+              }`}
+            >
               {partnerName}
             </Text>
             <View className="flex-row items-center">
-              {isOnline && (
-                <FontAwesomeIcon
-                  icon={faCircle}
-                  size={8}
-                  color="#10b981"
-                  style={{ marginRight: 4 }}
-                />
+              {messageTime && (
+                <Text
+                  style={{ fontSize: 13 }}
+                  className={` ${
+                    isUnread ? "text-blue-600 font-semibold" : "text-gray-500"
+                  }`}
+                >
+                  {messageTime}
+                </Text>
               )}
-              <Text className="text-xs text-gray-500">
-                {isOnline ? "Online" : "Offline"}
-              </Text>
             </View>
           </View>
 
-          <Text className="text-sm text-gray-600 mt-1">
-            {partnerId !== partnerName
-              ? `ID: ${partnerId}`
-              : "Tap to start chatting"}
-          </Text>
+          <View className="flex-row justify-between items-center">
+            <Text
+              style={{ fontSize: 14 }}
+              className={` flex-1 mr-2 ${
+                isUnread ? "text-gray-900 font-medium" : "text-gray-600"
+              }`}
+              numberOfLines={1}
+            >
+              {lastMessage || ""}
+            </Text>
+            {isUnread && <View className="w-2 h-2 bg-blue-500 rounded-full" />}
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -285,7 +271,7 @@ const MessagesScreen = ({ navigation }) => {
       <StatusBar style="dark" backgroundColor="#fff" />
 
       {/* Header */}
-      <View className="bg-white px-4 py-3 border-b border-gray-100">
+      <View className="bg-white px-4 py-3">
         <View className="flex-row items-center justify-between mb-4">
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -295,22 +281,7 @@ const MessagesScreen = ({ navigation }) => {
           </TouchableOpacity>
 
           <View className="flex-1 items-center">
-            <Text className="text-xl font-bold text-gray-900">Messages</Text>
-            {/* Connection status */}
-            <View className="flex-row items-center mt-1">
-              <FontAwesomeIcon
-                icon={isConnected ? faWifi : faWifiSlash}
-                size={12}
-                color={isConnected ? "#10b981" : "#ef4444"}
-              />
-              <Text
-                className={`ml-1 text-xs ${
-                  isConnected ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {isConnected ? "Connected" : "Disconnected"}
-              </Text>
-            </View>
+            <Text className="text-xl font-bold text-gray-900">Mesajlar</Text>
           </View>
 
           <View className="flex-row items-center">
@@ -328,8 +299,11 @@ const MessagesScreen = ({ navigation }) => {
         </View>
 
         {/* Search Bar */}
-        <View className="bg-gray-100 rounded-full px-4 py-3 flex-row items-center">
-          <FontAwesomeIcon icon={faSearch} size={16} color="#666" />
+        <View
+          style={{ boxShadow: "0px 0px 12px #00000014" }}
+          className=" rounded-full px-4 py-3 flex-row items-center"
+        >
+          <FontAwesomeIcon icon={faSearch} size={16} color="#000" />
           <TextInput
             className="flex-1 ml-3 text-base"
             placeholder="Search conversations..."
@@ -340,24 +314,11 @@ const MessagesScreen = ({ navigation }) => {
         </View>
       </View>
 
-      {/* Debug Info - Geliştirme aşamasında görmek için */}
-      {__DEV__ && (
-        <View className="bg-yellow-100 px-4 py-2">
-          <Text className="text-xs text-yellow-800">
-            Debug: Partners count: {chatPartners.length} | Type:{" "}
-            {typeof chatPartnersResponse}
-          </Text>
-        </View>
-      )}
-
       {/* Partners List */}
       <FlatList
         data={filteredPartners}
         renderItem={renderPartner}
-        keyExtractor={(item, index) => {
-          const partnerId = getPartnerId(item);
-          return partnerId + index; // Unique key için index ekle
-        }}
+        keyExtractor={(item) => item.id}
         className="flex-1"
         showsVerticalScrollIndicator={false}
         refreshControl={

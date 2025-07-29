@@ -1,7 +1,7 @@
 // redux/api/chatApiSlice.js - Updated with Better Error Handling
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-const CHAT_BASE_URL = "https://8b2591d0595b.ngrok-free.app/";
+const CHAT_BASE_URL = "https://20053fb3ffb3.ngrok-free.app";
 
 export const chatApiSlice = createApi({
   reducerPath: "chatApi",

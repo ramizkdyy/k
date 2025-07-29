@@ -461,15 +461,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
         )}
       />
 
-      {/* Connection Status Warning */}
-      {!isConnected && (
-        <View className="bg-yellow-100 px-4 py-2 border-t border-yellow-200">
-          <Text className="text-yellow-800 text-sm text-center">
-            ⚠️ Connection issues. Messages may be delayed.
-          </Text>
-        </View>
-      )}
-
       {/* Input Area */}
       <View
         className="bg-white px-4 py-3 border-t border-gray-100"
