@@ -49,6 +49,7 @@ import ProfileExpectationScreen from "../screens/ProfileExpectationScreen";
 import OffersScreen from "../screens/OffersScreen";
 import MessagesScreen from "../screens/MessagesScreen";
 import ChatDetailScreen from "../screens/ChatDetailScreen";
+import AllRecommendedPostsScreen from "../screens/AllRecommendedPostsScreen";
 
 // Import icons
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
@@ -817,6 +818,14 @@ const TenantHomeStack = () => {
         }}
       />
       <TenantStack.Screen
+        name="AllRecommendedPosts"
+        component={AllRecommendedPostsScreen}
+        options={{
+          headerShown: false,
+          title: "Sizin İçin Önerilen",
+        }}
+      />
+      <TenantStack.Screen
         name="ProfileExpectation"
         component={ProfileExpectationScreen}
         options={{
@@ -1082,7 +1091,6 @@ const TenantTabNavigator = () => {
           tabBarStyle: ((route) => {
             const routeName = getFocusedRouteNameFromRoute(route) ?? "";
 
-            // CreatePost ve EditPost ekranlarında tab bar'ı gizle (eğer tenant'ta da varsa)
             if (
               routeName === "PostDetail" ||
               routeName === "CreatePost" ||

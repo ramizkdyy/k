@@ -8,6 +8,7 @@ export const apiSlice = createApi({
     baseUrl: BASE_URL,
     prepareHeaders: (headers, { getState }) => {
       const token = getState().auth.token;
+      console.log("BEARERTOKEN:", token);
 
       if (token) {
         headers.set("authorization", `Bearer ${token}`);
@@ -457,6 +458,44 @@ export const apiSlice = createApi({
       },
     }),
 
+    getTenantPostsPaginated: builder.query({
+      query: ({
+        tenantUserId,
+        page = 1,
+        pageSize = 10,
+        minMatchScore = 0.1, // API response'a göre default 0.1
+      }) => {
+        const params = new URLSearchParams();
+        if (tenantUserId) params.append("tenantUserId", tenantUserId);
+        params.append("page", page);
+        params.append("pageSize", pageSize);
+        params.append("minMatchScore", minMatchScore);
+
+        return {
+          url: `/api/Matching/tenant/posts/paginated?${params.toString()}`,
+          method: "GET",
+        };
+      },
+      providesTags: ["Matching"],
+      // Pagination için cache merge stratejisi
+      serializeQueryArgs: ({ endpointName, queryArgs }) => {
+        const { tenantUserId, minMatchScore } = queryArgs;
+        return `${endpointName}-${tenantUserId}-${minMatchScore}`;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        if (arg.page === 1) {
+          return newItems;
+        }
+        return {
+          ...newItems,
+          data: [...(currentCache?.data || []), ...(newItems?.data || [])],
+        };
+      },
+      forceRefetch({ currentArg, previousArg }) {
+        return currentArg !== previousArg;
+      },
+    }),
+
     // Profile endpoints
     createLandlordProfile: builder.mutation({
       query: (profileData) => ({
@@ -846,7 +885,7 @@ export const {
   useGetLandlordTenantsWithFallbackQuery,
   useGetTenantLandlordsPaginatedQuery,
   useGetTenantLandlordsWithFallbackQuery,
-
+  useGetTenantPostsPaginatedQuery,
   useGetSimilarPostsPaginatedQuery,
   useGetSimilarPostsByPostIdPaginatedQuery,
 

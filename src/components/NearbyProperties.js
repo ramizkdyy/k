@@ -725,7 +725,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   );
 
   const handleSeeAll = (type) => {
-    console.log("handleSeeAll called with type:", type); // Debug için
+    console.log("handleSeeAll called with type:", type);
 
     // Type ve user role'e göre farklı navigation
     if (type === "similarPosts") {
@@ -733,7 +733,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
       navigation.navigate("AllSimilarProperties", {
         userLocation: userLocation,
         similarPosts: similarPosts,
-        searchType: "general", //
+        searchType: "general",
         landlordUserId: currentUser?.id,
       });
     } else if (type === "bestTenants") {
@@ -748,8 +748,11 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
         initialLocation: userLocation,
         searchType: type,
       });
+    } else if (type === "bestForYou" && userRole === "KIRACI") {
+      // KIRACILARIN "Sizin İçin Önerilen" için yeni AllRecommendedPostsScreen
+      navigation.navigate("AllRecommendedPosts");
     } else {
-      // nearby, bestForYou ve diğerleri için AllNearbyProperties
+      // nearby, bestForYou (ev sahibi için) ve diğerleri için AllNearbyProperties
       navigation.navigate("AllNearbyProperties", {
         initialLocation: userLocation,
         searchType: type,
