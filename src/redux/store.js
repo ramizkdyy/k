@@ -1,3 +1,4 @@
+// redux/store.js
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import { persistReducer, persistStore } from "redux-persist";
@@ -7,11 +8,11 @@ import authReducer from "./slices/authSlice";
 import postReducer from "./slices/postSlice";
 import offerReducer from "./slices/offerSlice";
 import profileReducer from "./slices/profileSlice";
-import expectationReducer from "./slices/expectationSlice"; // Yeni eklenen reducer
+import expectationReducer from "./slices/expectationSlice";
 import { apiSlice } from "./api/apiSlice";
+import { chatApiSlice } from "./api/chatApiSlice"; // Chat API slice eklendi
 
 // Initialize empty initial state for development
-// This helps prevent errors if selectors are accessed before state is fully loaded
 const initialState = {
   auth: {
     user: null,
@@ -59,7 +60,6 @@ const initialState = {
     coverImageUploadStatus: null,
   },
   expectations: {
-    // Yeni eklenen bölüexpectations: { // Yeni eklenen bölüm
     landlordExpectation: null,
     tenantExpectation: null,
     isLoading: false,
@@ -71,7 +71,9 @@ const initialState = {
 const persistConfig = {
   key: "root",
   storage: AsyncStorage,
-  whitelist: ["auth", "profiles", "expectations"], // expectations eklendi, profil beklenti verilerinin de kalıcı olması için
+  whitelist: ["auth", "profiles", "expectations"],
+  // Chat verilerini persist etmemek daha iyi - real-time olduğu için
+  blacklist: [apiSlice.reducerPath, chatApiSlice.reducerPath],
 };
 
 const rootReducer = combineReducers({
@@ -79,22 +81,48 @@ const rootReducer = combineReducers({
   posts: postReducer,
   offers: offerReducer,
   profiles: profileReducer,
-  expectations: expectationReducer, // Yeni eklenen reducer
+  expectations: expectationReducer,
   [apiSlice.reducerPath]: apiSlice.reducer,
+  [chatApiSlice.reducerPath]: chatApiSlice.reducer, // Chat API reducer eklendi
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const store = configureStore({
   reducer: persistedReducer,
-  preloadedState: initialState, // Initialize with our empty state
+  preloadedState: initialState,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
+        ignoredActions: [
+          "persist/PERSIST",
+          "persist/REHYDRATE",
+          // RTK Query actions
+          "api/executeQuery/pending",
+          "api/executeQuery/fulfilled",
+          "api/executeQuery/rejected",
+          "chatApi/executeQuery/pending",
+          "chatApi/executeQuery/fulfilled",
+          "chatApi/executeQuery/rejected",
+        ],
+        ignoredActionsPaths: [
+          "meta.arg",
+          "payload.timestamp",
+          "meta.baseQueryMeta",
+        ],
+        ignoredPaths: [
+          "api.mutations",
+          "api.queries",
+          "api.subscriptions",
+          "chatApi.mutations",
+          "chatApi.queries",
+          "chatApi.subscriptions",
+        ],
       },
-    }).concat(apiSlice.middleware),
-  devTools: process.env.NODE_ENV !== "production", // Enable devTools only in development
+    })
+      .concat(apiSlice.middleware)
+      .concat(chatApiSlice.middleware), // Chat API middleware eklendi
+  devTools: process.env.NODE_ENV !== "production",
 });
 
 setupListeners(store.dispatch);
