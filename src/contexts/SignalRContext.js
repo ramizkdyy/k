@@ -1,14 +1,19 @@
-// contexts/SignalRContext.js
+// contexts/SignalRContext.js - Fixed with Better Error Handling
 import React, {
   createContext,
   useContext,
   useEffect,
-  useRef,
   useState,
+  useCallback,
+  useRef,
 } from "react";
-import { HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
-import { useSelector, useDispatch } from "react-redux";
-import { chatApiSlice } from "../redux/api/chatApiSlice";
+import {
+  HubConnectionBuilder,
+  LogLevel,
+  HubConnectionState,
+} from "@microsoft/signalr";
+import { useSelector } from "react-redux";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const SignalRContext = createContext();
 
@@ -23,297 +28,407 @@ export const useSignalR = () => {
 export const SignalRProvider = ({ children }) => {
   const [connection, setConnection] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionError, setConnectionError] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState(new Set());
-  const [typingUsers, setTypingUsers] = useState(new Map());
-  const connectionRef = useRef(null);
-  const dispatch = useDispatch();
+  const [typingUsers, setTypingUsers] = useState(new Set());
+  const [lastPingTime, setLastPingTime] = useState(null);
 
   const { token, user } = useSelector((state) => state.auth);
-  const currentUserId = user?.id || user?.userId;
+  const connectionRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
+  const pingIntervalRef = useRef(null);
+  const reconnectAttempts = useRef(0);
+  const maxReconnectAttempts = 5;
 
-  const CHAT_HUB_URL = "https://8b2591d0595b.ngrok-free.app/chatHub";
+  // ✅ Güncel ngrok URL'ini dinamik olarak al veya manuel güncelle
+  const SIGNALR_BASE_URL = "https://20053fb3ffb3.ngrok-free.app"; // Bu URL'yi güncelleyin
 
   // SignalR bağlantısını başlat
-  const connectToHub = async () => {
-    if (!token || !currentUserId) {
-      console.log("❌ Token veya UserId yok, bağlantı kurulamıyor");
+  const startConnection = useCallback(async () => {
+    if (!token || !user?.id) {
+      console.log(
+        "❌ Token veya user ID yok, SignalR bağlantısı başlatılamıyor"
+      );
       return;
     }
 
-    if (connectionRef.current) {
-      console.log("⚠️ Bağlantı zaten mevcut");
+    if (
+      isConnecting ||
+      (connection && connection.state === HubConnectionState.Connected)
+    ) {
+      console.log("🔄 Zaten bağlanıyor veya bağlı");
       return;
     }
 
     try {
-      console.log("🔌 SignalR bağlantısı kuruluyor...");
+      setIsConnecting(true);
+      setConnectionError(null);
 
+      console.log("🚀 SignalR bağlantısı başlatılıyor...");
+      console.log("🔗 URL:", `${SIGNALR_BASE_URL}/chathub`);
+      console.log("👤 User ID:", user.id);
+
+      // Mevcut bağlantıyı temizle
+      if (connectionRef.current) {
+        try {
+          await connectionRef.current.stop();
+        } catch (error) {
+          console.log("⚠️ Eski bağlantı kapatılırken hata:", error.message);
+        }
+      }
+
+      // Yeni bağlantı oluştur
       const newConnection = new HubConnectionBuilder()
-        .withUrl(CHAT_HUB_URL, {
-          accessTokenFactory: () => {
-            console.log("🔑 Token factory called");
-            return token;
+        .withUrl(`${SIGNALR_BASE_URL}/chathub`, {
+          accessTokenFactory: () => token,
+          headers: {
+            "ngrok-skip-browser-warning": "true",
           },
-          skipNegotiation: false,
-          transport: 1, // WebSockets
+          withCredentials: false,
         })
-        .withAutomaticReconnect([0, 2000, 10000, 30000])
+        .withAutomaticReconnect({
+          nextRetryDelayInMilliseconds: (retryContext) => {
+            // Exponential backoff: 2s, 4s, 8s, 16s, 30s
+            const delays = [2000, 4000, 8000, 16000, 30000];
+            return delays[
+              Math.min(retryContext.previousRetryCount, delays.length - 1)
+            ];
+          },
+        })
         .configureLogging(LogLevel.Information)
         .build();
 
       // Event listeners
       newConnection.onclose((error) => {
-        console.log("❌ SignalR bağlantısı kapandı:", error);
+        console.log(
+          "❌ SignalR bağlantısı kapandı:",
+          error?.message || "Bilinmeyen sebep"
+        );
         setIsConnected(false);
-        connectionRef.current = null;
+        setConnectionError(error?.message || "Connection closed");
+
+        // Manuel reconnect deneme
+        if (reconnectAttempts.current < maxReconnectAttempts) {
+          const delay = Math.min(
+            1000 * Math.pow(2, reconnectAttempts.current),
+            30000
+          );
+          console.log(`🔄 ${delay}ms sonra yeniden bağlanmayı deneye...`);
+
+          reconnectTimeoutRef.current = setTimeout(() => {
+            reconnectAttempts.current++;
+            startConnection();
+          }, delay);
+        } else {
+          console.log("❌ Maksimum yeniden bağlanma denemesi aşıldı");
+        }
       });
 
       newConnection.onreconnecting((error) => {
-        console.log("🔄 SignalR yeniden bağlanıyor:", error);
+        console.log("🔄 SignalR yeniden bağlanıyor...", error?.message);
         setIsConnected(false);
+        setConnectionError("Reconnecting...");
       });
 
       newConnection.onreconnected((connectionId) => {
         console.log("✅ SignalR yeniden bağlandı:", connectionId);
         setIsConnected(true);
+        setConnectionError(null);
+        reconnectAttempts.current = 0;
+
+        // Ping'i yeniden başlat
+        startPingInterval();
       });
 
-      // Hub method listeners
-      newConnection.on("ReceiveMessage", (message) => {
-        console.log("📨 Yeni mesaj alındı:", message);
-
-        // Cache'i güncellemek için mesajı ekle
-        dispatch(
-          chatApiSlice.util.updateQueryData(
-            "getChatHistory",
-            { partnerId: message.senderUserId },
-            (draft) => {
-              if (draft) {
-                // Aynı mesajın zaten var olup olmadığını kontrol et
-                const exists = draft.find((m) => m.id === message.id);
-                if (!exists) {
-                  draft.push({
-                    id: message.id || `msg-${Date.now()}`,
-                    senderUserId: message.senderUserId,
-                    receiverUserId: currentUserId,
-                    content: message.content,
-                    sentAt: message.sentAt,
-                    isRead: false,
-                  });
-                }
-              }
-            }
-          )
-        );
-
-        // Unread count'u güncelle
-        dispatch(
-          chatApiSlice.util.invalidateTags(["UnreadCount", "ChatPartner"])
-        );
+      // Message listeners
+      newConnection.on("ReceiveMessage", (messageData) => {
+        console.log("📨 Yeni mesaj alındı:", messageData);
+        // Bu event'i ChatDetailScreen'de handle ediyoruz
       });
 
-      newConnection.on("MessageSent", (response) => {
-        console.log("✅ Mesaj gönderildi:", response);
+      newConnection.on("MessageSent", (confirmationData) => {
+        console.log("✅ Mesaj gönderim onayı:", confirmationData);
       });
 
-      newConnection.on("MessageError", (error) => {
-        console.log("❌ Mesaj hatası:", error);
+      newConnection.on("MessageError", (errorData) => {
+        console.error("❌ Mesaj hatası:", errorData);
       });
 
-      newConnection.on("MessagesRead", (data) => {
-        console.log("👀 Mesajlar okundu:", data);
-        // İlgili chat'in mesajlarını okundu olarak işaretle
-        dispatch(
-          chatApiSlice.util.updateQueryData(
-            "getChatHistory",
-            { partnerId: data.readByUserId },
-            (draft) => {
-              if (draft) {
-                draft.forEach((message) => {
-                  if (message.senderUserId === currentUserId) {
-                    message.isRead = true;
-                  }
-                });
-              }
-            }
-          )
-        );
+      newConnection.on("MessagesRead", (readData) => {
+        console.log("👁️ Mesajlar okundu:", readData);
       });
 
+      // User status listeners
+      newConnection.on("UserStatusChanged", (statusData) => {
+        console.log("👤 Kullanıcı durumu değişti:", statusData);
+
+        setOnlineUsers((prevUsers) => {
+          const newUsers = new Set(prevUsers);
+          if (statusData.IsOnline) {
+            newUsers.add(statusData.UserId);
+          } else {
+            newUsers.delete(statusData.UserId);
+          }
+          return newUsers;
+        });
+      });
+
+      // Typing listeners
       newConnection.on("UserStartedTyping", (userId) => {
-        console.log("⌨️ Kullanıcı yazıyor:", userId);
-        setTypingUsers((prev) => new Map(prev.set(userId, true)));
-
-        // 3 saniye sonra typing'i kaldır
-        setTimeout(() => {
-          setTypingUsers((prev) => {
-            const newMap = new Map(prev);
-            newMap.delete(userId);
-            return newMap;
-          });
-        }, 3000);
+        console.log("⌨️ Kullanıcı yazmaya başladı:", userId);
+        setTypingUsers((prev) => new Set([...prev, userId]));
       });
 
       newConnection.on("UserStoppedTyping", (userId) => {
         console.log("⌨️ Kullanıcı yazmayı bıraktı:", userId);
         setTypingUsers((prev) => {
-          const newMap = new Map(prev);
-          newMap.delete(userId);
-          return newMap;
-        });
-      });
-
-      newConnection.on("UserStatusChanged", (data) => {
-        console.log("🔄 Kullanıcı durumu değişti:", data);
-        setOnlineUsers((prev) => {
           const newSet = new Set(prev);
-          if (data.isOnline) {
-            newSet.add(data.userId);
-          } else {
-            newSet.delete(data.userId);
-          }
+          newSet.delete(userId);
           return newSet;
         });
       });
 
-      newConnection.on("OnlineUsersCount", (count) => {
-        console.log("📊 Online kullanıcı sayısı:", count);
+      // Ping/Pong listeners
+      newConnection.on("Pong", (timestamp) => {
+        console.log("🏓 Pong alındı:", timestamp);
+        setLastPingTime(new Date(timestamp));
       });
 
-      newConnection.on("Pong", (time) => {
-        console.log("🏓 Pong alındı:", time);
+      // Test response listener
+      newConnection.on("TestResponse", (message) => {
+        console.log("🧪 Test response:", message);
       });
 
       // Bağlantıyı başlat
       await newConnection.start();
 
-      console.log(
-        "✅ SignalR bağlantısı başarılı, Connection ID:",
-        newConnection.connectionId
-      );
+      console.log("✅ SignalR bağlantısı başarılı!");
+      console.log("🔗 Connection ID:", newConnection.connectionId);
 
       connectionRef.current = newConnection;
       setConnection(newConnection);
       setIsConnected(true);
+      setIsConnecting(false);
+      setConnectionError(null);
+      reconnectAttempts.current = 0;
 
-      // Test ping gönder
+      // Ping interval'ı başlat
+      startPingInterval();
+
+      // Test mesajı gönder
       try {
-        await newConnection.invoke("Ping");
-        console.log("🏓 Ping gönderildi");
-      } catch (error) {
-        console.log("❌ Ping hatası:", error);
+        await newConnection.invoke("TestMethod");
+        console.log("🧪 Test method çağrıldı");
+      } catch (testError) {
+        console.log("⚠️ Test method hatası:", testError.message);
       }
     } catch (error) {
       console.error("❌ SignalR bağlantı hatası:", error);
+      setConnectionError(error.message);
       setIsConnected(false);
+      setIsConnecting(false);
+
+      // Hata durumunda yeniden deneme
+      if (reconnectAttempts.current < maxReconnectAttempts) {
+        const delay = Math.min(
+          1000 * Math.pow(2, reconnectAttempts.current),
+          30000
+        );
+        console.log(`🔄 ${delay}ms sonra yeniden bağlanmayı deneye...`);
+
+        reconnectTimeoutRef.current = setTimeout(() => {
+          reconnectAttempts.current++;
+          startConnection();
+        }, delay);
+      }
     }
-  };
+  }, [token, user?.id, isConnecting, connection]);
 
-  // contexts/SignalRContext.js - Part 2 (Devamı)
+  // Ping gönderme fonksiyonu
+  const startPingInterval = useCallback(() => {
+    // Mevcut interval'ı temizle
+    if (pingIntervalRef.current) {
+      clearInterval(pingIntervalRef.current);
+    }
 
-  // Bağlantıyı kapat
-  const disconnectFromHub = async () => {
+    // Her 30 saniyede bir ping gönder
+    pingIntervalRef.current = setInterval(async () => {
+      if (
+        connectionRef.current &&
+        connectionRef.current.state === HubConnectionState.Connected
+      ) {
+        try {
+          await connectionRef.current.invoke("Ping");
+          console.log("🏓 Ping gönderildi");
+        } catch (error) {
+          console.log("⚠️ Ping hatası:", error.message);
+        }
+      }
+    }, 30000);
+  }, []);
+
+  // Bağlantıyı durdur
+  const stopConnection = useCallback(async () => {
+    console.log("🛑 SignalR bağlantısı durduruluyor...");
+
+    // Timeout'ları temizle
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+    }
+
+    if (pingIntervalRef.current) {
+      clearInterval(pingIntervalRef.current);
+    }
+
     if (connectionRef.current) {
       try {
         await connectionRef.current.stop();
-        console.log("❌ SignalR bağlantısı kapatıldı");
+        console.log("✅ SignalR bağlantısı durduruldu");
       } catch (error) {
-        console.error("❌ SignalR kapatma hatası:", error);
-      } finally {
-        connectionRef.current = null;
-        setConnection(null);
-        setIsConnected(false);
-        setOnlineUsers(new Set());
-        setTypingUsers(new Map());
+        console.log("⚠️ Bağlantı durdurulurken hata:", error.message);
       }
     }
-  };
 
-  // Mesaj gönder
-  const sendMessage = async (receiverUserId, message) => {
-    if (!connectionRef.current || !isConnected) {
+    setConnection(null);
+    setIsConnected(false);
+    setIsConnecting(false);
+    setConnectionError(null);
+    setOnlineUsers(new Set());
+    setTypingUsers(new Set());
+    connectionRef.current = null;
+  }, []);
+
+  // Mesaj gönderme
+  const sendMessage = useCallback(async (receiverUserId, content) => {
+    if (
+      !connectionRef.current ||
+      connectionRef.current.state !== HubConnectionState.Connected
+    ) {
       throw new Error("SignalR bağlantısı yok");
     }
 
     try {
+      console.log("📤 Mesaj gönderiliyor:", { receiverUserId, content });
       await connectionRef.current.invoke(
         "SendMessage",
         receiverUserId,
-        message
+        content
       );
-      console.log("📤 SignalR ile mesaj gönderildi");
+      console.log("✅ Mesaj SignalR ile gönderildi");
     } catch (error) {
-      console.error("❌ SignalR mesaj gönderme hatası:", error);
+      console.error("❌ Mesaj gönderme hatası:", error);
       throw error;
     }
-  };
-
-  // Typing events
-  const startTyping = async (receiverUserId) => {
-    if (connectionRef.current && isConnected) {
-      try {
-        await connectionRef.current.invoke("StartTyping", receiverUserId);
-      } catch (error) {
-        console.error("❌ StartTyping hatası:", error);
-      }
-    }
-  };
-
-  const stopTyping = async (receiverUserId) => {
-    if (connectionRef.current && isConnected) {
-      try {
-        await connectionRef.current.invoke("StopTyping", receiverUserId);
-      } catch (error) {
-        console.error("❌ StopTyping hatası:", error);
-      }
-    }
-  };
-
-  // Mesajları okundu olarak işaretle
-  const markMessagesAsRead = async (senderUserId) => {
-    if (connectionRef.current && isConnected) {
-      try {
-        await connectionRef.current.invoke("MarkMessagesAsRead", senderUserId);
-      } catch (error) {
-        console.error("❌ MarkMessagesAsRead hatası:", error);
-      }
-    }
-  };
-
-  // Token değiştiğinde yeniden bağlan
-  useEffect(() => {
-    if (token && currentUserId) {
-      connectToHub();
-    } else {
-      disconnectFromHub();
-    }
-
-    return () => {
-      disconnectFromHub();
-    };
-  }, [token, currentUserId]);
-
-  // Component unmount'ta bağlantıyı kapat
-  useEffect(() => {
-    return () => {
-      disconnectFromHub();
-    };
   }, []);
 
-  const value = {
-    connection,
+  // Typing durumu
+  const startTyping = useCallback(async (receiverUserId) => {
+    if (
+      !connectionRef.current ||
+      connectionRef.current.state !== HubConnectionState.Connected
+    ) {
+      return;
+    }
+
+    try {
+      await connectionRef.current.invoke("StartTyping", receiverUserId);
+    } catch (error) {
+      console.log("⚠️ Start typing hatası:", error.message);
+    }
+  }, []);
+
+  const stopTyping = useCallback(async (receiverUserId) => {
+    if (
+      !connectionRef.current ||
+      connectionRef.current.state !== HubConnectionState.Connected
+    ) {
+      return;
+    }
+
+    try {
+      await connectionRef.current.invoke("StopTyping", receiverUserId);
+    } catch (error) {
+      console.log("⚠️ Stop typing hatası:", error.message);
+    }
+  }, []);
+
+  // Mesajları okundu işaretle
+  const markMessagesAsRead = useCallback(async (senderUserId) => {
+    if (
+      !connectionRef.current ||
+      connectionRef.current.state !== HubConnectionState.Connected
+    ) {
+      return;
+    }
+
+    try {
+      await connectionRef.current.invoke("MarkMessagesAsRead", senderUserId);
+      console.log("👁️ Mesajlar okundu olarak işaretlendi:", senderUserId);
+    } catch (error) {
+      console.log("⚠️ Mark as read hatası:", error.message);
+    }
+  }, []);
+
+  // Manuel yeniden bağlanma
+  const reconnect = useCallback(() => {
+    console.log("🔄 Manuel yeniden bağlanma başlatılıyor...");
+    reconnectAttempts.current = 0;
+    stopConnection().then(() => {
+      setTimeout(() => {
+        startConnection();
+      }, 1000);
+    });
+  }, [startConnection, stopConnection]);
+
+  // Auth değişikliklerini dinle
+  useEffect(() => {
+    if (token && user?.id) {
+      console.log("🔑 Token ve user mevcut, SignalR başlatılıyor...");
+      startConnection();
+    } else {
+      console.log("❌ Token veya user yok, SignalR durduruluyor...");
+      stopConnection();
+    }
+
+    return () => {
+      stopConnection();
+    };
+  }, [token, user?.id]);
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (pingIntervalRef.current) {
+        clearInterval(pingIntervalRef.current);
+      }
+      stopConnection();
+    };
+  }, [stopConnection]);
+
+  const contextValue = {
+    connection: connectionRef.current,
     isConnected,
+    isConnecting,
+    connectionError,
     onlineUsers,
     typingUsers,
-    connectToHub,
-    disconnectFromHub,
+    lastPingTime,
     sendMessage,
     startTyping,
     stopTyping,
     markMessagesAsRead,
+    reconnect,
+    startConnection,
+    stopConnection,
   };
 
   return (
-    <SignalRContext.Provider value={value}>{children}</SignalRContext.Provider>
+    <SignalRContext.Provider value={contextValue}>
+      {children}
+    </SignalRContext.Provider>
   );
 };
