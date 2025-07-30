@@ -95,6 +95,7 @@ const ProfileScreen = ({ navigation }) => {
       {
         text: "Çıkış Yap",
         onPress: () => {
+          console.log("🚪 User initiated logout from ProfileScreen");
           dispatch(logout());
         },
         style: "destructive",

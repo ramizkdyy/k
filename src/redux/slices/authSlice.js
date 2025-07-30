@@ -44,11 +44,22 @@ const authSlice = createSlice({
       });
     },
 
-    // ENHANCED: More thorough logout
+    // ENHANCED: More thorough logout with detailed logging
     logout: (state) => {
+      console.log("🚪 Logout initiated for user:", state.user?.id);
+      
+      // Store previous user info for logging
+      const previousUserId = state.user?.id;
+      const previousRole = state.role;
+      
       // Reset to initial state completely
       Object.assign(state, initialState);
-      console.log("Logout completed - all state cleared");
+      
+      console.log("🧹 Logout completed - all auth state cleared:", {
+        previousUserId,
+        previousRole,
+        stateReset: true
+      });
     },
 
     // ENHANCED: More robust role setting

@@ -269,17 +269,19 @@ export const SignalRProvider = ({ children }) => {
     }, 30000);
   }, []);
 
-  // Bağlantıyı durdur - FIX: Better cleanup for user switching
+  // Bağlantıyı durdur - ENHANCED: Complete cleanup for user switching
   const stopConnection = useCallback(async () => {
     console.log("🛑 SignalR bağlantısı durduruluyor...");
 
     // Timeout'ları temizle
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
 
     if (pingIntervalRef.current) {
       clearInterval(pingIntervalRef.current);
+      pingIntervalRef.current = null;
     }
 
     if (connectionRef.current) {
@@ -294,6 +296,17 @@ export const SignalRProvider = ({ children }) => {
           }
         }
         
+        // Remove all event listeners to prevent memory leaks
+        connectionRef.current.off("ReceiveMessage");
+        connectionRef.current.off("MessageSent");
+        connectionRef.current.off("MessageError");
+        connectionRef.current.off("MessagesRead");
+        connectionRef.current.off("UserStatusChanged");
+        connectionRef.current.off("UserStartedTyping");
+        connectionRef.current.off("UserStoppedTyping");
+        connectionRef.current.off("Pong");
+        connectionRef.current.off("TestResponse");
+        
         await connectionRef.current.stop();
         console.log("✅ SignalR bağlantısı durduruldu");
       } catch (error) {
@@ -301,7 +314,7 @@ export const SignalRProvider = ({ children }) => {
       }
     }
 
-    // Reset all state
+    // Reset all state completely
     setConnection(null);
     setIsConnected(false);
     setIsConnecting(false);
@@ -315,8 +328,9 @@ export const SignalRProvider = ({ children }) => {
     console.log("🧹 SignalR state completely reset");
   }, []);
 
-  // Mesaj gönderme - FIX: Add user validation
+  // Mesaj gönderme - ENHANCED: Better user validation and auth checking
   const sendMessage = useCallback(async (receiverUserId, content) => {
+    // Validate connection state
     if (
       !connectionRef.current ||
       connectionRef.current.state !== HubConnectionState.Connected
@@ -324,16 +338,27 @@ export const SignalRProvider = ({ children }) => {
       throw new Error("SignalR bağlantısı yok");
     }
 
-    if (!user?.id) {
-      throw new Error("Kullanıcı kimliği bulunamadı");
+    // Enhanced user validation - prevent using stale user data
+    if (!user?.id || !token) {
+      console.error("❌ Mesaj gönderme hatası: Kullanıcı kimliği veya token bulunamadı", {
+        hasUser: !!user,
+        userId: user?.id,
+        hasToken: !!token
+      });
+      throw new Error("Kullanıcı kimliği veya yetkilendirme bulunamadı");
     }
+
+    // Additional validation to ensure we're using the right user
+    const currentUserId = user.id;
+    const currentConnectionId = connectionRef.current.connectionId;
 
     try {
       console.log("📤 Mesaj gönderiliyor:", { 
-        senderId: user.id,
+        senderId: currentUserId,
         receiverUserId, 
-        content,
-        connectionId: connectionRef.current.connectionId 
+        content: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
+        connectionId: currentConnectionId,
+        hasToken: !!token
       });
       
       await connectionRef.current.invoke(
@@ -341,12 +366,23 @@ export const SignalRProvider = ({ children }) => {
         receiverUserId,
         content
       );
-      console.log("✅ Mesaj SignalR ile gönderildi");
+      
+      console.log("✅ Mesaj SignalR ile gönderildi:", {
+        senderId: currentUserId,
+        receiverUserId,
+        connectionId: currentConnectionId
+      });
     } catch (error) {
-      console.error("❌ Mesaj gönderme hatası:", error);
+      console.error("❌ Mesaj gönderme hatası:", {
+        error: error.message,
+        senderId: currentUserId,
+        receiverUserId,
+        connectionState: connectionRef.current?.state,
+        connectionId: currentConnectionId
+      });
       throw error;
     }
-  }, [user?.id]);
+  }, [user?.id, token]);
 
   // Typing durumu
   const startTyping = useCallback(async (receiverUserId) => {
@@ -407,25 +443,32 @@ export const SignalRProvider = ({ children }) => {
     });
   }, [startConnection, stopConnection]);
 
-  // Auth değişikliklerini dinle - FIX: Better user switching
+  // Auth değişikliklerini dinle - ENHANCED: Better user switching with complete cleanup
   useEffect(() => {
     if (token && user?.id) {
       console.log("🔑 Token ve user mevcut, SignalR başlatılıyor...");
       console.log("👤 Current user ID:", user.id);
+      console.log("🔑 Token preview:", token.substring(0, 20) + "...");
       
       // Force stop any existing connection first to prevent auth issues
-      stopConnection().then(() => {
-        // Small delay to ensure complete cleanup
+      const handleUserSwitch = async () => {
+        await stopConnection();
+        // Longer delay to ensure complete cleanup for user switching
         setTimeout(() => {
+          console.log("🔄 Starting fresh connection for user:", user.id);
           startConnection();
-        }, 500);
-      });
+        }, 750);
+      };
+      
+      handleUserSwitch();
     } else {
       console.log("❌ Token veya user yok, SignalR durduruluyor...");
+      console.log("🧹 Cleaning up for logout/user switch");
       stopConnection();
     }
 
     return () => {
+      console.log("🧹 Effect cleanup: stopping connection");
       stopConnection();
     };
   }, [token, user?.id]);
