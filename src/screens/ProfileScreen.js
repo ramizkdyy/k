@@ -14,6 +14,7 @@ import {
 import { useSelector, useDispatch } from "react-redux";
 import {
   logout,
+  forceLogout,
   selectCurrentUser,
   selectUserRole,
 } from "../redux/slices/authSlice";
@@ -25,6 +26,9 @@ import {
   selectUserProfile,
   setUserProfile,
 } from "../redux/slices/profileSlice";
+import { chatApiHelpers } from "../redux/api/chatApiSlice";
+import { useSignalR } from "../contexts/SignalRContext";
+import { authCleanupHelper } from "../utils/authCleanup";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
   faChevronRight,
@@ -45,6 +49,9 @@ const ProfileScreen = ({ navigation }) => {
   const userRole = useSelector(selectUserRole);
   const userProfile = useSelector(selectUserProfile);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // SignalR context for proper cleanup
+  const { stopConnection } = useSignalR();
 
   // Animation setup
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -89,13 +96,40 @@ const ProfileScreen = ({ navigation }) => {
     setRefreshing(false);
   };
 
+  // ENHANCED: Comprehensive logout with complete cleanup
   const handleLogout = () => {
     Alert.alert("Çıkış Yap", "Hesabınızdan çıkış yapmak istiyor musunuz?", [
       { text: "İptal", style: "cancel" },
       {
         text: "Çıkış Yap",
-        onPress: () => {
-          dispatch(logout());
+        onPress: async () => {
+          console.log("🚪 User initiated logout from ProfileScreen");
+          console.log("👤 Current user being logged out:", currentUser?.id);
+          
+          try {
+            // 1. Stop SignalR connection first to prevent message sending with stale token
+            console.log("🔌 Stopping SignalR connection...");
+            await stopConnection();
+            
+            // 2. Clear chat cache to remove old user's messages
+            console.log("🧹 Clearing chat cache...");
+            chatApiHelpers.clearChatCache(dispatch);
+            
+            // 3. Comprehensive storage cleanup
+            console.log("🗑️ Performing comprehensive storage cleanup...");
+            await authCleanupHelper.clearUserStorage();
+            
+            // 4. Force logout to ensure complete state reset
+            console.log("🔥 Executing force logout...");
+            dispatch(forceLogout());
+            
+            console.log("✅ Logout process completed successfully");
+            
+          } catch (error) {
+            console.error("❌ Error during logout process:", error);
+            // Even if cleanup fails, still logout
+            dispatch(forceLogout());
+          }
         },
         style: "destructive",
       },

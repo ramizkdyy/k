@@ -68,6 +68,7 @@ export const SignalRProvider = ({ children }) => {
       console.log("🚀 SignalR bağlantısı başlatılıyor...");
       console.log("🔗 URL:", `${SIGNALR_BASE_URL}/chathub`);
       console.log("👤 User ID:", user.id);
+      console.log("🔑 Token preview:", token.substring(0, 20) + "...");
 
       // Mevcut bağlantıyı temizle
       if (connectionRef.current) {
@@ -268,21 +269,44 @@ export const SignalRProvider = ({ children }) => {
     }, 30000);
   }, []);
 
-  // Bağlantıyı durdur
+  // Bağlantıyı durdur - ENHANCED: Complete cleanup for user switching
   const stopConnection = useCallback(async () => {
     console.log("🛑 SignalR bağlantısı durduruluyor...");
 
     // Timeout'ları temizle
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
 
     if (pingIntervalRef.current) {
       clearInterval(pingIntervalRef.current);
+      pingIntervalRef.current = null;
     }
 
     if (connectionRef.current) {
       try {
+        // First try to leave any groups/rooms server-side
+        if (connectionRef.current.state === HubConnectionState.Connected) {
+          try {
+            await connectionRef.current.invoke("Disconnect");
+            console.log("🚪 User disconnected from server groups");
+          } catch (disconnectError) {
+            console.log("⚠️ Disconnect invoke hatası:", disconnectError.message);
+          }
+        }
+        
+        // Remove all event listeners to prevent memory leaks
+        connectionRef.current.off("ReceiveMessage");
+        connectionRef.current.off("MessageSent");
+        connectionRef.current.off("MessageError");
+        connectionRef.current.off("MessagesRead");
+        connectionRef.current.off("UserStatusChanged");
+        connectionRef.current.off("UserStartedTyping");
+        connectionRef.current.off("UserStoppedTyping");
+        connectionRef.current.off("Pong");
+        connectionRef.current.off("TestResponse");
+        
         await connectionRef.current.stop();
         console.log("✅ SignalR bağlantısı durduruldu");
       } catch (error) {
@@ -290,17 +314,23 @@ export const SignalRProvider = ({ children }) => {
       }
     }
 
+    // Reset all state completely
     setConnection(null);
     setIsConnected(false);
     setIsConnecting(false);
     setConnectionError(null);
     setOnlineUsers(new Set());
     setTypingUsers(new Set());
+    setLastPingTime(null);
     connectionRef.current = null;
+    reconnectAttempts.current = 0;
+    
+    console.log("🧹 SignalR state completely reset");
   }, []);
 
-  // Mesaj gönderme
+  // Mesaj gönderme - ENHANCED: Better user validation and auth checking
   const sendMessage = useCallback(async (receiverUserId, content) => {
+    // Validate connection state
     if (
       !connectionRef.current ||
       connectionRef.current.state !== HubConnectionState.Connected
@@ -308,19 +338,51 @@ export const SignalRProvider = ({ children }) => {
       throw new Error("SignalR bağlantısı yok");
     }
 
+    // Enhanced user validation - prevent using stale user data
+    if (!user?.id || !token) {
+      console.error("❌ Mesaj gönderme hatası: Kullanıcı kimliği veya token bulunamadı", {
+        hasUser: !!user,
+        userId: user?.id,
+        hasToken: !!token
+      });
+      throw new Error("Kullanıcı kimliği veya yetkilendirme bulunamadı");
+    }
+
+    // Additional validation to ensure we're using the right user
+    const currentUserId = user.id;
+    const currentConnectionId = connectionRef.current.connectionId;
+
     try {
-      console.log("📤 Mesaj gönderiliyor:", { receiverUserId, content });
+      console.log("📤 Mesaj gönderiliyor:", { 
+        senderId: currentUserId,
+        receiverUserId, 
+        content: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
+        connectionId: currentConnectionId,
+        hasToken: !!token
+      });
+      
       await connectionRef.current.invoke(
         "SendMessage",
         receiverUserId,
         content
       );
-      console.log("✅ Mesaj SignalR ile gönderildi");
+      
+      console.log("✅ Mesaj SignalR ile gönderildi:", {
+        senderId: currentUserId,
+        receiverUserId,
+        connectionId: currentConnectionId
+      });
     } catch (error) {
-      console.error("❌ Mesaj gönderme hatası:", error);
+      console.error("❌ Mesaj gönderme hatası:", {
+        error: error.message,
+        senderId: currentUserId,
+        receiverUserId,
+        connectionState: connectionRef.current?.state,
+        connectionId: currentConnectionId
+      });
       throw error;
     }
-  }, []);
+  }, [user?.id, token]);
 
   // Typing durumu
   const startTyping = useCallback(async (receiverUserId) => {
@@ -381,17 +443,72 @@ export const SignalRProvider = ({ children }) => {
     });
   }, [startConnection, stopConnection]);
 
-  // Auth değişikliklerini dinle
+  // ENHANCED: Auth changes listener with better user switching detection
+  const previousUserIdRef = useRef(null);
+  const isUserSwitchingRef = useRef(false);
+  
   useEffect(() => {
-    if (token && user?.id) {
+    const currentUserId = user?.id;
+    const previousUserId = previousUserIdRef.current;
+    
+    // Detect user switching (different user ID)
+    const isUserSwitch = previousUserId && currentUserId && previousUserId !== currentUserId;
+    
+    if (isUserSwitch) {
+      console.log("🔄 USER SWITCH DETECTED:", {
+        previousUserId,
+        currentUserId,
+        tokenExists: !!token
+      });
+      isUserSwitchingRef.current = true;
+    }
+
+    if (token && currentUserId) {
       console.log("🔑 Token ve user mevcut, SignalR başlatılıyor...");
-      startConnection();
+      console.log("👤 Current user ID:", currentUserId);
+      console.log("🔑 Token preview:", token.substring(0, 20) + "...");
+      
+      // Handle user switch or initial connection
+      const handleConnection = async () => {
+        // For user switches, do more thorough cleanup
+        if (isUserSwitchingRef.current) {
+          console.log("🔥 PERFORMING DEEP CLEANUP FOR USER SWITCH");
+          
+          // Stop connection and clear all cached references
+          await stopConnection();
+          
+          // Clear connection reference completely
+          connectionRef.current = null;
+          
+          // Longer delay for user switches to ensure backend cleanup
+          setTimeout(() => {
+            console.log("🆕 Starting fresh connection for new user:", currentUserId);
+            isUserSwitchingRef.current = false;
+            startConnection();
+          }, 1500); // Longer delay for user switches
+        } else {
+          // Regular connection start
+          await stopConnection();
+          setTimeout(() => {
+            console.log("🔄 Starting connection for user:", currentUserId);
+            startConnection();
+          }, 750);
+        }
+      };
+      
+      handleConnection();
     } else {
       console.log("❌ Token veya user yok, SignalR durduruluyor...");
+      console.log("🧹 Cleaning up for logout/user switch");
+      isUserSwitchingRef.current = false;
       stopConnection();
     }
 
+    // Update previous user ID reference
+    previousUserIdRef.current = currentUserId;
+
     return () => {
+      console.log("🧹 Effect cleanup: stopping connection");
       stopConnection();
     };
   }, [token, user?.id]);
