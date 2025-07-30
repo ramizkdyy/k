@@ -17,8 +17,27 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
+    // ENHANCED: Better user switching detection and cleanup in setCredentials
     setCredentials: (state, action) => {
       const { user, token, hasUserProfile } = action.payload;
+      const previousUserId = state.user?.id;
+      const currentUserId = user?.id;
+      
+      // Detect user switch
+      const isUserSwitch = previousUserId && currentUserId && previousUserId !== currentUserId;
+      
+      if (isUserSwitch) {
+        console.log("🔄 USER SWITCH in setCredentials:", {
+          previousUserId,
+          currentUserId,
+          clearingPreviousData: true
+        });
+        
+        // Clear previous user's data completely for user switch
+        Object.assign(state, initialState);
+      }
+      
+      // Set new credentials
       state.user = user;
       state.token = token;
       state.isAuthenticated = true;
@@ -35,16 +54,18 @@ const authSlice = createSlice({
       state.error = null;
 
       console.log("setCredentials çalıştı:", {
-        userId: user?.id, // Log user ID for debugging
+        userId: user?.id,
+        wasUserSwitch: isUserSwitch,
+        previousUserId,
         user,
-        token,
+        token: token?.substring(0, 20) + "...",
         role: state.role,
         userRole: state.userRole,
         hasUserProfile: state.hasUserProfile,
       });
     },
 
-    // ENHANCED: More thorough logout with detailed logging
+    // ENHANCED: More thorough logout with detailed logging and async storage cleanup
     logout: (state) => {
       console.log("🚪 Logout initiated for user:", state.user?.id);
       
@@ -59,6 +80,29 @@ const authSlice = createSlice({
         previousUserId,
         previousRole,
         stateReset: true
+      });
+    },
+
+    // NEW: Force clear all user data for hard reset (emergency logout)
+    forceLogout: (state) => {
+      console.log("🔥 FORCE LOGOUT initiated - clearing everything");
+      
+      // Store previous info
+      const previousUserId = state.user?.id;
+      
+      // Hard reset - no partial state retention
+      state.user = null;
+      state.token = null;
+      state.isAuthenticated = false;
+      state.role = null;
+      state.userRole = null;
+      state.hasUserProfile = false;
+      state.isLoading = false;
+      state.error = null;
+      
+      console.log("🔥 FORCE LOGOUT completed:", {
+        previousUserId,
+        allDataCleared: true
       });
     },
 
@@ -363,6 +407,7 @@ const authSlice = createSlice({
 export const {
   setCredentials,
   logout,
+  forceLogout, // NEW
   setRole,
   setError,
   clearError,

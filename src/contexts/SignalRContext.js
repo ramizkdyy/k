@@ -443,29 +443,69 @@ export const SignalRProvider = ({ children }) => {
     });
   }, [startConnection, stopConnection]);
 
-  // Auth değişikliklerini dinle - ENHANCED: Better user switching with complete cleanup
+  // ENHANCED: Auth changes listener with better user switching detection
+  const previousUserIdRef = useRef(null);
+  const isUserSwitchingRef = useRef(false);
+  
   useEffect(() => {
-    if (token && user?.id) {
+    const currentUserId = user?.id;
+    const previousUserId = previousUserIdRef.current;
+    
+    // Detect user switching (different user ID)
+    const isUserSwitch = previousUserId && currentUserId && previousUserId !== currentUserId;
+    
+    if (isUserSwitch) {
+      console.log("🔄 USER SWITCH DETECTED:", {
+        previousUserId,
+        currentUserId,
+        tokenExists: !!token
+      });
+      isUserSwitchingRef.current = true;
+    }
+
+    if (token && currentUserId) {
       console.log("🔑 Token ve user mevcut, SignalR başlatılıyor...");
-      console.log("👤 Current user ID:", user.id);
+      console.log("👤 Current user ID:", currentUserId);
       console.log("🔑 Token preview:", token.substring(0, 20) + "...");
       
-      // Force stop any existing connection first to prevent auth issues
-      const handleUserSwitch = async () => {
-        await stopConnection();
-        // Longer delay to ensure complete cleanup for user switching
-        setTimeout(() => {
-          console.log("🔄 Starting fresh connection for user:", user.id);
-          startConnection();
-        }, 750);
+      // Handle user switch or initial connection
+      const handleConnection = async () => {
+        // For user switches, do more thorough cleanup
+        if (isUserSwitchingRef.current) {
+          console.log("🔥 PERFORMING DEEP CLEANUP FOR USER SWITCH");
+          
+          // Stop connection and clear all cached references
+          await stopConnection();
+          
+          // Clear connection reference completely
+          connectionRef.current = null;
+          
+          // Longer delay for user switches to ensure backend cleanup
+          setTimeout(() => {
+            console.log("🆕 Starting fresh connection for new user:", currentUserId);
+            isUserSwitchingRef.current = false;
+            startConnection();
+          }, 1500); // Longer delay for user switches
+        } else {
+          // Regular connection start
+          await stopConnection();
+          setTimeout(() => {
+            console.log("🔄 Starting connection for user:", currentUserId);
+            startConnection();
+          }, 750);
+        }
       };
       
-      handleUserSwitch();
+      handleConnection();
     } else {
       console.log("❌ Token veya user yok, SignalR durduruluyor...");
       console.log("🧹 Cleaning up for logout/user switch");
+      isUserSwitchingRef.current = false;
       stopConnection();
     }
+
+    // Update previous user ID reference
+    previousUserIdRef.current = currentUserId;
 
     return () => {
       console.log("🧹 Effect cleanup: stopping connection");
