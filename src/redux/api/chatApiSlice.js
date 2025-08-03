@@ -9,7 +9,7 @@ export const chatApiSlice = createApi({
     baseUrl: CHAT_BASE_URL,
     prepareHeaders: (headers, { getState }) => {
       const token = getState().auth.token;
-      console.log("CHAT BEARER TOKEN:", token?.substring(0, 50) + "...");
+      console.log("CHAT BEARER TOKEN:", token);
 
       if (token) {
         headers.set("authorization", `Bearer ${token}`);

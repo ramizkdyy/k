@@ -1,4 +1,4 @@
-// screens/ChatDetailScreen.js - Fixed with Proper Pagination
+// screens/ChatDetailScreen.js - Fixed with Backend Pagination Response
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
@@ -26,6 +26,9 @@ import {
   faCheckDouble,
   faExclamationCircle,
   faTimes,
+  faChevronLeft,
+  faPaperPlaneTop,
+  faPlus,
 } from "@fortawesome/pro-solid-svg-icons";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -35,6 +38,7 @@ import {
 } from "../redux/api/chatApiSlice";
 import { useSignalR } from "../contexts/SignalRContext";
 import { useSelector, useDispatch } from "react-redux";
+import { BlurView } from "expo-blur";
 
 const ChatDetailScreen = ({ navigation, route }) => {
   const { partnerId, partnerName } = route.params || {};
@@ -46,7 +50,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
     useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true); // ✅ Backend'den gelecek
   const [shouldScrollToEnd, setShouldScrollToEnd] = useState(false);
   const [loadedPages, setLoadedPages] = useState(new Set([1])); // ✅ Yüklenen sayfaları takip et
 
@@ -74,7 +78,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
   // ✅ FIXED: İlk sayfayı yükle (Page 1)
   const {
-    data: firstPageData = [],
+    data: firstPageResponse,
     isLoading: isLoadingFirstPage,
     error: firstPageError,
     refetch: refetchFirstPage,
@@ -90,14 +94,14 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
   // ✅ FIXED: Dinamik sayfa yükleme - Sadece gerekli sayfayı yükle
   const {
-    data: currentPageData = [],
+    data: currentPageResponse,
     isLoading: isLoadingCurrentPage,
     error: currentPageError,
     refetch: refetchCurrentPage,
   } = useGetChatHistoryQuery(
     { partnerId, page: currentPage },
     {
-      skip: !partnerId || currentPage === 1 || loadedPages.has(currentPage), // ✅ Zaten yüklü sayfaları atla
+      skip: !partnerId || currentPage === 1 || loadedPages.has(currentPage),
     }
   );
 
@@ -107,39 +111,66 @@ const ChatDetailScreen = ({ navigation, route }) => {
   const isPartnerOnline = onlineUsers.has(partnerId);
   const isPartnerTyping = typingUsers.has(partnerId);
 
+  // ✅ FIXED: Backend response structure'ını parse et
+  const parseBackendResponse = (response) => {
+    if (!response) return { messages: [], hasNextPage: false, currentPage: 1 };
+
+    // Eğer direkt array geliyorsa (eski format)
+    if (Array.isArray(response)) {
+      return {
+        messages: response,
+        hasNextPage: response.length === 20, // 20 item varsa muhtemelen daha var
+        currentPage: 1,
+      };
+    }
+
+    // Yeni backend format: { currentPage, hasNextPage, messages, pageSize }
+    return {
+      messages: response.messages || [],
+      hasNextPage: response.hasNextPage || false,
+      currentPage: response.currentPage || 1,
+      pageSize: response.pageSize || 20,
+    };
+  };
+
   // ✅ İlk sayfa yüklendiğinde mesajları set et
   useEffect(() => {
-    if (firstPageData.length > 0 && !hasLoadedInitialMessages) {
-      console.log(
-        "📖 Setting initial messages from page 1:",
-        firstPageData.length
-      );
-      setMessages(firstPageData);
+    if (firstPageResponse && !hasLoadedInitialMessages) {
+      const { messages: firstPageMessages, hasNextPage } =
+        parseBackendResponse(firstPageResponse);
+
+      console.log("📖 Setting initial messages from page 1:", {
+        messageCount: firstPageMessages.length,
+        hasNextPage,
+      });
+
+      setMessages(firstPageMessages);
       setHasLoadedInitialMessages(true);
       setShouldScrollToEnd(true);
+      setHasMoreMessages(hasNextPage); // ✅ Backend'den gelen hasNextPage kullan
 
-      // Eğer 20'den az mesaj varsa (sayfa boyutu 20 ise), daha fazla sayfa yok
-      if (firstPageData.length < 20) {
-        setHasMoreMessages(false);
-        console.log("🔚 No more messages to load (first page < 20)");
-      }
+      console.log(`📖 Initial load complete. HasMore: ${hasNextPage}`);
     }
-  }, [firstPageData, hasLoadedInitialMessages]);
+  }, [firstPageResponse, hasLoadedInitialMessages]);
 
   // ✅ FIXED: Yeni sayfa yüklendiğinde mesajları birleştir
   useEffect(() => {
     if (
-      currentPageData.length > 0 &&
+      currentPageResponse &&
       currentPage > 1 &&
       !loadedPages.has(currentPage)
     ) {
-      console.log(
-        `📖 Loading page ${currentPage} with ${currentPageData.length} messages`
-      );
+      const { messages: currentPageMessages, hasNextPage } =
+        parseBackendResponse(currentPageResponse);
+
+      console.log(`📖 Loading page ${currentPage}:`, {
+        messageCount: currentPageMessages.length,
+        hasNextPage,
+      });
 
       setMessages((prevMessages) => {
         // Yeni sayfadaki mesajları eskilerle birleştir (eski mesajlar sonda)
-        const combinedMessages = [...prevMessages, ...currentPageData];
+        const combinedMessages = [...prevMessages, ...currentPageMessages];
 
         // Duplicate kontrolü - ID ve timestamp'e göre
         const uniqueMessages = combinedMessages.filter(
@@ -168,15 +199,13 @@ const ChatDetailScreen = ({ navigation, route }) => {
       // Bu sayfayı yüklü olarak işaretle
       setLoadedPages((prev) => new Set([...prev, currentPage]));
 
-      // Eğer 20'den az mesaj varsa, daha fazla sayfa yok
-      if (currentPageData.length < 20) {
-        setHasMoreMessages(false);
-        console.log("🔚 No more messages to load");
-      }
+      // ✅ Backend'den gelen hasNextPage bilgisini kullan
+      setHasMoreMessages(hasNextPage);
+      console.log(`📖 Page ${currentPage} loaded. HasMore: ${hasNextPage}`);
 
       setIsLoadingMore(false);
     }
-  }, [currentPageData, currentPage, loadedPages]);
+  }, [currentPageResponse, currentPage, loadedPages]);
 
   // ✅ Auto scroll to bottom after messages are loaded
   useEffect(() => {
@@ -188,7 +217,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
     }
   }, [shouldScrollToEnd, messages]);
 
-  // ✅ FIXED: Load more messages - Doğru sayfa numarasını kullan
+  // ✅ FIXED: Load more messages - Backend hasNextPage'e göre kontrol et
   const handleLoadMore = useCallback(async () => {
     if (isLoadingMore || !hasMoreMessages || isLoadingCurrentPage) {
       console.log("⚠️ Skipping load more:", {
@@ -207,7 +236,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
       return;
     }
 
-    console.log(`📖 Loading page ${nextPage}...`);
+    console.log(`📖 Loading page ${nextPage}... (hasMore: ${hasMoreMessages})`);
     setIsLoadingMore(true);
     setCurrentPage(nextPage);
   }, [
@@ -638,35 +667,76 @@ const ChatDetailScreen = ({ navigation, route }) => {
     setHasLoadedInitialMessages(false);
     setMessages([]);
     setCurrentPage(1);
-    setHasMoreMessages(true);
+    setHasMoreMessages(true); // ✅ Reset hasMore to true for fresh start
     setIsLoadingMore(false);
     setShouldScrollToEnd(true);
     setLoadedPages(new Set([1])); // ✅ Reset loaded pages
     refetchFirstPage();
   }, [refetchFirstPage]);
 
-  // Format timestamp
-  const formatTimestamp = (timestamp) => {
+  // Helper function to check if two dates are the same day
+  const isSameDay = (date1, date2) => {
+    return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate()
+    );
+  };
+
+  // Format timestamp for message separators (shows "Bugün", "Dün", or date)
+  const formatSeparatorTimestamp = (timestamp) => {
     const date = new Date(timestamp);
     const now = new Date();
-    const diffInHours = (now - date) / (1000 * 60 * 60);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const messageDate = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    );
 
-    if (diffInHours < 24) {
-      return date.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } else if (diffInHours < 48) {
-      return "Yesterday";
+    const diffInDays = Math.floor(
+      (today - messageDate) / (1000 * 60 * 60 * 24)
+    );
+
+    if (diffInDays === 0) {
+      return "Bugün";
+    } else if (diffInDays === 1) {
+      return "Dün";
     } else {
-      return date.toLocaleDateString();
+      // Turkish months
+      const months = [
+        "Ocak",
+        "Şubat",
+        "Mart",
+        "Nisan",
+        "Mayıs",
+        "Haziran",
+        "Temmuz",
+        "Ağustos",
+        "Eylül",
+        "Ekim",
+        "Kasım",
+        "Aralık",
+      ];
+
+      return `${date.getDate()} ${months[date.getMonth()]}`;
     }
   };
 
-  // Message renderer - Normal order (newest at bottom)
+  // Format timestamp for individual messages (shows only hour:minute)
+  const formatMessageTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString("tr-TR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  };
+
+  // Updated renderMessage function with new timestamp formatting
   const renderMessage = ({ item, index }) => {
     const isSent = item.senderUserId === currentUserId;
-    const isLatestMessage = index === messages.length - 1; // Latest message is now at the end
+    const isLatestMessage = index === messages.length - 1;
 
     // For normal list order
     const prevMessage = index > 0 ? messages[index - 1] : null;
@@ -682,11 +752,11 @@ const ChatDetailScreen = ({ navigation, route }) => {
       new Date(item.sentAt) - new Date(prevMessage.sentAt) > 5 * 60 * 1000; // 5 minutes
 
     return (
-      <View className="mb-1">
+      <View style={{ marginBottom: 1 }}>
         {showTimestamp && (
           <View className="items-center my-2">
             <Text className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-              {formatTimestamp(item.sentAt)}
+              {formatSeparatorTimestamp(item.sentAt)}
             </Text>
           </View>
         )}
@@ -696,53 +766,48 @@ const ChatDetailScreen = ({ navigation, route }) => {
             isSent ? "justify-end" : "justify-start"
           }`}
         >
-          {/* Avatar for received messages */}
-          {!isSent && (
-            <View className="mr-2" style={{ width: 32 }}>
-              {showAvatar && (
-                <Image
-                  source={{
-                    uri: `https://ui-avatars.com/api/?name=${item.senderUserId}&background=0ea5e9&color=fff&size=32`,
-                  }}
-                  className="w-8 h-8 rounded-full"
-                />
-              )}
-            </View>
-          )}
-
           <View
-            className={`max-w-[75%] px-3 py-2 rounded-2xl ${
-              isSent ? "bg-blue-500 rounded-br-md" : "bg-gray-200 rounded-bl-md"
-            }`}
+            style={{
+              boxShadow: "0px 0px 12px #00000014",
+              paddingHorizontal: 14,
+              paddingVertical: 8,
+              backgroundColor: isSent ? "#242424" : "#fff",
+            }}
+            className={`max-w-[75%] rounded-3xl`}
           >
             <Text
-              className={`text-base ${isSent ? "text-white" : "text-gray-900"}`}
+              style={{ fontSize: 16 }}
+              className={` ${isSent ? "text-white" : "text-gray-900"}`}
             >
-              {item.content}
+              {item.content}{" "}
+              {isSent
+                ? "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"
+                : "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"}
             </Text>
-
-            <View className="flex-row items-center justify-between mt-1">
+            <View
+              style={{ bottom: 9, right: 12, gap: 2 }}
+              className="absolute flex flex-row items-center"
+            >
               <Text
                 className={`text-xs ${
                   isSent ? "text-blue-100" : "text-gray-500"
                 }`}
               >
-                {formatTimestamp(item.sentAt)}
+                {formatMessageTimestamp(item.sentAt)}
               </Text>
-
-              {/* Message status for sent messages (only show for latest message) */}
-              {isSent && isLatestMessage && (
-                <View className="ml-2 flex-row items-center">
+              {/* Message status for sent messages */}
+              {isSent && (
+                <View className=" flex-row items-center">
                   {item.isOptimistic ? (
-                    <View className="w-2 h-2 bg-blue-200 rounded-full animate-pulse" />
+                    <View className="w-2 h-2 bg-gray-200 rounded-full animate-pulse" />
                   ) : item.isRead ? (
                     <FontAwesomeIcon
                       icon={faCheckDouble}
                       size={10}
-                      color="#93c5fd"
+                      color="#5ba8fc"
                     />
                   ) : (
-                    <FontAwesomeIcon icon={faCheck} size={10} color="#93c5fd" />
+                    <FontAwesomeIcon icon={faCheck} size={10} color="#b0b0b0" />
                   )}
                 </View>
               )}
@@ -766,26 +831,10 @@ const ChatDetailScreen = ({ navigation, route }) => {
   // Error state
   if (firstPageError && !hasLoadedInitialMessages) {
     return (
-      <KeyboardAvoidingView
-        className="flex-1 bg-white"
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <SafeAreaView style={{ flex: 0, backgroundColor: "#fff" }} />
-        <StatusBar style="dark" backgroundColor="#fff" />
+      <View className="flex-1 bg-white">
+        <StatusBar style="dark" backgroundColor="transparent" translucent />
 
-        {/* Header */}
-        <View className="bg-white px-4 py-3 border-b border-gray-100 flex-row items-center">
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            className="p-2 -ml-2 mr-2"
-          >
-            <FontAwesomeIcon icon={faArrowLeft} size={20} color="#000" />
-          </TouchableOpacity>
-          <Text className="text-lg font-semibold text-gray-900">
-            {partnerName || partnerId}
-          </Text>
-        </View>
-
+        {/* Error content */}
         <View className="flex-1 justify-center items-center px-4">
           <FontAwesomeIcon
             icon={faExclamationCircle}
@@ -805,72 +854,41 @@ const ChatDetailScreen = ({ navigation, route }) => {
             <Text className="text-white font-semibold">Try Again</Text>
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+
+        {/* ✅ Absolute positioned BlurView Header for error state */}
+        <BlurView
+          intensity={90}
+          tint="light"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 50,
+          }}
+        >
+          <SafeAreaView style={{ backgroundColor: "transparent" }} />
+          <View className="px-4 py-3 flex-row items-center">
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              className="p-2 -ml-2 mr-2"
+            >
+              <FontAwesomeIcon icon={faArrowLeft} size={20} color="#000" />
+            </TouchableOpacity>
+            <Text className="text-lg font-semibold text-gray-900">
+              {partnerName || partnerId}
+            </Text>
+          </View>
+        </BlurView>
+      </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-white">
-      <SafeAreaView style={{ flex: 0, backgroundColor: "#fff" }} />
-      <StatusBar style="dark" backgroundColor="#fff" />
+    <View className="flex-1">
+      <StatusBar style="dark" backgroundColor="transparent" translucent />
 
-      {/* Header */}
-      <View className="bg-white px-4 py-3 border-b border-gray-100 flex-row items-center justify-between">
-        <View className="flex-row items-center flex-1">
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            className="p-2 -ml-2 mr-2"
-          >
-            <FontAwesomeIcon icon={faArrowLeft} size={20} color="#000" />
-          </TouchableOpacity>
-
-          <TouchableOpacity className="flex-row items-center flex-1">
-            <Image
-              source={{
-                uri: `https://ui-avatars.com/api/?name=${
-                  partnerName || partnerId
-                }&background=0ea5e9&color=fff&size=40`,
-              }}
-              className="w-10 h-10 rounded-full mr-3"
-            />
-            <View className="flex-1">
-              <Text className="text-base font-semibold text-gray-900">
-                {partnerName || partnerId}
-              </Text>
-              <View className="flex-row items-center">
-                {isPartnerOnline && (
-                  <FontAwesomeIcon icon={faCircle} size={6} color="#10b981" />
-                )}
-                <Text
-                  className={`text-xs ml-1 ${
-                    isPartnerOnline ? "text-green-600" : "text-gray-500"
-                  }`}
-                >
-                  {isPartnerTyping
-                    ? "Typing..."
-                    : isPartnerOnline
-                    ? "Online"
-                    : "Offline"}
-                </Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        <View className="flex-row items-center space-x-3">
-          <TouchableOpacity className="p-2">
-            <FontAwesomeIcon icon={faPhone} size={18} color="#666" />
-          </TouchableOpacity>
-          <TouchableOpacity className="p-2">
-            <FontAwesomeIcon icon={faVideo} size={18} color="#666" />
-          </TouchableOpacity>
-          <TouchableOpacity className="p-2">
-            <FontAwesomeIcon icon={faCircleInfo} size={18} color="#666" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Messages - Normal FlatList with pagination at top */}
+      {/* Messages - Full screen FlatList */}
       <FlatList
         ref={flatListRef}
         data={messages.slice().reverse()} // Reverse to show oldest at top, newest at bottom
@@ -884,7 +902,11 @@ const ChatDetailScreen = ({ navigation, route }) => {
           item.id?.toString() || `${item.senderUserId}-${item.sentAt}`
         }
         className="flex-1 px-4"
-        contentContainerStyle={{ paddingVertical: 16 }}
+        contentContainerStyle={{
+          paddingTop: Platform.OS === "ios" ? 140 : 120, // Space for header
+          paddingBottom: Platform.OS === "ios" ? 90 : 120, // Space for input
+          paddingVertical: 16,
+        }}
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={100}
@@ -899,6 +921,12 @@ const ChatDetailScreen = ({ navigation, route }) => {
                 Loading page {currentPage}...
               </Text>
             </View>
+          ) : !hasMoreMessages && messages.length > 0 ? (
+            <View className="py-4 items-center">
+              <Text className="text-xs text-gray-400">
+                🔚 Bu sohbetin başlangıcı
+              </Text>
+            </View>
           ) : null
         }
         ListEmptyComponent={() => (
@@ -910,9 +938,18 @@ const ChatDetailScreen = ({ navigation, route }) => {
         )}
       />
 
-      {/* Connection Status Indicator */}
+      {/* Connection Status Indicator - Positioned above input */}
       {!isConnected && (
-        <View className="bg-yellow-100 px-4 py-2 border-t border-yellow-200">
+        <View
+          className="bg-yellow-100 px-4 py-2 border-t border-yellow-200"
+          style={{
+            position: "absolute",
+            bottom: Platform.OS === "ios" ? 120 : 100,
+            left: 0,
+            right: 0,
+            zIndex: 30,
+          }}
+        >
           <View className="flex-row items-center justify-between">
             <Text className="text-yellow-600 text-sm">
               {isConnecting
@@ -938,59 +975,135 @@ const ChatDetailScreen = ({ navigation, route }) => {
         </View>
       )}
 
-      {/* Input Area */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+      {/* ✅ Absolute positioned BlurView Header */}
+      <BlurView
+        intensity={70}
+        tint="light"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 50,
+        }}
       >
-        <View
-          className="bg-white px-4 py-3 border-t border-gray-100"
-          style={{
-            paddingBottom: Platform.OS === "ios" ? 16 : 16,
-          }}
-        >
-          <View className="flex-row items-end bg-gray-100 rounded-full px-4 py-2">
-            <TextInput
-              ref={textInputRef}
-              className="flex-1 text-base py-2 max-h-20"
-              placeholder="Type a message..."
-              value={message}
-              onChangeText={(text) => {
-                setMessage(text);
-                if (text.trim()) {
-                  handleTypingStart();
-                }
-              }}
-              multiline
-              maxLength={500}
-              placeholderTextColor="#999"
-              editable={!isSending}
-              onSubmitEditing={handleSendMessage}
-              blurOnSubmit={false}
-            />
-
+        <SafeAreaView style={{ backgroundColor: "transparent" }} />
+        <View className="px-4 pb-2 flex-row items-center justify-between">
+          <View className="flex-row items-center flex-1">
             <TouchableOpacity
-              onPress={handleSendMessage}
-              className={`ml-2 w-8 h-8 rounded-full items-center justify-center ${
-                message.trim() && !isSending ? "bg-blue-500" : "bg-gray-300"
-              }`}
-              disabled={!message.trim() || isSending}
+              onPress={() => navigation.goBack()}
+              className="p-2 -ml-2 mr-2"
             >
-              {isSending ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <FontAwesomeIcon
-                  icon={faPaperPlane}
-                  size={14}
-                  color={message.trim() ? "#fff" : "#666"}
-                />
-              )}
+              <FontAwesomeIcon icon={faChevronLeft} size={20} color="#000" />
+            </TouchableOpacity>
+
+            <TouchableOpacity className="flex-row items-center flex-1">
+              <Image
+                source={{
+                  uri: `https://ui-avatars.com/api/?name=${
+                    partnerName || partnerId
+                  }&background=0ea5e9&color=fff&size=40`,
+                }}
+                className="w-12 h-12 rounded-full mr-3"
+              />
+              <View className="flex-1">
+                <Text
+                  style={{ fontSize: 18 }}
+                  className="font-semibold text-gray-900"
+                >
+                  {partnerName || partnerId}
+                </Text>
+                <View className="flex-row items-center">
+                  {isPartnerOnline ? (
+                    <Text className="text-gray-500" style={{ fontSize: 12 }}>
+                      {isPartnerTyping
+                        ? "Yazıyor..."
+                        : isPartnerOnline
+                        ? "Çevrimiçi"
+                        : ""}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          <View className="flex-row items-center space-x-3">
+            <TouchableOpacity className="p-2">
+              <FontAwesomeIcon icon={faCircleInfo} size={22} color="#000" />
             </TouchableOpacity>
           </View>
         </View>
-      </KeyboardAvoidingView>
+      </BlurView>
 
-      <SafeAreaView style={{ flex: 0, backgroundColor: "transparent" }} />
+      {/* ✅ Absolute positioned BlurView Input Area */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 50,
+        }}
+      >
+        <BlurView intensity={70} tint="light">
+          <View className="">
+            <View className="flex-row items-center bg-white/20 rounded-full px-4 py-1.5 backdrop-blur-md">
+              <TouchableOpacity
+                onPress={handleSendMessage}
+                className={`w-10 h-10 rounded-full items-center justify-center mr-3`}
+                disabled={!message.trim() || isSending}
+              >
+                <FontAwesomeIcon
+                  icon={faPlus}
+                  size={22}
+                  color={message.trim() ? "#000" : "#000"}
+                />
+              </TouchableOpacity>
+              <BlurView
+                style={{ boxShadow: "0px 0px 12px #00000014" }}
+                className="flex-1 rounded-full overflow-hidden px-4"
+              >
+                <TextInput
+                  ref={textInputRef}
+                  className=" text-base py-2  max-h-20 rounded-full"
+                  value={message}
+                  onChangeText={(text) => {
+                    setMessage(text);
+                    if (text.trim()) {
+                      handleTypingStart();
+                    }
+                  }}
+                  multiline
+                  maxLength={500}
+                  placeholderTextColor="#999"
+                  editable={!isSending}
+                  onSubmitEditing={handleSendMessage}
+                  blurOnSubmit={false}
+                />
+              </BlurView>
+
+              <TouchableOpacity
+                onPress={handleSendMessage}
+                style={{ backgroundColor: "#4ade80" }}
+                className={`ml-2 w-10 h-10 rounded-full items-center justify-center ${
+                  message.trim() && !isSending ? "bg-blue-500" : ""
+                }`}
+                disabled={!message.trim() || isSending}
+              >
+                <FontAwesomeIcon
+                  icon={faPaperPlaneTop}
+                  size={18}
+                  color={message.trim() ? "#000" : "#fff"}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+          <SafeAreaView style={{ backgroundColor: "transparent" }} />
+        </BlurView>
+      </KeyboardAvoidingView>
     </View>
   );
 };
