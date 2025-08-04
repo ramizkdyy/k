@@ -717,7 +717,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
       userId: currentUser?.id,
       latitude: userLocation?.latitude,
       longitude: userLocation?.longitude,
-      radiusKm: 50,
+      radiusKm: 100,
       page: currentPage,
       pageSize: 10,
       sortBy: sortBy,

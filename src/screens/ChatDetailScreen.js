@@ -12,6 +12,8 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  Dimensions,
+  Animated,
   Keyboard,
 } from "react-native";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
@@ -39,12 +41,12 @@ import {
 import { useSignalR } from "../contexts/SignalRContext";
 import { useSelector, useDispatch } from "react-redux";
 import { BlurView } from "expo-blur";
+import { useHeaderHeight } from "@react-navigation/elements";
 
 const ChatDetailScreen = ({ navigation, route }) => {
   const { partnerId, partnerName } = route.params || {};
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [messages, setMessages] = useState([]); // Local state for combined messages
   const [hasLoadedInitialMessages, setHasLoadedInitialMessages] =
     useState(false);
@@ -53,10 +55,11 @@ const ChatDetailScreen = ({ navigation, route }) => {
   const [hasMoreMessages, setHasMoreMessages] = useState(true); // ✅ Backend'den gelecek
   const [shouldScrollToEnd, setShouldScrollToEnd] = useState(false);
   const [loadedPages, setLoadedPages] = useState(new Set([1])); // ✅ Yüklenen sayfaları takip et
-
+  const keyboardHeight = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef();
   const typingTimeoutRef = useRef();
   const textInputRef = useRef();
+  const headerHeight = Platform.OS === "ios" ? useHeaderHeight() : 0;
 
   const { user } = useSelector((state) => state.auth);
   const currentUserId = user?.id || user?.userId;
@@ -110,6 +113,20 @@ const ChatDetailScreen = ({ navigation, route }) => {
   // Partner online status
   const isPartnerOnline = onlineUsers.has(partnerId);
   const isPartnerTyping = typingUsers.has(partnerId);
+  const handleTextInputFocus = () => {
+    // iOS'ta klavye yüksekliğini tahmin ederek hemen başlatın
+    if (Platform.OS === "ios") {
+      // Standard iOS keyboard height (iPhone'lara göre)
+      const estimatedKeyboardHeight =
+        Dimensions.get("window").height > 800 ? 346 : 316; // iPhone büyüklüğüne göre
+
+      Animated.timing(keyboardHeight, {
+        toValue: estimatedKeyboardHeight,
+        duration: 150,
+        useNativeDriver: false,
+      }).start();
+    }
+  };
 
   // ✅ FIXED: Backend response structure'ını parse et
   const parseBackendResponse = (response) => {
@@ -132,6 +149,45 @@ const ChatDetailScreen = ({ navigation, route }) => {
       pageSize: response.pageSize || 20,
     };
   };
+
+  useEffect(() => {
+    // iOS için keyboardWillShow/Hide kullanın (daha responsive)
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const show = Keyboard.addListener(showEvent, (e) => {
+      console.log("Keyboard showing:", e.endCoordinates);
+
+      // iOS'ta animasyon süresini keyboard'un kendi animasyon süresiyle eşleştirin
+      const animationDuration = Platform.OS === "ios" ? e.duration || 250 : 150;
+
+      Animated.timing(keyboardHeight, {
+        toValue: e.endCoordinates.height,
+        duration: animationDuration,
+        useNativeDriver: false,
+      }).start();
+    });
+
+    const hide = Keyboard.addListener(hideEvent, (e) => {
+      console.log("Keyboard hiding");
+
+      const animationDuration =
+        Platform.OS === "ios" ? e?.duration || 250 : 150;
+
+      Animated.timing(keyboardHeight, {
+        toValue: 0,
+        duration: animationDuration,
+        useNativeDriver: false,
+      }).start();
+    });
+
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   // ✅ İlk sayfa yüklendiğinde mesajları set et
   useEffect(() => {
@@ -461,31 +517,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
     syncMessageToCache,
     dispatch,
   ]);
-
-  // Keyboard listeners
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      "keyboardDidShow",
-      (e) => {
-        setKeyboardHeight(e.endCoordinates.height);
-        // ✅ Klavye açıldığında da scroll et
-        setTimeout(() => {
-          flatListRef.current?.scrollToEnd({ animated: true });
-        }, 100);
-      }
-    );
-    const keyboardDidHideListener = Keyboard.addListener(
-      "keyboardDidHide",
-      () => {
-        setKeyboardHeight(0);
-      }
-    );
-
-    return () => {
-      keyboardDidHideListener?.remove();
-      keyboardDidShowListener?.remove();
-    };
-  }, []);
 
   // Mark messages as read when entering chat
   useEffect(() => {
@@ -885,169 +916,165 @@ const ChatDetailScreen = ({ navigation, route }) => {
   }
 
   return (
-    <View className="flex-1">
-      <StatusBar style="dark" backgroundColor="transparent" translucent />
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={headerHeight}
+    >
+      <View className="flex-1">
+        <StatusBar style="dark" backgroundColor="transparent" translucent />
 
-      {/* Messages - Full screen FlatList */}
-      <FlatList
-        ref={flatListRef}
-        data={messages.slice().reverse()} // Reverse to show oldest at top, newest at bottom
-        renderItem={({ item, index }) =>
-          renderMessage({
-            item,
-            index: messages.length - 1 - index, // Adjust index for reversed array
-          })
-        }
-        keyExtractor={(item) =>
-          item.id?.toString() || `${item.senderUserId}-${item.sentAt}`
-        }
-        className="flex-1 px-4"
-        contentContainerStyle={{
-          paddingTop: Platform.OS === "ios" ? 140 : 120, // Space for header
-          paddingBottom: Platform.OS === "ios" ? 90 : 120, // Space for input
-          paddingVertical: 16,
-        }}
-        showsVerticalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={100}
-        maintainVisibleContentPosition={{
-          minIndexForVisible: 0,
-        }}
-        ListHeaderComponent={() =>
-          isLoadingMore && hasMoreMessages ? (
-            <View className="py-4 items-center">
-              <ActivityIndicator size="small" color="#0ea5e9" />
-              <Text className="text-xs text-gray-500 mt-1">
-                Loading page {currentPage}...
-              </Text>
-            </View>
-          ) : !hasMoreMessages && messages.length > 0 ? (
-            <View className="py-4 items-center">
-              <Text className="text-xs text-gray-400">
-                🔚 Bu sohbetin başlangıcı
-              </Text>
-            </View>
-          ) : null
-        }
-        ListEmptyComponent={() => (
-          <View className="flex-1 justify-center items-center py-20">
-            <Text className="text-gray-500 text-base text-center">
-              No messages yet. Start the conversation!
-            </Text>
-          </View>
-        )}
-      />
-
-      {/* Connection Status Indicator - Positioned above input */}
-      {!isConnected && (
-        <View
-          className="bg-yellow-100 px-4 py-2 border-t border-yellow-200"
-          style={{
-            position: "absolute",
-            bottom: Platform.OS === "ios" ? 120 : 100,
-            left: 0,
-            right: 0,
-            zIndex: 30,
+        {/* Messages - Full screen FlatList */}
+        <FlatList
+          ref={flatListRef}
+          data={messages.slice().reverse()} // Reverse to show oldest at top, newest at bottom
+          renderItem={({ item, index }) =>
+            renderMessage({
+              item,
+              index: messages.length - 1 - index, // Adjust index for reversed array
+            })
+          }
+          keyExtractor={(item) =>
+            item.id?.toString() || `${item.senderUserId}-${item.sentAt}`
+          }
+          className="flex-1 px-4"
+          contentContainerStyle={{
+            paddingTop: Platform.OS === "ios" ? 140 : 120, // Space for header
+            paddingBottom: Platform.OS === "ios" ? 90 : 120, // Space for input
+            paddingVertical: 16,
           }}
-        >
-          <View className="flex-row items-center justify-between">
-            <Text className="text-yellow-600 text-sm">
-              {isConnecting
-                ? "Connecting to chat..."
-                : connectionError
-                ? "Chat disconnected"
-                : "Reconnecting to chat..."}
-            </Text>
-            {!isConnecting && (
-              <TouchableOpacity
-                onPress={reconnect}
-                className="bg-yellow-500 px-3 py-1 rounded"
-              >
-                <Text className="text-white text-xs font-medium">Retry</Text>
-              </TouchableOpacity>
+          keyboardDismissMode="interactive"
+          showsVerticalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={100}
+          maintainVisibleContentPosition={{
+            minIndexForVisible: 0,
+          }}
+          ListHeaderComponent={() =>
+            isLoadingMore && hasMoreMessages ? (
+              <View className="py-4 items-center">
+                <ActivityIndicator size="small" color="#0ea5e9" />
+                <Text className="text-xs text-gray-500 mt-1">
+                  Loading page {currentPage}...
+                </Text>
+              </View>
+            ) : !hasMoreMessages && messages.length > 0 ? (
+              <View className="py-4 items-center">
+                <Text className="text-xs text-gray-400">
+                  🔚 Bu sohbetin başlangıcı
+                </Text>
+              </View>
+            ) : null
+          }
+          ListEmptyComponent={() => (
+            <View className="flex-1 justify-center items-center py-20">
+              <Text className="text-gray-500 text-base text-center">
+                No messages yet. Start the conversation!
+              </Text>
+            </View>
+          )}
+        />
+
+        {/* Connection Status Indicator - Positioned above input */}
+        {!isConnected && (
+          <View
+            className="bg-yellow-100 px-4 py-2 border-t border-yellow-200"
+            style={{
+              position: "absolute",
+              bottom: Platform.OS === "ios" ? 120 : 100,
+              left: 0,
+              right: 0,
+              zIndex: 30,
+            }}
+          >
+            <View className="flex-row items-center justify-between">
+              <Text className="text-yellow-600 text-sm">
+                {isConnecting
+                  ? "Connecting to chat..."
+                  : connectionError
+                  ? "Chat disconnected"
+                  : "Reconnecting to chat..."}
+              </Text>
+              {!isConnecting && (
+                <TouchableOpacity
+                  onPress={reconnect}
+                  className="bg-yellow-500 px-3 py-1 rounded"
+                >
+                  <Text className="text-white text-xs font-medium">Retry</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {connectionError && (
+              <Text className="text-yellow-500 text-xs mt-1">
+                Using fallback messaging
+              </Text>
             )}
           </View>
-          {connectionError && (
-            <Text className="text-yellow-500 text-xs mt-1">
-              Using fallback messaging
-            </Text>
-          )}
-        </View>
-      )}
+        )}
 
-      {/* ✅ Absolute positioned BlurView Header */}
-      <BlurView
-        intensity={70}
-        tint="light"
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 50,
-        }}
-      >
-        <SafeAreaView style={{ backgroundColor: "transparent" }} />
-        <View className="px-4 pb-2 flex-row items-center justify-between">
-          <View className="flex-row items-center flex-1">
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              className="p-2 -ml-2 mr-2"
-            >
-              <FontAwesomeIcon icon={faChevronLeft} size={20} color="#000" />
-            </TouchableOpacity>
+        {/* ✅ Absolute positioned BlurView Header */}
+        <BlurView
+          intensity={70}
+          tint="light"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 50,
+          }}
+        >
+          <SafeAreaView style={{ backgroundColor: "transparent" }} />
+          <View className="px-4 pb-2 flex-row items-center justify-between">
+            <View className="flex-row items-center flex-1">
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                className="p-2 -ml-2 mr-2"
+              >
+                <FontAwesomeIcon icon={faChevronLeft} size={20} color="#000" />
+              </TouchableOpacity>
 
-            <TouchableOpacity className="flex-row items-center flex-1">
-              <Image
-                source={{
-                  uri: `https://ui-avatars.com/api/?name=${
-                    partnerName || partnerId
-                  }&background=0ea5e9&color=fff&size=40`,
-                }}
-                className="w-12 h-12 rounded-full mr-3"
-              />
-              <View className="flex-1">
-                <Text
-                  style={{ fontSize: 18 }}
-                  className="font-semibold text-gray-900"
-                >
-                  {partnerName || partnerId}
-                </Text>
-                <View className="flex-row items-center">
-                  {isPartnerOnline ? (
-                    <Text className="text-gray-500" style={{ fontSize: 12 }}>
-                      {isPartnerTyping
-                        ? "Yazıyor..."
-                        : isPartnerOnline
-                        ? "Çevrimiçi"
-                        : ""}
-                    </Text>
-                  ) : null}
+              <TouchableOpacity className="flex-row items-center flex-1">
+                <Image
+                  source={{
+                    uri: `https://ui-avatars.com/api/?name=${
+                      partnerName || partnerId
+                    }&background=0ea5e9&color=fff&size=40`,
+                  }}
+                  className="w-12 h-12 rounded-full mr-3"
+                />
+                <View className="flex-1">
+                  <Text
+                    style={{ fontSize: 18 }}
+                    className="font-semibold text-gray-900"
+                  >
+                    {partnerName || partnerId}
+                  </Text>
+                  <View className="flex-row items-center">
+                    {isPartnerOnline ? (
+                      <Text className="text-gray-500" style={{ fontSize: 12 }}>
+                        {isPartnerTyping
+                          ? "Yazıyor..."
+                          : isPartnerOnline
+                          ? "Çevrimiçi"
+                          : ""}
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
-              </View>
-            </TouchableOpacity>
-          </View>
+              </TouchableOpacity>
+            </View>
 
-          <View className="flex-row items-center space-x-3">
-            <TouchableOpacity className="p-2">
-              <FontAwesomeIcon icon={faCircleInfo} size={22} color="#000" />
-            </TouchableOpacity>
+            <View className="flex-row items-center space-x-3">
+              <TouchableOpacity className="p-2">
+                <FontAwesomeIcon icon={faCircleInfo} size={22} color="#000" />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </BlurView>
+        </BlurView>
 
-      {/* ✅ Absolute positioned BlurView Input Area */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 50,
-        }}
-      >
+        {/* ✅ BlurView Input Area */}
+
         <BlurView intensity={70} tint="light">
           <View className="">
             <View className="flex-row items-center bg-white/20 rounded-full px-4 py-1.5 backdrop-blur-md">
@@ -1068,7 +1095,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
               >
                 <TextInput
                   ref={textInputRef}
-                  className=" text-base py-2  max-h-20 rounded-full"
+                  className="text-base py-2 max-h-20 rounded-full"
                   value={message}
                   onChangeText={(text) => {
                     setMessage(text);
@@ -1076,6 +1103,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
                       handleTypingStart();
                     }
                   }}
+                  onFocus={handleTextInputFocus} // Yeni eklenen
                   multiline
                   maxLength={500}
                   placeholderTextColor="#999"
@@ -1103,8 +1131,8 @@ const ChatDetailScreen = ({ navigation, route }) => {
           </View>
           <SafeAreaView style={{ backgroundColor: "transparent" }} />
         </BlurView>
-      </KeyboardAvoidingView>
-    </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 
