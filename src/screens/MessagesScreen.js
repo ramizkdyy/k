@@ -28,12 +28,14 @@ import {
 } from "../redux/api/chatApiSlice";
 import { useSignalR } from "../contexts/SignalRContext";
 import { useSelector } from "react-redux";
+import { selectCurrentUser } from "../redux/slices/authSlice";
 import { useFocusEffect } from "@react-navigation/native";
 
 const MessagesScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const { user } = useSelector((state) => state.auth);
   const { isConnected, onlineUsers, connection } = useSignalR();
+  const currentUser = useSelector(selectCurrentUser);
 
   // API calls
   const {
@@ -152,26 +154,6 @@ const MessagesScreen = ({ navigation }) => {
     return partner.name || partner.userName || "Unknown User";
   };
 
-  // ✅ Partner profil resmini al
-  const getPartnerImage = (partner) => {
-    if (typeof partner === "object" && partner !== null) {
-      // Eğer profileImageUrl varsa ve default değil ise kullan
-      if (
-        partner.profileImageUrl &&
-        partner.profileImageUrl !== "default_profile_image_url" &&
-        partner.profileImageUrl.startsWith("http")
-      ) {
-        return partner.profileImageUrl;
-      }
-    }
-
-    // Fallback olarak avatar generator kullan
-    const partnerName = getPartnerName(partner);
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      partnerName
-    )}&background=0ea5e9&color=fff&size=56`;
-  };
-
   // ✅ Son mesajı al
   const getLastMessage = (partner) => {
     if (
@@ -224,7 +206,7 @@ const MessagesScreen = ({ navigation }) => {
   const renderPartner = ({ item: partner }) => {
     const partnerId = getPartnerId(partner);
     const partnerName = getPartnerName(partner);
-    const partnerImage = getPartnerImage(partner);
+
     const lastMessage = getLastMessage(partner);
     const isOnline = onlineUsers.has(partnerId);
     const messageTime = partner.lastMessage
@@ -234,7 +216,7 @@ const MessagesScreen = ({ navigation }) => {
 
     return (
       <TouchableOpacity
-        className="flex-row items-center px-4 py-3 bg-white"
+        className="flex flex-row items-center justify-center py-2 px-4 bg-white gap-4"
         onPress={() => {
           console.log("🚀 Navigating to chat with:", partnerId, partnerName);
           navigation.navigate("ChatDetail", {
@@ -244,40 +226,52 @@ const MessagesScreen = ({ navigation }) => {
         }}
       >
         {/* Avatar with online indicator */}
-        <View className="relative mr-3">
-          <Image
-            source={{ uri: partnerImage }}
-            className="w-14 h-14 rounded-full"
-            defaultSource={{
-              uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                partnerName
-              )}&background=0ea5e9&color=fff&size=56`,
-            }}
-          />
+
+        <View
+          style={{ boxShadow: "0px 0px 12px #00000014", width: 60, height: 60 }}
+          className=" rounded-full bg-white justify-center  items-center overflow-hidden"
+        >
+          {partner?.profileImageUrl &&
+          partner?.profileImageUrl !== "default_profile_image_url" ? (
+            <Image
+              source={{ uri: partner.profileImageUrl }}
+              className="w-full h-full"
+              resizeMode="cover"
+            />
+          ) : (
+            <Text style={{ fontSize: 30 }} className="text-gray-900 font-bold">
+              {partner?.name?.charAt(0) || "P"}
+            </Text>
+          )}
+
           {/* Online status indicator */}
-          <View
-            className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white ${
-              isOnline ? "bg-green-500" : "bg-gray-400"
-            }`}
-          />
+          {isOnline && (
+            <View
+              className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white bg-green-500
+              }`}
+            />
+          )}
         </View>
 
         {/* Partner info */}
         <View className="flex-1">
           <View className="flex-row justify-between items-center">
             <Text
-              className={`text-base text-gray-900 flex-1 ${
+              style={{ fontSize: 15 }}
+              className={` text-gray-900 flex-1 mb-1 ${
                 isUnread ? "font-bold" : " font-medium"
               }`}
             >
-              {partnerName}
+              {partner?.name} {partner.surname}
             </Text>
             <View className="flex-row items-center">
               {messageTime && (
                 <Text
-                  style={{ fontSize: 13 }}
+                  style={{ fontSize: 15 }}
                   className={` ${
-                    isUnread ? "text-blue-600 font-semibold" : "text-gray-500"
+                    isUnread
+                      ? "text-gray-900 font-bold"
+                      : "text-gray-500 font-normal"
                   }`}
                 >
                   {messageTime}
@@ -296,7 +290,7 @@ const MessagesScreen = ({ navigation }) => {
             >
               {lastMessage || ""}
             </Text>
-            {isUnread && <View className="w-2 h-2 bg-blue-500 rounded-full" />}
+            {isUnread && <View className="w-3 h-3 bg-gray-900 rounded-full" />}
           </View>
         </View>
       </TouchableOpacity>
