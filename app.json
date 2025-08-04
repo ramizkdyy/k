@@ -13,11 +13,13 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
+      "bundleIdentifier": "com.uygarcapar.kiraX",
       "supportsTablet": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Bu uygulama konum bilginizi ilan oluştururken kullanır.",
         "NSLocationUsageDescription": "Bu uygulama konum bilginizi ilan oluştururken kullanır.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Bu uygulama konum bilginizi ilan oluştururken kullanır."
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Bu uygulama konum bilginizi ilan oluştururken kullanır.",
+        "ITSAppUsesNonExemptEncryption": false
       },
       "config": {
         "googleMapsApiKey": "AIzaSyBmN5yPYOrGCGaIzp8hcoWNkKFX0sqmI7g"
@@ -32,7 +34,9 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "INTERNET",
-        "ACCESS_NETWORK_STATE"
+        "ACCESS_NETWORK_STATE",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ],
       "config": {
         "googleMaps": {
@@ -51,6 +55,11 @@
           "locationAlwaysAndWhenInUsePermission": "Bu uygulama konum bilginizi ilan oluştururken kullanır."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "ec7b8e3c-31c0-470c-8664-583719f38588"
+      }
+    }
   }
 }
