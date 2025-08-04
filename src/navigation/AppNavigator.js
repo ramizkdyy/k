@@ -698,6 +698,7 @@ const LandlordProfileStack = () => {
           ),
           headerBackTitle: "",
           headerBackTitleVisible: false,
+          headerShown: false,
         })}
       />
       <LandlordStack.Screen
@@ -720,7 +721,11 @@ const LandlordProfileStack = () => {
       <LandlordStack.Screen
         name="UserProfile"
         component={UserProfileScreen}
-        options={{ headerShown: false }}
+        options={{
+          headerShown: false,
+          tabBarStyle: { display: 'none' },
+
+        }}
       />
     </LandlordStack.Navigator>
   );

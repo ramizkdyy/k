@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
     View,
     Text,
@@ -9,6 +9,7 @@ import {
     ActivityIndicator,
     SafeAreaView,
     Dimensions,
+    Animated
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
@@ -52,23 +53,57 @@ import {
     faClock,
     faMoneyBillWave,
 } from "@fortawesome/pro-solid-svg-icons";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser } from "../redux/slices/authSlice";
 import {
     useGetLandlordProfileQuery,
     useGetTenantProfileQuery,
+    apiSlice
 } from "../redux/api/apiSlice";
+import { useFocusEffect } from "@react-navigation/native";
+import {
+    selectProfileActionLoading,
+    selectProfileActionError,
+    clearProfileActionError,
+} from "../redux/slices/profileSlice";
+import ProfileRateModal from "../modals/ProfileRateModal";
+
+
 
 const { width: screenWidth } = Dimensions.get('window');
 
 const UserProfileScreen = ({ navigation, route }) => {
+    const dispatch = useDispatch();
 
     const { userId, userRole } = route.params;
-    const [isFavorite, setIsFavorite] = useState(false);
+    const scrollY = useRef(new Animated.Value(0)).current;
+    const headerTranslateY = scrollY.interpolate({
+        inputRange: [0, 100],
+        outputRange: [0, -70],
+        extrapolate: "clamp",
+    });
+
+    const headerOpacity = scrollY.interpolate({
+        inputRange: [0, 50, 100],
+        outputRange: [1, 0.5, 0],
+        extrapolate: "clamp",
+    });
+
+    const headerContainerHeight = scrollY.interpolate({
+        inputRange: [0, 50],
+        outputRange: [50, 0],
+        extrapolate: "clamp",
+    });
     const [activeTab, setActiveTab] = useState('general');
+    const [isFavorite, setIsFavorite] = useState(false);
+    const [showRatingModal, setShowRatingModal] = useState(false);
 
     const currentUserProfile = useSelector(selectCurrentUser);
+    const profileActionLoading = useSelector(selectProfileActionLoading);
+    const profileActionError = useSelector(selectProfileActionError);
     const insets = useSafeAreaInsets();
+
+
 
     console.log("UserProfileScreen params:", { userId, userRole });
 
@@ -80,6 +115,80 @@ const UserProfileScreen = ({ navigation, route }) => {
     } = userRole === "EVSAHIBI"
             ? useGetLandlordProfileQuery(userId)
             : useGetTenantProfileQuery(userId);
+
+    const isOwnProfile = currentUserProfile?.id === userId;
+
+    console.log("🔍 Current Redux State:", {
+        profileActionLoading: profileActionLoading,
+        profileActionError: profileActionError,
+        showRatingModal: showRatingModal
+    });
+
+    const [profileAction] = apiSlice.endpoints.profileAction.useMutation();
+    const handleRateProfile = async (ratingData) => {
+        try {
+            console.log("🎯 Rating başlatılıyor:", {
+                senderUserId: currentUserProfile?.id,
+                receiverUserId: userId,
+                ratingValue: ratingData.rating,
+                message: ratingData.message
+            });
+
+            // 1. Önce Rating Gönder
+            const ratingResult = await profileAction({
+                SenderUserId: currentUserProfile?.id,
+                ReceiverUserId: userId,
+                profileAction: 2, // RateProfile
+                RatingValue: ratingData.rating,
+            }).unwrap();
+
+            console.log("✅ Rating gönderildi:", ratingResult);
+
+            // 2. Eğer mesaj varsa, ayrı olarak MessageProfile gönder
+            if (ratingData.message?.trim()) {
+                console.log("📝 Mesaj gönderiliyor:", ratingData.message);
+
+                const messageResult = await profileAction({
+                    SenderUserId: currentUserProfile?.id,
+                    ReceiverUserId: userId,
+                    profileAction: 3, // MessageProfile
+                    Message: ratingData.message.trim(),
+                }).unwrap();
+
+                console.log("✅ Mesaj gönderildi:", messageResult);
+            }
+
+            // İşlemler başarılı olduysa modal'ı kapat ve profili yenile
+            if (ratingResult.isSuccess) {
+                setShowRatingModal(false);
+                Alert.alert(
+                    "Başarılı",
+                    ratingData.message?.trim()
+                        ? "Değerlendirmeniz ve mesajınız gönderildi!"
+                        : "Değerlendirmeniz gönderildi!"
+                );
+                refetchProfile();
+            }
+
+        } catch (error) {
+            console.error('❌ Rating/Message hatası:', error);
+            setShowRatingModal(false);
+            Alert.alert(
+                "Hata",
+                error?.data?.message || "Değerlendirme gönderilirken bir hata oluştu."
+            );
+        }
+    };
+
+    useEffect(() => {
+        if (profileActionError) {
+            Alert.alert("Hata", profileActionError, [
+                { text: "Tamam", onPress: () => dispatch(clearProfileActionError()) }
+            ]);
+        }
+    }, [profileActionError, dispatch]);
+
+
 
     console.log("API Response:", { profileData, profileError, profileLoading });
 
@@ -116,6 +225,58 @@ const UserProfileScreen = ({ navigation, route }) => {
             recipientName: userProfile?.user?.name + " " + userProfile?.user?.surname,
         });
     };
+
+    // Tab Management for hiding bottom tabs
+    // Tab Management for hiding bottom tabs
+    useFocusEffect(
+        useCallback(() => {
+            console.log('🔍 UserProfile focused, userRole:', userRole);
+
+            const parent = navigation.getParent();
+            console.log('👨‍👦 Parent exists:', !!parent);
+
+            if (parent) {
+                parent.setOptions({
+                    tabBarStyle: { display: "none" },
+                });
+                console.log('✅ Tab bar hidden');
+            }
+
+            return () => {
+                console.log('👋 UserProfile cleanup, userRole:', userRole);
+
+                const parent = navigation.getParent();
+                if (parent) {
+                    if (userRole === "EVSAHIBI") {
+                        parent.setOptions({
+                            tabBarStyle: {
+                                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                                borderTopColor: "rgba(224, 224, 224, 0.2)",
+                                paddingTop: 5,
+                                paddingBottom: 5,
+                                position: "absolute",
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                elevation: 8,
+                            },
+                        });
+                        console.log('✅ Landlord tab bar restored');
+                    } else if (userRole === "KIRACI") {
+                        parent.setOptions({
+                            tabBarStyle: {
+                                backgroundColor: "#fff",
+                                borderTopColor: "#e0e0e0",
+                                paddingTop: 5,
+                                paddingBottom: 5,
+                            },
+                        });
+                        console.log('✅ Tenant tab bar restored');
+                    }
+                }
+            };
+        }, [navigation, userRole])
+    );
 
     const handleReport = () => {
         Alert.alert(
@@ -246,28 +407,54 @@ const UserProfileScreen = ({ navigation, route }) => {
     return (
         <SafeAreaView className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
             {/* Header */}
-            <View className="bg-white px-5 py-4 flex-row items-center justify-center relative">
-                <TouchableOpacity
-                    onPress={() => navigation.goBack()}
-                    className="absolute left-5 w-10 h-10 rounded-full justify-center items-center"
+            {/* Animated Header - ProfileScreen'den eklendi */}
+            <View className="bg-white z-10">
+                <Animated.View
+                    style={{
+                        height: headerContainerHeight,
+                        overflow: "hidden",
+                    }}
                 >
-                    <FontAwesomeIcon icon={faChevronLeft} size={20} color="#374151" />
-                </TouchableOpacity>
+                    <Animated.View
+                        className="bg-white px-5 py-4 flex-row items-center justify-center relative"
+                        style={{
+                            height: 50,
+                            opacity: headerOpacity,
+                            transform: [{ translateY: headerTranslateY }],
+                        }}
+                    >
+                        <TouchableOpacity
+                            onPress={() => navigation.goBack()}
+                            className="absolute left-5 w-10 h-10 rounded-full justify-center items-center"
+                        >
+                            <FontAwesomeIcon icon={faChevronLeft} size={20} color="#374151" />
+                        </TouchableOpacity>
 
-                <Text style={{ fontSize: 20, fontWeight: 600 }} className="text-gray-900">
-                    Profil
-                </Text>
+                        <Text style={{ fontSize: 20, fontWeight: 600 }} className="text-gray-900">
+                            Profil
+                        </Text>
 
-                <TouchableOpacity
-                    onPress={handleReport}
-                    className="absolute right-5 w-10 h-10 rounded-full justify-center items-center"
-                >
-                    <FontAwesomeIcon icon={faUserShield} size={20} color="#6b7280" />
-                </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={handleReport}
+                            className="absolute right-5 w-10 h-10 rounded-full justify-center items-center"
+                        >
+                            <FontAwesomeIcon icon={faUserShield} size={20} color="#6b7280" />
+                        </TouchableOpacity>
+                    </Animated.View>
+                </Animated.View>
             </View>
 
-            <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-                {/* Profile Header */}
+            <Animated.ScrollView
+                className="flex-1 px-5"
+                showsVerticalScrollIndicator={false}
+                onScroll={Animated.event(
+                    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                    {
+                        useNativeDriver: false,
+                    }
+                )}
+                scrollEventThrottle={1}
+            >                {/* Profile Header */}
                 <View className="items-center py-6">
                     <View
                         style={{ boxShadow: "0px 0px 12px #00000014" }}
@@ -321,70 +508,91 @@ const UserProfileScreen = ({ navigation, route }) => {
                     )}
 
                     {/* Action Buttons */}
-                    <View className="flex-row gap-3">
-                        <TouchableOpacity
-                            onPress={handleFavoriteToggle}
-                            className={`px-6 py-3 rounded-xl flex-row items-center ${isFavorite ? "bg-red-500" : "bg-gray-100"
-                                }`}
-                        >
-                            <FontAwesomeIcon
-                                icon={faHeart}
-                                size={16}
-                                color={isFavorite ? "white" : "#6b7280"}
-                            />
-                        </TouchableOpacity>
+                    {!isOwnProfile && (
+                        <View className="flex-row gap-3">
+                            {/* Favori Butonu */}
+                            <TouchableOpacity
+                                onPress={handleFavoriteToggle}
+                                className={`px-6 py-3 rounded-xl flex-row items-center ${isFavorite ? "bg-red-500" : "bg-gray-100"
+                                    }`}
+                            >
+                                <FontAwesomeIcon
+                                    icon={faHeart}
+                                    size={16}
+                                    color={isFavorite ? "white" : "#6b7280"}
+                                />
+                            </TouchableOpacity>
 
-                        <TouchableOpacity
-                            onPress={handleSendMessage}
-                            className="bg-gray-900 px-6 py-3 rounded-xl flex-row items-center"
-                        >
-                            <FontAwesomeIcon icon={faMessage} size={16} color="white" />
-                        </TouchableOpacity>
-                    </View>
+                            {/* Mesaj Butonu */}
+                            <TouchableOpacity
+                                onPress={handleSendMessage}
+                                className="bg-gray-900 px-6 py-3 rounded-xl flex-row items-center"
+                            >
+                                <FontAwesomeIcon icon={faMessage} size={16} color="white" />
+                            </TouchableOpacity>
+
+                            {/* YENİ: Değerlendir Butonu */}
+                            <TouchableOpacity
+                                onPress={() => setShowRatingModal(true)}
+                                disabled={profileActionLoading}
+                                className="bg-yellow-500 px-6 py-3 rounded-xl flex-row items-center"
+                            >
+                                {profileActionLoading ? (
+                                    <ActivityIndicator size="small" color="white" />
+                                ) : (
+                                    <FontAwesomeIcon icon={faStar} size={16} color="white" />
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
 
                 {/* Tab Navigation */}
                 <View className="mb-6">
-                    <View className="flex-row gap-3">
+                    <View className="flex-row gap-2"> {/* gap-3'ü gap-2 yap, 4 buton sığsın */}
                         <TouchableOpacity
                             onPress={() => setActiveTab('general')}
-                            className={`flex-1 py-3 px-4 rounded-full ${activeTab === 'general' ? 'bg-gray-900' : 'bg-gray-100'
-                                }`}
+                            className={`flex-1 py-3 px-3 rounded-full ${activeTab === 'general' ? 'bg-gray-900' : 'bg-gray-100'}`}
                         >
-                            <Text className={`text-center font-medium ${activeTab === 'general' ? 'text-white' : 'text-gray-700'
-                                }`}>
+                            <Text className={`text-center font-medium text-xs ${activeTab === 'general' ? 'text-white' : 'text-gray-700'}`}>
                                 Genel
                             </Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
                             onPress={() => setActiveTab('preferences')}
-                            className={`flex-1 py-3 px-4 rounded-full ${activeTab === 'preferences' ? 'bg-gray-900' : 'bg-gray-100'
-                                }`}
+                            className={`flex-1 py-3 px-3 rounded-full ${activeTab === 'preferences' ? 'bg-gray-900' : 'bg-gray-100'}`}
                         >
-                            <Text className={`text-center font-medium ${activeTab === 'preferences' ? 'text-white' : 'text-gray-700'
-                                }`}>
-                                {userRole === "EVSAHIBI" ? "Beklentiler" : "Tercihler"}
+                            <Text className={`text-center font-medium text-xs ${activeTab === 'preferences' ? 'text-white' : 'text-gray-700'}`}>
+                                {userRole === "EVSAHIBI" ? "Beklenti" : "Tercih"}
                             </Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
                             onPress={() => setActiveTab('requirements')}
-                            className={`flex-1 py-3 px-4 rounded-full ${activeTab === 'requirements' ? 'bg-gray-900' : 'bg-gray-100'
-                                }`}
+                            className={`flex-1 py-3 px-3 rounded-full ${activeTab === 'requirements' ? 'bg-gray-900' : 'bg-gray-100'}`}
                         >
-                            <Text className={`text-center font-medium ${activeTab === 'requirements' ? 'text-white' : 'text-gray-700'
-                                }`}>
-                                {userRole === "EVSAHIBI" ? "Koşullar" : "Gereksinimler"}
+                            <Text className={`text-center font-medium text-xs ${activeTab === 'requirements' ? 'text-white' : 'text-gray-700'}`}>
+                                {userRole === "EVSAHIBI" ? "Koşul" : "Gerek"}
+                            </Text>
+                        </TouchableOpacity>
+
+                        {/* YENİ 4. TAB */}
+                        <TouchableOpacity
+                            onPress={() => setActiveTab('reviews')}
+                            className={`flex-1 py-3 px-3 rounded-full ${activeTab === 'reviews' ? 'bg-gray-900' : 'bg-gray-100'}`}
+                        >
+                            <Text className={`text-center font-medium text-xs ${activeTab === 'reviews' ? 'text-white' : 'text-gray-700'}`}>
+                                Değerlen.
                             </Text>
                         </TouchableOpacity>
                     </View>
+
                 </View>
 
-                {/* Tab Content */}
                 {/* GENERAL TAB */}
                 {activeTab === 'general' && (
-                    <View className="gap-4">
+                    <View className="gap-4" style={{ minHeight: 600 }}>
                         {/* Kişisel Bilgiler */}
                         <View className="bg-white rounded-xl p-4 border border-gray-100">
                             <Text style={{ fontSize: 18 }} className="font-semibold text-gray-900 mb-4">
@@ -1135,6 +1343,91 @@ const UserProfileScreen = ({ navigation, route }) => {
                     </View>
                 )}
 
+                {/* REVIEWS TAB - DÜZELTİLMİŞ */}
+                {activeTab === 'reviews' && (
+                    <View className="gap-4">
+                        {/* Rating Özeti */}
+                        <View className="bg-white rounded-xl p-4 items-center">
+                            <Text style={{ fontSize: 22 }} className="font-semibold text-gray-900 mb-4">
+                                Değerlendirme Özeti
+                            </Text>
+
+                            <View className="items-center mb-4">
+                                <View className="flex-row items-center mb-2">
+                                    {renderStarRating(userProfile?.profileRating || 0, 24)}
+                                </View>
+                                <Text style={{ fontSize: 32 }} className="font-bold text-gray-900">
+                                    {userProfile?.profileRating ? userProfile.profileRating.toFixed(1) : '0.0'}
+                                </Text>
+                                <Text className="text-gray-500">
+                                    {userProfile?.ratingCount || 0} değerlendirme
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Son Değerlendirmeler - DÜZELTİLMİŞ */}
+                        {userProfile?.profileMessages?.length > 0 ? (
+                            <View className="bg-white rounded-xl py-4 px-2">
+                                <View className="items-center" >
+                                    <Text style={{ fontSize: 22 }} className="font-semibold text-gray-900 mb-4">
+                                        Son Değerlendirmeler
+                                    </Text>
+                                </View>
+                                {userProfile.profileMessages.map((message, index) => (
+                                    <View
+                                        key={message.id}
+                                        className={`py-4 ${index < userProfile.profileMessages.length - 1 ? '' : ''}`}
+                                    >
+                                        <View className="flex-row items-center justify-between mb-2">
+                                            <View className="flex-row items-center">
+                                                <View className="w-8 h-8 bg-gray-200 rounded-full justify-center items-center overflow-hidden">
+                                                    {message.senderProfile?.profileImageUrl ? (
+                                                        <Image
+                                                            source={{ uri: message.senderProfile.profileImageUrl }}
+                                                            style={{ width: '100%', height: '100%' }}
+                                                            resizeMode="cover"
+                                                        />
+                                                    ) : (
+                                                        <Text className="text-gray-600 font-semibold text-sm">
+                                                            A
+                                                        </Text>
+                                                    )}
+                                                </View>
+                                                <Text className="ml-3 font-medium text-gray-900">
+                                                    {message.senderProfile?.user?.name
+                                                        ? `${message.senderProfile.user.name} ${message.senderProfile.user.surname || ''}`.trim()
+                                                        : 'Anonim Kullanıcı'
+                                                    }
+                                                </Text>
+                                            </View>
+                                            <Text className="text-gray-500 text-sm">
+                                                {new Date(message.sentAt).toLocaleDateString('tr-TR')}
+                                            </Text>
+                                        </View>
+
+                                        <Text className="text-gray-700 text-sm leading-5">
+                                            {message.content}
+                                        </Text>
+                                    </View>
+                                ))}
+                            </View>
+                        ) : (
+                            /* Değerlendirme Yoksa */
+                            <View className="bg-white rounded-xl p-6 border border-gray-100">
+                                <View className="items-center">
+                                    <FontAwesomeIcon icon={faStar} size={48} color="#d1d5db" />
+                                    <Text style={{ fontSize: 18 }} className="font-semibold text-gray-900 mt-4 mb-2 text-center">
+                                        Henüz Değerlendirme Yok
+                                    </Text>
+                                    <Text className="text-base text-gray-500 text-center">
+                                        Bu kullanıcı henüz hiç değerlendirme almamış.
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
+                    </View>
+                )}
+
                 {/* Expectation yoksa gösterilecek mesaj */}
                 {(activeTab === 'preferences' || activeTab === 'requirements') && !expectation && (
                     <View className="bg-white rounded-xl p-6 border border-gray-100">
@@ -1155,9 +1448,23 @@ const UserProfileScreen = ({ navigation, route }) => {
 
                 {/* Alt Boşluk */}
                 <View className="h-8"></View>
-            </ScrollView>
+            </Animated.ScrollView>
+            <ProfileRateModal
+                visible={showRatingModal}
+                onClose={() => setShowRatingModal(false)}
+                onSubmit={handleRateProfile}
+                isLoading={profileActionLoading}
+                profileData={userProfile}
+            />
         </SafeAreaView>
     );
 };
 
 export default UserProfileScreen;
+
+const ProfileAction = {
+    AddFavorite: 0,
+    RemoveFavorite: 1,
+    RateProfile: 2,
+    MessageProfile: 3,
+};

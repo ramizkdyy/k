@@ -177,7 +177,7 @@ const SwitchField = ({ label, value, setValue, description = null }) => (
       <Switch
         value={value}
         onValueChange={setValue}
-        trackColor={{ false: "#e5e7eb", true: "#97e8bc" }}
+        trackColor={{ false: "#e5e7eb", true: "#111827" }}
         thumbColor={value ? "#fff" : "#f4f3f4"}
       />
     </View>

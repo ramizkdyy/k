@@ -14,6 +14,8 @@ const initialState = {
   profileFormData: null, // Store form data when navigating between screens
   profileImageUploadStatus: null,
   coverImageUploadStatus: null,
+  profileActionLoading: false,
+  profileActionError: null,
 };
 
 const profileSlice = createSlice({
@@ -115,6 +117,10 @@ const profileSlice = createSlice({
         (property) => property.id !== action.payload
       );
     },
+    clearProfileActionError: (state) => {
+      state.profileActionError = null;
+    },
+
   },
   extraReducers: (builder) => {
     // Handle fetching landlord profiles
@@ -606,6 +612,71 @@ const profileSlice = createSlice({
         console.error("Toggle favorite failed:", error);
       }
     );
+    // Profile Action API handlers - basit versiyon
+    builder.addMatcher(
+      apiSlice.endpoints.profileAction.matchFulfilled,
+      (state, { payload, meta }) => {
+        state.profileActionLoading = false;
+        state.profileActionError = null;
+
+        if (payload && payload.isSuccess) {
+          const actionData = meta.arg;
+
+          console.log("Profile action başarılı:", {
+            action: actionData.profileAction,
+            senderUserId: actionData.SenderUserId,
+            receiverUserId: actionData.ReceiverUserId,
+            ratingValue: actionData.RatingValue,
+            message: actionData.Message,
+            result: payload.result
+          });
+
+          // Rating işlemi ise profil rating'ini güncelle (opsiyonel)
+          if (actionData.profileAction === 2 && payload.result?.newRating) {
+            // Current landlord profile güncelle
+            if (state.currentLandlordProfile &&
+              state.currentLandlordProfile.userId === actionData.ReceiverUserId) {
+              state.currentLandlordProfile.profileRating = payload.result.newRating;
+              if (payload.result.ratingCount) {
+                state.currentLandlordProfile.ratingCount = payload.result.ratingCount;
+              }
+            }
+
+            // Current tenant profile güncelle  
+            if (state.currentTenantProfile &&
+              state.currentTenantProfile.userId === actionData.ReceiverUserId) {
+              state.currentTenantProfile.profileRating = payload.result.newRating;
+              if (payload.result.ratingCount) {
+                state.currentTenantProfile.ratingCount = payload.result.ratingCount;
+              }
+            }
+          }
+        }
+      }
+    );
+
+    builder.addMatcher(
+      apiSlice.endpoints.profileAction.matchPending,
+      (state) => {
+        state.profileActionLoading = true;
+        state.profileActionError = null;
+      }
+    );
+
+    builder.addMatcher(
+      apiSlice.endpoints.profileAction.matchRejected,
+      (state, { payload, error }) => {
+        state.profileActionLoading = false;
+        state.profileActionError =
+          payload?.data?.message ||
+          payload?.message ||
+          error?.message ||
+          "Profil işlemi başarısız oldu";
+
+        console.error("Profile action hatası:", state.profileActionError);
+      }
+    );
+
   },
 });
 
@@ -629,6 +700,7 @@ export const {
   setFavoriteProperties,
   addFavoriteProperty,
   removeFavoriteProperty,
+  clearProfileActionError,
 } = profileSlice.actions;
 
 export default profileSlice.reducer;
@@ -651,6 +723,8 @@ export const selectCoverImageStatus = (state) =>
   state.profiles.coverImageUploadStatus;
 export const selectProfileError = (state) => state.profiles.error;
 export const selectProfileLoading = (state) => state.profiles.isLoading;
+export const selectProfileActionLoading = (state) => state.profiles.profileActionLoading;
+export const selectProfileActionError = (state) => state.profiles.profileActionError;
 
 // Enhanced selectors
 export const selectProfileByUserId = (state, userId) => {

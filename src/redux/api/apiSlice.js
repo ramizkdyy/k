@@ -21,6 +21,7 @@ export const apiSlice = createApi({
     "Post",
     "Offer",
     "Profile",
+    "ProfileRating", // ← YENİ EKLENEN
     "User",
     "Expectation",
     "Matching",
@@ -317,9 +318,8 @@ export const apiSlice = createApi({
       // Pagination için cache merge stratejisi
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         const { landlordUserId, minMatchScore, propertyId } = queryArgs;
-        return `${endpointName}-${landlordUserId}-${minMatchScore}-${
-          propertyId || "all"
-        }`;
+        return `${endpointName}-${landlordUserId}-${minMatchScore}-${propertyId || "all"
+          }`;
       },
       merge: (currentCache, newItems, { arg }) => {
         if (arg.page === 1) {
@@ -362,9 +362,8 @@ export const apiSlice = createApi({
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         const { landlordUserId, minMatchScore, propertyId, includeFallback } =
           queryArgs;
-        return `${endpointName}-${landlordUserId}-${minMatchScore}-${
-          propertyId || "all"
-        }-${includeFallback}`;
+        return `${endpointName}-${landlordUserId}-${minMatchScore}-${propertyId || "all"
+          }-${includeFallback}`;
       },
       merge: (currentCache, newItems, { arg }) => {
         if (arg.page === 1) {
@@ -583,6 +582,7 @@ export const apiSlice = createApi({
       invalidatesTags: ["Profile", "Post"],
     }),
 
+
     // Updated expectation endpoints with "ById" suffix
     createLandlordExpectation: builder.mutation({
       query: (expectationData) => ({
@@ -633,6 +633,56 @@ export const apiSlice = createApi({
         { type: "Expectation", id: userId },
         { type: "User", id: userId },
       ],
+    }),
+    profileAction: builder.mutation({
+      query: (actionData) => ({
+        url: "/api/profile/profile-action",
+        method: "POST",
+        body: actionData,
+      }),
+      invalidatesTags: (result, error, { ReceiverUserId, profileAction }) => {
+        const tags = [
+          { type: "Profile", id: ReceiverUserId },
+          "Profile"
+        ];
+
+        // Eğer rating ise Profile tag'ini invalidate et
+        if (profileAction === 2) { // RateProfile = 2
+          tags.push({ type: "ProfileRating", id: ReceiverUserId });
+        }
+
+        // Eğer favorite ise favorileri invalidate et
+        if (profileAction === 0 || profileAction === 1) { // AddFavorite = 0, RemoveFavorite = 1
+          tags.push("ProfileFavorites");
+        }
+
+        return tags;
+      },
+      // Optimistic updates için
+      async onQueryStarted(actionData, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+
+          // Rating işlemi başarılı olduysa, ilgili profili yeniden fetch et
+          if (actionData.profileAction === 2 && data?.isSuccess) { // RateProfile
+            dispatch(
+              apiSlice.util.invalidateTags([
+                { type: "Profile", id: actionData.ReceiverUserId }
+              ])
+            );
+          }
+
+          // Favorite işlemi başarılı olduysa favorileri güncelle
+          if ((actionData.profileAction === 0 || actionData.profileAction === 1) && data?.isSuccess) {
+            dispatch(
+              apiSlice.util.invalidateTags(["ProfileFavorites", "Profile"])
+            );
+          }
+
+        } catch (error) {
+          console.error("Profile action failed:", error);
+        }
+      },
     }),
 
     // YENİ: Seed endpoints
@@ -789,9 +839,8 @@ export const apiSlice = createApi({
       // Pagination için cache merge stratejisi
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         const { LandLordUserId, minSimilarityScore } = queryArgs;
-        return `${endpointName}-${
-          LandLordUserId || "all"
-        }-${minSimilarityScore}`;
+        return `${endpointName}-${LandLordUserId || "all"
+          }-${minSimilarityScore}`;
       },
       merge: (currentCache, newItems, { arg }) => {
         if (arg.page === 1) {

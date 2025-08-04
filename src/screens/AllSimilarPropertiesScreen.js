@@ -619,7 +619,7 @@ const PropertyItem = memo(
 
         {/* Similarity Score Bar */}
         {item.similarityScore && (
-          <View style={{ top: 32, left: 20 }} className=" absolute">
+          <View style={{ top: 32, left: 20 }} className="absolute">
             <SimilarityScoreBar
               similarityScore={item.similarityScore}
               showBar={true}

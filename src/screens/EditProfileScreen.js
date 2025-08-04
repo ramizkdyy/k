@@ -45,6 +45,9 @@ import {
   faChevronDown,
   faCalendar,
   faCheck,
+  faImage,
+  faCamera,
+  faTrash
 } from "@fortawesome/pro-solid-svg-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -57,6 +60,178 @@ import Animated, {
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+
+// CustomDropdown tarzında hem profil hem kapak fotoğrafı seçici modal
+const ImagePickerModal = ({
+  isVisible,
+  onClose,
+  onGallery,
+  onCamera,
+  onRemove,
+  hasCurrentImage,
+  imageType // "profile" veya "cover"
+}) => {
+  const translateY = useSharedValue(SCREEN_HEIGHT);
+  const backdropOpacity = useSharedValue(0);
+
+  const getModalHeight = () => {
+    const headerHeight = 80;
+    const itemHeight = 60;
+    const bottomPadding = 40;
+    const itemCount = hasCurrentImage ? 3 : 2; // Kaldır seçeneği varsa 3, yoksa 2
+
+    return headerHeight + (itemCount * itemHeight) + bottomPadding;
+  };
+
+  const SNAP_POINTS = {
+    CLOSED: SCREEN_HEIGHT,
+    OPEN: SCREEN_HEIGHT - getModalHeight(),
+  };
+
+  useEffect(() => {
+    if (isVisible) {
+      translateY.value = withSpring(SNAP_POINTS.OPEN, {
+        damping: 80,
+        stiffness: 400,
+      });
+      backdropOpacity.value = withTiming(0.5, { duration: 300 });
+    } else if (isVisible === false && translateY.value !== SCREEN_HEIGHT) {
+      translateY.value = withSpring(SCREEN_HEIGHT, {
+        damping: 80,
+        stiffness: 400,
+      });
+      backdropOpacity.value = withTiming(0, { duration: 250 });
+    }
+  }, [isVisible]);
+
+  const handleClose = () => {
+    translateY.value = withSpring(SCREEN_HEIGHT, {
+      damping: 80,
+      stiffness: 400,
+    });
+    backdropOpacity.value = withTiming(0, { duration: 250 });
+    setTimeout(() => onClose(), 300);
+  };
+
+  const handleBackdropPress = () => {
+    handleClose();
+  };
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const modalStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  const handleOptionSelect = (action) => {
+    // Modal'ı anında kapat
+    translateY.value = SCREEN_HEIGHT;
+    backdropOpacity.value = 0;
+    onClose(); // Anında state'i güncelle
+
+    // Action'ı hemen çalıştır
+    if (action === 'gallery') {
+      onGallery();
+    } else if (action === 'camera') {
+      onCamera();
+    } else if (action === 'remove') {
+      onRemove();
+    }
+  };
+
+  return (
+    <Modal
+      visible={isVisible}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={handleClose}
+    >
+      <GestureHandlerRootView style={styles.container}>
+        <Animated.View style={[styles.backdrop, backdropStyle]}>
+          <TouchableWithoutFeedback onPress={handleBackdropPress}>
+            <View style={styles.backdropTouchable} />
+          </TouchableWithoutFeedback>
+        </Animated.View>
+
+        <Animated.View style={[styles.modal, modalStyle]}>
+          {/* Header */}
+          <View className="py-4 px-6 border-b border-gray-100 bg-white">
+            <View className="flex-row justify-between items-center">
+              <Text
+                style={{ fontWeight: 600, fontSize: 18 }}
+                className="text-gray-800"
+              >
+                {imageType === "profile" ? "Profil Fotoğrafı" : "Kapak Fotoğrafı"}
+              </Text>
+              <TouchableOpacity onPress={handleClose} className="px-2 py-2">
+                <Text
+                  style={{
+                    fontSize: 15,
+                    color: "#007AFF",
+                    fontWeight: "500",
+                  }}
+                >
+                  Kapat
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Options */}
+          <View className="bg-white">
+            {/* Galeriden Seç */}
+            <TouchableOpacity
+              className="py-4 px-7 flex-row items-center border-b border-gray-50"
+              onPress={() => handleOptionSelect('gallery')}
+              activeOpacity={0.7}
+            >
+              <View className="w-10 h-10  rounded-full items-center justify-center mr-4">
+                <FontAwesomeIcon icon={faImage} size={18} color="#111827" />
+              </View>
+              <Text className="text-lg text-gray-700 flex-1">
+                Galeriden Seç
+              </Text>
+            </TouchableOpacity>
+
+            {/* Fotoğraf Çek */}
+            <TouchableOpacity
+              className={`py-4 px-7 flex-row items-center ${hasCurrentImage ? 'border-b border-gray-50' : ''}`}
+              onPress={() => handleOptionSelect('camera')}
+              activeOpacity={0.7}
+            >
+              <View className="w-10 h-10  rounded-full items-center justify-center mr-4">
+                <FontAwesomeIcon icon={faCamera} size={18} color="#111827" />
+              </View>
+              <Text className="text-lg text-gray-700 flex-1">
+                Fotoğraf Çek
+              </Text>
+            </TouchableOpacity>
+
+            {/* Fotoğrafı Kaldır - Sadece mevcut fotoğraf varsa */}
+            {hasCurrentImage && (
+              <TouchableOpacity
+                className="py-4 px-7 flex-row items-center"
+                onPress={() => handleOptionSelect('remove')}
+                activeOpacity={0.7}
+              >
+                <View className="w-10 h-10  rounded-full items-center justify-center mr-4">
+                  <FontAwesomeIcon icon={faTrash} size={18} color="#111827" />
+                </View>
+                <Text className="text-lg flex-1">
+                  Fotoğrafı Kaldır
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </Animated.View>
+      </GestureHandlerRootView>
+    </Modal>
+  );
+};
+
 
 // Header Component similar to ProfileExpectation
 const EditProfileHeader = ({ navigation, onSave, isLoading }) => (
@@ -162,7 +337,7 @@ const SwitchField = ({ label, value, setValue, description = null }) => (
       <Switch
         value={value}
         onValueChange={setValue}
-        trackColor={{ false: "#e5e7eb", true: "#97e8bc" }}
+        trackColor={{ false: "#e5e7eb", true: "#111827" }}
         thumbColor={value ? "#fff" : "#f4f3f4"}
       />
     </View>
@@ -332,20 +507,18 @@ const CustomDropdown = ({
                 {options.map((option, index) => (
                   <TouchableOpacity
                     key={index}
-                    className={`py-4 px-7 flex-row items-center justify-between ${
-                      index !== options.length - 1
-                        ? "border-b border-gray-50"
-                        : ""
-                    } ${value === option ? "bg-gray-100" : "bg-white"}`}
+                    className={`py-4 px-7 flex-row items-center justify-between ${index !== options.length - 1
+                      ? "border-b border-gray-50"
+                      : ""
+                      } ${value === option ? "bg-gray-100" : "bg-white"}`}
                     onPress={() => handleOptionSelect(option)}
                     activeOpacity={0.7}
                   >
                     <Text
-                      className={`text-lg flex-1 mr-3 ${
-                        value === option
-                          ? "text-gray-900 font-medium"
-                          : "text-gray-600"
-                      }`}
+                      className={`text-lg flex-1 mr-3 ${value === option
+                        ? "text-gray-900 font-medium"
+                        : "text-gray-600"
+                        }`}
                       numberOfLines={2}
                       ellipsizeMode="tail"
                     >
@@ -355,7 +528,7 @@ const CustomDropdown = ({
                       <FontAwesomeIcon
                         icon={faCheck}
                         size={16}
-                        color="#16a34a"
+                        color="#86efac"
                       />
                     )}
                   </TouchableOpacity>
@@ -480,6 +653,7 @@ const EditProfileScreen = ({ navigation }) => {
   const [isImagePickerVisible, setIsImagePickerVisible] = useState(false);
   const [activeImageType, setActiveImageType] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
+
 
   // Landlord Expectations states
   const [landlordCity, setLandlordCity] = useState("İstanbul");
@@ -666,18 +840,18 @@ const EditProfileScreen = ({ navigation }) => {
     isLoading: profileLoading,
     isSuccess: profileSuccess,
   } = userRole === "EVSAHIBI"
-    ? useGetLandlordProfileQuery(currentUser?.id, { skip: !currentUser?.id })
-    : useGetTenantProfileQuery(currentUser?.id, { skip: !currentUser?.id });
+      ? useGetLandlordProfileQuery(currentUser?.id, { skip: !currentUser?.id })
+      : useGetTenantProfileQuery(currentUser?.id, { skip: !currentUser?.id });
 
   const {
     data: expectationsData,
     isLoading: expectationsLoading,
     isSuccess: expectationsSuccess,
   } = userRole === "EVSAHIBI"
-    ? useGetLandlordExpectationByIdQuery(currentUser?.id, {
+      ? useGetLandlordExpectationByIdQuery(currentUser?.id, {
         skip: !currentUser?.id,
       })
-    : useGetTenantExpectationByIdQuery(currentUser?.id, {
+      : useGetTenantExpectationByIdQuery(currentUser?.id, {
         skip: !currentUser?.id,
       });
 
@@ -864,7 +1038,7 @@ const EditProfileScreen = ({ navigation }) => {
         if (
           maintenancePreferenceIndex >= 0 &&
           maintenancePreferenceIndex <
-            maintenanceFeeResponsibilityOptions.length
+          maintenanceFeeResponsibilityOptions.length
         ) {
           setMaintenanceFeePreference(
             maintenanceFeeResponsibilityOptions[maintenancePreferenceIndex]
@@ -989,16 +1163,14 @@ const EditProfileScreen = ({ navigation }) => {
     }
   }, [expectationsSuccess, expectationsData, userRole]);
 
-  // Image picker functions
-  const handleImageSelection = async (type) => {
+  const handleImageSelection = (type) => {
     setActiveImageType(type);
     setIsImagePickerVisible(true);
   };
 
   const pickImageFromGallery = async () => {
     try {
-      const permissionResult =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permissionResult.granted) {
         Alert.alert("İzin Gerekli", "Fotoğraflara erişim izni gereklidir.");
         return;
@@ -1019,18 +1191,15 @@ const EditProfileScreen = ({ navigation }) => {
           setPreviewCoverImage(result.assets[0].uri);
         }
       }
-      setIsImagePickerVisible(false);
     } catch (error) {
       console.error("Image picker error:", error);
       Alert.alert("Hata", "Fotoğraf seçilirken bir hata oluştu");
-      setIsImagePickerVisible(false);
     }
   };
 
   const takePhoto = async () => {
     try {
-      const permissionResult =
-        await ImagePicker.requestCameraPermissionsAsync();
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
       if (!permissionResult.granted) {
         Alert.alert("İzin Gerekli", "Kamera erişim izni gereklidir.");
         return;
@@ -1051,11 +1220,19 @@ const EditProfileScreen = ({ navigation }) => {
           setPreviewCoverImage(result.assets[0].uri);
         }
       }
-      setIsImagePickerVisible(false);
     } catch (error) {
       console.error("Camera error:", error);
       Alert.alert("Hata", "Fotoğraf çekilirken bir hata oluştu.");
-      setIsImagePickerVisible(false);
+    }
+  };
+
+  const removeImage = () => {
+    if (activeImageType === "profile") {
+      setProfileImage(null);
+      setPreviewProfileImage(null);
+    } else {
+      setCoverImage(null);
+      setPreviewCoverImage(null);
     }
   };
 
@@ -1384,7 +1561,7 @@ const EditProfileScreen = ({ navigation }) => {
         Alert.alert(
           "Güncelleme Hatası",
           error?.data?.message ||
-            "Profil güncellenirken bir hata oluştu. Lütfen tekrar deneyin."
+          "Profil güncellenirken bir hata oluştu. Lütfen tekrar deneyin."
         );
       }
 
@@ -2053,50 +2230,18 @@ const EditProfileScreen = ({ navigation }) => {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Image picker modal */}
-      <Modal
-        visible={isImagePickerVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setIsImagePickerVisible(false)}
-      >
-        <View className="flex-1 justify-end bg-black bg-opacity-50">
-          <View className="bg-white rounded-t-xl">
-            <View className="p-4 border-b border-gray-200">
-              <Text className="text-xl font-bold text-gray-800 text-center">
-                {activeImageType === "profile"
-                  ? "Profil Fotoğrafı"
-                  : "Kapak Fotoğrafı"}
-              </Text>
-            </View>
+      // 4. Eski modal kodunu değiştir:
+      {/* ImagePickerModal */}
+      <ImagePickerModal
+        isVisible={isImagePickerVisible}
+        onClose={() => setIsImagePickerVisible(false)}
+        onGallery={pickImageFromGallery}
+        onCamera={takePhoto}
+        onRemove={removeImage}
+        hasCurrentImage={activeImageType === "profile" ? !!previewProfileImage : !!previewCoverImage}
+        imageType={activeImageType}
+      />
 
-            <TouchableOpacity
-              className="p-4 border-b border-gray-200"
-              onPress={pickImageFromGallery}
-            >
-              <Text className="text-lg text-green-600 text-center">
-                Galeriden Seç
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="p-4 border-b border-gray-200"
-              onPress={takePhoto}
-            >
-              <Text className="text-lg text-green-600 text-center">
-                Fotoğraf Çek
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="p-4 mb-6"
-              onPress={() => setIsImagePickerVisible(false)}
-            >
-              <Text className="text-lg text-red-600 text-center">İptal</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 };
