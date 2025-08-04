@@ -40,6 +40,7 @@ import {
   faSliders,
 } from "@fortawesome/pro-regular-svg-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useFocusEffect } from "@react-navigation/native";
 
 const { width } = Dimensions.get("window");
 
@@ -477,8 +478,15 @@ const PropertyItem = memo(
     }, [item.postId, navigation]);
 
     const handleProfilePress = useCallback(() => {
-      navigation.navigate("LandlordProfile", { userId: item.userId });
-    }, [item.userId, navigation]);
+      console.log("PROFILE NAVIGATION DATA:", JSON.stringify(item, null, 2));
+      console.log("userId:", item.userId);
+
+      navigation.navigate('UserProfile', {
+        userId: item.userId, // Doğru userId
+        userRole: "EVSAHIBI", // Sabit değer
+        matchScore: item.matchScore,
+      });
+    }, [item, navigation]); // item'i dependency array'e eklemeyi unutmayın
 
     return (
       <View
@@ -519,9 +527,8 @@ const PropertyItem = memo(
               className="text-gray-900 underline"
             >
               {item.kiraFiyati || item.rent
-                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-                    item.paraBirimi || item.currency || "₺"
-                  }`
+                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
+                }`
                 : "Fiyat belirtilmemiş"}
             </Text>
             <Text className="text-sm text-gray-400 ml-1">/ay</Text>
@@ -679,6 +686,48 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
     const timer = setTimeout(() => setIsFilterChanging(false), 300);
     return () => clearTimeout(timer);
   }, [sortBy, sortDirection, isMatch, userLocation]);
+  // Tab bar visibility
+  // Tab Management for hiding bottom tabs
+  useFocusEffect(
+    React.useCallback(() => {
+      const parent = navigation.getParent();
+      if (parent) {
+        parent.setOptions({
+          tabBarStyle: { display: "none" },
+        });
+      }
+
+      return () => {
+        if (parent) {
+          if (userRole === "EVSAHIBI") {
+            parent.setOptions({
+              tabBarStyle: {
+                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                borderTopColor: "rgba(224, 224, 224, 0.2)",
+                paddingTop: 5,
+                paddingBottom: 5,
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                elevation: 8,
+              },
+            });
+          } else if (userRole === "KIRACI") {
+            parent.setOptions({
+              tabBarStyle: {
+                backgroundColor: "#fff",
+                borderTopColor: "#e0e0e0",
+                paddingTop: 5,
+                paddingBottom: 5,
+              },
+            });
+          }
+        }
+      };
+    }, [navigation, userRole])
+  );
+
 
   const getCurrentLocation = async () => {
     try {
@@ -1007,17 +1056,15 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
                   <TouchableOpacity
                     activeOpacity={1}
                     key={option.key}
-                    className={`mr-3 px-4 py-2 rounded-full border ${
-                      sortBy === option.key
-                        ? "bg-gray-900"
-                        : "bg-white border-white"
-                    }`}
+                    className={`mr-3 px-4 py-2 rounded-full border ${sortBy === option.key
+                      ? "bg-gray-900"
+                      : "bg-white border-white"
+                      }`}
                     onPress={() => handleSortChange(option.key)}
                   >
                     <Text
-                      className={`text-sm font-medium ${
-                        sortBy === option.key ? "text-white" : "text-gray-700"
-                      }`}
+                      className={`text-sm font-medium ${sortBy === option.key ? "text-white" : "text-gray-700"
+                        }`}
                     >
                       {option.label}
                       {sortBy === option.key && (
@@ -1060,7 +1107,6 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
         }
         contentContainerStyle={{
           flexGrow: 1,
-          paddingBottom: 16,
         }}
         // CRITICAL Performance optimizations
         removeClippedSubviews={true}

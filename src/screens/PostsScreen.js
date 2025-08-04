@@ -360,7 +360,18 @@ const PostsScreen = ({ navigation }) => {
 
   const handleEditPostNavigation = (postId) => {
     Logger.event("edit_post", { postId });
-    navigation.navigate("EditPost", { postId });
+
+    // İlgili post verisini bulun
+    const postToEdit = landlordListingsData?.result?.find(post => post.postId === postId);
+
+    if (postToEdit) {
+      navigation.navigate("EditPost", {
+        propertyData: postToEdit  // ✅ Tüm post verisini gönderin
+      });
+    } else {
+      console.error("Post data not found for editing:", postId);
+      Alert.alert("Hata", "İlan verisi bulunamadı.");
+    }
   };
 
   const handleOffersNavigation = (postId) => {

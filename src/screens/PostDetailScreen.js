@@ -496,18 +496,14 @@ const PostDetailScreen = ({ route, navigation }) => {
   // Render matching tenant card
   const renderMatchingTenantCard = ({ item, index }) => (
     <TouchableOpacity
-      style={{
-        borderRightWidth: index === matchingTenants.length - 1 ? 0 : 0.5,
-        marginRight: index === matchingTenants.length - 1 ? 0 : 16,
-        paddingRight: 30,
-        borderColor: "#dee0ea",
-      }}
+      style={{ boxShadow: "0px 0px 12px #00000014", borderRadius: 25 }}
       activeOpacity={1}
-      className="mr-4 mb-3 overflow-hidden w-72 flex flex-col bg-white p-4"
+      className="mr-4 mb-3 overflow-hidden w-72 flex flex-col bg-white border border-gray-200 p-4"
       onPress={() => {
-        // Navigate to tenant profile
-        navigation.navigate("TenantProfile", {
-          tenantId: item.tenantProfileId || item.userId,
+        // Navigate to user profile screen with tenant role
+        navigation.navigate("UserProfile", {
+          userId: item.tenantUserId || item.userId,
+          userRole: "KIRACI"
         });
       }}
     >
@@ -524,7 +520,6 @@ const PostDetailScreen = ({ route, navigation }) => {
           className="rounded-full border border-gray-100"
           resizeMode="cover"
         />
-
         <View className="flex-1 ml-3">
           <Text
             style={{ fontSize: 16, fontWeight: 700 }}
@@ -1190,8 +1185,9 @@ const PostDetailScreen = ({ route, navigation }) => {
               <TouchableOpacity
                 className="flex-row items-center"
                 onPress={() =>
-                  navigation.navigate("LandlordProfile", {
-                    userId: post.landlordId,
+                  navigation.navigate("UserProfile", {
+                    userId: post.userId, // landlordId değil, userId kullanın
+                    userRole: "EVSAHIBI"
                   })
                 }
               >

@@ -219,10 +219,10 @@ const OffersScreen = () => {
     refetch,
     error,
   } = isTenant
-    ? useGetSentOffersQuery(currentUser?.id, {
+      ? useGetSentOffersQuery(currentUser?.id, {
         skip: !currentUser?.id,
       })
-    : useGetReceivedOffersQuery(currentUser?.id, {
+      : useGetReceivedOffersQuery(currentUser?.id, {
         skip: !currentUser?.id,
       });
 
@@ -286,8 +286,7 @@ const OffersScreen = () => {
 
       offersData.result.rentalPosts.forEach((post, postIndex) => {
         console.log(
-          `Post ${postIndex}: ${post.ilanBasligi}, has ${
-            post.offers?.length || 0
+          `Post ${postIndex}: ${post.ilanBasligi}, has ${post.offers?.length || 0
           } offers`
         );
 
@@ -387,7 +386,7 @@ const OffersScreen = () => {
               Alert.alert(
                 "Hata",
                 error?.data?.message ||
-                  "Teklif kabul edilirken bir hata oluştu."
+                "Teklif kabul edilirken bir hata oluştu."
               );
             }
           },
@@ -630,8 +629,8 @@ const OffersScreen = () => {
                     {post.paraBirimi === "USD"
                       ? "$"
                       : post.paraBirimi === "EUR"
-                      ? "€"
-                      : "₺"}
+                        ? "€"
+                        : "₺"}
                     {item.offerAmount?.toLocaleString() || "0"}
                   </Text>
                   <Text
@@ -670,8 +669,8 @@ const OffersScreen = () => {
                     {post.paraBirimi === "USD"
                       ? "$"
                       : post.paraBirimi === "EUR"
-                      ? "€"
-                      : "₺"}
+                        ? "€"
+                        : "₺"}
                     {item.offerAmount?.toLocaleString() || "0"}
                   </Text>
                 </View>
@@ -703,10 +702,10 @@ const OffersScreen = () => {
                     >
                       {item.offerTime
                         ? new Date(item.offerTime).toLocaleDateString("tr-TR", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          })
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })
                         : ""}
                     </Text>
                   </View>
@@ -734,8 +733,8 @@ const OffersScreen = () => {
                     {post.paraBirimi === "USD"
                       ? "$"
                       : post.paraBirimi === "EUR"
-                      ? "€"
-                      : "₺"}
+                        ? "€"
+                        : "₺"}
                     {item.offerAmount?.toLocaleString() || "0"}
                   </Text>
                 </View>
@@ -810,7 +809,7 @@ const OffersScreen = () => {
             {isLandlord && item.status === 0 && (
               <View className="flex-row gap-3">
                 <TouchableOpacity
-                  className="flex-1 bg-green-300 rounded-2xl justify-center items-center"
+                  className="flex-1 bg-black rounded-2xl justify-center items-center"
                   style={{ height: 40 }}
                   onPress={() => handleAcceptOffer(item.offerId)}
                   activeOpacity={0.8}
@@ -867,16 +866,14 @@ const OffersScreen = () => {
         {tabs.map((tab) => (
           <TouchableOpacity
             key={tab.key}
-            className={`flex-1  rounded-full py-3 ${
-              selectedTab === tab.key ? "bg-black " : ""
-            }`}
+            className={`flex-1  rounded-full py-3 ${selectedTab === tab.key ? "bg-black " : ""
+              }`}
             onPress={() => setSelectedTab(tab.key)}
           >
             <Text
               style={{ fontSize: 12 }}
-              className={`text-center ${
-                selectedTab === tab.key ? "text-white" : "text-gray-900"
-              }`}
+              className={`text-center ${selectedTab === tab.key ? "text-white" : "text-gray-900"
+                }`}
             >
               {tab.label} ({tab.count})
             </Text>
@@ -947,15 +944,15 @@ const OffersScreen = () => {
       {/* UPDATED: Static Header Section (no animation) */}
       <View className="bg-white border-b border-gray-200 z-10">
         <View className="flex flex-row items-center px-5 mt-1">
-          <TouchableOpacity
+          {/* <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={{ width: "8%" }}
           >
             <FontAwesomeIcon icon={faChevronLeft} color="black" size={25} />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
-          <View className="px-4" style={{ width: "84%" }}>
-            <View className="bg-white rounded-3xl gap-2 px-4 flex-row items-center justify-center">
+          <View className="px-4 items-center" style={{ width: "100%" }}>
+            <View className=" gap-2 px-4 flex-row items-center justify-center">
               <View className="py-4">
                 <Text className="text-lg font-bold text-gray-800 text-center">
                   {isTenant ? "Gönderdiğim Teklifler" : "Gelen Teklifler"}
@@ -1010,16 +1007,14 @@ const OffersScreen = () => {
               ].map((tab) => (
                 <TouchableOpacity
                   key={tab.key}
-                  className={`flex-1  rounded-full py-3 ${
-                    selectedTab === tab.key ? "bg-black " : ""
-                  }`}
+                  className={`flex-1  rounded-full py-3 ${selectedTab === tab.key ? "bg-black " : ""
+                    }`}
                   onPress={() => setSelectedTab(tab.key)}
                 >
                   <Text
                     style={{ fontSize: 12 }}
-                    className={`text-center ${
-                      selectedTab === tab.key ? "text-white" : "text-gray-900"
-                    }`}
+                    className={`text-center ${selectedTab === tab.key ? "text-white" : "text-gray-900"
+                      }`}
                   >
                     {tab.label} ({tab.count})
                   </Text>

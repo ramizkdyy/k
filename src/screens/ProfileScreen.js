@@ -49,7 +49,7 @@ const ProfileScreen = ({ navigation }) => {
   const userRole = useSelector(selectUserRole);
   const userProfile = useSelector(selectUserProfile);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   // SignalR context for proper cleanup
   const { stopConnection } = useSignalR();
 
@@ -81,8 +81,8 @@ const ProfileScreen = ({ navigation }) => {
     isLoading,
     refetch,
   } = userRole === "EVSAHIBI"
-    ? useGetLandlordProfileQuery(currentUser?.id)
-    : useGetTenantProfileQuery(currentUser?.id);
+      ? useGetLandlordProfileQuery(currentUser?.id)
+      : useGetTenantProfileQuery(currentUser?.id);
 
   useEffect(() => {
     if (profileData && profileData.isSuccess && profileData.result) {
@@ -105,26 +105,26 @@ const ProfileScreen = ({ navigation }) => {
         onPress: async () => {
           console.log("🚪 User initiated logout from ProfileScreen");
           console.log("👤 Current user being logged out:", currentUser?.id);
-          
+
           try {
             // 1. Stop SignalR connection first to prevent message sending with stale token
             console.log("🔌 Stopping SignalR connection...");
             await stopConnection();
-            
+
             // 2. Clear chat cache to remove old user's messages
             console.log("🧹 Clearing chat cache...");
             chatApiHelpers.clearChatCache(dispatch);
-            
+
             // 3. Comprehensive storage cleanup
             console.log("🗑️ Performing comprehensive storage cleanup...");
             await authCleanupHelper.clearUserStorage();
-            
+
             // 4. Force logout to ensure complete state reset
             console.log("🔥 Executing force logout...");
             dispatch(forceLogout());
-            
+
             console.log("✅ Logout process completed successfully");
-            
+
           } catch (error) {
             console.error("❌ Error during logout process:", error);
             // Even if cleanup fails, still logout
@@ -237,9 +237,12 @@ const ProfileScreen = ({ navigation }) => {
               </View>
             )}
           </View>
+
           <Text
             style={{ fontSize: 20 }}
-            className="font-bold text-gray-900 mb-1"
+            className="font-bold text-gray-900 mb-1 text-center px-4"
+            numberOfLines={2}
+            ellipsizeMode="tail"
           >
             {userProfile?.user?.name || currentUser?.name || ""}{" "}
             {userProfile?.user?.surname || currentUser?.surname || ""}
@@ -367,11 +370,11 @@ const ProfileScreen = ({ navigation }) => {
                   {userRole === "EVSAHIBI" ? "Mülklerim" : "İlan Ara"}
                 </Text>
               </View>
-              <FontAwesomeIcon
+              {/* <FontAwesomeIcon
                 icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"
-              />
+              /> */}
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -391,11 +394,11 @@ const ProfileScreen = ({ navigation }) => {
                   {userRole === "EVSAHIBI" ? "Teklifler" : "Tekliflerim"}
                 </Text>
               </View>
-              <FontAwesomeIcon
+              {/* <FontAwesomeIcon
                 icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"
-              />
+              /> */}
             </TouchableOpacity>
 
             {userRole === "KIRACI" && (
@@ -494,11 +497,11 @@ const ProfileScreen = ({ navigation }) => {
                   Çıkış Yap
                 </Text>
               </View>
-              <FontAwesomeIcon
+              {/* <FontAwesomeIcon
                 icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"
-              />
+              /> */}
             </TouchableOpacity>
           </View>
         </View>
