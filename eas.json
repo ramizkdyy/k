@@ -38,11 +38,17 @@
       }
     }
   },
-  "submit": {
-    "internal": {
-      "ios": {
-        "appleTeamId": "B6ZN5P3TP7"
-      }
+"submit": {
+  "internal": {
+    "ios": {
+      "appleTeamId": "B6ZN5P3TP7"
+    }
+  },
+  "production": {
+    "ios": {
+      "appleTeamId": "B6ZN5P3TP7"
     }
   }
+}
+
 }
