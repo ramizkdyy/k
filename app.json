@@ -2,7 +2,7 @@
   "expo": {
     "name": "kiraX",
     "slug": "kiraX",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -13,6 +13,7 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
+      "buildNumber": "12",
       "bundleIdentifier": "com.uygarcapar.kiraX",
       "supportsTablet": true,
       "infoPlist": {
@@ -31,6 +32,12 @@
         "backgroundColor": "#FFFFFF"
       },
       "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "INTERNET",
@@ -60,6 +67,12 @@
       "eas": {
         "projectId": "ec7b8e3c-31c0-470c-8664-583719f38588"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/ec7b8e3c-31c0-470c-8664-583719f38588"
     }
   }
 }

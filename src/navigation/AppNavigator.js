@@ -723,8 +723,7 @@ const LandlordProfileStack = () => {
         component={UserProfileScreen}
         options={{
           headerShown: false,
-          tabBarStyle: { display: 'none' },
-
+          tabBarStyle: { display: "none" },
         }}
       />
     </LandlordStack.Navigator>
@@ -1416,10 +1415,10 @@ const ProfileLoader = ({ children }) => {
     isLoading,
     error,
   } = userRole === "EVSAHIBI"
-      ? useGetLandlordProfileQuery(currentUser?.id, {
+    ? useGetLandlordProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       })
-      : useGetTenantProfileQuery(currentUser?.id, {
+    : useGetTenantProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       });
 
@@ -1457,8 +1456,7 @@ const AppNavigatorContent = () => {
   const shouldShowRoleSelection = isAuthenticated && !userRole;
 
   return (
-    <View className="flex-1 bg-white">
-      <SafeAreaView style={{ flex: 0 }} />
+    <View className="flex-1 bg-transparent">
       <NavigationContainer>
         <View style={{ flex: 1 }}>
           <ProfileLoader>
@@ -1484,7 +1482,6 @@ const AppNavigatorContent = () => {
           </ProfileLoader>
         </View>
       </NavigationContainer>
-      <SafeAreaView style={{ flex: 0 }} />
     </View>
   );
 };

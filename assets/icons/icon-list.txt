@@ -1,0 +1,140 @@
+# FontAwesome Icons Used in KiraX App
+
+## Required Icons (download from FontAwesome Pro):
+
+### Solid Style Icons:
+- arrow-left
+- bars-filter  
+- bath
+- bed
+- bell
+- building
+- calendar
+- camera
+- check
+- check-double
+- chevron-down
+- chevron-left
+- chevron-right
+- circle
+- circle-info
+- comment-dots
+- comments
+- eye
+- eye-slash
+- gavel
+- heart
+- home
+- house
+- image
+- location-dot
+- lock
+- magnifying-glass
+- map-marker-alt
+- paper-plane
+- paper-plane-top
+- phone
+- plus
+- road
+- search
+- star
+- times
+- trash
+- user
+- video
+- wifi
+- wifi-slash
+- xmark
+- balance-scale
+- car
+- check-circle
+- clock
+- credit-card
+- dollar-sign
+- elevator
+- file-contract
+- graduation-cap
+- handshake
+- hospital
+- money-bill-wave
+- parking
+- paw
+- ruler-combined
+- school
+- shield
+- shopping-cart
+- smoking
+- subway
+- temperature-high
+- times-circle
+- tree
+- users
+- user-shield
+- venus-mars
+- home-alt
+- bed-bunk
+- shower
+- ruler
+- money-bills
+- bars
+
+### Regular Style Icons:
+- bell
+- building
+- chevron-left
+- chevron-right
+- cog
+- comments
+- edit
+- envelope
+- gavel
+- handshake
+- heart
+- home
+- house
+- key
+- map-marker-alt
+- message
+- plus
+- question-circle
+- search
+- sign-out
+- sign-out-alt
+- sliders
+- times
+- user
+- user-edit
+- xmark
+- comment-dots
+- exclamation-circle
+
+### Light Style Icons:
+- bath
+- bed
+- comment-dots
+- edit
+- external-link
+- heart
+- list
+- location-dot
+- lock
+- magnifying-glass
+- road
+- trash
+- user
+
+### Brand Icons:
+- apple
+
+## Download Instructions:
+1. Go to https://fontawesome.com/icons
+2. Search for each icon name
+3. Download as SVG format
+4. Place in assets/icons/ folder with naming convention: icon-name-style.svg
+   Example: arrow-left-solid.svg, home-regular.svg, user-light.svg
+
+## Alternative Free Icons:
+You can also use free alternatives from:
+- Heroicons (https://heroicons.com/)
+- Lucide (https://lucide.dev/)
+- Tabler Icons (https://tabler-icons.io/)
