@@ -1,4 +1,4 @@
-// screens/ChatDetailScreen.js - Fixed with Backend Pagination Response
+// screens/ChatDetailScreen.js - With BlurView instead of SafeAreaView
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
@@ -6,15 +6,11 @@ import {
   TouchableOpacity,
   Image,
   TextInput,
-  SafeAreaView,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
   Alert,
   Dimensions,
-  Animated,
-  Keyboard,
+  Platform,
 } from "react-native";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
@@ -30,7 +26,6 @@ import {
   faTimes,
   faChevronLeft,
   faPaperPlaneTop,
-  faPlus,
 } from "@fortawesome/pro-solid-svg-icons";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -42,6 +37,25 @@ import { useSignalR } from "../contexts/SignalRContext";
 import { useSelector, useDispatch } from "react-redux";
 import { BlurView } from "expo-blur";
 import { useHeaderHeight } from "@react-navigation/elements";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+
+// ✅ React Native Keyboard Controller imports
+import {
+  KeyboardAvoidingView,
+  KeyboardAwareScrollView,
+  useKeyboardAnimation,
+  useReanimatedKeyboardAnimation,
+  KeyboardStickyView,
+} from "react-native-keyboard-controller";
+import Reanimated, {
+  useAnimatedStyle,
+  useDerivedValue,
+  interpolate,
+} from "react-native-reanimated";
+import { faPlus } from "@fortawesome/pro-regular-svg-icons";
 
 const ChatDetailScreen = ({ navigation, route }) => {
   const { partnerId, partnerName } = route.params || {};
@@ -55,15 +69,21 @@ const ChatDetailScreen = ({ navigation, route }) => {
   const [hasMoreMessages, setHasMoreMessages] = useState(true); // ✅ Backend'den gelecek
   const [shouldScrollToEnd, setShouldScrollToEnd] = useState(false);
   const [loadedPages, setLoadedPages] = useState(new Set([1])); // ✅ Yüklenen sayfaları takip et
-  const keyboardHeight = useRef(new Animated.Value(0)).current;
+
   const flatListRef = useRef();
   const typingTimeoutRef = useRef();
   const textInputRef = useRef();
   const headerHeight = Platform.OS === "ios" ? useHeaderHeight() : 0;
 
+  // ✅ SafeArea insets for manual safe area handling
+  const insets = useSafeAreaInsets();
+
   const { user } = useSelector((state) => state.auth);
   const currentUserId = user?.id || user?.userId;
   const dispatch = useDispatch();
+
+  // ✅ Keyboard Controller hooks
+  const { height: keyboardHeight, progress } = useReanimatedKeyboardAnimation();
 
   const {
     isConnected,
@@ -113,20 +133,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
   // Partner online status
   const isPartnerOnline = onlineUsers.has(partnerId);
   const isPartnerTyping = typingUsers.has(partnerId);
-  const handleTextInputFocus = () => {
-    // iOS'ta klavye yüksekliğini tahmin ederek hemen başlatın
-    if (Platform.OS === "ios") {
-      // Standard iOS keyboard height (iPhone'lara göre)
-      const estimatedKeyboardHeight =
-        Dimensions.get("window").height > 800 ? 346 : 316; // iPhone büyüklüğüne göre
-
-      Animated.timing(keyboardHeight, {
-        toValue: estimatedKeyboardHeight,
-        duration: 150,
-        useNativeDriver: false,
-      }).start();
-    }
-  };
 
   // ✅ FIXED: Backend response structure'ını parse et
   const parseBackendResponse = (response) => {
@@ -149,45 +155,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
       pageSize: response.pageSize || 20,
     };
   };
-
-  useEffect(() => {
-    // iOS için keyboardWillShow/Hide kullanın (daha responsive)
-    const showEvent =
-      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvent =
-      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-
-    const show = Keyboard.addListener(showEvent, (e) => {
-      console.log("Keyboard showing:", e.endCoordinates);
-
-      // iOS'ta animasyon süresini keyboard'un kendi animasyon süresiyle eşleştirin
-      const animationDuration = Platform.OS === "ios" ? e.duration || 250 : 150;
-
-      Animated.timing(keyboardHeight, {
-        toValue: e.endCoordinates.height,
-        duration: animationDuration,
-        useNativeDriver: false,
-      }).start();
-    });
-
-    const hide = Keyboard.addListener(hideEvent, (e) => {
-      console.log("Keyboard hiding");
-
-      const animationDuration =
-        Platform.OS === "ios" ? e?.duration || 250 : 150;
-
-      Animated.timing(keyboardHeight, {
-        toValue: 0,
-        duration: animationDuration,
-        useNativeDriver: false,
-      }).start();
-    });
-
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
 
   // ✅ İlk sayfa yüklendiğinde mesajları set et
   useEffect(() => {
@@ -886,7 +853,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
           </TouchableOpacity>
         </View>
 
-        {/* ✅ Absolute positioned BlurView Header for error state */}
+        {/* ✅ BlurView Header for error state with manual safe area */}
         <BlurView
           intensity={90}
           tint="light"
@@ -896,9 +863,9 @@ const ChatDetailScreen = ({ navigation, route }) => {
             left: 0,
             right: 0,
             zIndex: 50,
+            paddingTop: insets.top,
           }}
         >
-          <SafeAreaView style={{ backgroundColor: "transparent" }} />
           <View className="px-4 py-3 flex-row items-center">
             <TouchableOpacity
               onPress={() => navigation.goBack()}
@@ -916,77 +883,63 @@ const ChatDetailScreen = ({ navigation, route }) => {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={headerHeight}
-    >
-      <View className="flex-1">
-        <StatusBar style="dark" backgroundColor="transparent" translucent />
+    <View style={{ flex: 1 }}>
+      <StatusBar style="dark" backgroundColor="transparent" translucent />
 
-        {/* Messages - Full screen FlatList */}
-        <FlatList
-          ref={flatListRef}
-          data={messages.slice().reverse()} // Reverse to show oldest at top, newest at bottom
-          renderItem={({ item, index }) =>
-            renderMessage({
-              item,
-              index: messages.length - 1 - index, // Adjust index for reversed array
-            })
-          }
-          keyExtractor={(item) =>
-            item.id?.toString() || `${item.senderUserId}-${item.sentAt}`
-          }
-          className="flex-1 px-4"
-          contentContainerStyle={{
-            paddingTop: Platform.OS === "ios" ? 140 : 120, // Space for header
-            paddingBottom: Platform.OS === "ios" ? 90 : 120, // Space for input
-            paddingVertical: 16,
-          }}
-          keyboardDismissMode="interactive"
-          showsVerticalScrollIndicator={false}
-          onScroll={handleScroll}
-          scrollEventThrottle={100}
-          maintainVisibleContentPosition={{
-            minIndexForVisible: 0,
-          }}
-          ListHeaderComponent={() =>
-            isLoadingMore && hasMoreMessages ? (
-              <View className="py-4 items-center">
-                <ActivityIndicator size="small" color="#0ea5e9" />
-                <Text className="text-xs text-gray-500 mt-1">
-                  Loading page {currentPage}...
-                </Text>
-              </View>
-            ) : !hasMoreMessages && messages.length > 0 ? (
-              <View className="py-4 items-center">
-                <Text className="text-xs text-gray-400">
-                  🔚 Bu sohbetin başlangıcı
-                </Text>
-              </View>
-            ) : null
-          }
-          ListEmptyComponent={() => (
-            <View className="flex-1 justify-center items-center py-20">
-              <Text className="text-gray-500 text-base text-center">
-                No messages yet. Start the conversation!
+      {/* ✅ Messages - Normal FlatList without keyboard animation */}
+      <FlatList
+        ref={flatListRef}
+        data={messages.slice().reverse()} // Reverse to show oldest at top, newest at bottom
+        renderItem={({ item, index }) =>
+          renderMessage({
+            item,
+            index: messages.length - 1 - index, // Adjust index for reversed array
+          })
+        }
+        keyExtractor={(item) =>
+          item.id?.toString() || `${item.senderUserId}-${item.sentAt}`
+        }
+        className="flex-1 px-4"
+        contentContainerStyle={{
+          paddingTop: Platform.OS === "ios" ? insets.top + 80 : insets.top + 60, // Manual safe area + header height
+          paddingBottom: 140, // ✅ Fixed bottom padding for input area
+        }}
+        keyboardDismissMode="interactive"
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={100}
+        maintainVisibleContentPosition={{
+          minIndexForVisible: 0,
+        }}
+        ListHeaderComponent={() =>
+          isLoadingMore && hasMoreMessages ? (
+            <View className="py-4 items-center">
+              <ActivityIndicator size="small" color="#0ea5e9" />
+              <Text className="text-xs text-gray-500 mt-1">
+                Loading page {currentPage}...
               </Text>
             </View>
-          )}
-        />
+          ) : !hasMoreMessages && messages.length > 0 ? (
+            <View className="py-4 items-center">
+              <Text className="text-xs text-gray-400">
+                🔚 Bu sohbetin başlangıcı
+              </Text>
+            </View>
+          ) : null
+        }
+        ListEmptyComponent={() => (
+          <View className="flex-1 justify-center items-center py-20">
+            <Text className="text-gray-500 text-base text-center">
+              No messages yet. Start the conversation!
+            </Text>
+          </View>
+        )}
+      />
 
-        {/* Connection Status Indicator - Positioned above input */}
-        {!isConnected && (
-          <View
-            className="bg-yellow-100 px-4 py-2 border-t border-yellow-200"
-            style={{
-              position: "absolute",
-              bottom: Platform.OS === "ios" ? 120 : 100,
-              left: 0,
-              right: 0,
-              zIndex: 30,
-            }}
-          >
+      {/* ✅ Connection Status Indicator */}
+      {!isConnected && (
+        <KeyboardStickyView offset={{ closed: 120, opened: 0 }}>
+          <View className="bg-yellow-100 px-4 py-2 border-t border-yellow-200">
             <View className="flex-row items-center justify-between">
               <Text className="text-yellow-600 text-sm">
                 {isConnecting
@@ -1010,92 +963,108 @@ const ChatDetailScreen = ({ navigation, route }) => {
               </Text>
             )}
           </View>
-        )}
+        </KeyboardStickyView>
+      )}
 
-        {/* ✅ Absolute positioned BlurView Header */}
-        <BlurView
-          intensity={70}
-          tint="light"
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 50,
-          }}
-        >
-          <SafeAreaView style={{ backgroundColor: "transparent" }} />
-          <View className="px-4 pb-2 flex-row items-center justify-between">
-            <View className="flex-row items-center flex-1">
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                className="p-2 -ml-2 mr-2"
-              >
-                <FontAwesomeIcon icon={faChevronLeft} size={20} color="#000" />
-              </TouchableOpacity>
+      {/* ✅ BlurView Header with manual safe area */}
+      <BlurView
+        intensity={70}
+        tint="light"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 50,
+          paddingTop: insets.top,
+        }}
+      >
+        <View className="px-4 pb-2 flex-row items-center justify-between">
+          <View className="flex-row items-center flex-1">
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              className="p-2 -ml-2 mr-2"
+            >
+              <FontAwesomeIcon icon={faChevronLeft} size={20} color="#000" />
+            </TouchableOpacity>
 
-              <TouchableOpacity className="flex-row items-center flex-1">
-                <Image
-                  source={{
-                    uri: `https://ui-avatars.com/api/?name=${
-                      partnerName || partnerId
-                    }&background=0ea5e9&color=fff&size=40`,
-                  }}
-                  className="w-12 h-12 rounded-full mr-3"
-                />
-                <View className="flex-1">
-                  <Text
-                    style={{ fontSize: 18 }}
-                    className="font-semibold text-gray-900"
-                  >
-                    {partnerName || partnerId}
-                  </Text>
-                  <View className="flex-row items-center">
-                    {isPartnerOnline ? (
-                      <Text className="text-gray-500" style={{ fontSize: 12 }}>
-                        {isPartnerTyping
-                          ? "Yazıyor..."
-                          : isPartnerOnline
-                          ? "Çevrimiçi"
-                          : ""}
-                      </Text>
-                    ) : null}
-                  </View>
+            <TouchableOpacity className="flex-row items-center flex-1">
+              <Image
+                source={{
+                  uri: `https://ui-avatars.com/api/?name=${
+                    partnerName || partnerId
+                  }&background=0ea5e9&color=fff&size=40`,
+                }}
+                className="w-12 h-12 rounded-full mr-3"
+              />
+              <View className="flex-1">
+                <Text
+                  style={{ fontSize: 18 }}
+                  className="font-semibold text-gray-900"
+                >
+                  {partnerName || partnerId}
+                </Text>
+                <View className="flex-row items-center">
+                  {isPartnerOnline ? (
+                    <Text className="text-gray-500" style={{ fontSize: 12 }}>
+                      {isPartnerTyping
+                        ? "Yazıyor..."
+                        : isPartnerOnline
+                        ? "Çevrimiçi"
+                        : ""}
+                    </Text>
+                  ) : null}
                 </View>
-              </TouchableOpacity>
-            </View>
-
-            <View className="flex-row items-center space-x-3">
-              <TouchableOpacity className="p-2">
-                <FontAwesomeIcon icon={faCircleInfo} size={22} color="#000" />
-              </TouchableOpacity>
-            </View>
+              </View>
+            </TouchableOpacity>
           </View>
-        </BlurView>
 
-        {/* ✅ BlurView Input Area */}
+          <View className="flex-row items-center space-x-3">
+            <TouchableOpacity className="p-2">
+              <FontAwesomeIcon icon={faCircleInfo} size={22} color="#000" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </BlurView>
 
-        <BlurView intensity={70} tint="light">
-          <View className="">
-            <View className="flex-row items-center bg-white/20 rounded-full px-4 py-1.5 backdrop-blur-md">
+      {/* ✅ FIXED: WhatsApp-style Keyboard Sticky Input Area with BlurView */}
+      <KeyboardStickyView
+        offset={{ closed: 0, opened: 28 }}
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 100,
+        }}
+      >
+        <BlurView
+          style={{ paddingBottom: insets.bottom }}
+          className="py-1.5"
+          intensity={80}
+          tint="systemUltraThinMaterialDark"
+        >
+          <View className="px-3">
+            <View className="flex-row items-center">
+              {/* Plus Button */}
               <TouchableOpacity
-                onPress={handleSendMessage}
-                className={`w-10 h-10 rounded-full items-center justify-center mr-3`}
-                disabled={!message.trim() || isSending}
+                className="w-8 h-8 rounded-full items-center justify-center mr-2 mb-1"
+                onPress={() => {
+                  console.log("Open attachment picker");
+                }}
               >
-                <FontAwesomeIcon
-                  icon={faPlus}
-                  size={22}
-                  color={message.trim() ? "#000" : "#000"}
-                />
+                <FontAwesomeIcon icon={faPlus} size={25} color="#000" />
               </TouchableOpacity>
+
+              {/* Text Input Container */}
               <BlurView
-                style={{ boxShadow: "0px 0px 12px #00000014" }}
-                className="flex-1 rounded-full overflow-hidden px-4"
+                intensity={40}
+                tint="systemUltraThinMaterialDark"
+                className="flex-1 rounded-2xl overflow-hidden px-4 max-h-[100px]"
               >
                 <TextInput
                   ref={textInputRef}
-                  className="text-base py-2 max-h-20 rounded-full"
+                  className="text-base"
                   value={message}
                   onChangeText={(text) => {
                     setMessage(text);
@@ -1103,36 +1072,49 @@ const ChatDetailScreen = ({ navigation, route }) => {
                       handleTypingStart();
                     }
                   }}
-                  onFocus={handleTextInputFocus} // Yeni eklenen
                   multiline
                   maxLength={500}
-                  placeholderTextColor="#999"
+                  placeholderTextColor
                   editable={!isSending}
                   onSubmitEditing={handleSendMessage}
                   blurOnSubmit={false}
+                  style={{
+                    fontSize: 16,
+                    lineHeight: 20,
+                    color: "#000",
+                    paddingTop: Platform.OS === "ios" ? 8 : 4,
+                    paddingBottom: Platform.OS === "ios" ? 8 : 4,
+                    minHeight: 24,
+                  }}
+                  textAlignVertical="center"
                 />
               </BlurView>
 
+              {/* Send Button */}
               <TouchableOpacity
                 onPress={handleSendMessage}
-                style={{ backgroundColor: "#4ade80" }}
-                className={`ml-2 w-10 h-10 rounded-full items-center justify-center ${
-                  message.trim() && !isSending ? "bg-blue-500" : ""
-                }`}
+                style={{
+                  marginLeft: 8,
+                  marginBottom: 1,
+                }}
+                className="w-10 h-10  items-center justify-center"
                 disabled={!message.trim() || isSending}
               >
-                <FontAwesomeIcon
-                  icon={faPaperPlaneTop}
-                  size={18}
-                  color={message.trim() ? "#000" : "#fff"}
-                />
+                {isSending ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <FontAwesomeIcon
+                    icon={faPaperPlaneTop}
+                    size={25}
+                    color={message.trim() ? "#000" : "#a6a6a6"}
+                  />
+                )}
               </TouchableOpacity>
             </View>
           </View>
-          <SafeAreaView style={{ backgroundColor: "transparent" }} />
         </BlurView>
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardStickyView>
+    </View>
   );
 };
 

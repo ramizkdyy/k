@@ -1,8 +1,12 @@
 {
   "build": {
     "development": {
+      "env": {
+          "FONTAWESOME_NPM_AUTH_TOKEN": "064A34B2-5CC3-41AE-B9E4-4F4F370CE058"
+         },
       "developmentClient": true,
       "distribution": "internal",
+      "channel": "development",
       "android": {
         "buildType": "apk"
       },
@@ -11,11 +15,33 @@
       }
     },
     "production": {
+      
+      "distribution": "store",
       "android": {
         "buildType": "app-bundle"
       },
       "ios": {
         "simulator": false
+      }
+    },
+    "internal": {
+      "env": {
+          "FONTAWESOME_NPM_AUTH_TOKEN": "064A34B2-5CC3-41AE-B9E4-4F4F370CE058"
+         },
+      "distribution": "internal",
+      "channel": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "simulator": false
+      }
+    }
+  },
+  "submit": {
+    "internal": {
+      "ios": {
+        "appleTeamId": "B6ZN5P3TP7"
       }
     }
   }

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
@@ -17,9 +16,14 @@ import {
   Alert,
   StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import { useLoginMutation } from "../redux/api/apiSlice";
-import { setCredentials, setHasUserProfile, selectCurrentUser } from "../redux/slices/authSlice";
+import {
+  setCredentials,
+  setHasUserProfile,
+  selectCurrentUser,
+} from "../redux/slices/authSlice";
 import { setUserProfile } from "../redux/slices/profileSlice";
 import { authCleanupHelper } from "../utils/authCleanup";
 import { chatApiHelpers } from "../redux/api/chatApiSlice";
@@ -27,7 +31,7 @@ import { chatApiHelpers } from "../redux/api/chatApiSlice";
 const { width } = Dimensions.get("window");
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import { faEyeSlash, faEye } from "@fortawesome/pro-solid-svg-icons";
-import { faApple } from "@fortawesome/free-brands-svg-icons";
+import { faApple, faGoogle } from "@fortawesome/free-brands-svg-icons";
 
 import Checkbox from "expo-checkbox";
 import { faLock, faUser } from "@fortawesome/pro-light-svg-icons";
@@ -106,17 +110,23 @@ const LoginScreen = ({ navigation }) => {
         console.log("API'den gelen profil durumu:", hasUserProfile);
 
         // ENHANCED: Handle potential user switching
-        const isUserSwitch = currentUser?.id && updatedUser.id && currentUser.id !== updatedUser.id;
-        
+        const isUserSwitch =
+          currentUser?.id &&
+          updatedUser.id &&
+          currentUser.id !== updatedUser.id;
+
         if (isUserSwitch) {
           console.log("🔄 USER SWITCH DETECTED in LoginScreen:", {
             previousUserId: currentUser.id,
-            newUserId: updatedUser.id
+            newUserId: updatedUser.id,
           });
-          
+
           // Prepare for user switch - clean up old user data
-          await authCleanupHelper.prepareForUserSwitch(currentUser.id, updatedUser.id);
-          
+          await authCleanupHelper.prepareForUserSwitch(
+            currentUser.id,
+            updatedUser.id
+          );
+
           // Clear chat cache for the previous user
           chatApiHelpers.clearChatCache(dispatch);
         }
@@ -343,10 +353,7 @@ const LoginScreen = ({ navigation }) => {
                   className="rounded-xl bg-white flex-row items-center px-4 py-3 gap-2 w-full border border-gray-900"
                   onPress={() => console.log("Google login")}
                 >
-                  <Image
-                    source={require("../../assets/google-logo.svg")}
-                    className="w-6 h-6"
-                  />
+                  <FontAwesomeIcon icon={faGoogle} size={20} />
                   <Text
                     className="absolute"
                     style={{
