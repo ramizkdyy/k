@@ -1,4 +1,4 @@
-// redux/api/chatApiSlice.js - Fixed Pagination System
+// redux/api/chatApiSlice.js - Fixed Pagination System with Lazy Query
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const CHAT_BASE_URL = "https://chatapi.justkey.online/";
@@ -106,7 +106,6 @@ export const chatApiSlice = createApi({
         // Partner değişirse force refetch
         return currentArg?.partnerId !== previousArg?.partnerId;
       },
-      // ✅ REMOVED: merge fonksiyonu kaldırıldı - her sayfa kendi cache'inde tutulsun
     }),
 
     // Chat partnerlarını getir - ✅ More aggressive refetching
@@ -179,8 +178,6 @@ export const chatApiSlice = createApi({
       },
     }),
 
-    // ✅ REMOVED: loadOlderMessages endpoint'i kaldırıldı - getChatHistory kullanacağız
-
     // ✅ Mesaj gönder - Better invalidation strategy
     sendMessage: builder.mutation({
       query: (messageData) => ({
@@ -248,8 +245,10 @@ export const chatApiSlice = createApi({
   }),
 });
 
+// ✅ FIXED: Export all hooks including lazy queries
 export const {
   useGetChatHistoryQuery,
+  useLazyGetChatHistoryQuery, // ✅ Bu hook otomatik olarak oluşturuluyor
   useGetChatPartnersQuery,
   useGetUnreadCountQuery,
   useSendMessageMutation,
