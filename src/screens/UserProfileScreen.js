@@ -70,6 +70,7 @@ import ProfileRateModal from "../modals/ProfileRateModal";
 
 
 
+
 const { width: screenWidth } = Dimensions.get('window');
 
 const UserProfileScreen = ({ navigation, route }) => {
@@ -107,6 +108,19 @@ const UserProfileScreen = ({ navigation, route }) => {
 
     console.log("UserProfileScreen params:", { userId, userRole });
 
+    // YENİ: Mevcut kullanıcının kendi profilini fetch et (favoriler için)
+    const {
+        data: myProfileData,
+        isLoading: myProfileLoading,
+        refetch: refetchMyProfile,
+    } = currentUserProfile?.role === "EVSAHIBI"
+            ? useGetLandlordProfileQuery(currentUserProfile.id, {
+                skip: !currentUserProfile?.id
+            })
+            : useGetTenantProfileQuery(currentUserProfile.id, {
+                skip: !currentUserProfile?.id
+            });
+    // Bunu ekleyin (eksik olan query):
     const {
         data: profileData,
         isLoading: profileLoading,
@@ -116,15 +130,22 @@ const UserProfileScreen = ({ navigation, route }) => {
             ? useGetLandlordProfileQuery(userId)
             : useGetTenantProfileQuery(userId);
 
+
     const isOwnProfile = currentUserProfile?.id === userId;
+    const userProfile = profileData?.isSuccess ? profileData.result : null;
+    const myProfile = myProfileData?.isSuccess ? myProfileData.result : null;
+
+
+
+    const [profileAction] = apiSlice.endpoints.profileAction.useMutation();
 
     console.log("🔍 Current Redux State:", {
         profileActionLoading: profileActionLoading,
         profileActionError: profileActionError,
-        showRatingModal: showRatingModal
+        showRatingModal: showRatingModal,
+        isFavorite: isFavorite
     });
 
-    const [profileAction] = apiSlice.endpoints.profileAction.useMutation();
     const handleRateProfile = async (ratingData) => {
         try {
             console.log("🎯 Rating başlatılıyor:", {
@@ -189,10 +210,48 @@ const UserProfileScreen = ({ navigation, route }) => {
     }, [profileActionError, dispatch]);
 
 
+    // YENİ: Favori durumunu kontrol et - DÜZELTME
+    useEffect(() => {
+        if (myProfile && userId && userRole) {
+            let isUserFavorited = false;
+
+            console.log("🔍 Favori kontrol ediliyor:", {
+                userId: userId,
+                userRole: userRole,
+                myProfile: {
+                    favoriteLandlordProfile: myProfile.favoriteLandlordProfile?.length || 0,
+                    favoriteTenantProfile: myProfile.favoriteTenantProfile?.length || 0
+                }
+            });
+
+            // Görüntülenen profil türüne göre kontrol et
+            if (userRole === "EVSAHIBI" && myProfile.favoriteLandlordProfile) {
+                // Ev sahibi profiline bakıyoruz, myProfile'ın favoriteLandlordProfile'ında var mı?
+                isUserFavorited = myProfile.favoriteLandlordProfile.some(
+                    (favProfile) => favProfile.userId === userId
+                );
+            } else if (userRole === "KIRACI" && myProfile.favoriteTenantProfile) {
+                // Kiracı profiline bakıyoruz, myProfile'ın favoriteTenantProfile'ında var mı?
+                isUserFavorited = myProfile.favoriteTenantProfile.some(
+                    (favProfile) => favProfile.userId === userId
+                );
+            }
+
+            setIsFavorite(isUserFavorited);
+
+            console.log("🔍 Favori durumu sonucu:", {
+                userId: userId,
+                userRole: userRole,
+                isUserFavorited: isUserFavorited
+            });
+        }
+    }, [myProfile, userId, userRole]);
+
+
+
 
     console.log("API Response:", { profileData, profileError, profileLoading });
 
-    const userProfile = profileData?.isSuccess ? profileData.result : null;
     console.log("Parsed userProfile:", userProfile);
 
     const expectation = userRole === "EVSAHIBI"
@@ -215,8 +274,37 @@ const UserProfileScreen = ({ navigation, route }) => {
         }
     };
 
-    const handleFavoriteToggle = () => {
-        setIsFavorite(!isFavorite);
+    const handleFavoriteToggle = async () => {
+        try {
+            console.log("🎯 Favorite toggle başlatılıyor:", {
+                senderUserId: currentUserProfile?.id,
+                receiverUserId: userId,
+                currentFavoriteState: isFavorite
+            });
+
+            const actionType = isFavorite ? 1 : 0; // 1: RemoveFavorite, 0: AddFavorite
+
+            const result = await profileAction({
+                SenderUserId: currentUserProfile?.id,
+                ReceiverUserId: userId,
+                profileAction: actionType, // ProfileAction enum'ından AddFavorite (0) veya RemoveFavorite (1)
+            }).unwrap();
+
+            console.log("✅ Favorite action tamamlandı:", result);
+
+            if (result.isSuccess) {
+                // Local state'i güncelle
+                setIsFavorite(!isFavorite);
+
+            }
+
+        } catch (error) {
+            console.error('❌ Favorite toggle hatası:', error);
+            Alert.alert(
+                "Hata",
+                error?.data?.message || "Favori işlemi sırasında bir hata oluştu."
+            );
+        }
     };
 
     const handleSendMessage = () => {
@@ -374,7 +462,7 @@ const UserProfileScreen = ({ navigation, route }) => {
         }
     };
 
-    if (profileLoading) {
+    if (profileLoading || myProfileLoading) {
         return (
             <View className="flex-1 justify-center items-center bg-white">
                 <ActivityIndicator size="large" color="#6b7280" />
@@ -513,6 +601,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                             {/* Favori Butonu */}
                             <TouchableOpacity
                                 onPress={handleFavoriteToggle}
+                                disabled={profileActionLoading}
                                 className={`px-6 py-3 rounded-xl flex-row items-center ${isFavorite ? "bg-red-500" : "bg-gray-100"
                                     }`}
                             >
@@ -537,11 +626,9 @@ const UserProfileScreen = ({ navigation, route }) => {
                                 disabled={profileActionLoading}
                                 className="bg-yellow-500 px-6 py-3 rounded-xl flex-row items-center"
                             >
-                                {profileActionLoading ? (
-                                    <ActivityIndicator size="small" color="white" />
-                                ) : (
-                                    <FontAwesomeIcon icon={faStar} size={16} color="white" />
-                                )}
+
+                                <FontAwesomeIcon icon={faStar} size={16} color="white" />
+
                             </TouchableOpacity>
                         </View>
                     )}
@@ -549,7 +636,7 @@ const UserProfileScreen = ({ navigation, route }) => {
 
                 {/* Tab Navigation */}
                 <View className="mb-6">
-                    <View className="flex-row gap-2"> {/* gap-3'ü gap-2 yap, 4 buton sığsın */}
+                    <View className="flex-row gap-2">
                         <TouchableOpacity
                             onPress={() => setActiveTab('general')}
                             className={`flex-1 py-3 px-3 rounded-full ${activeTab === 'general' ? 'bg-gray-900' : 'bg-gray-100'}`}

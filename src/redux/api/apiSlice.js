@@ -21,7 +21,8 @@ export const apiSlice = createApi({
     "Post",
     "Offer",
     "Profile",
-    "ProfileRating", // ← YENİ EKLENEN
+    "ProfileRating",
+    "ProfileFavorites",
     "User",
     "Expectation",
     "Matching",
@@ -208,13 +209,57 @@ export const apiSlice = createApi({
 
     // FYP (For You Page) endpoints
     getForYouPage: builder.query({
-      query: ({ userId, latitude, longitude, radiusKm = 50, limit = 15 }) => ({
-        url: `/api/Fyp/GetForYourPage?userId=${userId}&latitude=${latitude}&longitude=${longitude}&radiusKm=${radiusKm}&limit=${limit}`,
+      query: ({ userId, latitude, longitude, radiusKm = 50, limit = 15, isCached = false }) => ({
+        url: `/api/Fyp/GetForYourPage?userId=${userId}&latitude=${latitude}&longitude=${longitude}&radiusKm=${radiusKm}&limit=${limit}&isCached=${isCached}`,
         method: "GET",
       }),
       providesTags: ["Post"],
     }),
-
+    // TikTok Feed endpoint'i - diğer endpoint'lerin yanına ekle
+    getTikTokFeed: builder.query({
+      query: ({
+        userId, // currentUser.id - matching score için gerekli
+        latitude,
+        longitude,
+        radiusKm = 50,
+        normalPostLimit = 15,
+        metaPostLimit = 15,
+        page = 1
+      }) => ({
+        url: `/api/Fyp/GetTikTokFeed`,
+        method: "GET",
+        params: {
+          userId, // Bu parametre matching score hesaplaması için kritik
+          latitude,
+          longitude,
+          radiusKm,
+          normalPostLimit,
+          metaPostLimit,
+          page
+        }
+      }),
+      providesTags: ["Post"],
+      // Cache için 5 dakika
+      keepUnusedDataFor: 300,
+      // Pagination için cache merge stratejisi
+      serializeQueryArgs: ({ endpointName, queryArgs }) => {
+        const { userId, latitude, longitude, radiusKm } = queryArgs;
+        return `${endpointName}-${userId}-${latitude}-${longitude}-${radiusKm}`;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        if (arg.page === 1) {
+          return newItems;
+        }
+        return {
+          ...newItems,
+          data: [...(currentCache?.data || []), ...(newItems?.data || [])],
+        };
+      },
+      forceRefetch({ currentArg, previousArg }) {
+        return currentArg?.page !== previousArg?.page ||
+          currentArg?.userId !== previousArg?.userId;
+      },
+    }),
     getNearbyPostsPaginated: builder.query({
       query: ({
         userId,
@@ -1000,4 +1045,7 @@ export const {
   // Profile Callback hooks
   useProfileUploadImageStatusMutation,
   useProfileSensorImageStatusMutation,
+
+  // YENİ: TikTok Feed hook'u ekle
+  useGetTikTokFeedQuery,
 } = apiSlice;

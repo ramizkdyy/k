@@ -18,7 +18,7 @@ import NearbyProperties from "../components/NearbyProperties";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import { faBarsFilter, faSearch } from "@fortawesome/pro-solid-svg-icons";
 import { StatusBar } from "expo-status-bar";
-import { faEdit, faMessage } from "@fortawesome/pro-regular-svg-icons";
+import { faEdit, faMessage, faFingerprint } from "@fortawesome/pro-regular-svg-icons";
 
 const HomeScreen = ({ navigation }) => {
   const userRole = useSelector(selectUserRole);
@@ -88,15 +88,24 @@ const HomeScreen = ({ navigation }) => {
                 kiraX
               </Text>
             </View>
-            <TouchableOpacity
-              className="rounded-full justify-center items-center flex flex-col relative"
-              onPress={handleMessagesPress}
-            >
-              <FontAwesomeIcon icon={faMessage} size={20} />
-              <View className="bg-red-500 rounded-full w-7 h-6 absolute -top-3 -right-3 flex justify-center items-center">
-                <Text className="text-white font-semibold">12</Text>
-              </View>
-            </TouchableOpacity>
+            <View className="flex-row gap-6 items-center justify-center">
+              {/* <TouchableOpacity
+                onPress={() => {
+                  navigation.navigate("Explore");
+                }}
+              >
+                <FontAwesomeIcon icon={faFingerprint} size={20} />
+              </TouchableOpacity> */}
+              <TouchableOpacity
+                className="rounded-full justify-center items-center flex flex-col relative"
+                onPress={handleMessagesPress}
+              >
+                <FontAwesomeIcon icon={faMessage} size={20} />
+                <View className="bg-red-500 rounded-full w-7 h-6 absolute -top-3 -right-3 flex justify-center items-center">
+                  <Text className="text-white font-semibold">12</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Search Bar */}
