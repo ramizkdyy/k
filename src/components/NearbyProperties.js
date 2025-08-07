@@ -24,12 +24,18 @@ import {
   faLocationDot,
   faBath,
   faBed,
+  faFingerprint
 } from "@fortawesome/pro-light-svg-icons";
 import { BlurView } from "expo-blur";
 import { LoadingSkeleton } from "./LoadingSkeleton"; // Import the skeleton component
 import { LinearGradient } from "expo-linear-gradient";
+import { useFypCacheTracker } from "../hooks/useFypCacheTracker"; // YENİ IMPORT
+
 
 const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
+
+  const { shouldUseCache, resetCache, getCacheInfo } = useFypCacheTracker();
+
   // Match Score gösterim fonksiyonu
   const getMatchScoreInfo = (score) => {
     if (score >= 80)
@@ -225,6 +231,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   }, []);
 
   // Fetch nearby properties using FYP API
+  // Fetch nearby properties using FYP API - UPDATED with cache
   const {
     data: nearbyData,
     isLoading: isLoadingNearby,
@@ -235,6 +242,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
       userId: currentUser?.id,
       latitude: userLocation?.latitude,
       longitude: userLocation?.longitude,
+      isCached: shouldUseCache(), // CACHE TRACKER KULLAN
     },
     {
       skip: !userLocation || !currentUser?.id,
@@ -283,12 +291,15 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
     }
   }, [refreshing, userLocation, currentUser?.id]);
 
-  // Manual refresh handler
+  // Manual refresh handler - cache'i reset et
   const handleRefresh = async () => {
     if (!userLocation || !currentUser?.id) return;
 
     setIsRefreshing(true);
     try {
+      // Cache'i reset et çünkü kullanıcı manuel refresh yapıyor
+      resetCache();
+
       const result = await refetch();
       console.log("Refetch Result:", result);
       if (onRefresh) {
@@ -301,12 +312,14 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
     }
   };
 
-  // Refresh both location and data
   const handleFullRefresh = async () => {
     console.log("===== FULL REFRESH STARTED =====");
     setIsRefreshing(true);
 
     try {
+      // Cache'i reset et
+      resetCache();
+
       // Get fresh location
       const { status } = await Location.requestForegroundPermissionsAsync();
       console.log("Location permission status:", status);

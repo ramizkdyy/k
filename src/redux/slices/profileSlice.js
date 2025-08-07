@@ -267,6 +267,61 @@ const profileSlice = createSlice({
       }
     );
 
+    builder.addMatcher(
+      apiSlice.endpoints.profileAction.matchFulfilled,
+      (state, { payload, meta }) => {
+        state.profileActionLoading = false;
+        state.profileActionError = null;
+
+        if (payload && payload.isSuccess) {
+          const actionData = meta.arg;
+
+          console.log("Profile action başarılı:", {
+            action: actionData.profileAction,
+            senderUserId: actionData.SenderUserId,
+            receiverUserId: actionData.ReceiverUserId,
+            ratingValue: actionData.RatingValue,
+            message: actionData.Message,
+            result: payload.result
+          });
+
+          // Rating işlemi ise profil rating'ini güncelle
+          if (actionData.profileAction === 2 && payload.result?.newRating) {
+            // Current landlord profile güncelle
+            if (state.currentLandlordProfile &&
+              state.currentLandlordProfile.userId === actionData.ReceiverUserId) {
+              state.currentLandlordProfile.profileRating = payload.result.newRating;
+              if (payload.result.ratingCount) {
+                state.currentLandlordProfile.ratingCount = payload.result.ratingCount;
+              }
+            }
+
+            // Current tenant profile güncelle  
+            if (state.currentTenantProfile &&
+              state.currentTenantProfile.userId === actionData.ReceiverUserId) {
+              state.currentTenantProfile.profileRating = payload.result.newRating;
+              if (payload.result.ratingCount) {
+                state.currentTenantProfile.ratingCount = payload.result.ratingCount;
+              }
+            }
+          }
+
+          // YENİ: Favorite işlemleri için handler
+          if (actionData.profileAction === 0) { // AddFavorite
+            console.log("✅ Kullanıcı favorilere eklendi");
+            // Favorilere ekleme işlemi başarılı
+            // İsteğe bağlı olarak favoriler listesini güncelleyebiliriz
+          }
+
+          if (actionData.profileAction === 1) { // RemoveFavorite  
+            console.log("✅ Kullanıcı favorilerden çıkarıldı");
+            // Favorilerden çıkarma işlemi başarılı
+            // İsteğe bağlı olarak favoriler listesini güncelleyebiliriz
+          }
+        }
+      }
+    );
+
     // Handle creating a landlord profile
     builder.addMatcher(
       apiSlice.endpoints.createLandlordProfile.matchFulfilled,
