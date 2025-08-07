@@ -178,14 +178,16 @@ const PostsScreen = ({ navigation }) => {
         // Sonraki sayfalar için - DUPLICATE KONTROLÜ EKLENDİ
         setAllPostsData((prevData) => {
           const newData = paginatedPostsResponse?.data || [];
-          const existingPostIds = new Set(prevData.map(item => item.postId));
+          const existingPostIds = new Set(prevData.map((item) => item.postId));
 
           // Sadece daha önce eklenmemiş postları ekle
-          const uniqueNewData = newData.filter(item =>
-            item && item.postId && !existingPostIds.has(item.postId)
+          const uniqueNewData = newData.filter(
+            (item) => item && item.postId && !existingPostIds.has(item.postId)
           );
 
-          console.log(`Adding ${uniqueNewData.length} new unique posts out of ${newData.length} total`);
+          console.log(
+            `Adding ${uniqueNewData.length} new unique posts out of ${newData.length} total`
+          );
 
           return [...prevData, ...uniqueNewData];
         });
@@ -362,11 +364,13 @@ const PostsScreen = ({ navigation }) => {
     Logger.event("edit_post", { postId });
 
     // İlgili post verisini bulun
-    const postToEdit = landlordListingsData?.result?.find(post => post.postId === postId);
+    const postToEdit = landlordListingsData?.result?.find(
+      (post) => post.postId === postId
+    );
 
     if (postToEdit) {
       navigation.navigate("EditPost", {
-        propertyData: postToEdit  // ✅ Tüm post verisini gönderin
+        propertyData: postToEdit, // ✅ Tüm post verisini gönderin
       });
     } else {
       console.error("Post data not found for editing:", postId);
@@ -399,7 +403,7 @@ const PostsScreen = ({ navigation }) => {
     const uniquePosts = [];
     const seenPostIds = new Set();
 
-    filteredPosts.forEach(post => {
+    filteredPosts.forEach((post) => {
       if (post && post.postId && !seenPostIds.has(post.postId)) {
         seenPostIds.add(post.postId);
         uniquePosts.push(post);
@@ -559,8 +563,8 @@ const PostsScreen = ({ navigation }) => {
                   {item.status === 0
                     ? "Aktif"
                     : item.status === 1
-                      ? "Kiralandı"
-                      : "Kapalı"}
+                    ? "Kiralandı"
+                    : "Kapalı"}
                 </Text>
               </View>
             </BlurView>
@@ -644,9 +648,9 @@ const PostsScreen = ({ navigation }) => {
               <Text
                 style={{
                   fontSize: 18,
-                  fontWeight: 'bold',
-                  color: '#111827',
-                  lineHeight: 24
+                  fontWeight: "bold",
+                  color: "#111827",
+                  lineHeight: 24,
                 }}
                 numberOfLines={2}
                 ellipsizeMode="tail"
@@ -656,7 +660,7 @@ const PostsScreen = ({ navigation }) => {
 
               {/* Location */}
               <View className="mt-2 mb-3">
-                <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                <Text style={{ fontSize: 12, color: "#6B7280" }}>
                   {[item.il, item.ilce, item.mahalle]
                     .filter(Boolean)
                     .join(", ") || "Konum belirtilmemiş"}
@@ -665,13 +669,13 @@ const PostsScreen = ({ navigation }) => {
 
               {/* Price - Sadeleştirildi */}
               <View className="mb-2">
-                <Text style={{ fontSize: 14, color: '#6B7280' }}>
+                <Text style={{ fontSize: 14, color: "#6B7280" }}>
                   <Text
                     style={{
                       fontSize: 18,
-                      fontWeight: '600',
-                      color: '#111827',
-                      textDecorationLine: 'underline'
+                      fontWeight: "600",
+                      color: "#111827",
+                      textDecorationLine: "underline",
                     }}
                   >
                     {item.kiraFiyati
@@ -690,8 +694,8 @@ const PostsScreen = ({ navigation }) => {
               ellipsizeMode="tail"
               style={{
                 fontSize: 14,
-                color: '#6B7280',
-                lineHeight: 20
+                color: "#6B7280",
+                lineHeight: 20,
               }}
             >
               {item.postDescription || "Açıklama yok"}
@@ -743,7 +747,8 @@ const PostsScreen = ({ navigation }) => {
         </Text>
         {userRole === "EVSAHIBI" && (
           <TouchableOpacity
-            className="bg-gray-900 px-6 py-2 rounded-full"
+            style={{ marginTop: 10 }}
+            className="bg-gray-900 px-6 py-3 rounded-full "
             onPress={handleCreatePostNavigation}
           >
             <Text className="text-white font-semibold">Yeni ilan oluştur</Text>
@@ -782,11 +787,12 @@ const PostsScreen = ({ navigation }) => {
 
         <TouchableOpacity
           style={{ boxShadow: "0px 0px 12px #00000014" }}
-          className={`p-3 rounded-full ${isFilterVisible ||
+          className={`p-3 rounded-full ${
+            isFilterVisible ||
             Object.values(filters).some((val) => val !== null)
-            ? "bg-gray-700"
-            : "bg-white"
-            }`}
+              ? "bg-gray-700"
+              : "bg-white"
+          }`}
           onPress={() => {
             Logger.event("toggle_filter_panel", { show: !isFilterVisible });
             setIsFilterVisible(!isFilterVisible);
@@ -797,7 +803,7 @@ const PostsScreen = ({ navigation }) => {
             size={18}
             color={
               isFilterVisible ||
-                Object.values(filters).some((val) => val !== null)
+              Object.values(filters).some((val) => val !== null)
                 ? "lightgray"
                 : "#000"
             }
@@ -839,8 +845,8 @@ const PostsScreen = ({ navigation }) => {
               {filters.status === 0
                 ? "Aktif"
                 : filters.status === 1
-                  ? "Kiralandı"
-                  : "Kapalı"}
+                ? "Kiralandı"
+                : "Kapalı"}
             </Text>
             <TouchableOpacity
               onPress={() => {
@@ -954,8 +960,9 @@ const PostsScreen = ({ navigation }) => {
             // Prevent text disappearing issues
             getItemLayout={undefined} // getItemLayout kaldırıldı
             // Improve stability
-            extraData={`${searchQuery}_${JSON.stringify(filters)}_${allPostsData.length
-              }`}
+            extraData={`${searchQuery}_${JSON.stringify(filters)}_${
+              allPostsData.length
+            }`}
           />
         )}
       </View>

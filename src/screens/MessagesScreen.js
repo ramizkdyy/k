@@ -222,6 +222,7 @@ const MessagesScreen = ({ navigation }) => {
           navigation.navigate("ChatDetail", {
             partnerId: partnerId,
             partnerName: partnerName,
+            partner: partner,
           });
         }}
       >

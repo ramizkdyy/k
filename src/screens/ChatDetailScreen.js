@@ -1,4 +1,4 @@
-// screens/ChatDetailScreen.js - With BlurView instead of SafeAreaView
+// screens/ChatDetailScreen.js - Fixed pagination with proper hasNextPage handling
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
@@ -30,6 +30,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 import {
   useGetChatHistoryQuery,
+  useLazyGetChatHistoryQuery,
   useSendMessageMutation,
   chatApiHelpers,
 } from "../redux/api/chatApiSlice";
@@ -42,48 +43,40 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
-// ✅ React Native Keyboard Controller imports
-import {
-  KeyboardAvoidingView,
-  KeyboardAwareScrollView,
-  useKeyboardAnimation,
-  useReanimatedKeyboardAnimation,
-  KeyboardStickyView,
-} from "react-native-keyboard-controller";
-import Reanimated, {
-  useAnimatedStyle,
-  useDerivedValue,
-  interpolate,
-} from "react-native-reanimated";
+import { KeyboardStickyView } from "react-native-keyboard-controller";
+import Animated from "react-native-reanimated";
 import { faPlus } from "@fortawesome/pro-regular-svg-icons";
 
 const ChatDetailScreen = ({ navigation, route }) => {
-  const { partnerId, partnerName } = route.params || {};
+  const { partnerId, partnerName, partner } = route.params || {};
+
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [messages, setMessages] = useState([]); // Local state for combined messages
+  const [messages, setMessages] = useState([]);
   const [hasLoadedInitialMessages, setHasLoadedInitialMessages] =
     useState(false);
+
+  // ✅ Enhanced pagination state with better control
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [hasMoreMessages, setHasMoreMessages] = useState(true); // ✅ Backend'den gelecek
-  const [shouldScrollToEnd, setShouldScrollToEnd] = useState(false);
-  const [loadedPages, setLoadedPages] = useState(new Set([1])); // ✅ Yüklenen sayfaları takip et
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [loadedPages, setLoadedPages] = useState(new Set());
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isBackgroundLoading, setIsBackgroundLoading] = useState(false);
+  const [backgroundLoadedUntilPage, setBackgroundLoadedUntilPage] = useState(2);
+  const [paginationComplete, setPaginationComplete] = useState(false); // ✅ New flag
 
   const flatListRef = useRef();
   const typingTimeoutRef = useRef();
   const textInputRef = useRef();
+  const backgroundLoadingTimeoutRef = useRef();
   const headerHeight = Platform.OS === "ios" ? useHeaderHeight() : 0;
 
-  // ✅ SafeArea insets for manual safe area handling
   const insets = useSafeAreaInsets();
 
   const { user } = useSelector((state) => state.auth);
   const currentUserId = user?.id || user?.userId;
   const dispatch = useDispatch();
-
-  // ✅ Keyboard Controller hooks
-  const { height: keyboardHeight, progress } = useReanimatedKeyboardAnimation();
 
   const {
     isConnected,
@@ -99,7 +92,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
     reconnect,
   } = useSignalR();
 
-  // ✅ FIXED: İlk sayfayı yükle (Page 1)
+  // ✅ First 2 pages queries
   const {
     data: firstPageResponse,
     isLoading: isLoadingFirstPage,
@@ -115,7 +108,23 @@ const ChatDetailScreen = ({ navigation, route }) => {
     }
   );
 
-  // ✅ FIXED: Dinamik sayfa yükleme - Sadece gerekli sayfayı yükle
+  const {
+    data: secondPageResponse,
+    isLoading: isLoadingSecondPage,
+    error: secondPageError,
+  } = useGetChatHistoryQuery(
+    { partnerId, page: 2 },
+    {
+      skip: !partnerId,
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
+    }
+  );
+
+  console.log("firstPageResponse:", firstPageResponse);
+
+  // ✅ Dynamic page loading query (6+ pages)
   const {
     data: currentPageResponse,
     isLoading: isLoadingCurrentPage,
@@ -124,9 +133,15 @@ const ChatDetailScreen = ({ navigation, route }) => {
   } = useGetChatHistoryQuery(
     { partnerId, page: currentPage },
     {
-      skip: !partnerId || currentPage === 1 || loadedPages.has(currentPage),
+      skip: !partnerId || currentPage <= 5 || loadedPages.has(currentPage),
     }
   );
+
+  // ✅ Lazy query for background preloading (3-5 pages)
+  const [
+    triggerBackgroundLoad,
+    { data: backgroundPageResponse, isLoading: isLoadingBackgroundPage },
+  ] = useLazyGetChatHistoryQuery();
 
   const [sendMessage, { isLoading: isSending }] = useSendMessageMutation();
 
@@ -134,53 +149,270 @@ const ChatDetailScreen = ({ navigation, route }) => {
   const isPartnerOnline = onlineUsers.has(partnerId);
   const isPartnerTyping = typingUsers.has(partnerId);
 
-  // ✅ FIXED: Backend response structure'ını parse et
+  const scrollToBottom = useCallback((animated = true) => {
+    if (!flatListRef.current) return;
+
+    requestAnimationFrame(() => {
+      try {
+        flatListRef.current?.scrollToEnd({
+          animated,
+          // Add these for better performance
+          velocity: animated ? undefined : 1000,
+        });
+      } catch (error) {
+        console.log("Scroll error:", error);
+        // Fallback: try scrolling to index 0 (newest message in reversed array)
+        try {
+          flatListRef.current?.scrollToIndex({
+            index: 0,
+            animated,
+            viewPosition: 1,
+          });
+        } catch (indexError) {
+          console.log("Index scroll error:", indexError);
+        }
+      }
+    });
+  }, []);
+
+  // ✅ Enhanced scroll to bottom with delay for better UX
+  const scrollToBottomWithDelay = useCallback(
+    (delay = 100, animated = true) => {
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          scrollToBottom(animated);
+        }, delay);
+      });
+    },
+    [scrollToBottom]
+  );
+
+  // ✅ Enhanced parseBackendResponse with better hasNextPage handling
   const parseBackendResponse = (response) => {
     if (!response) return { messages: [], hasNextPage: false, currentPage: 1 };
 
-    // Eğer direkt array geliyorsa (eski format)
     if (Array.isArray(response)) {
       return {
         messages: response,
-        hasNextPage: response.length === 20, // 20 item varsa muhtemelen daha var
+        hasNextPage: response.length === 20, // Only assume more if we got full page
         currentPage: 1,
       };
     }
 
-    // Yeni backend format: { currentPage, hasNextPage, messages, pageSize }
+    const hasNextPage = Boolean(response.hasNextPage);
+    const messages = response.messages || [];
+
+    console.log(
+      `📊 Parsing response - Page ${response.currentPage || "unknown"}: ${
+        messages.length
+      } messages, hasNextPage: ${hasNextPage}`
+    );
+
     return {
-      messages: response.messages || [],
-      hasNextPage: response.hasNextPage || false,
+      messages,
+      hasNextPage,
       currentPage: response.currentPage || 1,
       pageSize: response.pageSize || 20,
     };
   };
 
-  // ✅ İlk sayfa yüklendiğinde mesajları set et
+  // ✅ Enhanced background preloading with better completion detection
+  const startBackgroundPreloading = useCallback(async () => {
+    if (
+      !hasMoreMessages ||
+      isBackgroundLoading ||
+      backgroundLoadedUntilPage >= 5 ||
+      paginationComplete
+    ) {
+      console.log("⏭️ Skipping background preloading:", {
+        hasMoreMessages,
+        isBackgroundLoading,
+        backgroundLoadedUntilPage,
+        paginationComplete,
+      });
+      return;
+    }
+
+    console.log(
+      `🔄 Starting background preloading from page ${
+        backgroundLoadedUntilPage + 1
+      } to 5`
+    );
+    setIsBackgroundLoading(true);
+
+    // Load pages 3, 4, 5 one by one with delays
+    for (let page = backgroundLoadedUntilPage + 1; page <= 5; page++) {
+      if (loadedPages.has(page)) {
+        console.log(`⏭️ Page ${page} already loaded, skipping`);
+        continue;
+      }
+
+      try {
+        console.log(`📦 Background loading page ${page}...`);
+
+        await new Promise((resolve) => {
+          backgroundLoadingTimeoutRef.current = setTimeout(
+            resolve,
+            page === 3 ? 100 : 1500
+          );
+        });
+
+        const result = await triggerBackgroundLoad({
+          partnerId,
+          page,
+        }).unwrap();
+
+        const { messages: pageMessages, hasNextPage } =
+          parseBackendResponse(result);
+
+        console.log(
+          `✅ Background loaded page ${page}: ${pageMessages.length} messages, hasNext: ${hasNextPage}`
+        );
+
+        // Add messages to state
+        setMessages((prevMessages) => {
+          const combinedMessages = [...prevMessages, ...pageMessages];
+          const uniqueMessages = combinedMessages.filter(
+            (message, index, self) =>
+              index ===
+              self.findIndex(
+                (m) =>
+                  m.id === message.id ||
+                  (m.content === message.content &&
+                    m.senderUserId === message.senderUserId &&
+                    Math.abs(new Date(m.sentAt) - new Date(message.sentAt)) <
+                      2000)
+              )
+          );
+
+          console.log(
+            `📦 Background merge page ${page}: ${combinedMessages.length} -> ${uniqueMessages.length}`
+          );
+          return uniqueMessages;
+        });
+
+        // Mark page as loaded
+        setLoadedPages((prev) => new Set([...prev, page]));
+        setBackgroundLoadedUntilPage(page);
+
+        // ✅ Check if pagination should be complete
+        if (!hasNextPage || pageMessages.length === 0) {
+          setHasMoreMessages(false);
+          setPaginationComplete(true);
+          break;
+        } else if (page === 5) {
+          // Continue with regular pagination for 6+ pages
+          setHasMoreMessages(hasNextPage);
+          break;
+        }
+      } catch (error) {
+        console.error(`❌ Background loading failed for page ${page}:`, error);
+        break;
+      }
+    }
+
+    setIsBackgroundLoading(false);
+  }, [
+    hasMoreMessages,
+    isBackgroundLoading,
+    backgroundLoadedUntilPage,
+    loadedPages,
+    partnerId,
+    triggerBackgroundLoad,
+    paginationComplete,
+  ]);
+
+  // ✅ Enhanced initial loading with proper completion detection
   useEffect(() => {
-    if (firstPageResponse && !hasLoadedInitialMessages) {
+    if (firstPageResponse && secondPageResponse && !hasLoadedInitialMessages) {
+      const { messages: firstPageMessages, hasNextPage: firstHasNext } =
+        parseBackendResponse(firstPageResponse);
+      const { messages: secondPageMessages, hasNextPage: secondHasNext } =
+        parseBackendResponse(secondPageResponse);
+
+      console.log("📖 Setting initial messages from pages 1 & 2:", {
+        page1Count: firstPageMessages.length,
+        page2Count: secondPageMessages.length,
+        page1HasNext: firstHasNext,
+        page2HasNext: secondHasNext,
+      });
+
+      const combinedMessages = [...firstPageMessages, ...secondPageMessages];
+      const uniqueMessages = combinedMessages.filter(
+        (message, index, self) =>
+          index ===
+          self.findIndex(
+            (m) =>
+              m.id === message.id ||
+              (m.content === message.content &&
+                m.senderUserId === message.senderUserId &&
+                Math.abs(new Date(m.sentAt) - new Date(message.sentAt)) < 2000)
+          )
+      );
+
+      setMessages(uniqueMessages);
+      setHasLoadedInitialMessages(true);
+      setLoadedPages(new Set([1, 2]));
+      setCurrentPage(6);
+
+      // ✅ Check if we should stop pagination early
+      if (!secondHasNext || secondPageMessages.length === 0) {
+        console.log("🏁 Pagination complete after page 2");
+        setHasMoreMessages(false);
+        setPaginationComplete(true);
+      } else {
+        setHasMoreMessages(secondHasNext);
+      }
+
+      setIsInitialLoading(false);
+
+      // ✅ Only start background preloading if there are more messages
+      if (secondHasNext && secondPageMessages.length > 0) {
+        setTimeout(() => {
+          startBackgroundPreloading();
+        }, 500);
+        console.log(
+          "📖 Initial load complete, starting background preloading..."
+        );
+      } else {
+        console.log("📖 Initial load complete, no more messages to load");
+      }
+    } else if (
+      firstPageResponse &&
+      !secondPageResponse &&
+      !hasLoadedInitialMessages
+    ) {
       const { messages: firstPageMessages, hasNextPage } =
         parseBackendResponse(firstPageResponse);
 
-      console.log("📖 Setting initial messages from page 1:", {
-        messageCount: firstPageMessages.length,
-        hasNextPage,
-      });
-
       setMessages(firstPageMessages);
       setHasLoadedInitialMessages(true);
-      setShouldScrollToEnd(true);
-      setHasMoreMessages(hasNextPage); // ✅ Backend'den gelen hasNextPage kullan
+      setLoadedPages(new Set([1]));
+      setCurrentPage(2);
 
-      console.log(`📖 Initial load complete. HasMore: ${hasNextPage}`);
+      // ✅ Check if pagination is complete
+      if (!hasNextPage || firstPageMessages.length === 0) {
+        setHasMoreMessages(false);
+        setPaginationComplete(true);
+        console.log("🏁 Pagination complete after page 1");
+      } else {
+        setHasMoreMessages(hasNextPage);
+      }
+
+      setIsInitialLoading(false);
     }
-  }, [firstPageResponse, hasLoadedInitialMessages]);
+  }, [
+    firstPageResponse,
+    secondPageResponse,
+    hasLoadedInitialMessages,
+    startBackgroundPreloading,
+  ]);
 
-  // ✅ FIXED: Yeni sayfa yüklendiğinde mesajları birleştir
+  // ✅ Handle dynamic page loading (6+ pages) with completion detection
   useEffect(() => {
     if (
       currentPageResponse &&
-      currentPage > 1 &&
+      currentPage > 5 &&
       !loadedPages.has(currentPage)
     ) {
       const { messages: currentPageMessages, hasNextPage } =
@@ -191,11 +423,114 @@ const ChatDetailScreen = ({ navigation, route }) => {
         hasNextPage,
       });
 
-      setMessages((prevMessages) => {
-        // Yeni sayfadaki mesajları eskilerle birleştir (eski mesajlar sonda)
-        const combinedMessages = [...prevMessages, ...currentPageMessages];
+      // ✅ Check if pagination should be complete
+      if (!hasNextPage || currentPageMessages.length === 0) {
+        console.log(`🏁 Pagination complete at page ${currentPage}`);
+        setHasMoreMessages(false);
+        setPaginationComplete(true);
+      }
 
-        // Duplicate kontrolü - ID ve timestamp'e göre
+      setMessages((prevMessages) => {
+        const combinedMessages = [...prevMessages, ...currentPageMessages];
+        const uniqueMessages = combinedMessages.filter(
+          (message, index, self) =>
+            index ===
+            self.findIndex(
+              (m) =>
+                m.id === message.id ||
+                (m.content === message.content &&
+                  m.senderUserId === message.senderUserId &&
+                  Math.abs(new Date(m.sentAt) - new Date(message.sentAt)) <
+                    2000)
+            )
+        );
+
+        return uniqueMessages;
+      });
+
+      setLoadedPages((prev) => new Set([...prev, currentPage]));
+      setHasMoreMessages(hasNextPage && currentPageMessages.length > 0);
+      setIsLoadingMore(false);
+
+      console.log(
+        `📖 Page ${currentPage} loaded. HasMore: ${hasNextPage}, Complete: ${
+          !hasNextPage || currentPageMessages.length === 0
+        }`
+      );
+    }
+  }, [currentPageResponse, currentPage, loadedPages]);
+
+  // ✅ FIXED: Load more messages with proper completion checking
+  const handleLoadMore = useCallback(async () => {
+    // ✅ Enhanced conditions to prevent unnecessary requests
+    if (
+      isLoadingMore ||
+      !hasMoreMessages ||
+      paginationComplete ||
+      isLoadingCurrentPage ||
+      currentPage <= 5 ||
+      isBackgroundLoading
+    ) {
+      console.log("⚠️ Skipping load more:", {
+        isLoadingMore,
+        hasMoreMessages,
+        paginationComplete,
+        isLoadingCurrentPage,
+        currentPage,
+        isBackgroundLoading,
+      });
+      return;
+    }
+
+    // ✅ Load 5 pages at once for better UX
+    const pagesToLoad = Math.min(5, Math.ceil(hasMoreMessages ? 5 : 1));
+    const startPage = currentPage;
+    const endPage = startPage + pagesToLoad - 1;
+
+    console.log(`📖 Loading pages ${startPage} to ${endPage}...`);
+    setIsLoadingMore(true);
+
+    try {
+      // Load multiple pages in parallel
+      const pagePromises = [];
+      for (let page = startPage; page <= endPage; page++) {
+        if (!loadedPages.has(page)) {
+          pagePromises.push(
+            triggerBackgroundLoad({ partnerId, page }).unwrap()
+          );
+        }
+      }
+
+      const results = await Promise.all(pagePromises);
+      let allMessages = [];
+      let finalHasMore = false;
+      let shouldComplete = false;
+
+      results.forEach((result, index) => {
+        const actualPage = startPage + index;
+        const { messages: pageMessages, hasNextPage } =
+          parseBackendResponse(result);
+
+        allMessages = [...allMessages, ...pageMessages];
+        finalHasMore = hasNextPage;
+
+        // ✅ Check if we should complete pagination
+        if (!hasNextPage || pageMessages.length === 0) {
+          shouldComplete = true;
+          console.log(`🏁 Pagination should complete at page ${actualPage}`);
+        }
+
+        // Mark pages as loaded
+        setLoadedPages((prev) => new Set([...prev, actualPage]));
+
+        console.log(
+          `📖 Batch loaded page ${actualPage}: ${pageMessages.length} messages`
+        );
+      });
+
+      // Add all messages at once
+      setMessages((prevMessages) => {
+        const combinedMessages = [...prevMessages, ...allMessages];
         const uniqueMessages = combinedMessages.filter(
           (message, index, self) =>
             index ===
@@ -210,80 +545,71 @@ const ChatDetailScreen = ({ navigation, route }) => {
         );
 
         console.log(
-          `📖 Combined messages: ${combinedMessages.length} -> ${
-            uniqueMessages.length
-          } (removed ${
-            combinedMessages.length - uniqueMessages.length
-          } duplicates)`
+          `📖 Batch merge: ${combinedMessages.length} -> ${uniqueMessages.length}`
         );
         return uniqueMessages;
       });
 
-      // Bu sayfayı yüklü olarak işaretle
-      setLoadedPages((prev) => new Set([...prev, currentPage]));
+      setCurrentPage(endPage + 1);
 
-      // ✅ Backend'den gelen hasNextPage bilgisini kullan
-      setHasMoreMessages(hasNextPage);
-      console.log(`📖 Page ${currentPage} loaded. HasMore: ${hasNextPage}`);
+      // ✅ Set completion state properly
+      if (shouldComplete || !finalHasMore || allMessages.length === 0) {
+        setHasMoreMessages(false);
+        setPaginationComplete(true);
+        console.log("🏁 Pagination marked as complete");
+      } else {
+        setHasMoreMessages(finalHasMore);
+      }
 
+      console.log(
+        `📖 Batch load complete. Next page: ${
+          endPage + 1
+        }, HasMore: ${finalHasMore}, Complete: ${shouldComplete}`
+      );
+    } catch (error) {
+      console.error("❌ Failed to load more pages:", error);
+      Alert.alert("Error", "Failed to load more messages. Please try again.");
+    } finally {
       setIsLoadingMore(false);
     }
-  }, [currentPageResponse, currentPage, loadedPages]);
-
-  // ✅ Auto scroll to bottom after messages are loaded
-  useEffect(() => {
-    if (shouldScrollToEnd && messages.length > 0 && flatListRef.current) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: false });
-        setShouldScrollToEnd(false);
-      }, 100);
-    }
-  }, [shouldScrollToEnd, messages]);
-
-  // ✅ FIXED: Load more messages - Backend hasNextPage'e göre kontrol et
-  const handleLoadMore = useCallback(async () => {
-    if (isLoadingMore || !hasMoreMessages || isLoadingCurrentPage) {
-      console.log("⚠️ Skipping load more:", {
-        isLoadingMore,
-        hasMoreMessages,
-        isLoadingCurrentPage,
-      });
-      return;
-    }
-
-    const nextPage = currentPage + 1;
-
-    // Eğer bu sayfa zaten yüklenmiş ise atla
-    if (loadedPages.has(nextPage)) {
-      console.log(`⚠️ Page ${nextPage} already loaded, skipping`);
-      return;
-    }
-
-    console.log(`📖 Loading page ${nextPage}... (hasMore: ${hasMoreMessages})`);
-    setIsLoadingMore(true);
-    setCurrentPage(nextPage);
   }, [
     isLoadingMore,
     hasMoreMessages,
+    paginationComplete,
     isLoadingCurrentPage,
     currentPage,
     loadedPages,
+    isBackgroundLoading,
+    partnerId,
+    triggerBackgroundLoad,
   ]);
 
-  // Handle scroll event to detect when user reaches top
+  // ✅ Enhanced scroll handler with better completion checking
   const handleScroll = useCallback(
     (event) => {
       const { contentOffset, contentSize, layoutMeasurement } =
         event.nativeEvent;
 
-      // Normal FlatList - check if user scrolled to top
       const isAtTop = contentOffset.y <= 50;
 
-      if (isAtTop && hasMoreMessages && !isLoadingMore) {
+      if (
+        isAtTop &&
+        hasMoreMessages &&
+        !paginationComplete &&
+        !isLoadingMore &&
+        !isBackgroundLoading
+      ) {
+        console.log("📜 User scrolled to top, triggering load more");
         handleLoadMore();
       }
     },
-    [hasMoreMessages, isLoadingMore, handleLoadMore]
+    [
+      hasMoreMessages,
+      paginationComplete,
+      isLoadingMore,
+      isBackgroundLoading,
+      handleLoadMore,
+    ]
   );
 
   // ✅ Function to sync message to cache
@@ -291,27 +617,58 @@ const ChatDetailScreen = ({ navigation, route }) => {
     (messageData) => {
       console.log("🔄 Syncing message to cache:", messageData);
       chatApiHelpers.addMessageToCache(dispatch, partnerId, messageData);
-
-      // Also update partners list to show latest message
       chatApiHelpers.updatePartnersList(dispatch);
     },
     [dispatch, partnerId]
   );
 
-  // SignalR message listeners
+  // ✅ Cleanup timeouts
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      if (backgroundLoadingTimeoutRef.current) {
+        clearTimeout(backgroundLoadingTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // ✅ Enhanced refresh messages - Reset all pagination state
+  const refreshMessages = useCallback(() => {
+    console.log("🔄 Refreshing messages - resetting all pagination state");
+
+    // Clear all timeouts
+    if (backgroundLoadingTimeoutRef.current) {
+      clearTimeout(backgroundLoadingTimeoutRef.current);
+    }
+
+    setHasLoadedInitialMessages(false);
+    setMessages([]);
+    setCurrentPage(1);
+    setHasMoreMessages(true);
+    setPaginationComplete(false); // ✅ Reset completion flag
+    setIsLoadingMore(false);
+    setLoadedPages(new Set());
+    setIsInitialLoading(true);
+    setIsBackgroundLoading(false);
+    setBackgroundLoadedUntilPage(2);
+
+    refetchFirstPage();
+  }, [refetchFirstPage]);
+
+  // SignalR message listeners (unchanged)
   useEffect(() => {
     if (!connection || !isConnected) return;
 
     console.log("Setting up SignalR listeners for chat:", partnerId);
 
-    // Listen for new messages
     const handleReceiveMessage = (messageData) => {
       console.log(
         "📨 Received new message via SignalR:",
         JSON.stringify(messageData, null, 2)
       );
 
-      // Only add message if it's from our current chat partner OR if it's TO our current partner
       if (
         messageData.SenderUserId === partnerId ||
         messageData.ReceiverUserId === partnerId
@@ -331,13 +688,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
           isRead: messageData.IsRead || messageData.isRead || false,
         };
 
-        console.log(
-          "🔄 Processed message:",
-          JSON.stringify(newMessage, null, 2)
-        );
-
         setMessages((prevMessages) => {
-          // Avoid duplicates
           const exists = prevMessages.some(
             (msg) =>
               msg.id === newMessage.id ||
@@ -349,7 +700,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
           if (!exists) {
             console.log("✅ Adding new message to local state at index 0");
-            // Add new message at the beginning (index 0) since latest messages come first
             return [newMessage, ...prevMessages];
           } else {
             console.log("⚠️ Duplicate message, not adding");
@@ -357,41 +707,25 @@ const ChatDetailScreen = ({ navigation, route }) => {
           return prevMessages;
         });
 
-        // ✅ Sync to cache for MessagesScreen to see
         syncMessageToCache(messageData);
 
-        // ✅ Yeni mesaj geldiğinde scroll et
-        setTimeout(() => {
-          flatListRef.current?.scrollToEnd({ animated: true });
-        }, 100);
-
-        // Mark as read if it's from partner and we're in the chat
         if (messageData.SenderUserId === partnerId && isConnected) {
           setTimeout(() => {
             markMessagesAsRead(partnerId);
           }, 500);
         }
-      } else {
-        console.log("🚫 Message not for current chat:", {
-          messageSender: messageData.SenderUserId,
-          messageReceiver: messageData.ReceiverUserId,
-          currentPartner: partnerId,
-        });
       }
     };
 
-    // Listen for message sent confirmation
     const handleMessageSent = (confirmationData) => {
       console.log(
         "✅ Message sent confirmation:",
         JSON.stringify(confirmationData, null, 2)
       );
 
-      // Update optimistic messages to show as delivered
       setMessages((prevMessages) =>
         prevMessages.map((msg) => {
           if (msg.isOptimistic) {
-            console.log("🔄 Updating optimistic message to delivered");
             const updatedMessage = {
               ...msg,
               isOptimistic: false,
@@ -402,7 +736,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
               id: msg.id.startsWith("temp-") ? `msg-${Date.now()}` : msg.id,
             };
 
-            // ✅ Sync confirmed message to cache
             syncMessageToCache({
               Id: updatedMessage.id,
               SenderUserId: updatedMessage.senderUserId,
@@ -419,7 +752,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
       );
     };
 
-    // Listen for message read status
     const handleMessagesRead = (readData) => {
       console.log("Messages marked as read:", readData);
 
@@ -430,7 +762,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
           )
         );
 
-        // ✅ Update cache for read status
         chatApiHelpers.markCacheMessagesAsRead(
           dispatch,
           partnerId,
@@ -439,19 +770,12 @@ const ChatDetailScreen = ({ navigation, route }) => {
       }
     };
 
-    // Listen for message errors
     const handleMessageError = (errorData) => {
       console.error("❌ Message error:", JSON.stringify(errorData, null, 2));
 
-      // Remove failed optimistic messages
       setMessages((prevMessages) => {
         const filteredMessages = prevMessages.filter(
           (msg) => !msg.isOptimistic
-        );
-        console.log(
-          `🗑️ Removed ${
-            prevMessages.length - filteredMessages.length
-          } optimistic messages due to error`
         );
         return filteredMessages;
       });
@@ -462,13 +786,11 @@ const ChatDetailScreen = ({ navigation, route }) => {
       );
     };
 
-    // Register SignalR listeners
     connection.on("ReceiveMessage", handleReceiveMessage);
     connection.on("MessageSent", handleMessageSent);
     connection.on("MessagesRead", handleMessagesRead);
     connection.on("MessageError", handleMessageError);
 
-    // Cleanup listeners
     return () => {
       connection.off("ReceiveMessage", handleReceiveMessage);
       connection.off("MessageSent", handleMessageSent);
@@ -492,36 +814,37 @@ const ChatDetailScreen = ({ navigation, route }) => {
     }
   }, [partnerId, isConnected, hasLoadedInitialMessages, markMessagesAsRead]);
 
-  // ✅ Update partners list when leaving chat (so MessagesScreen shows latest message)
+  // Update partners list when leaving chat
   useEffect(() => {
     return () => {
-      // When component unmounts, update partners list
       console.log("🔄 Chat screen unmounting, updating partners list");
       chatApiHelpers.updatePartnersList(dispatch);
       chatApiHelpers.updateUnreadCount(dispatch);
     };
   }, [dispatch]);
 
-  // Debug: Messages state changes
+  // ✅ Enhanced debug logging with completion status
   useEffect(() => {
     console.log("📊 Messages state updated:", {
       count: messages.length,
-      latestMessage: messages[0], // Latest message is now at index 0
+      latestMessage: messages[0],
       optimisticCount: messages.filter((m) => m.isOptimistic).length,
       currentPage,
       hasMoreMessages,
+      paginationComplete, // ✅ Added completion status
       loadedPages: Array.from(loadedPages),
+      backgroundLoadedUntilPage,
+      isBackgroundLoading,
     });
-  }, [messages, currentPage, hasMoreMessages, loadedPages]);
-
-  // Cleanup typing timeout
-  useEffect(() => {
-    return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-    };
-  }, []);
+  }, [
+    messages,
+    currentPage,
+    hasMoreMessages,
+    paginationComplete,
+    loadedPages,
+    backgroundLoadedUntilPage,
+    isBackgroundLoading,
+  ]);
 
   // Handle typing indicator
   const handleTypingStart = useCallback(() => {
@@ -530,19 +853,17 @@ const ChatDetailScreen = ({ navigation, route }) => {
       startTyping(partnerId);
     }
 
-    // Clear existing timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    // Set new timeout
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false);
       stopTyping(partnerId);
     }, 1000);
   }, [isTyping, isConnected, partnerId, startTyping, stopTyping]);
 
-  // Send message handler
+  // Send message handler (unchanged)
   const handleSendMessage = async () => {
     if (!message.trim() || !partnerId) {
       console.log("❌ Empty message or no partnerId");
@@ -553,18 +874,15 @@ const ChatDetailScreen = ({ navigation, route }) => {
     console.log("📤 Sending message:", { partnerId, messageText, isConnected });
     setMessage("");
 
-    // Stop typing
     if (isTyping) {
       setIsTyping(false);
       stopTyping(partnerId);
     }
 
-    // Clear typing timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    // Add optimistic message at the beginning (index 0)
     const optimisticMessage = {
       id: `temp-${Date.now()}`,
       senderUserId: currentUserId,
@@ -576,26 +894,22 @@ const ChatDetailScreen = ({ navigation, route }) => {
     };
 
     console.log("🔮 Adding optimistic message at index 0:", optimisticMessage);
+
     setMessages((prevMessages) => {
       const newMessages = [optimisticMessage, ...prevMessages];
-      console.log("🔮 Messages after optimistic add:", newMessages.length);
       return newMessages;
     });
 
-    // ✅ Mesaj gönderildikten sonra scroll et
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    // ✅ AUTO-SCROLL AFTER SENDING MESSAGE
+    scrollToBottomWithDelay(50, true);
 
     try {
-      // SignalR bağlantısı varsa önce onu dene
       if (isConnected) {
         console.log("📡 Sending message via SignalR...");
         await sendSignalRMessage(partnerId, messageText);
         console.log("✅ Message sent via SignalR successfully");
       } else {
         console.log("🌐 SignalR not connected, using REST API...");
-        // SignalR bağlantısı yoksa REST API kullan
         const result = await sendMessage({
           receiverUserId: partnerId,
           content: messageText,
@@ -603,7 +917,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
         console.log("✅ Message sent via REST API:", result);
 
-        // REST API başarılı olursa optimistic mesajı güncelle ve cache'e sync et
         const confirmedMessage = {
           ...optimisticMessage,
           isOptimistic: false,
@@ -616,7 +929,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
           )
         );
 
-        // ✅ Sync to cache
         syncMessageToCache({
           Id: confirmedMessage.id,
           SenderUserId: confirmedMessage.senderUserId,
@@ -629,13 +941,9 @@ const ChatDetailScreen = ({ navigation, route }) => {
     } catch (error) {
       console.error("❌ Failed to send message:", error);
 
-      // Başarısız optimistic mesajı kaldır
       setMessages((prevMessages) => {
         const filteredMessages = prevMessages.filter(
           (msg) => msg.id !== optimisticMessage.id
-        );
-        console.log(
-          `🗑️ Removed optimistic message, remaining: ${filteredMessages.length}`
         );
         return filteredMessages;
       });
@@ -659,29 +967,17 @@ const ChatDetailScreen = ({ navigation, route }) => {
     }
   };
 
-  // ✅ FIXED: Refresh messages manually - Reset pagination state
-  const refreshMessages = useCallback(() => {
-    console.log("🔄 Refreshing messages - resetting pagination state");
-    setHasLoadedInitialMessages(false);
-    setMessages([]);
-    setCurrentPage(1);
-    setHasMoreMessages(true); // ✅ Reset hasMore to true for fresh start
-    setIsLoadingMore(false);
-    setShouldScrollToEnd(true);
-    setLoadedPages(new Set([1])); // ✅ Reset loaded pages
-    refetchFirstPage();
-  }, [refetchFirstPage]);
-
-  // Helper function to check if two dates are the same day
+  // Helper functions (unchanged)
   const isSameDay = (date1, date2) => {
+    const d1 = new Date(date1);
+    const d2 = new Date(date2);
     return (
-      date1.getFullYear() === date2.getFullYear() &&
-      date1.getMonth() === date2.getMonth() &&
-      date1.getDate() === date2.getDate()
+      d1.getFullYear() === d2.getFullYear() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getDate() === d2.getDate()
     );
   };
 
-  // Format timestamp for message separators (shows "Bugün", "Dün", or date)
   const formatSeparatorTimestamp = (timestamp) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -701,7 +997,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
     } else if (diffInDays === 1) {
       return "Dün";
     } else {
-      // Turkish months
       const months = [
         "Ocak",
         "Şubat",
@@ -716,12 +1011,10 @@ const ChatDetailScreen = ({ navigation, route }) => {
         "Kasım",
         "Aralık",
       ];
-
       return `${date.getDate()} ${months[date.getMonth()]}`;
     }
   };
 
-  // Format timestamp for individual messages (shows only hour:minute)
   const formatMessageTimestamp = (timestamp) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString("tr-TR", {
@@ -731,29 +1024,30 @@ const ChatDetailScreen = ({ navigation, route }) => {
     });
   };
 
-  // Updated renderMessage function with new timestamp formatting
+  // ✅ Updated renderMessage function with proper daily grouping
   const renderMessage = ({ item, index }) => {
     const isSent = item.senderUserId === currentUserId;
-    const isLatestMessage = index === messages.length - 1;
 
-    // For normal list order
-    const prevMessage = index > 0 ? messages[index - 1] : null;
+    // For reversed array (oldest at top, newest at bottom)
+    const reversedMessages = messages.slice().reverse();
+    const prevMessage = index > 0 ? reversedMessages[index - 1] : null;
     const nextMessage =
-      index < messages.length - 1 ? messages[index + 1] : null;
+      index < reversedMessages.length - 1 ? reversedMessages[index + 1] : null;
+
+    // ✅ Show date separator only when day changes
+    const showDateSeparator =
+      !prevMessage || !isSameDay(item.sentAt, prevMessage.sentAt);
 
     const showAvatar =
       !isSent &&
       (!nextMessage || nextMessage.senderUserId !== item.senderUserId);
 
-    const showTimestamp =
-      !prevMessage ||
-      new Date(item.sentAt) - new Date(prevMessage.sentAt) > 5 * 60 * 1000; // 5 minutes
-
     return (
       <View style={{ marginBottom: 1 }}>
-        {showTimestamp && (
-          <View className="items-center my-2">
-            <Text className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+        {/* ✅ Date separator - shows only when day changes */}
+        {showDateSeparator && (
+          <View className="items-center my-4">
+            <Text className="text-xs text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
               {formatSeparatorTimestamp(item.sentAt)}
             </Text>
           </View>
@@ -816,12 +1110,17 @@ const ChatDetailScreen = ({ navigation, route }) => {
     );
   };
 
-  // Loading state
-  if (isLoadingFirstPage && !hasLoadedInitialMessages) {
+  // ✅ Initial loading state (while first 2 pages are loading)
+  if (isInitialLoading || (isLoadingFirstPage && !hasLoadedInitialMessages)) {
     return (
       <View className="flex-1 bg-white justify-center items-center">
         <ActivityIndicator size="large" color="#0ea5e9" />
         <Text className="mt-2 text-gray-600">Loading messages...</Text>
+        {isBackgroundLoading && (
+          <Text className="mt-1 text-gray-500 text-sm">
+            Preparing more messages in background...
+          </Text>
+        )}
       </View>
     );
   }
@@ -886,86 +1185,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
     <View style={{ flex: 1 }}>
       <StatusBar style="dark" backgroundColor="transparent" translucent />
 
-      {/* ✅ Messages - Normal FlatList without keyboard animation */}
-      <FlatList
-        ref={flatListRef}
-        data={messages.slice().reverse()} // Reverse to show oldest at top, newest at bottom
-        renderItem={({ item, index }) =>
-          renderMessage({
-            item,
-            index: messages.length - 1 - index, // Adjust index for reversed array
-          })
-        }
-        keyExtractor={(item) =>
-          item.id?.toString() || `${item.senderUserId}-${item.sentAt}`
-        }
-        className="flex-1 px-4"
-        contentContainerStyle={{
-          paddingTop: Platform.OS === "ios" ? insets.top + 80 : insets.top + 60, // Manual safe area + header height
-          paddingBottom: 140, // ✅ Fixed bottom padding for input area
-        }}
-        keyboardDismissMode="interactive"
-        showsVerticalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={100}
-        maintainVisibleContentPosition={{
-          minIndexForVisible: 0,
-        }}
-        ListHeaderComponent={() =>
-          isLoadingMore && hasMoreMessages ? (
-            <View className="py-4 items-center">
-              <ActivityIndicator size="small" color="#0ea5e9" />
-              <Text className="text-xs text-gray-500 mt-1">
-                Loading page {currentPage}...
-              </Text>
-            </View>
-          ) : !hasMoreMessages && messages.length > 0 ? (
-            <View className="py-4 items-center">
-              <Text className="text-xs text-gray-400">
-                🔚 Bu sohbetin başlangıcı
-              </Text>
-            </View>
-          ) : null
-        }
-        ListEmptyComponent={() => (
-          <View className="flex-1 justify-center items-center py-20">
-            <Text className="text-gray-500 text-base text-center">
-              No messages yet. Start the conversation!
-            </Text>
-          </View>
-        )}
-      />
-
-      {/* ✅ Connection Status Indicator */}
-      {!isConnected && (
-        <KeyboardStickyView offset={{ closed: 120, opened: 0 }}>
-          <View className="bg-yellow-100 px-4 py-2 border-t border-yellow-200">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-yellow-600 text-sm">
-                {isConnecting
-                  ? "Connecting to chat..."
-                  : connectionError
-                  ? "Chat disconnected"
-                  : "Reconnecting to chat..."}
-              </Text>
-              {!isConnecting && (
-                <TouchableOpacity
-                  onPress={reconnect}
-                  className="bg-yellow-500 px-3 py-1 rounded"
-                >
-                  <Text className="text-white text-xs font-medium">Retry</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-            {connectionError && (
-              <Text className="text-yellow-500 text-xs mt-1">
-                Using fallback messaging
-              </Text>
-            )}
-          </View>
-        </KeyboardStickyView>
-      )}
-
       {/* ✅ BlurView Header with manual safe area */}
       <BlurView
         intensity={70}
@@ -975,7 +1194,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
           top: 0,
           left: 0,
           right: 0,
-          zIndex: 50,
+          zIndex: 150,
           paddingTop: insets.top,
         }}
       >
@@ -989,14 +1208,31 @@ const ChatDetailScreen = ({ navigation, route }) => {
             </TouchableOpacity>
 
             <TouchableOpacity className="flex-row items-center flex-1">
-              <Image
-                source={{
-                  uri: `https://ui-avatars.com/api/?name=${
-                    partnerName || partnerId
-                  }&background=0ea5e9&color=fff&size=40`,
+              <View
+                style={{
+                  boxShadow: "0px 0px 12px #00000014",
+                  width: 48,
+                  height: 48,
                 }}
-                className="w-12 h-12 rounded-full mr-3"
-              />
+                className="rounded-full bg-white justify-center items-center overflow-hidden mr-3"
+              >
+                {partner?.profileImageUrl &&
+                partner?.profileImageUrl !== "default_profile_image_url" ? (
+                  <Image
+                    source={{ uri: partner.profileImageUrl }}
+                    className="w-full h-full"
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text
+                    style={{ fontSize: 20 }}
+                    className="text-gray-900 font-bold"
+                  >
+                    {(partnerName || partnerId)?.charAt(0)?.toUpperCase() ||
+                      "P"}
+                  </Text>
+                )}
+              </View>
               <View className="flex-1">
                 <Text
                   style={{ fontSize: 18 }}
@@ -1027,22 +1263,56 @@ const ChatDetailScreen = ({ navigation, route }) => {
         </View>
       </BlurView>
 
-      {/* ✅ FIXED: WhatsApp-style Keyboard Sticky Input Area with BlurView */}
+      {/* ✅ WhatsApp-style Keyboard Sticky Input Area with BlurView */}
       <KeyboardStickyView
         offset={{ closed: 0, opened: 28 }}
         style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
+          paddingTop: Platform.OS === "ios" ? insets.top + 40 : insets.top + 50,
+          paddingBottom: 80,
           zIndex: 100,
+          flex: 1,
         }}
       >
+        {/* ✅ Messages - FlatList with optimized performance */}
+        <Animated.FlatList
+          ref={flatListRef}
+          data={messages.slice().reverse()} // Reverse to show oldest at top, newest at bottom
+          renderItem={renderMessage}
+          keyExtractor={(item) =>
+            item.id?.toString() || `${item.senderUserId}-${item.sentAt}`
+          }
+          className="flex-1 px-4"
+          contentContainerStyle={{}}
+          keyboardDismissMode="interactive"
+          showsVerticalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={100}
+          maintainVisibleContentPosition={{
+            minIndexForVisible: 0,
+          }}
+          ListEmptyComponent={() => (
+            <View className="flex-1 justify-center items-center py-20">
+              <Text className="text-gray-500 text-base text-center">
+                No messages yet. Start the conversation!
+              </Text>
+            </View>
+          )}
+          // ✅ Performance optimizations
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          updateCellsBatchingPeriod={50}
+          initialNumToRender={15}
+          windowSize={10}
+          legacyImplementation={false}
+          disableVirtualization={false}
+        />
+
+        {/* ✅ Enhanced Input Area with BlurView */}
         <BlurView
-          style={{ paddingBottom: insets.bottom }}
-          className="py-1.5"
-          intensity={80}
-          tint="systemUltraThinMaterialDark"
+          style={{ paddingBottom: insets.bottom, borderTopWidth: 0.5 }}
+          className="py-1.5 border-gray-200 absolute bottom-0 w-full"
+          intensity={70}
+          tint="light"
         >
           <View className="px-3">
             <View className="flex-row items-center">
@@ -1058,9 +1328,10 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
               {/* Text Input Container */}
               <BlurView
-                intensity={40}
+                style={{ borderWidth: 0.5 }}
+                intensity={10}
                 tint="systemUltraThinMaterialDark"
-                className="flex-1 rounded-2xl overflow-hidden px-4 max-h-[100px]"
+                className="flex-1 rounded-3xl overflow-hidden px-4 max-h-[100px] border-gray-200"
               >
                 <TextInput
                   ref={textInputRef}
@@ -1074,7 +1345,8 @@ const ChatDetailScreen = ({ navigation, route }) => {
                   }}
                   multiline
                   maxLength={500}
-                  placeholderTextColor
+                  placeholder=""
+                  placeholderTextColor="#9ca3af"
                   editable={!isSending}
                   onSubmitEditing={handleSendMessage}
                   blurOnSubmit={false}
@@ -1097,11 +1369,11 @@ const ChatDetailScreen = ({ navigation, route }) => {
                   marginLeft: 8,
                   marginBottom: 1,
                 }}
-                className="w-10 h-10  items-center justify-center"
+                className="w-10 h-10 items-center justify-center"
                 disabled={!message.trim() || isSending}
               >
                 {isSending ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator size="small" color="#666" />
                 ) : (
                   <FontAwesomeIcon
                     icon={faPaperPlaneTop}
