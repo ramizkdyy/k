@@ -177,11 +177,11 @@ const MessagesScreen = ({ navigation }) => {
 
       if (diffInHours < 1) {
         const diffInMinutes = Math.floor((now - messageDate) / (1000 * 60));
-        return diffInMinutes <= 1 ? "now" : `${diffInMinutes}m`;
+        return diffInMinutes <= 1 ? "az önce" : `${diffInMinutes}dk`;
       } else if (diffInHours < 24) {
-        return `${Math.floor(diffInHours)}h`;
+        return `${Math.floor(diffInHours)}s`;
       } else if (diffInHours < 24 * 7) {
-        return `${Math.floor(diffInHours / 24)}d`;
+        return `${Math.floor(diffInHours / 24)}g`;
       } else {
         return messageDate.toLocaleDateString();
       }
@@ -229,7 +229,7 @@ const MessagesScreen = ({ navigation }) => {
         {/* Avatar with online indicator */}
 
         <View
-          style={{ boxShadow: "0px 0px 12px #00000014", width: 60, height: 60 }}
+          style={{ boxShadow: "0px 0px 12px #00000014", width: 55, height: 55 }}
           className=" rounded-full bg-white justify-center  items-center overflow-hidden"
         >
           {partner?.profileImageUrl &&
@@ -283,9 +283,9 @@ const MessagesScreen = ({ navigation }) => {
 
           <View className="flex-row justify-between items-center">
             <Text
-              style={{ fontSize: 14 }}
+              style={{ fontSize: 15 }}
               className={` flex-1 mr-2 ${
-                isUnread ? "text-gray-900 font-medium" : "text-gray-600"
+                isUnread ? "text-gray-900 font-bold" : "text-gray-500"
               }`}
               numberOfLines={1}
             >
@@ -344,23 +344,11 @@ const MessagesScreen = ({ navigation }) => {
             <FontAwesomeIcon icon={faArrowLeft} size={20} color="#000" />
           </TouchableOpacity>
 
-          <View className="flex-1 items-center">
-            <Text className="text-xl font-bold text-gray-900">Mesajlar</Text>
+          <View className="flex-1 items-start">
+            <Text className="text-3xl ml-1 font-semibold text-gray-900">
+              Mesajlar
+            </Text>
             {/* ✅ Connection status indicator */}
-            <View className="flex-row items-center mt-1">
-              <FontAwesomeIcon
-                icon={isConnected ? faWifi : faWifiSlash}
-                size={12}
-                color={isConnected ? "#10b981" : "#ef4444"}
-              />
-              <Text
-                className={`text-xs ml-1 ${
-                  isConnected ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {isConnected ? "Connected" : "Offline"}
-              </Text>
-            </View>
           </View>
 
           <View className="flex-row items-center">
@@ -371,7 +359,18 @@ const MessagesScreen = ({ navigation }) => {
                 </Text>
               </View>
             )}
-            <TouchableOpacity className="p-2 -mr-2">
+            <TouchableOpacity
+              onPress={(userId) => {
+                if (userId && userId.trim()) {
+                  console.log("🚀 Starting new chat with:", userId.trim());
+                  navigation.navigate("ChatDetail", {
+                    partnerId: userId.trim(),
+                    partnerName: userId.trim(),
+                  });
+                }
+              }}
+              className="p-2 -mr-2"
+            >
               <FontAwesomeIcon icon={faEdit} size={20} color="#000" />
             </TouchableOpacity>
           </View>
@@ -434,38 +433,6 @@ const MessagesScreen = ({ navigation }) => {
         onRefresh={onRefresh}
         refreshing={partnersLoading}
       />
-
-      {/* Quick Actions */}
-      <View className="p-4 border-t border-gray-100">
-        <TouchableOpacity
-          className="bg-blue-500 rounded-lg py-3 flex-row items-center justify-center"
-          onPress={() => {
-            Alert.prompt(
-              "Start New Chat",
-              "Enter user ID to start a new conversation:",
-              [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Start Chat",
-                  onPress: (userId) => {
-                    if (userId && userId.trim()) {
-                      console.log("🚀 Starting new chat with:", userId.trim());
-                      navigation.navigate("ChatDetail", {
-                        partnerId: userId.trim(),
-                        partnerName: userId.trim(),
-                      });
-                    }
-                  },
-                },
-              ],
-              "plain-text"
-            );
-          }}
-        >
-          <FontAwesomeIcon icon={faEdit} size={16} color="#fff" />
-          <Text className="text-white font-semibold ml-2">Start New Chat</Text>
-        </TouchableOpacity>
-      </View>
 
       <SafeAreaView style={{ flex: 0, backgroundColor: "transparent" }} />
     </View>
