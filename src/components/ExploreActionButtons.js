@@ -27,7 +27,7 @@ import ExploreDetailModal from "../modals/ExploreDetailModal";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-const ExploreActionButtons = memo(({ listing, safeAreaInsets }) => {
+const ExploreActionButtons = memo(({ listing, safeAreaInsets, isHorizontalScrollActive }) => {
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
 
     // Listing verilerini çıkar
@@ -149,7 +149,8 @@ const ExploreActionButtons = memo(({ listing, safeAreaInsets }) => {
                     {/* Property Details */}
                     <ScrollView
                         showsVerticalScrollIndicator={false}
-                        bounces={true}
+                        bounces={!isHorizontalScrollActive} // ← Yatay scroll aktifken bounce kapalı
+                        scrollEnabled={!isHorizontalScrollActive} // ← Yatay scroll aktifken kapalı
                         contentContainerStyle={{
                             alignItems: 'center',
                         }}
