@@ -1,4 +1,4 @@
-// screens/MessagesScreen.js - Fixed with Real-time Updates
+// screens/MessagesScreen.js - Fixed with Real-time Updates and Working Filters
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
@@ -33,6 +33,9 @@ import { useFocusEffect } from "@react-navigation/native";
 
 const MessagesScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState("");
+  // ✅ Filter state'i ekledik
+  const [activeFilter, setActiveFilter] = useState("all"); // "all" veya "unread"
+
   const { user } = useSelector((state) => state.auth);
   const { isConnected, onlineUsers, connection } = useSignalR();
   const currentUser = useSelector(selectCurrentUser);
@@ -44,7 +47,6 @@ const MessagesScreen = ({ navigation }) => {
     error: partnersError,
     refetch: refetchPartners,
   } = useGetChatPartnersQuery(undefined, {
-    // ✅ Enable refetch when screen gains focus
     refetchOnFocus: true,
     refetchOnMountOrArgChange: true,
   });
@@ -54,24 +56,23 @@ const MessagesScreen = ({ navigation }) => {
     isLoading: unreadLoading,
     refetch: refetchUnread,
   } = useGetUnreadCountQuery(undefined, {
-    // ✅ Enable refetch when screen gains focus
     refetchOnFocus: true,
     refetchOnMountOrArgChange: true,
   });
 
-  // ✅ API response'dan chat partners'ı al (direkt array geliyor)
+  // API response'dan chat partners'ı al
   const chatPartners = React.useMemo(() => {
     console.log("Chat Partners Response:", chatPartnersResponse);
     return Array.isArray(chatPartnersResponse) ? chatPartnersResponse : [];
   }, [chatPartnersResponse]);
 
-  // ✅ Unread count'u al (response.count geliyor)
+  // Unread count'u al
   const totalUnreadCount = React.useMemo(() => {
     console.log("Unread Data Response:", unreadData);
     return unreadData?.count || 0;
   }, [unreadData]);
 
-  // ✅ Focus effect - Screen her görüldüğünde data'yı yenile
+  // Focus effect
   useFocusEffect(
     useCallback(() => {
       console.log("📱 MessagesScreen focused, refreshing data...");
@@ -80,47 +81,36 @@ const MessagesScreen = ({ navigation }) => {
     }, [refetchPartners, refetchUnread])
   );
 
-  // ✅ SignalR message listener for real-time updates
+  // SignalR message listener
   useEffect(() => {
     if (!connection || !isConnected) return;
 
     console.log("🔔 Setting up SignalR listeners for MessagesScreen");
 
-    // Listen for new messages to update partners list
     const handleReceiveMessage = (messageData) => {
       console.log("📨 New message received in MessagesScreen:", messageData);
-
-      // Refetch partners to show latest message
       refetchPartners();
       refetchUnread();
     };
 
-    // Listen for message sent confirmations
     const handleMessageSent = (confirmationData) => {
       console.log(
         "✅ Message sent confirmation in MessagesScreen:",
         confirmationData
       );
-
-      // Refetch partners to show sent message
       refetchPartners();
       refetchUnread();
     };
 
-    // Listen for messages read status
     const handleMessagesRead = (readData) => {
       console.log("👁️ Messages read in MessagesScreen:", readData);
-
-      // Refetch unread count
       refetchUnread();
     };
 
-    // Register SignalR listeners
     connection.on("ReceiveMessage", handleReceiveMessage);
     connection.on("MessageSent", handleMessageSent);
     connection.on("MessagesRead", handleMessagesRead);
 
-    // Cleanup listeners
     return () => {
       console.log("🧹 Cleaning up SignalR listeners for MessagesScreen");
       connection.off("ReceiveMessage", handleReceiveMessage);
@@ -136,25 +126,15 @@ const MessagesScreen = ({ navigation }) => {
     refetchUnread();
   }, [refetchPartners, refetchUnread]);
 
-  // ✅ Partner listesini arama ile filtrele
-  const filteredPartners = React.useMemo(() => {
-    return chatPartners.filter((partner) => {
-      const partnerName = partner.name || partner.userName || "";
-      return partnerName.toLowerCase().includes(searchQuery.toLowerCase());
-    });
-  }, [chatPartners, searchQuery]);
-
-  // ✅ Partner ID'sini al
+  // Helper functions
   const getPartnerId = (partner) => {
     return partner.id;
   };
 
-  // ✅ Partner name'ini al
   const getPartnerName = (partner) => {
     return partner.name || partner.userName || "Unknown User";
   };
 
-  // ✅ Son mesajı al
   const getLastMessage = (partner) => {
     if (
       typeof partner === "object" &&
@@ -166,7 +146,6 @@ const MessagesScreen = ({ navigation }) => {
     return "";
   };
 
-  // ✅ Son mesaj zamanını formatla
   const formatMessageTime = (sentAt) => {
     if (!sentAt) return "";
 
@@ -177,11 +156,11 @@ const MessagesScreen = ({ navigation }) => {
 
       if (diffInHours < 1) {
         const diffInMinutes = Math.floor((now - messageDate) / (1000 * 60));
-        return diffInMinutes <= 1 ? "now" : `${diffInMinutes}m`;
+        return diffInMinutes <= 1 ? "az önce" : `${diffInMinutes}dk`;
       } else if (diffInHours < 24) {
-        return `${Math.floor(diffInHours)}h`;
+        return `${Math.floor(diffInHours)}s`;
       } else if (diffInHours < 24 * 7) {
-        return `${Math.floor(diffInHours / 24)}d`;
+        return `${Math.floor(diffInHours / 24)}g`;
       } else {
         return messageDate.toLocaleDateString();
       }
@@ -190,7 +169,6 @@ const MessagesScreen = ({ navigation }) => {
     }
   };
 
-  // ✅ Mesajın okunmadığını kontrol et
   const isMessageUnread = (partner) => {
     if (
       typeof partner === "object" &&
@@ -202,11 +180,49 @@ const MessagesScreen = ({ navigation }) => {
     return false;
   };
 
+  // ✅ Filter ve arama ile birleştirilmiş filtreleme
+  const filteredPartners = React.useMemo(() => {
+    let filtered = chatPartners;
+
+    // Önce arama filtresini uygula
+    if (searchQuery.trim()) {
+      filtered = filtered.filter((partner) => {
+        const partnerName = partner.name || partner.userName || "";
+        const surname = partner.surname || "";
+        const fullName = `${partnerName} ${surname}`.toLowerCase();
+        return fullName.includes(searchQuery.toLowerCase());
+      });
+    }
+
+    // Sonra unread filtresini uygula
+    if (activeFilter === "unread") {
+      filtered = filtered.filter((partner) => isMessageUnread(partner));
+    }
+
+    return filtered;
+  }, [chatPartners, searchQuery, activeFilter]);
+
+  // ✅ Filter button component'i
+  const FilterButton = ({ filter, title, count, isActive, onPress }) => (
+    <TouchableOpacity
+      className={`py-2 px-4 rounded-full ${
+        isActive ? "bg-black" : "border border-gray-200 bg-white"
+      }`}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Text
+        className={` ${isActive ? "text-white font-medium" : "text-gray-500"}`}
+      >
+        {title} {count !== undefined ? `(${count})` : ""}
+      </Text>
+    </TouchableOpacity>
+  );
+
   // Partner item renderer
   const renderPartner = ({ item: partner }) => {
     const partnerId = getPartnerId(partner);
     const partnerName = getPartnerName(partner);
-
     const lastMessage = getLastMessage(partner);
     const isOnline = onlineUsers.has(partnerId);
     const messageTime = partner.lastMessage
@@ -227,16 +243,15 @@ const MessagesScreen = ({ navigation }) => {
         }}
       >
         {/* Avatar with online indicator */}
-
         <View
-          style={{ boxShadow: "0px 0px 12px #00000014", width: 60, height: 60 }}
-          className=" rounded-full bg-white justify-center  items-center overflow-hidden"
+          style={{ width: 55, height: 55 }}
+          className="justify-center  items-center rounded-full border border-gray-100"
         >
           {partner?.profileImageUrl &&
           partner?.profileImageUrl !== "default_profile_image_url" ? (
             <Image
               source={{ uri: partner.profileImageUrl }}
-              className="w-full h-full"
+              className="w-full h-full rounded-full"
               resizeMode="cover"
             />
           ) : (
@@ -248,9 +263,15 @@ const MessagesScreen = ({ navigation }) => {
           {/* Online status indicator */}
           {isOnline && (
             <View
-              className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white bg-green-500
-              }`}
-            />
+              style={{ width: 20, height: 20, bottom: -4, right: -4 }}
+              className={`absolute flex justify-center items-center rounded-full bg-white`}
+            >
+              {" "}
+              <View
+                style={{ width: 12, height: 12 }}
+                className={`flex justify-center items-center  rounded-full bg-green-500`}
+              />
+            </View>
           )}
         </View>
 
@@ -268,7 +289,7 @@ const MessagesScreen = ({ navigation }) => {
             <View className="flex-row items-center">
               {messageTime && (
                 <Text
-                  style={{ fontSize: 15 }}
+                  style={{ fontSize: 14 }}
                   className={` ${
                     isUnread
                       ? "text-gray-900 font-bold"
@@ -283,15 +304,20 @@ const MessagesScreen = ({ navigation }) => {
 
           <View className="flex-row justify-between items-center">
             <Text
-              style={{ fontSize: 14 }}
+              style={{ fontSize: 15 }}
               className={` flex-1 mr-2 ${
-                isUnread ? "text-gray-900 font-medium" : "text-gray-600"
+                isUnread ? "text-gray-900 font-bold" : "text-gray-500"
               }`}
               numberOfLines={1}
             >
               {lastMessage || ""}
             </Text>
-            {isUnread && <View className="w-3 h-3 bg-gray-900 rounded-full" />}
+            {isUnread && (
+              <View
+                style={{ backgroundColor: "#ff4a4a" }}
+                className="w-3 h-3 rounded-full"
+              />
+            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -344,35 +370,30 @@ const MessagesScreen = ({ navigation }) => {
             <FontAwesomeIcon icon={faArrowLeft} size={20} color="#000" />
           </TouchableOpacity>
 
-          <View className="flex-1 items-center">
-            <Text className="text-xl font-bold text-gray-900">Mesajlar</Text>
-            {/* ✅ Connection status indicator */}
-            <View className="flex-row items-center mt-1">
-              <FontAwesomeIcon
-                icon={isConnected ? faWifi : faWifiSlash}
-                size={12}
-                color={isConnected ? "#10b981" : "#ef4444"}
-              />
-              <Text
-                className={`text-xs ml-1 ${
-                  isConnected ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {isConnected ? "Connected" : "Offline"}
-              </Text>
-            </View>
+          <View className="flex-1 items-start">
+            <Text className="text-3xl ml-1 font-semibold text-gray-900">
+              Mesajlar
+            </Text>
           </View>
 
           <View className="flex-row items-center">
-            {totalUnreadCount > 0 && (
-              <View className="bg-red-500 rounded-full px-2 py-1 mr-2">
-                <Text className="text-white text-xs font-bold">
-                  {totalUnreadCount}
-                </Text>
-              </View>
-            )}
-            <TouchableOpacity className="p-2 -mr-2">
-              <FontAwesomeIcon icon={faEdit} size={20} color="#000" />
+            <TouchableOpacity
+              className="flex-row items-center justify-center"
+              onPress={() => {
+                Alert.prompt(
+                  "Start New Chat",
+                  "Enter user ID to start a new conversation:",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "Start Chat",
+                    },
+                  ],
+                  "plain-text"
+                );
+              }}
+            >
+              <FontAwesomeIcon icon={faEdit} size={22} color="#000" />
             </TouchableOpacity>
           </View>
         </View>
@@ -384,11 +405,29 @@ const MessagesScreen = ({ navigation }) => {
         >
           <FontAwesomeIcon icon={faSearch} size={16} color="#000" />
           <TextInput
-            className="flex-1 ml-3 text-base"
-            placeholder="Search conversations..."
+            style={{ fontSize: 15 }}
+            className="flex-1 ml-3 "
+            placeholder="Sohbet ara..."
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholderTextColor="#999"
+          />
+        </View>
+
+        {/* ✅ Filter Buttons - Çalışır halde */}
+        <View className="w-full flex-row gap-2 items-center justify-start mt-4">
+          <FilterButton
+            filter="all"
+            title="Tümü"
+            isActive={activeFilter === "all"}
+            onPress={() => setActiveFilter("all")}
+          />
+          <FilterButton
+            filter="unread"
+            title="Okunmamış"
+            count={totalUnreadCount}
+            isActive={activeFilter === "unread"}
+            onPress={() => setActiveFilter("unread")}
           />
         </View>
       </View>
@@ -410,62 +449,39 @@ const MessagesScreen = ({ navigation }) => {
         }
         ListEmptyComponent={() => (
           <View className="flex-1 justify-center items-center py-20">
-            {searchQuery ? (
+            {activeFilter === "unread" && !searchQuery ? (
+              <>
+                <FontAwesomeIcon icon={faCircle} size={40} color="#ccc" />
+                <Text className="text-gray-500 mt-4 text-base text-center">
+                  Okunmamış mesaj yok
+                </Text>
+                <Text className="text-gray-400 mt-2 text-sm text-center">
+                  Tüm mesajlarınızı okudunuz
+                </Text>
+              </>
+            ) : searchQuery ? (
               <>
                 <FontAwesomeIcon icon={faSearch} size={40} color="#ccc" />
                 <Text className="text-gray-500 mt-4 text-base text-center">
-                  No conversations found for "{searchQuery}"
+                  "{searchQuery}" için sonuç bulunamadı
                 </Text>
               </>
             ) : (
               <>
                 <FontAwesomeIcon icon={faEdit} size={40} color="#ccc" />
                 <Text className="text-gray-500 mt-4 text-base text-center">
-                  No conversations yet
+                  Henüz sohbet yok
                 </Text>
                 <Text className="text-gray-400 mt-2 text-sm text-center">
-                  Start a new conversation to see it here
+                  Yeni bir sohbet başlatın
                 </Text>
               </>
             )}
           </View>
         )}
-        // ✅ Pull to refresh ekle
         onRefresh={onRefresh}
         refreshing={partnersLoading}
       />
-
-      {/* Quick Actions */}
-      <View className="p-4 border-t border-gray-100">
-        <TouchableOpacity
-          className="bg-blue-500 rounded-lg py-3 flex-row items-center justify-center"
-          onPress={() => {
-            Alert.prompt(
-              "Start New Chat",
-              "Enter user ID to start a new conversation:",
-              [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Start Chat",
-                  onPress: (userId) => {
-                    if (userId && userId.trim()) {
-                      console.log("🚀 Starting new chat with:", userId.trim());
-                      navigation.navigate("ChatDetail", {
-                        partnerId: userId.trim(),
-                        partnerName: userId.trim(),
-                      });
-                    }
-                  },
-                },
-              ],
-              "plain-text"
-            );
-          }}
-        >
-          <FontAwesomeIcon icon={faEdit} size={16} color="#fff" />
-          <Text className="text-white font-semibold ml-2">Start New Chat</Text>
-        </TouchableOpacity>
-      </View>
 
       <SafeAreaView style={{ flex: 0, backgroundColor: "transparent" }} />
     </View>

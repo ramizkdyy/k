@@ -45,7 +45,7 @@ import {
 
 import { KeyboardStickyView } from "react-native-keyboard-controller";
 import Animated from "react-native-reanimated";
-import { faPlus } from "@fortawesome/pro-regular-svg-icons";
+import { faArrowUp, faPlus } from "@fortawesome/pro-regular-svg-icons";
 
 const ChatDetailScreen = ({ navigation, route }) => {
   const { partnerId, partnerName, partner } = route.params || {};
@@ -154,19 +154,19 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
     requestAnimationFrame(() => {
       try {
-        flatListRef.current?.scrollToEnd({
+        // ✅ Inverted mode için scrollToOffset(0) kullan
+        flatListRef.current?.scrollToOffset({
+          offset: 0,
           animated,
-          // Add these for better performance
-          velocity: animated ? undefined : 1000,
         });
       } catch (error) {
         console.log("Scroll error:", error);
-        // Fallback: try scrolling to index 0 (newest message in reversed array)
+        // Fallback: try scrolling to index 0
         try {
           flatListRef.current?.scrollToIndex({
             index: 0,
             animated,
-            viewPosition: 1,
+            viewPosition: 0,
           });
         } catch (indexError) {
           console.log("Index scroll error:", indexError);
@@ -590,7 +590,9 @@ const ChatDetailScreen = ({ navigation, route }) => {
       const { contentOffset, contentSize, layoutMeasurement } =
         event.nativeEvent;
 
-      const isAtTop = contentOffset.y <= 50;
+      // ✅ Inverted mode için en üst = offset büyük değer
+      const isAtTop =
+        contentOffset.y >= contentSize.height - layoutMeasurement.height - 50;
 
       if (
         isAtTop &&
@@ -708,6 +710,8 @@ const ChatDetailScreen = ({ navigation, route }) => {
         });
 
         syncMessageToCache(messageData);
+
+        scrollToBottomWithDelay(0, true);
 
         if (messageData.SenderUserId === partnerId && isConnected) {
           setTimeout(() => {
@@ -901,7 +905,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
     });
 
     // ✅ AUTO-SCROLL AFTER SENDING MESSAGE
-    scrollToBottomWithDelay(50, true);
+    scrollToBottomWithDelay(0, true);
 
     try {
       if (isConnected) {
@@ -1025,22 +1029,62 @@ const ChatDetailScreen = ({ navigation, route }) => {
   };
 
   // ✅ Updated renderMessage function with proper daily grouping
+  // FlatList'i inverted modda kullanarak en alttan başlatma
+
+  // 1. ✅ FlatList'i inverted moda alın ve data sıralamasını değiştirin
+  <Animated.FlatList
+    ref={flatListRef}
+    data={messages} // ✅ .reverse() kaldırıldı çünkü inverted kullanıyoruz
+    renderItem={renderMessage}
+    keyExtractor={(item) =>
+      item.id?.toString() || `${item.senderUserId}-${item.sentAt}`
+    }
+    className="flex-1 px-4"
+    contentContainerStyle={{
+      flexGrow: 1,
+      justifyContent: "flex-end", // ✅ İçerik en alta yaslanır
+    }}
+    keyboardDismissMode="interactive"
+    showsVerticalScrollIndicator={false}
+    onScroll={handleScroll}
+    scrollEventThrottle={100}
+    inverted={true} // ✅ Inverted mode - en alttan başlar
+    maintainVisibleContentPosition={{
+      minIndexForVisible: 0,
+    }}
+    ListEmptyComponent={() => (
+      <View className="flex-1 justify-center items-center py-20">
+        <Text className="text-gray-500 text-base text-center">
+          No messages yet. Start the conversation!
+        </Text>
+      </View>
+    )}
+    // ✅ Performance optimizations
+    removeClippedSubviews={true}
+    maxToRenderPerBatch={10}
+    updateCellsBatchingPeriod={50}
+    initialNumToRender={15}
+    windowSize={10}
+    legacyImplementation={false}
+    disableVirtualization={false}
+  />;
+
+  // 2. ✅ renderMessage fonksiyonunu inverted mode için güncelleme
   const renderMessage = ({ item, index }) => {
     const isSent = item.senderUserId === currentUserId;
 
-    // For reversed array (oldest at top, newest at bottom)
-    const reversedMessages = messages.slice().reverse();
-    const prevMessage = index > 0 ? reversedMessages[index - 1] : null;
+    // ✅ Inverted mode için index hesaplaması değişti
+    const prevMessage = index > 0 ? messages[index - 1] : null;
     const nextMessage =
-      index < reversedMessages.length - 1 ? reversedMessages[index + 1] : null;
+      index < messages.length - 1 ? messages[index + 1] : null;
 
     // ✅ Show date separator only when day changes
     const showDateSeparator =
-      !prevMessage || !isSameDay(item.sentAt, prevMessage.sentAt);
+      !nextMessage || !isSameDay(item.sentAt, nextMessage.sentAt);
 
     const showAvatar =
       !isSent &&
-      (!nextMessage || nextMessage.senderUserId !== item.senderUserId);
+      (!prevMessage || prevMessage.senderUserId !== item.senderUserId);
 
     return (
       <View style={{ marginBottom: 1 }}>
@@ -1238,7 +1282,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
                   style={{ fontSize: 18 }}
                   className="font-semibold text-gray-900"
                 >
-                  {partnerName || partnerId}
+                  {partner.name} {partner.surname}
                 </Text>
                 <View className="flex-row items-center">
                   {isPartnerOnline ? (
@@ -1276,17 +1320,21 @@ const ChatDetailScreen = ({ navigation, route }) => {
         {/* ✅ Messages - FlatList with optimized performance */}
         <Animated.FlatList
           ref={flatListRef}
-          data={messages.slice().reverse()} // Reverse to show oldest at top, newest at bottom
+          data={messages} // ✅ .reverse() kaldırıldı çünkü inverted kullanıyoruz
           renderItem={renderMessage}
           keyExtractor={(item) =>
             item.id?.toString() || `${item.senderUserId}-${item.sentAt}`
           }
           className="flex-1 px-4"
-          contentContainerStyle={{}}
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: "flex-end", // ✅ İçerik en alta yaslanır
+          }}
           keyboardDismissMode="interactive"
           showsVerticalScrollIndicator={false}
           onScroll={handleScroll}
           scrollEventThrottle={100}
+          inverted={true} // ✅ Inverted mode - en alttan başlar
           maintainVisibleContentPosition={{
             minIndexForVisible: 0,
           }}
@@ -1337,6 +1385,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
                   ref={textInputRef}
                   className="text-base"
                   value={message}
+                  scrollEnabled={message.length > 50 ? true : false}
                   onChangeText={(text) => {
                     setMessage(text);
                     if (text.trim()) {
@@ -1372,15 +1421,11 @@ const ChatDetailScreen = ({ navigation, route }) => {
                 className="w-10 h-10 items-center justify-center"
                 disabled={!message.trim() || isSending}
               >
-                {isSending ? (
-                  <ActivityIndicator size="small" color="#666" />
-                ) : (
-                  <FontAwesomeIcon
-                    icon={faPaperPlaneTop}
-                    size={25}
-                    color={message.trim() ? "#000" : "#a6a6a6"}
-                  />
-                )}
+                <FontAwesomeIcon
+                  icon={faArrowUp}
+                  size={25}
+                  color={message.trim() ? "#000" : "#a6a6a6"}
+                />
               </TouchableOpacity>
             </View>
           </View>
