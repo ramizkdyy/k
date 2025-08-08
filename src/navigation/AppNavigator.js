@@ -1,5 +1,5 @@
 // navigation/AppNavigator.js
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -58,6 +58,7 @@ import ExploreScreen from '../screens/ExploreScreen';
 
 
 // Import icons
+import { BlurView } from "expo-blur";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 // Solid icons (for selected state)
 import {
@@ -396,25 +397,75 @@ const OnboardingNavigator = () => {
 // ✅ Sadece 4 tab için Tab Navigator - Landlord
 const LandlordTabNavigator = () => {
   const userProfile = useSelector(selectUserProfile);
+  const [currentRoute, setCurrentRoute] = useState('Home');
+
+  // Tab bar stilini route'a göre belirle
+  const getTabBarStyle = (routeName) => {
+    if (routeName === 'Explore') {
+      return {
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        elevation: 0,
+        borderTopWidth: 0,
+        backgroundColor: 'transparent',
+        paddingTop: 5,
+        paddingBottom: 5,
+      };
+    } else {
+      return {
+        backgroundColor: "rgba(255, 255, 255, 0.05)",
+        borderTopColor: "rgba(224, 224, 224, 0.2)",
+        paddingTop: 5,
+        paddingBottom: 5,
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        elevation: 8,
+      };
+    }
+  };
+
+  // Tab bar background component'ini route'a göre belirle
+  const getTabBarBackground = (routeName) => {
+    if (routeName === 'Explore') {
+      return () => (
+        <BlurView
+          intensity={40}
+          tint="dark"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            bottom: 0,
+            right: 0,
+          }}
+        />
+      );
+    } else {
+      return () => <View className="bg-white flex-1"></View>;
+    }
+  };
 
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: "#000",
-        tabBarInactiveTintColor: "#999999",
-        tabBarStyle: {
-          backgroundColor: "rgba(255, 255, 255, 0.05)",
-          borderTopColor: "rgba(224, 224, 224, 0.2)",
-          paddingTop: 5,
-          paddingBottom: 5,
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          elevation: 8,
-        },
-        tabBarBackground: () => <View className="bg-white flex-1"></View>,
+        tabBarActiveTintColor: currentRoute === 'Explore' ? "white" : "#000",
+        tabBarInactiveTintColor: currentRoute === 'Explore' ? "rgba(255, 255, 255, 0.6)" : "#999999",
+        tabBarStyle: getTabBarStyle(currentRoute),
+        tabBarBackground: getTabBarBackground(currentRoute),
         headerShown: false,
+      }}
+      screenListeners={{
+        state: (e) => {
+          const state = e.data.state;
+          if (state) {
+            const routeName = state.routes[state.index].name;
+            setCurrentRoute(routeName);
+          }
+        },
       }}
     >
       {/* Tab 1: Ana Sayfa */}
@@ -428,7 +479,7 @@ const LandlordTabNavigator = () => {
             <FontAwesomeIcon
               icon={focused ? faMagnifyingGlassSolid : faMagnifyingGlassLight}
               size={24}
-              color={focused ? "#000" : "#999999"}
+              color={focused ? (currentRoute === 'Explore' ? "white" : "#000") : (currentRoute === 'Explore' ? "rgba(255, 255, 255, 0.6)" : "#999999")}
             />
           ),
         }}
@@ -443,7 +494,7 @@ const LandlordTabNavigator = () => {
             <FontAwesomeIcon
               icon={focused ? faFingerprintSolid : faFingerprintRegular}
               size={22}
-              color={focused ? "#000" : "#999999"}
+              color={focused ? (currentRoute === 'Explore' ? "white" : "#000") : (currentRoute === 'Explore' ? "rgba(255, 255, 255, 0.6)" : "#999999")}
             />
           ),
         }}
@@ -460,7 +511,7 @@ const LandlordTabNavigator = () => {
             <FontAwesomeIcon
               icon={focused ? faHouseSolid : faHouseRegular}
               size={24}
-              color={focused ? "#000" : "#999999"}
+              color={focused ? (currentRoute === 'Explore' ? "white" : "#000") : (currentRoute === 'Explore' ? "rgba(255, 255, 255, 0.6)" : "#999999")}
             />
           ),
         }}
@@ -477,7 +528,7 @@ const LandlordTabNavigator = () => {
             <FontAwesomeIcon
               icon={focused ? faEnvelopeSolid : faEnvelopeRegular}
               size={24}
-              color={focused ? "#000" : "#999999"}
+              color={focused ? (currentRoute === 'Explore' ? "white" : "#000") : (currentRoute === 'Explore' ? "rgba(255, 255, 255, 0.6)" : "#999999")}
             />
           ),
         }}
@@ -512,7 +563,7 @@ const LandlordTabNavigator = () => {
                       bottom: -2,
                       borderRadius: 16,
                       borderWidth: 2,
-                      borderColor: "#000",
+                      borderColor: currentRoute === 'Explore' ? "white" : "#000",
                     }}
                   />
                 )}
@@ -547,7 +598,7 @@ const LandlordTabNavigator = () => {
                       bottom: -2,
                       borderRadius: 16,
                       borderWidth: 2,
-                      borderColor: "#000",
+                      borderColor: currentRoute === 'Explore' ? "white" : "#000",
                     }}
                   />
                 )}
@@ -563,25 +614,75 @@ const LandlordTabNavigator = () => {
 // ✅ Sadece 4 tab için Tab Navigator - Tenant
 const TenantTabNavigator = () => {
   const userProfile = useSelector(selectUserProfile);
+  const [currentRoute, setCurrentRoute] = useState('Home');
+
+  // Tab bar stilini route'a göre belirle
+  const getTabBarStyle = (routeName) => {
+    if (routeName === 'Explore') {
+      return {
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        elevation: 0,
+        borderTopWidth: 0,
+        backgroundColor: 'transparent',
+        paddingTop: 5,
+        paddingBottom: 5,
+      };
+    } else {
+      return {
+        backgroundColor: "rgba(255, 255, 255, 0.05)",
+        borderTopColor: "rgba(224, 224, 224, 0.2)",
+        paddingTop: 5,
+        paddingBottom: 5,
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        elevation: 8,
+      };
+    }
+  };
+
+  // Tab bar background component'ini route'a göre belirle
+  const getTabBarBackground = (routeName) => {
+    if (routeName === 'Explore') {
+      return () => (
+        <BlurView
+          intensity={15}
+          tint="dark"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            bottom: 0,
+            right: 0,
+          }}
+        />
+      );
+    } else {
+      return () => <View className="bg-white flex-1"></View>;
+    }
+  };
 
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: "#000",
-        tabBarInactiveTintColor: "#999999",
-        tabBarStyle: {
-          backgroundColor: "rgba(255, 255, 255, 0.05)",
-          borderTopColor: "rgba(224, 224, 224, 0.2)",
-          paddingTop: 5,
-          paddingBottom: 5,
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          elevation: 8,
-        },
-        tabBarBackground: () => <View className="bg-white flex-1"></View>,
+        tabBarActiveTintColor: currentRoute === 'Explore' ? "white" : "#000",
+        tabBarInactiveTintColor: currentRoute === 'Explore' ? "rgba(255, 255, 255, 0.6)" : "#999999",
+        tabBarStyle: getTabBarStyle(currentRoute),
+        tabBarBackground: getTabBarBackground(currentRoute),
         headerShown: false,
+      }}
+      screenListeners={{
+        state: (e) => {
+          const state = e.data.state;
+          if (state) {
+            const routeName = state.routes[state.index].name;
+            setCurrentRoute(routeName);
+          }
+        },
       }}
     >
       {/* Tab 1: Ana Sayfa */}
@@ -595,7 +696,22 @@ const TenantTabNavigator = () => {
             <FontAwesomeIcon
               icon={focused ? faSearchSolid : faSearchRegular}
               size={24}
-              color={focused ? "#000" : "#999999"}
+              color={focused ? (currentRoute === 'Explore' ? "white" : "#000") : (currentRoute === 'Explore' ? "rgba(255, 255, 255, 0.6)" : "#999999")}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Explore"
+        component={ExploreScreen}
+        options={{
+          tabBarLabel: '',
+          headerShown: false,
+          tabBarIcon: ({ focused }) => (
+            <FontAwesomeIcon
+              icon={focused ? faFingerprintSolid : faFingerprintRegular}
+              size={22}
+              color={focused ? (currentRoute === 'Explore' ? "white" : "#000") : (currentRoute === 'Explore' ? "rgba(255, 255, 255, 0.6)" : "#999999")}
             />
           ),
         }}
@@ -612,7 +728,7 @@ const TenantTabNavigator = () => {
             <FontAwesomeIcon
               icon={focused ? faHouseSolid : faHouseRegular}
               size={24}
-              color={focused ? "#000" : "#999999"}
+              color={focused ? (currentRoute === 'Explore' ? "white" : "#000") : (currentRoute === 'Explore' ? "rgba(255, 255, 255, 0.6)" : "#999999")}
             />
           ),
         }}
@@ -629,7 +745,7 @@ const TenantTabNavigator = () => {
             <FontAwesomeIcon
               icon={focused ? faEnvelopeSolid : faEnvelopeRegular}
               size={24}
-              color={focused ? "#000" : "#999999"}
+              color={focused ? (currentRoute === 'Explore' ? "white" : "#000") : (currentRoute === 'Explore' ? "rgba(255, 255, 255, 0.6)" : "#999999")}
             />
           ),
         }}
@@ -664,7 +780,7 @@ const TenantTabNavigator = () => {
                       bottom: -2,
                       borderRadius: 16,
                       borderWidth: 2,
-                      borderColor: "#000",
+                      borderColor: currentRoute === 'Explore' ? "white" : "#000",
                     }}
                   />
                 )}
@@ -699,7 +815,7 @@ const TenantTabNavigator = () => {
                       bottom: -2,
                       borderRadius: 16,
                       borderWidth: 2,
-                      borderColor: "#000",
+                      borderColor: currentRoute === 'Explore' ? "white" : "#000",
                     }}
                   />
                 )}
@@ -711,7 +827,6 @@ const TenantTabNavigator = () => {
     </Tab.Navigator>
   );
 };
-
 // ✅ Yeni yapı: Ana Stack Navigator - Sadece tab'lı ekranlar ve diğer ekranlar ayrı
 const MainStackNavigator = () => {
   const userRole = useSelector(selectUserRole);

@@ -3,6 +3,7 @@ import {
     View,
     Text,
     Animated,
+    Image,
 } from "react-native";
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "../redux/slices/authSlice";
@@ -14,10 +15,12 @@ import { faHeart } from "@fortawesome/pro-solid-svg-icons";
 
 const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
     const currentUser = useSelector(selectCurrentUser);
+    // Kullanıcı rolünü al
+    const userRole = currentUser?.role || currentUser?.userRole;
 
-    // Match Score gösterim fonksiyonu (API'den 0-1 değeri geliyor, yüzdeye çevir)
+    // Match Score gösterim fonksiyonu
     const getMatchScoreInfo = (score) => {
-        // API'den 0-1 aralığında geliyor, yüzdeye çevir
+        // Score zaten 0-1 aralığında olmalı, yüzdeye çevir
         const percentage = score * 100;
 
         if (percentage >= 80)
@@ -93,7 +96,7 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
             // Yeni timeout ayarla
             timeoutRef.current = setTimeout(() => {
                 Animated.timing(progressAnim, {
-                    toValue: matchScore * 100, // 0-1 değerini 0-100'e çevir
+                    toValue: matchScore, // Score zaten 0-1 aralığında
                     duration: 800,
                     useNativeDriver: false,
                 }).start();
@@ -113,7 +116,7 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
                     {/* Match Score Barı */}
                     <View className="flex-row items-center">
                         <View
-                            className="bg-white/30 rounded-full overflow-hidden"
+                            className="bg-white rounded-full overflow-hidden"
                             style={{
                                 height: currentSize.barHeight,
                                 width: currentSize.barWidth,
@@ -123,7 +126,7 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
                             <Animated.View
                                 style={{
                                     width: progressAnim.interpolate({
-                                        inputRange: [0, 100],
+                                        inputRange: [0, 1],
                                         outputRange: ["0%", "100%"],
                                         extrapolate: "clamp",
                                     }),
@@ -178,6 +181,20 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
         if (listing.postType === "NormalPost" && listing.post) {
             const post = listing.post;
 
+            // Match score'u doğru formatta al
+            let matchScore = null;
+            const rawMatchScore = listing.matchScore || post.matchScore;
+
+            if (rawMatchScore) {
+                // Eğer obje formatında geliyorsa, içindeki matchScore field'ını kullan
+                if (typeof rawMatchScore === 'object' && rawMatchScore.matchScore !== undefined) {
+                    matchScore = rawMatchScore.matchScore / 100; // 0-100 aralığından 0-1'e çevir
+                } else if (typeof rawMatchScore === 'number') {
+                    // Eğer direkt sayı geliyorsa
+                    matchScore = rawMatchScore > 1 ? rawMatchScore / 100 : rawMatchScore; // 0-1 aralığına getir
+                }
+            }
+
             // DEBUG: Post verilerini console'a yazdır
             console.log("🔍 ExplorePostInfo - Post data:", {
                 postType: listing.postType,
@@ -185,7 +202,10 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
                 userId: post.user?.id,
                 userName: post.user?.name,
                 userSurname: post.user?.surname,
-                matchScore: listing.matchScore || post.matchScore || null, // Match score'u ara
+                userProfilePicture: post.user?.profilePictureUrl,
+                rawMatchScore: rawMatchScore,
+                processedMatchScore: matchScore,
+                currentUserRole: userRole,
                 rawListing: listing,
                 rawPost: post
             });
@@ -198,7 +218,8 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
                 rooms: post.odaSayisi || "",
                 area: post.brutMetreKare ? `${post.brutMetreKare} m²` : "",
                 landlord: post.user ? `${post.user.name} ${post.user.surname}` : "",
-                matchScore: listing.matchScore || post.matchScore || null, // Uyumluluk oranı
+                landlordProfilePicture: post.user?.profilePictureUrl || null,
+                matchScore: matchScore, // İşlenmiş match score
                 postId: post.postId,
                 type: "normal"
             };
@@ -212,6 +233,7 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
                 rooms: meta.bedroomCount ? `${meta.bedroomCount} oda` : "",
                 area: "",
                 landlord: meta.hostName || "",
+                landlordProfilePicture: null,
                 rating: meta.rating || null,
                 postId: meta.id,
                 type: "meta"
@@ -225,6 +247,7 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
             rooms: "",
             area: "",
             landlord: "",
+            landlordProfilePicture: null,
             matchScore: null,
             postId: null,
             type: "unknown"
@@ -237,8 +260,11 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
     console.log("🎯 ExplorePostInfo - Processed listing data:", {
         type: listingData.type,
         landlord: listingData.landlord,
+        landlordProfilePicture: listingData.landlordProfilePicture,
         matchScore: listingData.matchScore,
-        hasMatchScore: !!(listingData.matchScore && listingData.matchScore > 0)
+        hasMatchScore: !!(listingData.matchScore && listingData.matchScore > 0),
+        userRole: userRole,
+        shouldShowMatchScore: userRole === "KIRACI"
     });
 
     // Güçlü text shadow stil objesi
@@ -266,9 +292,10 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
         <View
             className="absolute left-1 z-10"
             style={{
-                right: 96, // Sağdaki panel için yer bırak
-                bottom: safeAreaInsets.bottom + 85
+                right: 96,
+                bottom: safeAreaInsets.bottom + 60
             }}
+            pointerEvents="none" // ← GESTURE GEÇİRGEN
         >
             <View className="px-3 py-3">
                 {/* Fiyat */}
@@ -311,43 +338,72 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
                     </Text>
                 </View>
 
-                {/* Ev sahibi bilgisi ve match score - sadece Normal Post için */}
+                {/* Ev sahibi bilgisi - sadece Normal Post için */}
                 {listingData.type === "normal" && listingData.landlord && (
                     <View className="mt-1">
-                        <Text
-                            className="text-white/90 text-xs mb-1"
-                            style={subtitleShadowStyle}
-                        >
-                            👤 {listingData.landlord}
-                        </Text>
+                        {/* Ev sahibi profil resmi ve ismi */}
+                        <View className="flex-row items-center mb-2">
+                            {/* Profil Resmi */}
+                            <View
+                                className="mr-2"
+                                style={{
+                                    shadowColor: '#000',
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.8,
+                                    shadowRadius: 3,
+                                }}
+                            >
+                                <Image
+                                    source={{
+                                        uri: listingData.landlordProfilePicture || "https://via.placeholder.com/32x32/cccccc/666666?text=U"
+                                    }}
+                                    style={{
+                                        width: 32,
+                                        height: 32,
+                                        borderRadius: 16,
+                                        borderWidth: 2,
+                                        borderColor: 'rgba(255, 255, 255, 0.8)'
+                                    }}
+                                    resizeMode="cover"
+                                />
+                            </View>
 
-                        {/* Match Score bar - sadece score varsa göster */}
-                        {listingData.matchScore && listingData.matchScore > 0 ? (
+                            {/* İsim */}
+                            <Text
+                                className="text-white text-sm font-medium"
+                                style={subtitleShadowStyle}
+                            >
+                                {listingData.landlord}
+                            </Text>
+                        </View>
+
+                        {/* Match Score bar - sadece KIRACI için ve score varsa göster */}
+                        {userRole === "KIRACI" && listingData.matchScore && listingData.matchScore > 0 ? (
                             <MatchScoreBar
                                 matchScore={listingData.matchScore}
                                 showBar={true}
                                 size="xs"
                             />
-                        ) : (
+                        ) : userRole === "KIRACI" ? (
                             <Text
-                                className="text-white/70 text-xs"
+                                className="text-white text-xs"
                                 style={subtitleShadowStyle}
                             >
                                 Uyumluluk hesaplanıyor...
                             </Text>
-                        )}
+                        ) : null}
                     </View>
                 )}
 
                 {/* Rating - sadece MetaPost için (değişiklik yok) */}
-                {listingData.type === "meta" && listingData.rating && (
+                {/* {listingData.type === "meta" && listingData.rating && (
                     <Text
                         className="text-yellow-400 text-xs mt-1 font-medium"
                         style={subtitleShadowStyle}
                     >
                         ⭐ {listingData.rating}
                     </Text>
-                )}
+                )} */}
             </View>
         </View>
     );
