@@ -1385,6 +1385,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
                   ref={textInputRef}
                   className="text-base"
                   value={message}
+                  scrollEnabled={message.length > 50 ? true : false}
                   onChangeText={(text) => {
                     setMessage(text);
                     if (text.trim()) {
