@@ -1028,47 +1028,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
     });
   };
 
-  // ✅ Updated renderMessage function with proper daily grouping
-  // FlatList'i inverted modda kullanarak en alttan başlatma
-
-  // 1. ✅ FlatList'i inverted moda alın ve data sıralamasını değiştirin
-  <Animated.FlatList
-    ref={flatListRef}
-    data={messages} // ✅ .reverse() kaldırıldı çünkü inverted kullanıyoruz
-    renderItem={renderMessage}
-    keyExtractor={(item) =>
-      item.id?.toString() || `${item.senderUserId}-${item.sentAt}`
-    }
-    className="flex-1 px-4"
-    contentContainerStyle={{
-      flexGrow: 1,
-      justifyContent: "flex-end", // ✅ İçerik en alta yaslanır
-    }}
-    keyboardDismissMode="interactive"
-    showsVerticalScrollIndicator={false}
-    onScroll={handleScroll}
-    scrollEventThrottle={100}
-    inverted={true} // ✅ Inverted mode - en alttan başlar
-    maintainVisibleContentPosition={{
-      minIndexForVisible: 0,
-    }}
-    ListEmptyComponent={() => (
-      <View className="flex-1 justify-center items-center py-20">
-        <Text className="text-gray-500 text-base text-center">
-          No messages yet. Start the conversation!
-        </Text>
-      </View>
-    )}
-    // ✅ Performance optimizations
-    removeClippedSubviews={true}
-    maxToRenderPerBatch={10}
-    updateCellsBatchingPeriod={50}
-    initialNumToRender={15}
-    windowSize={10}
-    legacyImplementation={false}
-    disableVirtualization={false}
-  />;
-
   // 2. ✅ renderMessage fonksiyonunu inverted mode için güncelleme
   const renderMessage = ({ item, index }) => {
     const isSent = item.senderUserId === currentUserId;
@@ -1328,7 +1287,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
           className="flex-1 px-4"
           contentContainerStyle={{
             flexGrow: 1,
-            justifyContent: "flex-end", // ✅ İçerik en alta yaslanır
           }}
           keyboardDismissMode="interactive"
           showsVerticalScrollIndicator={false}

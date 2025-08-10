@@ -1,7 +1,7 @@
 // redux/api/chatApiSlice.js - Fixed Pagination System with Lazy Query
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-const CHAT_BASE_URL = "https://chatapi.justkey.online/";
+const CHAT_BASE_URL = "https://129d4a308991.ngrok-free.app";
 
 export const chatApiSlice = createApi({
   reducerPath: "chatApi",

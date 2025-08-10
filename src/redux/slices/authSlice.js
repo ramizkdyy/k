@@ -11,6 +11,7 @@ const initialState = {
   hasUserProfile: false,
   isLoading: false,
   error: null,
+  expoPushToken: null,
 };
 
 const authSlice = createSlice({
@@ -216,6 +217,11 @@ const authSlice = createSlice({
       state.hasUserProfile = false;
       console.log("User data cleared");
     },
+
+    setExpoPushToken: (state, action) => {
+      state.expoPushToken = action.payload;
+      console.log("Expo push token set:", action.payload?.substring(0, 20) + "...");
+    },
   },
 
   extraReducers: (builder) => {
@@ -416,6 +422,7 @@ export const {
   syncUserDataFromProfile,
   syncExpectationStatus,
   clearUserData, // NEW
+  setExpoPushToken, // NEW
 } = authSlice.actions;
 
 export default authSlice.reducer;
@@ -428,3 +435,4 @@ export const selectUserRole = (state) => state.auth.userRole || state.auth.role;
 export const selectAuthError = (state) => state.auth.error;
 export const selectAuthToken = (state) => state.auth.token;
 export const selectHasUserProfile = (state) => state.auth.hasUserProfile;
+export const selectExpoPushToken = (state) => state.auth.expoPushToken;

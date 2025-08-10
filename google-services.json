@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "468360033546",
+    "project_id": "kirax-a0e59",
+    "storage_bucket": "kirax-a0e59.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:468360033546:android:02521f95c71ffacac8b6f3",
+        "android_client_info": {
+          "package_name": "com.uygarcapar.kiraX"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmSiB1sS1ADqTY80671TyV_vlOEVFgrgk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

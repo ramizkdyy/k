@@ -27,6 +27,7 @@ export const apiSlice = createApi({
     "Expectation",
     "Matching",
     "Health",
+    "Notification",
   ],
   endpoints: (builder) => ({
     // User endpoints
@@ -63,6 +64,24 @@ export const apiSlice = createApi({
     healthCheck: builder.query({
       query: () => "/api/HealthCheck",
       providesTags: ["Health"],
+    }),
+
+    // Notification endpoints
+    registerNotificationToken: builder.mutation({
+      query: (tokenData) => ({
+        url: "/api/notification/register-token",
+        method: "POST",
+        body: tokenData,
+      }),
+      invalidatesTags: ["Notification"],
+    }),
+    unregisterNotificationToken: builder.mutation({
+      query: (tokenData) => ({
+        url: "/api/notification/unregister-token",
+        method: "POST",
+        body: tokenData,
+      }),
+      invalidatesTags: ["Notification"],
     }),
 
     // Post endpoints
@@ -209,7 +228,14 @@ export const apiSlice = createApi({
 
     // FYP (For You Page) endpoints
     getForYouPage: builder.query({
-      query: ({ userId, latitude, longitude, radiusKm = 50, limit = 15, isCached = false }) => ({
+      query: ({
+        userId,
+        latitude,
+        longitude,
+        radiusKm = 50,
+        limit = 15,
+        isCached = false,
+      }) => ({
         url: `/api/Fyp/GetForYourPage?userId=${userId}&latitude=${latitude}&longitude=${longitude}&radiusKm=${radiusKm}&limit=${limit}&isCached=${isCached}`,
         method: "GET",
       }),
@@ -224,7 +250,7 @@ export const apiSlice = createApi({
         radiusKm = 50,
         normalPostLimit = 15,
         metaPostLimit = 15,
-        page = 1
+        page = 1,
       }) => ({
         url: `/api/Fyp/GetTikTokFeed`,
         method: "GET",
@@ -235,8 +261,8 @@ export const apiSlice = createApi({
           radiusKm,
           normalPostLimit,
           metaPostLimit,
-          page
-        }
+          page,
+        },
       }),
       providesTags: ["Post"],
       // Cache için 5 dakika
@@ -256,8 +282,10 @@ export const apiSlice = createApi({
         };
       },
       forceRefetch({ currentArg, previousArg }) {
-        return currentArg?.page !== previousArg?.page ||
-          currentArg?.userId !== previousArg?.userId;
+        return (
+          currentArg?.page !== previousArg?.page ||
+          currentArg?.userId !== previousArg?.userId
+        );
       },
     }),
     getNearbyPostsPaginated: builder.query({
@@ -363,8 +391,9 @@ export const apiSlice = createApi({
       // Pagination için cache merge stratejisi
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         const { landlordUserId, minMatchScore, propertyId } = queryArgs;
-        return `${endpointName}-${landlordUserId}-${minMatchScore}-${propertyId || "all"
-          }`;
+        return `${endpointName}-${landlordUserId}-${minMatchScore}-${
+          propertyId || "all"
+        }`;
       },
       merge: (currentCache, newItems, { arg }) => {
         if (arg.page === 1) {
@@ -407,8 +436,9 @@ export const apiSlice = createApi({
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         const { landlordUserId, minMatchScore, propertyId, includeFallback } =
           queryArgs;
-        return `${endpointName}-${landlordUserId}-${minMatchScore}-${propertyId || "all"
-          }-${includeFallback}`;
+        return `${endpointName}-${landlordUserId}-${minMatchScore}-${
+          propertyId || "all"
+        }-${includeFallback}`;
       },
       merge: (currentCache, newItems, { arg }) => {
         if (arg.page === 1) {
@@ -627,7 +657,6 @@ export const apiSlice = createApi({
       invalidatesTags: ["Profile", "Post"],
     }),
 
-
     // Updated expectation endpoints with "ById" suffix
     createLandlordExpectation: builder.mutation({
       query: (expectationData) => ({
@@ -686,18 +715,17 @@ export const apiSlice = createApi({
         body: actionData,
       }),
       invalidatesTags: (result, error, { ReceiverUserId, profileAction }) => {
-        const tags = [
-          { type: "Profile", id: ReceiverUserId },
-          "Profile"
-        ];
+        const tags = [{ type: "Profile", id: ReceiverUserId }, "Profile"];
 
         // Eğer rating ise Profile tag'ini invalidate et
-        if (profileAction === 2) { // RateProfile = 2
+        if (profileAction === 2) {
+          // RateProfile = 2
           tags.push({ type: "ProfileRating", id: ReceiverUserId });
         }
 
         // Eğer favorite ise favorileri invalidate et
-        if (profileAction === 0 || profileAction === 1) { // AddFavorite = 0, RemoveFavorite = 1
+        if (profileAction === 0 || profileAction === 1) {
+          // AddFavorite = 0, RemoveFavorite = 1
           tags.push("ProfileFavorites");
         }
 
@@ -709,21 +737,25 @@ export const apiSlice = createApi({
           const { data } = await queryFulfilled;
 
           // Rating işlemi başarılı olduysa, ilgili profili yeniden fetch et
-          if (actionData.profileAction === 2 && data?.isSuccess) { // RateProfile
+          if (actionData.profileAction === 2 && data?.isSuccess) {
+            // RateProfile
             dispatch(
               apiSlice.util.invalidateTags([
-                { type: "Profile", id: actionData.ReceiverUserId }
+                { type: "Profile", id: actionData.ReceiverUserId },
               ])
             );
           }
 
           // Favorite işlemi başarılı olduysa favorileri güncelle
-          if ((actionData.profileAction === 0 || actionData.profileAction === 1) && data?.isSuccess) {
+          if (
+            (actionData.profileAction === 0 ||
+              actionData.profileAction === 1) &&
+            data?.isSuccess
+          ) {
             dispatch(
               apiSlice.util.invalidateTags(["ProfileFavorites", "Profile"])
             );
           }
-
         } catch (error) {
           console.error("Profile action failed:", error);
         }
@@ -884,8 +916,9 @@ export const apiSlice = createApi({
       // Pagination için cache merge stratejisi
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         const { LandLordUserId, minSimilarityScore } = queryArgs;
-        return `${endpointName}-${LandLordUserId || "all"
-          }-${minSimilarityScore}`;
+        return `${endpointName}-${
+          LandLordUserId || "all"
+        }-${minSimilarityScore}`;
       },
       merge: (currentCache, newItems, { arg }) => {
         if (arg.page === 1) {
@@ -950,6 +983,10 @@ export const {
 
   // Health hooks
   useHealthCheckQuery,
+
+  // Notification hooks
+  useRegisterNotificationTokenMutation,
+  useUnregisterNotificationTokenMutation,
 
   // Post hooks
   useGetAllPostsQuery, // Eski hook (geriye dönük uyumluluk için)

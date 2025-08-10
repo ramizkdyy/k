@@ -387,6 +387,18 @@ const MessagesScreen = ({ navigation }) => {
                     { text: "Cancel", style: "cancel" },
                     {
                       text: "Start Chat",
+                      onPress: (userId) => {
+                        if (userId && userId.trim()) {
+                          console.log("🚀 Starting chat with user ID:", userId);
+                          navigation.navigate("ChatDetail", {
+                            partnerId: userId.trim(),
+                            partnerName: `User ${userId.trim()}`,
+                            partner: { id: userId.trim(), name: `User ${userId.trim()}` },
+                          });
+                        } else {
+                          Alert.alert("Error", "Please enter a valid user ID");
+                        }
+                      },
                     },
                   ],
                   "plain-text"
