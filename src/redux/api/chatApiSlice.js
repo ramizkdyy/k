@@ -1,7 +1,7 @@
-// redux/api/chatApiSlice.js - Fixed Pagination System with Lazy Query
+// redux/api/chatApiSlice.js - Backend Response Format'ına Uygun Güncellemeler
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-const CHAT_BASE_URL = "https://b616de053604.ngrok-free.app";
+const CHAT_BASE_URL = "https://chatapi.justkey.online/";
 
 export const chatApiSlice = createApi({
   reducerPath: "chatApi",
@@ -19,9 +19,13 @@ export const chatApiSlice = createApi({
 
       return headers;
     },
-    // Response transformer - Backend response'unu standardize et
+    // ✅ Enhanced response transformer - Backend'in yeni response format'ına uyumlu
     transformResponse: (response, meta, arg) => {
-      console.log("API Response:", response);
+      console.log("🔍 API Response received:", {
+        endpoint: arg.endpointName || "unknown",
+        response: response,
+        meta: meta,
+      });
 
       // Eğer response direkt array veya primitive ise, doğrudan döndür
       if (Array.isArray(response) || typeof response !== "object") {
@@ -40,9 +44,13 @@ export const chatApiSlice = createApi({
       // Default olarak response'u döndür
       return response;
     },
-    // Error handler
+    // Enhanced error handler
     transformErrorResponse: (response, meta, arg) => {
-      console.error("API Error Response:", response);
+      console.error("❌ API Error Response:", {
+        endpoint: arg.endpointName || "unknown",
+        response: response,
+        meta: meta,
+      });
 
       // Backend error response'unu handle et
       if (response.data?.message) {
@@ -53,52 +61,103 @@ export const chatApiSlice = createApi({
         return { error: response.data.error };
       }
 
+      if (response.status === 401) {
+        return { error: "Authentication failed. Please login again." };
+      }
+
+      if (response.status === 403) {
+        return { error: "Access denied." };
+      }
+
+      if (response.status >= 500) {
+        return { error: "Server error. Please try again later." };
+      }
+
       return { error: "An unexpected error occurred" };
     },
   }),
   tagTypes: ["ChatMessage", "ChatPartner", "UnreadCount", "Notification"],
   // ✅ Reduced cache times for real-time updates
   keepUnusedDataFor: 60, // 1 minute cache for unused data
-  refetchOnMountOrArgChange: true, // Refetch on component mount
-  refetchOnFocus: true, // Refetch when window gains focus
-  refetchOnReconnect: true, // Refetch on network reconnect
+  refetchOnMountOrArgChange: true,
+  refetchOnFocus: true,
+  refetchOnReconnect: true,
   endpoints: (builder) => ({
-    // ✅ FIXED: Chat geçmişini getir - Her sayfa için ayrı cache key
+    // ✅ ENHANCED: Chat geçmişini getir - Backend'in yeni pagination format'ına uyumlu
     getChatHistory: builder.query({
-      query: ({ partnerId, page = 1 }) => ({
-        url: `/api/chat/history/${partnerId}?page=${page}`,
+      query: ({ partnerId, page = 1, pageSize = 20 }) => ({
+        url: `/api/chat/history/${partnerId}?page=${page}&pageSize=${pageSize}`,
         method: "GET",
       }),
       providesTags: (result, error, { partnerId, page }) => [
-        { type: "ChatMessage", id: `${partnerId}-page-${page}` }, // ✅ Her sayfa için ayrı tag
-        { type: "ChatMessage", id: partnerId }, // Genel tag
+        { type: "ChatMessage", id: `${partnerId}-page-${page}` },
+        { type: "ChatMessage", id: partnerId },
       ],
       keepUnusedDataFor: 300, // 5 minutes cache
+      // ✅ ENHANCED: Backend'in yeni response format'ını handle et
       transformResponse: (response, meta, arg) => {
-        console.log(`Chat History Response (Page ${arg.page}):`, response);
+        console.log(`🔍 Chat History Response (Page ${arg.page}):`, response);
 
-        // Response array ise direkt döndür
-        if (Array.isArray(response)) {
-          return response;
+        // ✅ Backend'in yeni format'ı: { messages: [], hasNextPage: boolean, currentPage: number, pageSize: number }
+        if (response && typeof response === "object" && response.messages) {
+          const { messages, hasNextPage, currentPage, pageSize } = response;
+
+          // Messages array'ini validate et
+          if (Array.isArray(messages)) {
+            console.log(
+              `✅ Valid backend format - Page ${currentPage}: ${messages.length} messages, hasNext: ${hasNextPage}`
+            );
+            return {
+              messages: messages,
+              hasNextPage: Boolean(hasNextPage),
+              currentPage: currentPage || arg.page,
+              pageSize: pageSize || 20,
+            };
+          }
         }
 
-        // Object içinde array arama
+        // ✅ Fallback: Response array ise (eski format için backward compatibility)
+        if (Array.isArray(response)) {
+          console.log(
+            `⚠️ Legacy array format detected - ${response.length} messages`
+          );
+          return {
+            messages: response,
+            hasNextPage: response.length === (arg.pageSize || 20),
+            currentPage: arg.page || 1,
+            pageSize: arg.pageSize || 20,
+          };
+        }
+
+        // ✅ Fallback: Object içinde array arama (diğer formatlar için)
         if (response?.result && Array.isArray(response.result)) {
-          return response.result;
+          return {
+            messages: response.result,
+            hasNextPage: response.result.length === (arg.pageSize || 20),
+            currentPage: arg.page || 1,
+            pageSize: arg.pageSize || 20,
+          };
         }
 
         if (response?.data && Array.isArray(response.data)) {
-          return response.data;
+          return {
+            messages: response.data,
+            hasNextPage: response.data.length === (arg.pageSize || 20),
+            currentPage: arg.page || 1,
+            pageSize: arg.pageSize || 20,
+          };
         }
 
-        if (response?.messages && Array.isArray(response.messages)) {
-          return response.messages;
-        }
-
-        // Eğer hiç mesaj yoksa boş array döndür
-        return [];
+        // ✅ Default: Boş response
+        console.log("⚠️ Unknown response format, returning empty");
+        return {
+          messages: [],
+          hasNextPage: false,
+          currentPage: arg.page || 1,
+          pageSize: arg.pageSize || 20,
+        };
       },
-      // ✅ FIXED: Her page için ayrı cache key oluştur
+      // ✅ Her page için ayrı cache key oluştur
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         return `${endpointName}-${queryArgs.partnerId}-page-${queryArgs.page}`;
       },
@@ -108,18 +167,19 @@ export const chatApiSlice = createApi({
       },
     }),
 
-    // Chat partnerlarını getir - ✅ More aggressive refetching
+    // ✅ ENHANCED: Chat partnerlarını getir - Backend response format'ına uyumlu
     getChatPartners: builder.query({
       query: () => "/api/chat/partners",
       providesTags: ["ChatPartner"],
-      keepUnusedDataFor: 30, // ✅ Reduced to 30 seconds for fresher partner data
+      keepUnusedDataFor: 30, // 30 seconds for fresher partner data
       refetchOnMountOrArgChange: true,
       refetchOnFocus: true,
       transformResponse: (response) => {
-        console.log("Chat Partners Response:", response);
+        console.log("🔍 Chat Partners Response:", response);
 
         // Response direkt array ise
         if (Array.isArray(response)) {
+          console.log(`✅ Partners array format - ${response.length} partners`);
           return response;
         }
 
@@ -141,19 +201,20 @@ export const chatApiSlice = createApi({
         }
 
         // Eğer hiç partner yoksa boş array döndür
+        console.log("⚠️ No partners found or invalid format");
         return [];
       },
     }),
 
-    // Okunmamış mesaj sayısını getir - ✅ More frequent updates
+    // ✅ ENHANCED: Okunmamış mesaj sayısını getir - Backend response format'ına uyumlu
     getUnreadCount: builder.query({
       query: () => "/api/chat/unread-count",
       providesTags: ["UnreadCount"],
-      keepUnusedDataFor: 15, // ✅ 15 seconds cache for unread count
+      keepUnusedDataFor: 15, // 15 seconds cache for unread count
       refetchOnMountOrArgChange: true,
       refetchOnFocus: true,
       transformResponse: (response) => {
-        console.log("Unread Count Response:", response);
+        console.log("🔍 Unread Count Response:", response);
 
         // Response direkt number ise
         if (typeof response === "number") {
@@ -162,23 +223,35 @@ export const chatApiSlice = createApi({
 
         // Response object ise count field'ını ara
         if (response?.count !== undefined) {
-          return response;
+          return { count: Number(response.count) };
         }
 
         if (response?.result?.count !== undefined) {
-          return { count: response.result.count };
+          return { count: Number(response.result.count) };
         }
 
         if (response?.data?.count !== undefined) {
-          return { count: response.data.count };
+          return { count: Number(response.data.count) };
+        }
+
+        // Backend'in direkt { count: number } format'ı
+        if (typeof response === "object" && response !== null) {
+          // Response içindeki sayısal değeri bul
+          const numericValue = Object.values(response).find(
+            (val) => typeof val === "number"
+          );
+          if (numericValue !== undefined) {
+            return { count: numericValue };
+          }
         }
 
         // Default 0
+        console.log("⚠️ No valid count found, defaulting to 0");
         return { count: 0 };
       },
     }),
 
-    // ✅ Mesaj gönder - Better invalidation strategy
+    // ✅ ENHANCED: Mesaj gönder - Backend response format'ına uyumlu
     sendMessage: builder.mutation({
       query: (messageData) => ({
         url: "/api/chat/send-message",
@@ -188,6 +261,31 @@ export const chatApiSlice = createApi({
           content: messageData.content,
         },
       }),
+      // ✅ Enhanced response handling
+      transformResponse: (response) => {
+        console.log("🔍 Send Message Response:", response);
+
+        // Backend'in success response'unu handle et
+        if (response?.success) {
+          return {
+            success: true,
+            message: response.message || "Message sent successfully",
+          };
+        }
+
+        if (response?.isSuccess) {
+          return {
+            success: true,
+            message: response.message || "Message sent successfully",
+          };
+        }
+
+        // Default success response
+        return {
+          success: true,
+          message: "Message sent successfully",
+        };
+      },
       // ✅ Invalidate relevant tags to trigger refetch
       invalidatesTags: (result, error, { receiverUserId }) => [
         "ChatPartner", // Partner listesini güncelle
@@ -197,12 +295,16 @@ export const chatApiSlice = createApi({
       ],
     }),
 
-    // Mesajları okundu olarak işaretle
+    // ✅ ENHANCED: Mesajları okundu olarak işaretle
     markMessagesAsRead: builder.mutation({
       query: (partnerId) => ({
         url: `/api/chat/mark-read/${partnerId}`,
         method: "POST",
       }),
+      transformResponse: (response) => {
+        console.log("🔍 Mark Read Response:", response);
+        return response;
+      },
       invalidatesTags: (result, error, partnerId) => [
         "UnreadCount", // Unread count'u güncelle
         "ChatPartner", // Partner listesini güncelle (last message read status)
@@ -211,10 +313,207 @@ export const chatApiSlice = createApi({
       ],
     }),
 
+    // ✅ ENHANCED: Partner by ID getir - Backend response format'ına uyumlu
+    getPartnerById: builder.query({
+      query: (partnerId) => `/api/chat/GetPartner/${partnerId}`,
+      keepUnusedDataFor: 120, // 2 minutes cache
+      transformResponse: (response) => {
+        console.log("🔍 Partner By ID Response:", response);
+
+        // Response direkt partner object ise
+        if (response && typeof response === "object" && response.id) {
+          return response;
+        }
+
+        // Nested response check
+        if (response?.result && response.result.id) {
+          return response.result;
+        }
+
+        if (response?.data && response.data.id) {
+          return response.data;
+        }
+
+        return null;
+      },
+    }),
+
+    // ✅ NEW: Partner by username getir
+    getPartnerByUsername: builder.query({
+      query: (username) => `/api/chat/GetPartnerByUsername/${username}`,
+      keepUnusedDataFor: 60, // 1 minute cache
+      transformResponse: (response) => {
+        console.log("🔍 Partner By Username Response:", response);
+
+        if (response && typeof response === "object" && response.id) {
+          return response;
+        }
+
+        if (response?.result && response.result.id) {
+          return response.result;
+        }
+
+        if (response?.data && response.data.id) {
+          return response.data;
+        }
+
+        return null;
+      },
+    }),
+
+    // ✅ NEW: Partner arama
+    searchPartners: builder.query({
+      query: ({ query, limit = 10 }) =>
+        `/api/chat/search-partners?q=${encodeURIComponent(
+          query
+        )}&limit=${limit}`,
+      keepUnusedDataFor: 30, // 30 seconds cache for search results
+      transformResponse: (response) => {
+        console.log("🔍 Search Partners Response:", response);
+
+        // Backend format: { searchTerm: string, results: [], count: number }
+        if (response?.results && Array.isArray(response.results)) {
+          return {
+            searchTerm: response.searchTerm,
+            results: response.results,
+            count: response.count || response.results.length,
+          };
+        }
+
+        // Fallback: direkt array
+        if (Array.isArray(response)) {
+          return { searchTerm: "", results: response, count: response.length };
+        }
+
+        return {
+          searchTerm: "",
+          results: [],
+          count: 0,
+        };
+      },
+    }),
+
+    // ✅ NEW: Chat partner arama (sadece mesajlaştığı kişiler arasında)
+    searchChatPartners: builder.query({
+      query: ({ query, limit = 10 }) =>
+        `/api/chat/search-chat-partners?q=${encodeURIComponent(
+          query
+        )}&limit=${limit}`,
+      keepUnusedDataFor: 30,
+      transformResponse: (response) => {
+        console.log("🔍 Search Chat Partners Response:", response);
+
+        if (response?.results && Array.isArray(response.results)) {
+          return {
+            searchTerm: response.searchTerm,
+            results: response.results,
+            count: response.count || response.results.length,
+          };
+        }
+
+        if (Array.isArray(response)) {
+          return {
+            searchTerm: "",
+            results: response,
+            count: response.length,
+          };
+        }
+
+        return {
+          searchTerm: "",
+          results: [],
+          count: 0,
+        };
+      },
+    }),
+
+    // ✅ ENHANCED: Unread summary getir - Backend response format'ına uyumlu
+    getUnreadSummary: builder.query({
+      query: () => "/api/chat/unread-summary",
+      providesTags: ["UnreadCount"],
+      keepUnusedDataFor: 30,
+      transformResponse: (response) => {
+        console.log("🔍 Unread Summary Response:", response);
+
+        // Backend format: { totalUnreadMessages: number, totalUnreadChats: number, unreadChats: [] }
+        if (response && typeof response === "object") {
+          return {
+            totalUnreadMessages:
+              response.totalUnreadMessages || response.TotalUnreadMessages || 0,
+            totalUnreadChats:
+              response.totalUnreadChats || response.TotalUnreadChats || 0,
+            unreadChats: response.unreadChats || response.UnreadChats || [],
+          };
+        }
+
+        return {
+          totalUnreadMessages: 0,
+          totalUnreadChats: 0,
+          unreadChats: [],
+        };
+      },
+    }),
+
+    // ✅ NEW: Belirli chat için unread count
+    getUnreadCountForChat: builder.query({
+      query: (partnerId) => `/api/chat/unread-count/${partnerId}`,
+      keepUnusedDataFor: 15,
+      transformResponse: (response) => {
+        console.log("🔍 Unread Count For Chat Response:", response);
+
+        if (response?.unreadCount !== undefined) {
+          return {
+            partnerId: response.partnerId,
+            unreadCount: response.unreadCount,
+          };
+        }
+
+        if (typeof response === "number") {
+          return {
+            partnerId: "",
+            unreadCount: response,
+          };
+        }
+
+        return {
+          partnerId: "",
+          unreadCount: 0,
+        };
+      },
+    }),
+
+    // ✅ NEW: Chat partners with unread count
+    getChatPartnersWithUnreadCount: builder.query({
+      query: () => "/api/chat/partners-with-unread",
+      providesTags: ["ChatPartner", "UnreadCount"],
+      keepUnusedDataFor: 30,
+      transformResponse: (response) => {
+        console.log("🔍 Chat Partners With Unread Response:", response);
+
+        if (Array.isArray(response)) {
+          return response;
+        }
+
+        if (response?.result && Array.isArray(response.result)) {
+          return response.result;
+        }
+
+        if (response?.data && Array.isArray(response.data)) {
+          return response.data;
+        }
+
+        return [];
+      },
+    }),
+
     // ✅ Health check endpoint
     chatHealthCheck: builder.query({
       query: () => "/health",
       keepUnusedDataFor: 0,
+      transformResponse: (response) => {
+        console.log("🔍 Health Check Response:", response);
+        return response;
+      },
     }),
 
     // ✅ Belirli bir kullanıcının online durumunu kontrol et
@@ -222,6 +521,7 @@ export const chatApiSlice = createApi({
       query: (userId) => `/api/chat/user-status/${userId}`,
       keepUnusedDataFor: 30,
       transformResponse: (response) => {
+        console.log("🔍 User Online Status Response:", response);
         return {
           userId: response.userId || response.UserId,
           isOnline: response.isOnline || response.IsOnline || false,
@@ -235,6 +535,7 @@ export const chatApiSlice = createApi({
       query: () => "/api/chat/stats",
       keepUnusedDataFor: 300,
       transformResponse: (response) => {
+        console.log("🔍 Chat Stats Response:", response);
         return {
           totalChats: response.totalChats || response.TotalChats || 0,
           unreadCount: response.unreadCount || response.UnreadCount || 0,
@@ -243,34 +544,54 @@ export const chatApiSlice = createApi({
       },
     }),
 
-    // Notification endpoints
+    // ✅ Notification endpoints - Backend response format'ına uyumlu
     registerNotificationToken: builder.mutation({
       query: (tokenData) => ({
         url: "/api/notification/register-token",
         method: "POST",
         body: tokenData,
       }),
+      transformResponse: (response) => {
+        console.log("🔍 Register Notification Token Response:", response);
+        return response;
+      },
       invalidatesTags: ["Notification"],
     }),
+
     unregisterNotificationToken: builder.mutation({
       query: (tokenData) => ({
         url: "/api/notification/unregister-token",
         method: "POST",
         body: tokenData,
       }),
+      transformResponse: (response) => {
+        console.log("🔍 Unregister Notification Token Response:", response);
+        return response;
+      },
       invalidatesTags: ["Notification"],
     }),
   }),
 });
 
-// ✅ FIXED: Export all hooks including lazy queries
+// ✅ Export all hooks including new ones
 export const {
   useGetChatHistoryQuery,
-  useLazyGetChatHistoryQuery, // ✅ Bu hook otomatik olarak oluşturuluyor
+  useLazyGetChatHistoryQuery,
   useGetChatPartnersQuery,
   useGetUnreadCountQuery,
   useSendMessageMutation,
   useMarkMessagesAsReadMutation,
+  useGetPartnerByIdQuery,
+  useLazyGetPartnerByIdQuery,
+  useGetPartnerByUsernameQuery,
+  useLazyGetPartnerByUsernameQuery,
+  useSearchPartnersQuery,
+  useLazySearchPartnersQuery,
+  useSearchChatPartnersQuery,
+  useLazySearchChatPartnersQuery,
+  useGetUnreadSummaryQuery,
+  useGetUnreadCountForChatQuery,
+  useGetChatPartnersWithUnreadCountQuery,
   useChatHealthCheckQuery,
   useGetUserOnlineStatusQuery,
   useGetChatStatsQuery,
@@ -278,9 +599,9 @@ export const {
   useUnregisterNotificationTokenMutation,
 } = chatApiSlice;
 
-// ✅ Enhanced SignalR ile real-time mesaj yönetimi için helper functions
+// ✅ ENHANCED: SignalR ile real-time mesaj yönetimi için helper functions - Backend format'ına uyumlu
 export const chatApiHelpers = {
-  // ✅ FIXED: Pagination için mesajları birleştir
+  // ✅ ENHANCED: Pagination için mesajları birleştir - Backend response format'ına uyumlu
   getCombinedMessages: (getState, partnerId, maxPages = 10) => {
     const state = getState();
     const allMessages = [];
@@ -290,18 +611,36 @@ export const chatApiHelpers = {
       const cacheKey = `getChatHistory({"partnerId":"${partnerId}","page":${page}})`;
       const pageCache = state.chatApi.queries[cacheKey];
 
-      if (pageCache?.data && Array.isArray(pageCache.data)) {
-        console.log(
-          `📖 Page ${page} found with ${pageCache.data.length} messages`
-        );
-        allMessages.push(...pageCache.data);
+      if (pageCache?.data) {
+        // ✅ Backend'in yeni format'ını handle et
+        const pageData = pageCache.data;
+        let pageMessages = [];
+
+        if (pageData.messages && Array.isArray(pageData.messages)) {
+          // Yeni backend format
+          pageMessages = pageData.messages;
+        } else if (Array.isArray(pageData)) {
+          // Eski format (backward compatibility)
+          pageMessages = pageData;
+        }
+
+        if (pageMessages.length > 0) {
+          console.log(
+            `📖 Page ${page} found with ${pageMessages.length} messages`
+          );
+          allMessages.push(...pageMessages);
+        } else if (page === 1) {
+          console.log("📖 No first page data found");
+          break;
+        } else {
+          console.log(`📖 No more pages after ${page - 1}`);
+          break;
+        }
       } else if (page === 1) {
-        // İlk sayfa yoksa boş array döndür
-        console.log("📖 No first page data found");
+        console.log("📖 No first page cache found");
         break;
       } else {
-        // Sonraki sayfalar yoksa dur
-        console.log(`📖 No more pages after ${page - 1}`);
+        console.log(`📖 No more cached pages after ${page - 1}`);
         break;
       }
     }
@@ -323,9 +662,20 @@ export const chatApiHelpers = {
     return uniqueMessages;
   },
 
-  // SignalR'dan gelen mesajı cache'e manuel ekle
+  // ✅ ENHANCED: SignalR'dan gelen mesajı cache'e manuel ekle - Backend field names ile uyumlu
   addMessageToCache: (dispatch, partnerId, messageData) => {
     console.log("🔄 Adding message to cache:", { partnerId, messageData });
+
+    // ✅ Backend field names'leri normalize et
+    const normalizedMessage = {
+      id: messageData.Id || messageData.id || `msg-${Date.now()}`,
+      senderUserId: messageData.SenderUserId || messageData.senderUserId,
+      receiverUserId: messageData.ReceiverUserId || messageData.receiverUserId,
+      content: messageData.Content || messageData.content,
+      sentAt:
+        messageData.SentAt || messageData.sentAt || new Date().toISOString(),
+      isRead: messageData.IsRead || messageData.isRead || false,
+    };
 
     // Sadece ilk sayfayı güncelle (en yeni mesajlar burada)
     dispatch(
@@ -333,45 +683,58 @@ export const chatApiHelpers = {
         "getChatHistory",
         { partnerId, page: 1 },
         (draft) => {
-          if (Array.isArray(draft)) {
-            const newMessage = {
-              id: messageData.Id || messageData.id || `msg-${Date.now()}`,
-              senderUserId:
-                messageData.SenderUserId || messageData.senderUserId,
-              receiverUserId:
-                messageData.ReceiverUserId || messageData.receiverUserId,
-              content: messageData.Content || messageData.content,
-              sentAt:
-                messageData.SentAt ||
-                messageData.sentAt ||
-                new Date().toISOString(),
-              isRead: messageData.IsRead || messageData.isRead || false,
-            };
+          // ✅ Backend'in yeni format'ını handle et
+          let messages = [];
 
-            // Duplicate kontrolü
-            const exists = draft.some(
-              (msg) =>
-                msg.id === newMessage.id ||
-                (msg.content === newMessage.content &&
-                  msg.senderUserId === newMessage.senderUserId &&
-                  Math.abs(new Date(msg.sentAt) - new Date(newMessage.sentAt)) <
-                    2000)
-            );
+          if (draft.messages && Array.isArray(draft.messages)) {
+            // Yeni backend format
+            messages = draft.messages;
+          } else if (Array.isArray(draft)) {
+            // Eski format (backward compatibility)
+            messages = draft;
+            // Array'i yeni format'a dönüştür
+            Object.assign(draft, {
+              messages: messages,
+              hasNextPage: draft.hasNextPage || false,
+              currentPage: 1,
+              pageSize: 20,
+            });
+            messages = draft.messages;
+          } else {
+            // Tamamen yeni cache
+            Object.assign(draft, {
+              messages: [],
+              hasNextPage: false,
+              currentPage: 1,
+              pageSize: 20,
+            });
+            messages = draft.messages;
+          }
 
-            if (!exists) {
-              console.log("✅ Adding new message to cache");
-              // Add at the beginning since latest messages come first
-              draft.unshift(newMessage);
-            } else {
-              console.log("⚠️ Duplicate message, not adding to cache");
-            }
+          // Duplicate kontrolü
+          const exists = messages.some(
+            (msg) =>
+              msg.id === normalizedMessage.id ||
+              (msg.content === normalizedMessage.content &&
+                msg.senderUserId === normalizedMessage.senderUserId &&
+                Math.abs(
+                  new Date(msg.sentAt) - new Date(normalizedMessage.sentAt)
+                ) < 2000)
+          );
+
+          if (!exists) {
+            console.log("✅ Adding new message to cache");
+            // Add at the beginning since latest messages come first
+            messages.unshift(normalizedMessage);
+          } else {
+            console.log("⚠️ Duplicate message, not adding to cache");
           }
         }
       )
     );
   },
 
-  // Cache'deki mesajları okundu olarak işaretle
+  // ✅ ENHANCED: Cache'deki mesajları okundu olarak işaretle - Backend format'ına uyumlu
   markCacheMessagesAsRead: (dispatch, partnerId, currentUserId) => {
     console.log("👁️ Marking cache messages as read:", {
       partnerId,
@@ -385,20 +748,26 @@ export const chatApiHelpers = {
           "getChatHistory",
           { partnerId, page },
           (draft) => {
-            if (Array.isArray(draft)) {
-              draft.forEach((msg) => {
-                if (msg.senderUserId === currentUserId) {
-                  msg.isRead = true;
-                }
-              });
+            let messages = [];
+
+            if (draft.messages && Array.isArray(draft.messages)) {
+              messages = draft.messages;
+            } else if (Array.isArray(draft)) {
+              messages = draft;
             }
+
+            messages.forEach((msg) => {
+              if (msg.senderUserId === currentUserId) {
+                msg.isRead = true;
+              }
+            });
           }
         )
       );
     }
   },
 
-  // Optimistic mesajı cache'e ekle
+  // ✅ ENHANCED: Optimistic mesajı cache'e ekle - Backend format'ına uyumlu
   addOptimisticMessage: (dispatch, partnerId, messageData, currentUserId) => {
     const optimisticMessage = {
       id: `temp-${Date.now()}`,
@@ -415,11 +784,33 @@ export const chatApiHelpers = {
     dispatch(
       chatApiSlice.util.updateQueryData(
         "getChatHistory",
-        { partnerId, page: 1 }, // Sadece ilk sayfaya ekle
+        { partnerId, page: 1 },
         (draft) => {
-          if (Array.isArray(draft)) {
-            draft.unshift(optimisticMessage);
+          let messages = [];
+
+          if (draft.messages && Array.isArray(draft.messages)) {
+            messages = draft.messages;
+          } else if (Array.isArray(draft)) {
+            messages = draft;
+            // Convert to new format
+            Object.assign(draft, {
+              messages: messages,
+              hasNextPage: draft.hasNextPage || false,
+              currentPage: 1,
+              pageSize: 20,
+            });
+            messages = draft.messages;
+          } else {
+            Object.assign(draft, {
+              messages: [],
+              hasNextPage: false,
+              currentPage: 1,
+              pageSize: 20,
+            });
+            messages = draft.messages;
           }
+
+          messages.unshift(optimisticMessage);
         }
       )
     );
@@ -427,27 +818,33 @@ export const chatApiHelpers = {
     return optimisticMessage.id;
   },
 
-  // Optimistic mesajı kaldır (hata durumunda)
+  // ✅ ENHANCED: Optimistic mesajı kaldır - Backend format'ına uyumlu
   removeOptimisticMessage: (dispatch, partnerId, messageId) => {
     console.log("🗑️ Removing optimistic message:", { partnerId, messageId });
 
     dispatch(
       chatApiSlice.util.updateQueryData(
         "getChatHistory",
-        { partnerId, page: 1 }, // Sadece ilk sayfadan kaldır
+        { partnerId, page: 1 },
         (draft) => {
-          if (Array.isArray(draft)) {
-            const index = draft.findIndex((msg) => msg.id === messageId);
-            if (index !== -1) {
-              draft.splice(index, 1);
-            }
+          let messages = [];
+
+          if (draft.messages && Array.isArray(draft.messages)) {
+            messages = draft.messages;
+          } else if (Array.isArray(draft)) {
+            messages = draft;
+          }
+
+          const index = messages.findIndex((msg) => msg.id === messageId);
+          if (index !== -1) {
+            messages.splice(index, 1);
           }
         }
       )
     );
   },
 
-  // Optimistic mesajı gerçek mesajla değiştir
+  // ✅ ENHANCED: Optimistic mesajı gerçek mesajla değiştir - Backend format'ına uyumlu
   replaceOptimisticMessage: (dispatch, partnerId, tempId, realMessage) => {
     console.log("🔄 Replacing optimistic message:", {
       partnerId,
@@ -458,29 +855,35 @@ export const chatApiHelpers = {
     dispatch(
       chatApiSlice.util.updateQueryData(
         "getChatHistory",
-        { partnerId, page: 1 }, // Sadece ilk sayfada değiştir
+        { partnerId, page: 1 },
         (draft) => {
-          if (Array.isArray(draft)) {
-            const index = draft.findIndex((msg) => msg.id === tempId);
-            if (index !== -1) {
-              draft[index] = {
-                ...realMessage,
-                isOptimistic: false,
-              };
-            }
+          let messages = [];
+
+          if (draft.messages && Array.isArray(draft.messages)) {
+            messages = draft.messages;
+          } else if (Array.isArray(draft)) {
+            messages = draft;
+          }
+
+          const index = messages.findIndex((msg) => msg.id === tempId);
+          if (index !== -1) {
+            messages[index] = {
+              ...realMessage,
+              isOptimistic: false,
+            };
           }
         }
       )
     );
   },
 
-  // Cache'i temizle (çıkış yaparken)
+  // ✅ Cache'i temizle (çıkış yaparken)
   clearChatCache: (dispatch) => {
     console.log("🧹 Clearing all chat cache");
     dispatch(chatApiSlice.util.resetApiState());
   },
 
-  // Belirli bir chat'in cache'ini temizle
+  // ✅ Belirli bir chat'in cache'ini temizle
   clearSpecificChatCache: (dispatch, partnerId) => {
     console.log("🗑️ Clearing specific chat cache:", partnerId);
     // Tüm sayfa cache'lerini temizle
@@ -496,13 +899,13 @@ export const chatApiHelpers = {
     );
   },
 
-  // ✅ Partner listesini manuel güncelle - Enhanced
+  // ✅ Partner listesini manuel güncelle
   updatePartnersList: (dispatch) => {
     console.log("🔄 Invalidating partners list cache");
     dispatch(chatApiSlice.util.invalidateTags(["ChatPartner"]));
   },
 
-  // ✅ Unread count'u manuel güncelle - Enhanced
+  // ✅ Unread count'u manuel güncelle
   updateUnreadCount: (dispatch) => {
     console.log("🔄 Invalidating unread count cache");
     dispatch(chatApiSlice.util.invalidateTags(["UnreadCount"]));
@@ -536,7 +939,7 @@ export const chatApiHelpers = {
     );
   },
 
-  // ✅ Cache durumunu kontrol et
+  // ✅ ENHANCED: Cache durumunu kontrol et - Backend format'ına uyumlu
   getCacheStatus: (getState, partnerId) => {
     const state = getState();
     const chatCache =
@@ -552,6 +955,11 @@ export const chatApiHelpers = {
         isLoading: chatCache?.status === "pending",
         lastFetch: chatCache?.fulfilledTimeStamp,
         data: chatCache?.data,
+        format: chatCache?.data?.messages
+          ? "new"
+          : Array.isArray(chatCache?.data)
+          ? "legacy"
+          : "unknown",
       },
       partners: {
         exists: !!partnersCache,
@@ -580,7 +988,7 @@ export const chatApiHelpers = {
     );
   },
 
-  // ✅ Cache'deki bir mesajı güncelle (read status vs.)
+  // ✅ ENHANCED: Cache'deki bir mesajı güncelle - Backend format'ına uyumlu
   updateMessageInCache: (dispatch, partnerId, messageId, updates) => {
     console.log("🔄 Updating message in cache:", {
       partnerId,
@@ -595,18 +1003,63 @@ export const chatApiHelpers = {
           "getChatHistory",
           { partnerId, page },
           (draft) => {
-            if (Array.isArray(draft)) {
-              const messageIndex = draft.findIndex(
-                (msg) => msg.id === messageId
-              );
-              if (messageIndex !== -1) {
-                Object.assign(draft[messageIndex], updates);
-                return; // Mesaj bulundu, diğer sayfaları kontrol etme
-              }
+            let messages = [];
+
+            if (draft.messages && Array.isArray(draft.messages)) {
+              messages = draft.messages;
+            } else if (Array.isArray(draft)) {
+              messages = draft;
+            }
+
+            const messageIndex = messages.findIndex(
+              (msg) => msg.id === messageId
+            );
+            if (messageIndex !== -1) {
+              Object.assign(messages[messageIndex], updates);
+              return; // Mesaj bulundu, diğer sayfaları kontrol etme
             }
           }
         )
       );
     }
+  },
+
+  // ✅ NEW: Backend health check
+  checkBackendHealth: async (dispatch) => {
+    try {
+      const result = await dispatch(
+        chatApiSlice.endpoints.chatHealthCheck.initiate()
+      ).unwrap();
+      console.log("✅ Backend health check passed:", result);
+      return true;
+    } catch (error) {
+      console.error("❌ Backend health check failed:", error);
+      return false;
+    }
+  },
+
+  // ✅ NEW: Cache migration helper (eski format'tan yeni format'a)
+  migrateCacheFormat: (dispatch, partnerId) => {
+    console.log("🔄 Migrating cache format for:", partnerId);
+
+    dispatch(
+      chatApiSlice.util.updateQueryData(
+        "getChatHistory",
+        { partnerId, page: 1 },
+        (draft) => {
+          // Eğer eski format (direkt array) ise yeni format'a dönüştür
+          if (Array.isArray(draft) && !draft.messages) {
+            const messages = [...draft];
+            Object.assign(draft, {
+              messages: messages,
+              hasNextPage: false,
+              currentPage: 1,
+              pageSize: 20,
+            });
+            console.log("✅ Migrated cache from legacy format to new format");
+          }
+        }
+      )
+    );
   },
 };

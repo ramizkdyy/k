@@ -1,4 +1,4 @@
-// contexts/SignalRContext.js - Fixed with Better Error Handling
+// contexts/SignalRContext.js - Backend Field Names ile Uyumlu
 import React, {
   createContext,
   useContext,
@@ -39,11 +39,34 @@ export const SignalRProvider = ({ children }) => {
   const connectionRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const pingIntervalRef = useRef(null);
+  const heartbeatIntervalRef = useRef(null);
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
 
   // ✅ Güncel ngrok URL'ini dinamik olarak al veya manuel güncelle
-  const SIGNALR_BASE_URL = "https://b616de053604.ngrok-free.app"; // Bu URL'yi güncelleyin
+  const SIGNALR_BASE_URL = "https://chatapi.justkey.online/";
+
+  // ✅ ENHANCED: Heartbeat gönderme fonksiyonu (Backend'deki HeartbeatTimer ile uyumlu)
+  const startHeartbeat = useCallback(() => {
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+    }
+
+    // Backend'deki HeartbeatTimer 30 saniyede bir çalışıyor, biz 25 saniyede bir gönderelim
+    heartbeatIntervalRef.current = setInterval(async () => {
+      if (
+        connectionRef.current &&
+        connectionRef.current.state === HubConnectionState.Connected
+      ) {
+        try {
+          await connectionRef.current.invoke("Heartbeat");
+          console.log("💓 Heartbeat gönderildi");
+        } catch (error) {
+          console.log("⚠️ Heartbeat hatası:", error.message);
+        }
+      }
+    }, 25000); // 25 saniye
+  }, []);
 
   // SignalR bağlantısını başlat
   const startConnection = useCallback(async () => {
@@ -91,7 +114,6 @@ export const SignalRProvider = ({ children }) => {
         })
         .withAutomaticReconnect({
           nextRetryDelayInMilliseconds: (retryContext) => {
-            // Exponential backoff: 2s, 4s, 8s, 16s, 30s
             const delays = [2000, 4000, 8000, 16000, 30000];
             return delays[
               Math.min(retryContext.previousRetryCount, delays.length - 1)
@@ -109,6 +131,11 @@ export const SignalRProvider = ({ children }) => {
         );
         setIsConnected(false);
         setConnectionError(error?.message || "Connection closed");
+
+        // Heartbeat'i durdur
+        if (heartbeatIntervalRef.current) {
+          clearInterval(heartbeatIntervalRef.current);
+        }
 
         // Manuel reconnect deneme
         if (reconnectAttempts.current < maxReconnectAttempts) {
@@ -139,23 +166,33 @@ export const SignalRProvider = ({ children }) => {
         setConnectionError(null);
         reconnectAttempts.current = 0;
 
-        // Ping'i yeniden başlat
-        startPingInterval();
+        // Heartbeat'i yeniden başlat
+        startHeartbeat();
       });
 
-      // Message listeners
+      // ✅ ENHANCED: Backend field names ile uyumlu message listeners
       newConnection.on("ReceiveMessage", (messageData) => {
         console.log("📨 Yeni mesaj alındı:", messageData);
 
+        // ✅ Backend field names'leri normalize et
+        const normalizedData = {
+          senderId: messageData.SenderUserId || messageData.senderUserId,
+          senderName: messageData.SenderName || messageData.senderName,
+          content: messageData.Content || messageData.content,
+          sentAt: messageData.SentAt || messageData.sentAt,
+          messageId: messageData.Id || messageData.id || messageData.MessageId,
+        };
+
         // Send notification for received messages if user is not in chat screen
-        if (messageData && messageData.senderName && messageData.content) {
+        if (normalizedData.senderName && normalizedData.content) {
           notificationService.scheduleLocalNotification(
-            `${messageData.senderName}`,
-            messageData.content,
+            normalizedData.senderName,
+            normalizedData.content,
             {
               type: "chat_message",
-              chatId: messageData.senderId,
-              senderName: messageData.senderName,
+              chatId: normalizedData.senderId,
+              senderName: normalizedData.senderName,
+              messageId: normalizedData.messageId,
             }
           );
         }
@@ -163,27 +200,48 @@ export const SignalRProvider = ({ children }) => {
 
       newConnection.on("MessageSent", (confirmationData) => {
         console.log("✅ Mesaj gönderim onayı:", confirmationData);
+        // ✅ Backend field names'leri log et
+        const messageId =
+          confirmationData.MessageId || confirmationData.messageId;
+        const sentAt = confirmationData.SentAt || confirmationData.sentAt;
+        console.log("📤 Confirmed message ID:", messageId, "sent at:", sentAt);
       });
 
       newConnection.on("MessageError", (errorData) => {
         console.error("❌ Mesaj hatası:", errorData);
+        // ✅ Backend field names'leri handle et
+        const error = errorData.Error || errorData.error;
+        const details = errorData.Details || errorData.details;
+        console.error("❌ Error details:", { error, details });
       });
 
       newConnection.on("MessagesRead", (readData) => {
         console.log("👁️ Mesajlar okundu:", readData);
+        // ✅ Backend field names'leri handle et
+        const readByUserId = readData.ReadByUserId || readData.readByUserId;
+        const readAt = readData.ReadAt || readData.readAt;
+        console.log("👁️ Read by:", readByUserId, "at:", readAt);
       });
 
-      // User status listeners
+      // ✅ ENHANCED: User status listeners - Backend field names ile uyumlu
       newConnection.on("UserStatusChanged", (statusData) => {
         console.log("👤 Kullanıcı durumu değişti:", statusData);
 
+        // ✅ Backend field names'leri normalize et
+        const userId = statusData.UserId || statusData.userId;
+        const isOnline = statusData.IsOnline || statusData.isOnline;
+        const lastSeen = statusData.LastSeen || statusData.lastSeen;
+
+        console.log("👤 Status details:", { userId, isOnline, lastSeen });
+
         setOnlineUsers((prevUsers) => {
           const newUsers = new Set(prevUsers);
-          if (statusData.IsOnline) {
-            newUsers.add(statusData.UserId);
+          if (isOnline) {
+            newUsers.add(userId);
           } else {
-            newUsers.delete(statusData.UserId);
+            newUsers.delete(userId);
           }
+          console.log("👥 Online users updated:", Array.from(newUsers));
           return newUsers;
         });
       });
@@ -203,7 +261,103 @@ export const SignalRProvider = ({ children }) => {
         });
       });
 
-      // Ping/Pong listeners
+      // ✅ NEW: Backend'deki notification listeners
+      newConnection.on("NewMessageNotification", (notificationData) => {
+        console.log("🔔 Yeni mesaj bildirimi:", notificationData);
+
+        // ✅ Backend field names'leri normalize et
+        const senderId = notificationData.SenderId || notificationData.senderId;
+        const senderName =
+          notificationData.SenderName || notificationData.senderName;
+        const senderSurname =
+          notificationData.SenderSurname || notificationData.senderSurname;
+        const message = notificationData.Message || notificationData.message;
+        const messageId =
+          notificationData.MessageId || notificationData.messageId;
+
+        const fullSenderName = senderSurname
+          ? `${senderName} ${senderSurname}`
+          : senderName;
+
+        // Local notification göster
+        if (fullSenderName && message) {
+          notificationService.scheduleLocalNotification(
+            fullSenderName,
+            message,
+            {
+              type: "chat_message",
+              chatId: senderId,
+              senderName: fullSenderName,
+              messageId: messageId,
+            }
+          );
+        }
+      });
+
+      // ✅ NEW: Unread count update listeners
+      newConnection.on("UnreadCountUpdate", (updateData) => {
+        console.log("📊 Unread count güncellendi:", updateData);
+
+        const totalUnreadCount =
+          updateData.TotalUnreadCount || updateData.totalUnreadCount;
+        const totalUnreadChats =
+          updateData.TotalUnreadChats || updateData.totalUnreadChats;
+        const fromUserId = updateData.FromUserId || updateData.fromUserId;
+
+        console.log("📊 Unread details:", {
+          totalUnreadCount,
+          totalUnreadChats,
+          fromUserId,
+        });
+      });
+
+      newConnection.on("UnreadSummaryUpdate", (summaryData) => {
+        console.log("📋 Unread summary güncellendi:", summaryData);
+
+        const totalUnreadMessages =
+          summaryData.TotalUnreadMessages || summaryData.totalUnreadMessages;
+        const totalUnreadChats =
+          summaryData.TotalUnreadChats || summaryData.totalUnreadChats;
+        const unreadChats = summaryData.UnreadChats || summaryData.unreadChats;
+
+        console.log("📋 Summary details:", {
+          totalUnreadMessages,
+          totalUnreadChats,
+          unreadChats,
+        });
+      });
+
+      // ✅ ENHANCED: Heartbeat response listener
+      newConnection.on("HeartbeatResponse", (responseData) => {
+        console.log("💓 Heartbeat response alındı:", responseData);
+
+        const timestamp = responseData.Timestamp || responseData.timestamp;
+        const connectionId =
+          responseData.ConnectionId || responseData.connectionId;
+
+        setLastPingTime(new Date(timestamp));
+        console.log("💓 Heartbeat details:", { timestamp, connectionId });
+      });
+
+      // ✅ NEW: Connection established listener
+      newConnection.on("ConnectionEstablished", (connectionData) => {
+        console.log("🔗 Bağlantı kuruldu:", connectionData);
+
+        const connectionId =
+          connectionData.ConnectionId || connectionData.connectionId;
+        const connectedAt =
+          connectionData.ConnectedAt || connectionData.connectedAt;
+        const serverTime =
+          connectionData.ServerTime || connectionData.serverTime;
+
+        console.log("🔗 Connection details:", {
+          connectionId,
+          connectedAt,
+          serverTime,
+        });
+      });
+
+      // Ping/Pong listeners (eski format için backward compatibility)
       newConnection.on("Pong", (timestamp) => {
         console.log("🏓 Pong alındı:", timestamp);
         setLastPingTime(new Date(timestamp));
@@ -212,6 +366,24 @@ export const SignalRProvider = ({ children }) => {
       // Test response listener
       newConnection.on("TestResponse", (message) => {
         console.log("🧪 Test response:", message);
+      });
+
+      // ✅ NEW: User status response listener
+      newConnection.on("UserStatusResponse", (statusResponse) => {
+        console.log("👤 User status response:", statusResponse);
+
+        const userId = statusResponse.UserId || statusResponse.userId;
+        const isOnline = statusResponse.IsOnline || statusResponse.isOnline;
+        const lastSeen = statusResponse.LastSeen || statusResponse.lastSeen;
+        const activeConnections =
+          statusResponse.ActiveConnections || statusResponse.activeConnections;
+
+        console.log("👤 Status response details:", {
+          userId,
+          isOnline,
+          lastSeen,
+          activeConnections,
+        });
       });
 
       // Bağlantıyı başlat
@@ -227,8 +399,16 @@ export const SignalRProvider = ({ children }) => {
       setConnectionError(null);
       reconnectAttempts.current = 0;
 
-      // Ping interval'ı başlat
-      startPingInterval();
+      // ✅ Heartbeat'i başlat (Ping yerine)
+      startHeartbeat();
+
+      // ✅ ENHANCED: İlk bağlantıda unread count'u al
+      try {
+        await newConnection.invoke("GetUnreadCount");
+        console.log("📊 Initial unread count requested");
+      } catch (unreadError) {
+        console.log("⚠️ Get unread count hatası:", unreadError.message);
+      }
 
       // Test mesajı gönder
       try {
@@ -257,9 +437,9 @@ export const SignalRProvider = ({ children }) => {
         }, delay);
       }
     }
-  }, [token, user?.id, isConnecting, connection]);
+  }, [token, user?.id, isConnecting, connection, startHeartbeat]);
 
-  // Ping gönderme fonksiyonu
+  // ✅ Ping gönderme fonksiyonu (backward compatibility için)
   const startPingInterval = useCallback(() => {
     // Mevcut interval'ı temizle
     if (pingIntervalRef.current) {
@@ -282,7 +462,7 @@ export const SignalRProvider = ({ children }) => {
     }, 30000);
   }, []);
 
-  // Bağlantıyı durdur - ENHANCED: Complete cleanup for user switching
+  // ✅ ENHANCED: Bağlantıyı durdur - Complete cleanup for user switching
   const stopConnection = useCallback(async () => {
     console.log("🛑 SignalR bağlantısı durduruluyor...");
 
@@ -297,13 +477,19 @@ export const SignalRProvider = ({ children }) => {
       pingIntervalRef.current = null;
     }
 
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+
     if (connectionRef.current) {
       try {
         // First try to leave any groups/rooms server-side
         if (connectionRef.current.state === HubConnectionState.Connected) {
           try {
-            await connectionRef.current.invoke("Disconnect");
-            console.log("🚪 User disconnected from server groups");
+            // ✅ Backend'de böyle bir method yoksa comment out edebilirsin
+            // await connectionRef.current.invoke("Disconnect");
+            console.log("🚪 User disconnecting...");
           } catch (disconnectError) {
             console.log(
               "⚠️ Disconnect invoke hatası:",
@@ -313,15 +499,21 @@ export const SignalRProvider = ({ children }) => {
         }
 
         // Remove all event listeners to prevent memory leaks
-        connectionRef.current.off("ReceiveMessage");
-        connectionRef.current.off("MessageSent");
-        connectionRef.current.off("MessageError");
-        connectionRef.current.off("MessagesRead");
-        connectionRef.current.off("UserStatusChanged");
-        connectionRef.current.off("UserStartedTyping");
-        connectionRef.current.off("UserStoppedTyping");
-        connectionRef.current.off("Pong");
-        connectionRef.current.off("TestResponse");
+        newConnection.off("ReceiveMessage");
+        newConnection.off("MessageSent");
+        newConnection.off("MessageError");
+        newConnection.off("MessagesRead");
+        newConnection.off("UserStatusChanged");
+        newConnection.off("UserStartedTyping");
+        newConnection.off("UserStoppedTyping");
+        newConnection.off("NewMessageNotification");
+        newConnection.off("UnreadCountUpdate");
+        newConnection.off("UnreadSummaryUpdate");
+        newConnection.off("HeartbeatResponse");
+        newConnection.off("ConnectionEstablished");
+        newConnection.off("UserStatusResponse");
+        newConnection.off("Pong");
+        newConnection.off("TestResponse");
 
         await connectionRef.current.stop();
         console.log("✅ SignalR bağlantısı durduruldu");
@@ -344,7 +536,7 @@ export const SignalRProvider = ({ children }) => {
     console.log("🧹 SignalR state completely reset");
   }, []);
 
-  // Mesaj gönderme - ENHANCED: Better user validation and auth checking
+  // ✅ ENHANCED: Mesaj gönderme - Better user validation and auth checking
   const sendMessage = useCallback(
     async (receiverUserId, content) => {
       // Validate connection state
@@ -455,6 +647,40 @@ export const SignalRProvider = ({ children }) => {
     }
   }, []);
 
+  // ✅ NEW: Online status kontrolü
+  const checkUserOnlineStatus = useCallback(async (targetUserId) => {
+    if (
+      !connectionRef.current ||
+      connectionRef.current.state !== HubConnectionState.Connected
+    ) {
+      return;
+    }
+
+    try {
+      await connectionRef.current.invoke("CheckUserOnlineStatus", targetUserId);
+      console.log("👤 Online status kontrol edildi:", targetUserId);
+    } catch (error) {
+      console.log("⚠️ Check online status hatası:", error.message);
+    }
+  }, []);
+
+  // ✅ NEW: Unread summary getir
+  const getUnreadSummary = useCallback(async () => {
+    if (
+      !connectionRef.current ||
+      connectionRef.current.state !== HubConnectionState.Connected
+    ) {
+      return;
+    }
+
+    try {
+      await connectionRef.current.invoke("GetUnreadSummary");
+      console.log("📋 Unread summary istendi");
+    } catch (error) {
+      console.log("⚠️ Get unread summary hatası:", error.message);
+    }
+  }, []);
+
   // Manuel yeniden bağlanma
   const reconnect = useCallback(() => {
     console.log("🔄 Manuel yeniden bağlanma başlatılıyor...");
@@ -466,7 +692,7 @@ export const SignalRProvider = ({ children }) => {
     });
   }, [startConnection, stopConnection]);
 
-  // ENHANCED: Auth changes listener with better user switching detection
+  // ✅ ENHANCED: Auth changes listener with better user switching detection
   const previousUserIdRef = useRef(null);
   const isUserSwitchingRef = useRef(false);
 
@@ -549,6 +775,9 @@ export const SignalRProvider = ({ children }) => {
       if (pingIntervalRef.current) {
         clearInterval(pingIntervalRef.current);
       }
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+      }
       stopConnection();
     };
   }, [stopConnection]);
@@ -565,6 +794,8 @@ export const SignalRProvider = ({ children }) => {
     startTyping,
     stopTyping,
     markMessagesAsRead,
+    checkUserOnlineStatus, // ✅ NEW
+    getUnreadSummary, // ✅ NEW
     reconnect,
     startConnection,
     stopConnection,
