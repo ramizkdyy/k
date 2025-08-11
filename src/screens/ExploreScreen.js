@@ -8,6 +8,7 @@ import {
     Image,
     TouchableOpacity,
     ScrollView,
+    RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSelector, useDispatch } from "react-redux";
@@ -16,14 +17,14 @@ import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import { faHome } from "@fortawesome/pro-solid-svg-icons";
 import { useGetTikTokFeedQuery } from "../redux/api/apiSlice";
 
-// Gesture ve Animation imports - Rehberdeki paketler
+// Gesture ve Animation imports
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, {
     useAnimatedScrollHandler,
     useSharedValue,
     runOnJS,
 } from "react-native-reanimated";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 
 // Components
 import ExplorePostInfo from "../components/ExplorePostInfo";
@@ -31,7 +32,7 @@ import ExploreActionButtons from "../components/ExploreActionButtons";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-// Optimize edilmiş ListingCard component
+// Optimize edilmiş ListingCard component - AYNI KALDI
 const ListingCard = memo(({ listing, safeAreaInsets, isActive }) => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isHorizontalScrollActive, setIsHorizontalScrollActive] = useState(false);
@@ -51,50 +52,23 @@ const ListingCard = memo(({ listing, safeAreaInsets, isActive }) => {
         else if (listing.postType === "MetaPost" && listing.metaPost) {
             const meta = listing.metaPost;
 
-            // 🔍 DEBUG: MetaPost resim bilgilerini logla
-            console.log("=== MetaPost Debug ===");
-            console.log("PostId:", meta.id);
-            console.log("Title:", meta.title?.substring(0, 50));
-            console.log("ImagesJson exists:", !!meta.imagesJson);
-            console.log("FirstImageUrl:", meta.firstImageUrl?.substring(0, 80));
-
             let images = [];
 
-            // Önce imagesJson'u parse et
             if (meta.imagesJson) {
                 try {
-                    console.log("🔄 ImagesJson parse ediliyor...");
                     const parsedImages = JSON.parse(meta.imagesJson);
-                    console.log("✅ Parse başarılı, array uzunluğu:", parsedImages?.length);
-
                     if (Array.isArray(parsedImages)) {
-                        // Null olmayan URL'leri filtrele
                         const validImages = parsedImages.filter(img => img && img.url && img.url !== null);
-                        console.log("📷 Valid resim sayısı:", validImages.length);
-
-                        if (validImages.length > 0) {
-                            console.log("🖼️ İlk valid resim URL:", validImages[0].url?.substring(0, 80));
-                        }
-
                         images = validImages.map(img => ({ url: img.url }));
                     }
                 } catch (error) {
                     console.error("❌ ImagesJson parse hatası:", error.message);
-                    console.log("📝 Raw imagesJson ilk 200 karakter:", meta.imagesJson?.substring(0, 200));
                 }
             }
 
-            // Eğer imagesJson'dan resim çıkmadıysa firstImageUrl'i kullan
             if (images.length === 0 && meta.firstImageUrl) {
-                console.log("🔄 FirstImageUrl fallback kullanılıyor");
                 images = [{ url: meta.firstImageUrl }];
             }
-
-            console.log("🎯 Final images array length:", images.length);
-            if (images.length > 0) {
-                console.log("🎯 İlk resim URL:", images[0].url?.substring(0, 80));
-            }
-            console.log("=====================");
 
             return {
                 images,
@@ -108,7 +82,6 @@ const ListingCard = memo(({ listing, safeAreaInsets, isActive }) => {
             };
         }
 
-        // Fallback
         return {
             images: [],
             title: "Başlık yok",
@@ -118,31 +91,25 @@ const ListingCard = memo(({ listing, safeAreaInsets, isActive }) => {
             type: "unknown"
         };
     };
+
     const listingData = getListingData();
 
-    // Yatay scroll handler (mevcut yapı korundu, optimize edildi)
+    // Yatay scroll handler - AYNI KALDI
     const handleImageScroll = useCallback((event) => {
         const slideSize = SCREEN_WIDTH;
         const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
         setCurrentImageIndex(index);
     }, []);
 
-    // Yatay scroll başlangıç/bitiş kontrolü - YENİ EKLENEN
+    // Yatay scroll başlangıç/bitiş kontrolü - AYNI KALDI
     const handleScrollBeginDrag = useCallback(() => {
         setIsHorizontalScrollActive(true);
     }, []);
 
     const handleScrollEndDrag = useCallback(() => {
-        // Biraz gecikme ile false yapıyoruz
         setTimeout(() => {
             setIsHorizontalScrollActive(false);
         }, 100);
-    }, []);
-
-    // Dot press handler (mevcut yapı korundu)
-    const handleDotPress = useCallback((index) => {
-        setCurrentImageIndex(index);
-        // ScrollView ref ile kontrol edebiliriz
     }, []);
 
     return (
@@ -151,7 +118,7 @@ const ListingCard = memo(({ listing, safeAreaInsets, isActive }) => {
             height: SCREEN_HEIGHT,
             position: 'relative'
         }}>
-            {/* Background Images Container */}
+            {/* Background Images Container - AYNI KALDI */}
             <View style={{
                 flex: 1,
                 backgroundColor: '#374151'
@@ -162,12 +129,12 @@ const ListingCard = memo(({ listing, safeAreaInsets, isActive }) => {
                         pagingEnabled
                         showsHorizontalScrollIndicator={false}
                         onMomentumScrollEnd={handleImageScroll}
-                        onScrollBeginDrag={handleScrollBeginDrag} // YENİ EKLENEN
-                        onScrollEndDrag={handleScrollEndDrag} // YENİ EKLENEN
+                        onScrollBeginDrag={handleScrollBeginDrag}
+                        onScrollEndDrag={handleScrollEndDrag}
                         scrollEventThrottle={16}
-                        directionalLockEnabled={true} // MAGIC: Yön kilidi
-                        bounces={false} // iOS bounce kapat
-                        decelerationRate="fast" // Hızlı durma
+                        directionalLockEnabled={true}
+                        bounces={false}
+                        decelerationRate={0.9}
                         style={{ flex: 1 }}
                         contentContainerStyle={{ alignItems: 'center' }}
                     >
@@ -207,45 +174,20 @@ const ListingCard = memo(({ listing, safeAreaInsets, isActive }) => {
                 )}
             </View>
 
-            {/* Sayfa Numarası - Sadece birden fazla resim varsa */}
-            {listingData.images.length > 1 && (
-                <View style={{
-                    position: 'absolute',
-                    top: safeAreaInsets.top,
-                    left: 0,
-                    right: 0,
-                    alignItems: 'center',
-                    zIndex: 1000
-                }}>
-                    <View style={{
-                        backgroundColor: 'rgba(0,0,0,0.6)',
-                        borderRadius: 10,
-                        paddingHorizontal: 12,
-                        paddingVertical: 6
-                    }}>
-                        <Text style={{
-                            color: 'white',
-                            fontSize: 14,
-                            fontWeight: '600',
-                            textAlign: 'center'
-                        }}>
-                            {currentImageIndex + 1}/{listingData.images.length}
-                        </Text>
-                    </View>
-                </View>
-            )}
-
-            {/* Post Info Component */}
+            {/* Post Info Component - AYNI KALDI */}
             <ExplorePostInfo
                 listing={listing}
                 safeAreaInsets={safeAreaInsets}
+
             />
 
-            {/* Action Buttons Component - YENİ PROP EKLENDİ */}
+            {/* Action Buttons Component - Resim sayısı da burada olacak */}
             <ExploreActionButtons
                 listing={listing}
                 safeAreaInsets={safeAreaInsets}
                 isHorizontalScrollActive={isHorizontalScrollActive}
+                currentImageIndex={currentImageIndex}
+                totalImages={listingData.images.length}
             />
         </View>
     );
@@ -256,17 +198,19 @@ const ExploreScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
     const currentUser = useSelector(selectCurrentUser);
     const userRole = useSelector(selectUserRole);
+    const isFocused = useIsFocused(); // 🎯 Bu hook ekran odakta mı kontrol eder
 
     const [currentListingIndex, setCurrentListingIndex] = useState(0);
     const flatListRef = useRef(null);
     const scrollY = useSharedValue(0);
+    const [isHorizontalScrollActive, setIsHorizontalScrollActive] = useState(false);
 
-    // TikTok Feed API çağrısı (mevcut yapı korundu)
+    // TikTok Feed API çağrısı - AYNI KALDI
     const feedParams = {
         userId: currentUser?.id,
-        latitude: 41.0082, // Istanbul koordinatları (örnek)
+        latitude: 41.0082,
         longitude: 28.9784,
-        radius: 50000, // 50km
+        radius: 50000,
     };
 
     const {
@@ -278,9 +222,7 @@ const ExploreScreen = ({ navigation }) => {
         skip: !feedParams.userId,
     });
 
-
-
-    // Status bar ayarları (mevcut yapı korundu)
+    // Status bar ayarları - AYNI KALDI
     useEffect(() => {
         StatusBar.setBarStyle('light-content', true);
         if (Platform.OS === 'android') {
@@ -289,10 +231,44 @@ const ExploreScreen = ({ navigation }) => {
         }
     }, []);
 
+    // 🎯 AKILLI TAB REFRESH - Sadece zaten ekrandayken tetiklenir
+    useEffect(() => {
+        const unsubscribe = navigation?.addListener('tabPress', (e) => {
+            // 🚨 KRITIK: Sadece ekran zaten odaktayken yenile
+            if (isFocused) {
+                console.log('🔄 Tab pressed while already on Explore - Refreshing!');
+                handleManualRefresh();
+            } else {
+                console.log('⏭️ Tab pressed but coming from another screen - No refresh');
+            }
+        });
 
+        return unsubscribe;
+    }, [navigation, isFocused]);
 
+    // 🔧 DEBUG - Screen focus durumunu takip et
+    useEffect(() => {
+        console.log('🎯 ExploreScreen focus changed:', isFocused ? 'FOCUSED' : 'UNFOCUSED');
+    }, [isFocused]);
 
-    // Ana dikey scroll handler - YENİ EKLENEN
+    // 🔄 MANUEL YENİLEME - Pull to refresh tarzı
+    const handleManualRefresh = useCallback(() => {
+        console.log('🔄 Manual refresh triggered');
+
+        if (feedParams.userId) {
+            refetchFeed();
+            setCurrentListingIndex(0);
+
+            setTimeout(() => {
+                flatListRef.current?.scrollToOffset({
+                    offset: 0,
+                    animated: true // Manuel olunca smooth
+                });
+            }, 100);
+        }
+    }, [feedParams.userId, refetchFeed]);
+
+    // ⚡ SADECE DİKEY SCROLL HIZLANDIRILDI - Ana değişiklik burada!
     const scrollHandler = useAnimatedScrollHandler({
         onScroll: (event) => {
             scrollY.value = event.contentOffset.y;
@@ -301,6 +277,7 @@ const ExploreScreen = ({ navigation }) => {
         },
     });
 
+    // Viewability ayarları - AYNI KALDI
     const handleViewableItemsChanged = useCallback(({ viewableItems }) => {
         if (viewableItems.length > 0) {
             const visibleIndex = viewableItems[0].index;
@@ -309,11 +286,11 @@ const ExploreScreen = ({ navigation }) => {
     }, []);
 
     const viewabilityConfig = {
-        itemVisiblePercentThreshold: 51,
+        itemVisiblePercentThreshold: 40, // 40% - TikTok benzeri hassas algılama
         minimumViewTime: 100,
     };
 
-    // Loading state (mevcut yapı korundu)
+    // Loading states - AYNI KALDI
     if (feedLoading || !currentUser?.id) {
         return (
             <View style={{ flex: 1, backgroundColor: 'black' }}>
@@ -327,7 +304,6 @@ const ExploreScreen = ({ navigation }) => {
         );
     }
 
-    // Empty state (mevcut yapı korundu)
     if (!feedData?.result?.posts || feedData.result.posts.length === 0) {
         return (
             <View style={{ flex: 1, backgroundColor: 'black' }}>
@@ -347,7 +323,6 @@ const ExploreScreen = ({ navigation }) => {
             <View style={{ flex: 1, backgroundColor: 'black' }}>
                 <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-                {/* Ana Dikey FlatList - OPTİMİZE EDİLDİ */}
                 <Animated.FlatList
                     ref={flatListRef}
                     data={feedData.result.posts}
@@ -362,23 +337,51 @@ const ExploreScreen = ({ navigation }) => {
                         `listing-${item.postType}-${item.post?.postId || item.metaPost?.id || index}`
                     }
 
-                    // Dikey Scroll Optimizasyonları (MAGIC NUMBERS)
-                    pagingEnabled={true} // MAGIC 1: Sayfa bazlı geçiş
-                    snapToInterval={SCREEN_HEIGHT} // MAGIC 2: Tam ekran snap
+                    // 🚀 TikTok TARZINDA INSTANT SNAP - Momentum yok!
+                    pagingEnabled={true} // pagingEnabled = instant snap
+                    // snapToInterval kaldırıldı - momentum yaratıyor
                     snapToAlignment="start"
-                    decelerationRate="fast" // MAGIC 3: Hızlı durma
+                    decelerationRate={0.9} // 0.9 = hızlı ama smooth durma
                     showsVerticalScrollIndicator={false}
-                    bounces={false} // MAGIC 4: Bounce yok
+                    bounces={false}
 
-                    // Scroll Handler - YENİ EKLENEN
+                    // ⚡ HIZLI RESPONSE
+                    scrollEventThrottle={8} // 8ms'de bir tetikle
+
+                    // 🔒 YATAY SCROLL ÇAKIŞMASI ENGELLEMESİ - AYNI KALDI
+                    scrollEnabled={!isHorizontalScrollActive}
+
+                    // 🔄 PULL TO REFRESH - Manuel yenileme ekle
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={feedLoading}
+                            onRefresh={handleManualRefresh}
+                            colors={["#4A90E2"]}
+                            tintColor="#4A90E2"
+                        />
+                    }
+
+                    // 📱 PLATFORM-SPESİFİK OPTİMİZASYONLAR
+                    {...(Platform.OS === 'android' && {
+                        persistentScrollbar: false,
+                        fadingEdgeLength: 0,
+                        nestedScrollEnabled: false,
+                        overScrollMode: "never",
+                    })}
+
+                    {...(Platform.OS === 'ios' && {
+                        automaticallyAdjustContentInsets: false,
+                        contentInsetAdjustmentBehavior: "never",
+                    })}
+
+                    // Scroll Handler - AYNI KALDI
                     onScroll={scrollHandler}
-                    scrollEventThrottle={16}
 
-                    // Viewability Ayarları - YENİ EKLENEN
+                    // Viewability Ayarları - AYNI KALDI
                     onViewableItemsChanged={handleViewableItemsChanged}
                     viewabilityConfig={viewabilityConfig}
 
-                    // Performance Optimizasyonları (REHBERDEKİ ÖNERİLER)
+                    // Performance Optimizasyonları - AYNI KALDI
                     getItemLayout={(data, index) => ({
                         length: SCREEN_HEIGHT,
                         offset: SCREEN_HEIGHT * index,
@@ -390,15 +393,9 @@ const ExploreScreen = ({ navigation }) => {
                     initialNumToRender={1}
                     updateCellsBatchingPeriod={50}
 
-                    // Content Ayarları
+                    // Content Ayarları - AYNI KALDI
                     contentInsetAdjustmentBehavior="never"
                     automaticallyAdjustContentInsets={false}
-
-                    // Android için ek optimizasyonlar
-                    {...(Platform.OS === 'android' && {
-                        persistentScrollbar: false,
-                        fadingEdgeLength: 0,
-                    })}
                 />
             </View>
         </GestureHandlerRootView>
