@@ -1,4 +1,4 @@
-// screens/MessagesScreen.js - Fixed with Real-time Updates and Working Filters
+// screens/MessagesScreen.js - Backend Response Format'ına Uygun Güncellemeler
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
@@ -25,22 +25,26 @@ import { faEdit } from "@fortawesome/pro-regular-svg-icons";
 import {
   useGetChatPartnersQuery,
   useGetUnreadCountQuery,
+  useLazySearchChatPartnersQuery,
+  chatApiHelpers,
 } from "../redux/api/chatApiSlice";
 import { useSignalR } from "../contexts/SignalRContext";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser } from "../redux/slices/authSlice";
 import { useFocusEffect } from "@react-navigation/native";
 
 const MessagesScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  // ✅ Filter state'i ekledik
   const [activeFilter, setActiveFilter] = useState("all"); // "all" veya "unread"
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
 
   const { user } = useSelector((state) => state.auth);
   const { isConnected, onlineUsers, connection } = useSignalR();
   const currentUser = useSelector(selectCurrentUser);
+  const dispatch = useDispatch();
 
-  // API calls
+  // ✅ ENHANCED: API calls with better error handling
   const {
     data: chatPartnersResponse,
     isLoading: partnersLoading,
@@ -49,28 +53,150 @@ const MessagesScreen = ({ navigation }) => {
   } = useGetChatPartnersQuery(undefined, {
     refetchOnFocus: true,
     refetchOnMountOrArgChange: true,
+    // ✅ Enhanced error handling
+    onError: (error) => {
+      console.error("❌ Chat partners fetch error:", error);
+    },
   });
 
   const {
     data: unreadData,
     isLoading: unreadLoading,
+    error: unreadError,
     refetch: refetchUnread,
   } = useGetUnreadCountQuery(undefined, {
     refetchOnFocus: true,
     refetchOnMountOrArgChange: true,
+    // ✅ Enhanced error handling
+    onError: (error) => {
+      console.error("❌ Unread count fetch error:", error);
+    },
   });
 
-  // API response'dan chat partners'ı al
+  // ✅ NEW: Search functionality
+  const [
+    triggerSearch,
+    { data: searchResponse, isLoading: isSearchLoading, error: searchError },
+  ] = useLazySearchChatPartnersQuery();
+
+  // ✅ ENHANCED: API response handling with backend format compatibility
   const chatPartners = React.useMemo(() => {
-    console.log("Chat Partners Response:", chatPartnersResponse);
-    return Array.isArray(chatPartnersResponse) ? chatPartnersResponse : [];
+    console.log("🔍 Chat Partners Response Processing:", chatPartnersResponse);
+
+    // Backend'in response format'ına göre handle et
+    if (Array.isArray(chatPartnersResponse)) {
+      console.log(
+        `✅ Partners array format - ${chatPartnersResponse.length} partners`
+      );
+      return chatPartnersResponse;
+    }
+
+    // Nested response handling
+    if (
+      chatPartnersResponse?.result &&
+      Array.isArray(chatPartnersResponse.result)
+    ) {
+      return chatPartnersResponse.result;
+    }
+
+    if (
+      chatPartnersResponse?.data &&
+      Array.isArray(chatPartnersResponse.data)
+    ) {
+      return chatPartnersResponse.data;
+    }
+
+    console.log("⚠️ Unknown chat partners format, returning empty array");
+    return [];
   }, [chatPartnersResponse]);
 
-  // Unread count'u al
+  // ✅ ENHANCED: Unread count handling with backend format compatibility
   const totalUnreadCount = React.useMemo(() => {
-    console.log("Unread Data Response:", unreadData);
-    return unreadData?.count || 0;
+    console.log("🔍 Unread Data Response Processing:", unreadData);
+
+    // Backend'in response format'ına göre handle et
+    if (typeof unreadData === "number") {
+      return unreadData;
+    }
+
+    if (unreadData?.count !== undefined) {
+      return Number(unreadData.count);
+    }
+
+    if (unreadData?.result?.count !== undefined) {
+      return Number(unreadData.result.count);
+    }
+
+    if (unreadData?.data?.count !== undefined) {
+      return Number(unreadData.data.count);
+    }
+
+    // Backend'in direkt { count: number } format'ı
+    if (typeof unreadData === "object" && unreadData !== null) {
+      const numericValue = Object.values(unreadData).find(
+        (val) => typeof val === "number"
+      );
+      if (numericValue !== undefined) {
+        return numericValue;
+      }
+    }
+
+    console.log("⚠️ Unknown unread count format, defaulting to 0");
+    return 0;
   }, [unreadData]);
+
+  // ✅ ENHANCED: Search handling
+  const handleSearch = useCallback(
+    async (query) => {
+      if (!query.trim() || query.length < 2) {
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
+
+      setIsSearching(true);
+
+      try {
+        const result = await triggerSearch({
+          query: query.trim(),
+          limit: 20,
+        }).unwrap();
+
+        console.log("🔍 Search result:", result);
+
+        // Backend format: { searchTerm: string, results: [], count: number }
+        if (result?.results && Array.isArray(result.results)) {
+          setSearchResults(result.results);
+        } else if (Array.isArray(result)) {
+          setSearchResults(result);
+        } else {
+          setSearchResults([]);
+        }
+      } catch (error) {
+        console.error("❌ Search error:", error);
+        setSearchResults([]);
+        // Optional: Show error to user
+        // Alert.alert("Search Error", "Failed to search chat partners. Please try again.");
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    [triggerSearch]
+  );
+
+  // ✅ Search debounce effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchQuery.trim()) {
+        handleSearch(searchQuery);
+      } else {
+        setSearchResults([]);
+        setIsSearching(false);
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, handleSearch]);
 
   // Focus effect
   useFocusEffect(
@@ -81,7 +207,7 @@ const MessagesScreen = ({ navigation }) => {
     }, [refetchPartners, refetchUnread])
   );
 
-  // SignalR message listener
+  // ✅ ENHANCED: SignalR message listener with backend field names compatibility
   useEffect(() => {
     if (!connection || !isConnected) return;
 
@@ -89,6 +215,18 @@ const MessagesScreen = ({ navigation }) => {
 
     const handleReceiveMessage = (messageData) => {
       console.log("📨 New message received in MessagesScreen:", messageData);
+
+      // ✅ Backend field names'leri log et
+      const senderId = messageData.SenderUserId || messageData.senderUserId;
+      const receiverId =
+        messageData.ReceiverUserId || messageData.receiverUserId;
+
+      console.log("📨 Message details:", {
+        senderId,
+        receiverId,
+        currentUserId: user?.id,
+      });
+
       refetchPartners();
       refetchUnread();
     };
@@ -107,43 +245,96 @@ const MessagesScreen = ({ navigation }) => {
       refetchUnread();
     };
 
+    // ✅ NEW: Unread count update listener
+    const handleUnreadCountUpdate = (updateData) => {
+      console.log("📊 Unread count update in MessagesScreen:", updateData);
+      refetchUnread();
+    };
+
+    // ✅ NEW: Partner list update listener
+    const handlePartnerListUpdate = () => {
+      console.log("👥 Partner list update in MessagesScreen");
+      refetchPartners();
+    };
+
     connection.on("ReceiveMessage", handleReceiveMessage);
     connection.on("MessageSent", handleMessageSent);
     connection.on("MessagesRead", handleMessagesRead);
+    connection.on("UnreadCountUpdate", handleUnreadCountUpdate);
+    connection.on("NewMessageNotification", handleReceiveMessage);
 
     return () => {
       console.log("🧹 Cleaning up SignalR listeners for MessagesScreen");
       connection.off("ReceiveMessage", handleReceiveMessage);
       connection.off("MessageSent", handleMessageSent);
       connection.off("MessagesRead", handleMessagesRead);
+      connection.off("UnreadCountUpdate", handleUnreadCountUpdate);
+      connection.off("NewMessageNotification", handleReceiveMessage);
     };
-  }, [connection, isConnected, refetchPartners, refetchUnread]);
+  }, [connection, isConnected, refetchPartners, refetchUnread, user?.id]);
 
-  // Refresh handler
+  // ✅ ENHANCED: Refresh handler with better error handling
   const onRefresh = useCallback(() => {
     console.log("🔄 Manual refresh requested");
-    refetchPartners();
-    refetchUnread();
+
+    Promise.all([refetchPartners(), refetchUnread()])
+      .then(() => {
+        console.log("✅ Manual refresh completed successfully");
+      })
+      .catch((error) => {
+        console.error("❌ Manual refresh failed:", error);
+        Alert.alert(
+          "Refresh Failed",
+          "Unable to refresh chat data. Please check your connection and try again.",
+          [
+            { text: "OK", style: "default" },
+            { text: "Retry", onPress: onRefresh, style: "default" },
+          ]
+        );
+      });
   }, [refetchPartners, refetchUnread]);
 
-  // Helper functions
+  // ✅ ENHANCED: Helper functions with backend field names compatibility
   const getPartnerId = (partner) => {
-    return partner.id;
+    return partner.id || partner.Id;
   };
 
   const getPartnerName = (partner) => {
-    return partner.name || partner.userName || "Unknown User";
+    // ✅ Backend'den gelen field names'leri handle et
+    const firstName = partner.name || partner.Name || "";
+    const lastName = partner.surname || partner.Surname || "";
+    const username = partner.userName || partner.UserName || "";
+
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`;
+    } else if (firstName) {
+      return firstName;
+    } else if (username) {
+      return username;
+    }
+
+    return "Unknown User";
   };
 
   const getLastMessage = (partner) => {
-    if (
-      typeof partner === "object" &&
-      partner !== null &&
-      partner.lastMessage
-    ) {
-      return partner.lastMessage.content || "";
+    // ✅ Backend'den gelen nested object'leri handle et
+    const lastMessage = partner.lastMessage || partner.LastMessage;
+
+    if (typeof lastMessage === "object" && lastMessage !== null) {
+      return lastMessage.content || lastMessage.Content || "";
     }
+
     return "";
+  };
+
+  const getLastMessageTime = (partner) => {
+    const lastMessage = partner.lastMessage || partner.LastMessage;
+
+    if (typeof lastMessage === "object" && lastMessage !== null) {
+      return lastMessage.sentAt || lastMessage.SentAt;
+    }
+
+    return null;
   };
 
   const formatMessageTime = (sentAt) => {
@@ -162,47 +353,71 @@ const MessagesScreen = ({ navigation }) => {
       } else if (diffInHours < 24 * 7) {
         return `${Math.floor(diffInHours / 24)}g`;
       } else {
-        return messageDate.toLocaleDateString();
+        return messageDate.toLocaleDateString("tr-TR", {
+          day: "2-digit",
+          month: "2-digit",
+        });
       }
     } catch (error) {
+      console.error("❌ Date formatting error:", error);
       return "";
     }
   };
 
   const isMessageUnread = (partner) => {
-    if (
-      typeof partner === "object" &&
-      partner !== null &&
-      partner.lastMessage
-    ) {
-      return !partner.lastMessage.isRead && !partner.lastMessage.isFromMe;
+    const lastMessage = partner.lastMessage || partner.LastMessage;
+
+    if (typeof lastMessage === "object" && lastMessage !== null) {
+      const isRead = lastMessage.isRead || lastMessage.IsRead;
+      const isFromMe = lastMessage.isFromMe || lastMessage.IsFromMe;
+      const senderId = lastMessage.senderUserId || lastMessage.SenderUserId;
+
+      // Message okunmamış ve benden gelmiyorsa unread
+      return !isRead && !isFromMe && senderId !== user?.id;
     }
+
     return false;
   };
 
-  // ✅ Filter ve arama ile birleştirilmiş filtreleme
-  const filteredPartners = React.useMemo(() => {
-    let filtered = chatPartners;
+  const getProfileImage = (partner) => {
+    return partner.profileImageUrl || partner.ProfileImageUrl;
+  };
 
-    // Önce arama filtresini uygula
-    if (searchQuery.trim()) {
-      filtered = filtered.filter((partner) => {
-        const partnerName = partner.name || partner.userName || "";
-        const surname = partner.surname || "";
-        const fullName = `${partnerName} ${surname}`.toLowerCase();
-        return fullName.includes(searchQuery.toLowerCase());
-      });
+  // ✅ ENHANCED: Filter ve arama ile birleştirilmiş filtreleme
+  const filteredPartners = React.useMemo(() => {
+    let filtered = [];
+
+    // Arama yapılıyorsa search results'u kullan, yoksa normal partners
+    if (searchQuery.trim() && searchResults.length > 0) {
+      filtered = searchResults;
+      console.log(`🔍 Using search results: ${filtered.length} partners`);
+    } else if (searchQuery.trim() && !isSearching) {
+      // Arama yapıldı ama sonuç yok
+      filtered = [];
+      console.log("🔍 Search completed but no results");
+    } else {
+      // Normal partner listesi
+      filtered = chatPartners;
+      console.log(`📝 Using normal partners: ${filtered.length} partners`);
     }
 
-    // Sonra unread filtresini uygula
+    // Unread filtresini uygula
     if (activeFilter === "unread") {
       filtered = filtered.filter((partner) => isMessageUnread(partner));
+      console.log(`🔍 After unread filter: ${filtered.length} partners`);
     }
 
     return filtered;
-  }, [chatPartners, searchQuery, activeFilter]);
+  }, [
+    chatPartners,
+    searchQuery,
+    searchResults,
+    isSearching,
+    activeFilter,
+    user?.id,
+  ]);
 
-  // ✅ Filter button component'i
+  // ✅ Filter button component
   const FilterButton = ({ filter, title, count, isActive, onPress }) => (
     <TouchableOpacity
       className={`py-2 px-4 rounded-full ${
@@ -219,44 +434,66 @@ const MessagesScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
 
-  // Partner item renderer
+  // ✅ ENHANCED: Partner item renderer with backend field names compatibility
   const renderPartner = ({ item: partner }) => {
     const partnerId = getPartnerId(partner);
     const partnerName = getPartnerName(partner);
     const lastMessage = getLastMessage(partner);
+    const lastMessageTime = getLastMessageTime(partner);
     const isOnline = onlineUsers.has(partnerId);
-    const messageTime = partner.lastMessage
-      ? formatMessageTime(partner.lastMessage.sentAt)
-      : "";
+    const messageTime = formatMessageTime(lastMessageTime);
     const isUnread = isMessageUnread(partner);
+    const profileImage = getProfileImage(partner);
 
     return (
       <TouchableOpacity
         className="flex flex-row items-center justify-center py-2 px-4 bg-white gap-4"
         onPress={() => {
-          console.log("🚀 Navigating to chat with:", partnerId, partnerName);
+          console.log("🚀 Navigating to chat with:", {
+            partnerId,
+            partnerName,
+            partner: {
+              ...partner,
+              // ✅ Normalize field names for consistency
+              id: partnerId,
+              name: partner.name || partner.Name,
+              surname: partner.surname || partner.Surname,
+              userName: partner.userName || partner.UserName,
+              profileImageUrl: profileImage,
+            },
+          });
+
           navigation.navigate("ChatDetail", {
             partnerId: partnerId,
             partnerName: partnerName,
-            partner: partner,
+            partner: {
+              ...partner,
+              id: partnerId,
+              name: partner.name || partner.Name,
+              surname: partner.surname || partner.Surname,
+              userName: partner.userName || partner.UserName,
+              profileImageUrl: profileImage,
+            },
           });
         }}
       >
-        {/* Avatar with online indicator */}
+        {/* ✅ Enhanced Avatar with online indicator */}
         <View
           style={{ width: 55, height: 55 }}
-          className="justify-center  items-center rounded-full border border-gray-100"
+          className="justify-center items-center rounded-full border border-gray-100"
         >
-          {partner?.profileImageUrl &&
-          partner?.profileImageUrl !== "default_profile_image_url" ? (
+          {profileImage && profileImage !== "default_profile_image_url" ? (
             <Image
-              source={{ uri: partner.profileImageUrl }}
+              source={{ uri: profileImage }}
               className="w-full h-full rounded-full"
               resizeMode="cover"
+              onError={(error) => {
+                console.log("❌ Profile image load error:", error);
+              }}
             />
           ) : (
             <Text style={{ fontSize: 30 }} className="text-gray-900 font-bold">
-              {partner?.name?.charAt(0) || "P"}
+              {partnerName?.charAt(0)?.toUpperCase() || "P"}
             </Text>
           )}
 
@@ -266,16 +503,15 @@ const MessagesScreen = ({ navigation }) => {
               style={{ width: 20, height: 20, bottom: -4, right: -4 }}
               className={`absolute flex justify-center items-center rounded-full bg-white`}
             >
-              {" "}
               <View
                 style={{ width: 12, height: 12 }}
-                className={`flex justify-center items-center  rounded-full bg-green-500`}
+                className={`flex justify-center items-center rounded-full bg-green-500`}
               />
             </View>
           )}
         </View>
 
-        {/* Partner info */}
+        {/* ✅ Enhanced Partner info */}
         <View className="flex-1">
           <View className="flex-row justify-between items-center">
             <Text
@@ -283,8 +519,9 @@ const MessagesScreen = ({ navigation }) => {
               className={` text-gray-900 flex-1 mb-1 ${
                 isUnread ? "font-bold" : " font-medium"
               }`}
+              numberOfLines={1}
             >
-              {partner?.name} {partner.surname}
+              {partnerName}
             </Text>
             <View className="flex-row items-center">
               {messageTime && (
@@ -324,18 +561,23 @@ const MessagesScreen = ({ navigation }) => {
     );
   };
 
-  // Loading state
-  if (partnersLoading) {
+  // ✅ ENHANCED: Loading state with connection status
+  if (partnersLoading && !chatPartners.length) {
     return (
       <View className="flex-1 bg-white justify-center items-center">
         <ActivityIndicator size="large" color="#0ea5e9" />
         <Text className="mt-2 text-gray-600">Loading chats...</Text>
+        {!isConnected && (
+          <Text className="mt-1 text-red-500 text-sm">
+            ⚠️ Connection issues detected
+          </Text>
+        )}
       </View>
     );
   }
 
-  // Error state
-  if (partnersError) {
+  // ✅ ENHANCED: Error state with retry functionality
+  if (partnersError && !chatPartners.length) {
     return (
       <View className="flex-1 bg-white justify-center items-center px-4">
         <FontAwesomeIcon icon={faWifiSlash} size={40} color="#ef4444" />
@@ -345,6 +587,11 @@ const MessagesScreen = ({ navigation }) => {
         <Text className="mt-2 text-gray-600 text-center">
           Unable to load your chats. Please check your connection.
         </Text>
+        {!isConnected && (
+          <Text className="mt-2 text-red-500 text-center text-sm">
+            SignalR connection is offline
+          </Text>
+        )}
         <TouchableOpacity
           className="mt-4 bg-blue-500 px-6 py-3 rounded-lg"
           onPress={onRefresh}
@@ -360,7 +607,7 @@ const MessagesScreen = ({ navigation }) => {
       <SafeAreaView style={{ flex: 0, backgroundColor: "#fff" }} />
       <StatusBar style="dark" backgroundColor="#fff" />
 
-      {/* Header */}
+      {/* ✅ Enhanced Header */}
       <View className="bg-white px-4 py-3">
         <View className="flex-row items-center justify-between mb-4">
           <TouchableOpacity
@@ -374,6 +621,10 @@ const MessagesScreen = ({ navigation }) => {
             <Text className="text-3xl ml-1 font-semibold text-gray-900">
               Mesajlar
             </Text>
+            {/* ✅ Connection status indicator */}
+            {!isConnected && (
+              <Text className="text-red-500 text-sm ml-1">⚠️ Offline mode</Text>
+            )}
           </View>
 
           <View className="flex-row items-center">
@@ -387,6 +638,23 @@ const MessagesScreen = ({ navigation }) => {
                     { text: "Cancel", style: "cancel" },
                     {
                       text: "Start Chat",
+                      onPress: (userId) => {
+                        if (userId && userId.trim()) {
+                          console.log("🚀 Starting chat with user ID:", userId);
+                          navigation.navigate("ChatDetail", {
+                            partnerId: userId.trim(),
+                            partnerName: `User ${userId.trim()}`,
+                            partner: {
+                              id: userId.trim(),
+                              name: `User ${userId.trim()}`,
+                              surname: "",
+                              userName: userId.trim(),
+                            },
+                          });
+                        } else {
+                          Alert.alert("Error", "Please enter a valid user ID");
+                        }
+                      },
                     },
                   ],
                   "plain-text"
@@ -398,7 +666,7 @@ const MessagesScreen = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Search Bar */}
+        {/* ✅ Enhanced Search Bar with loading indicator */}
         <View
           style={{ boxShadow: "0px 0px 12px #00000014" }}
           className=" rounded-full px-4 py-3 flex-row items-center"
@@ -406,15 +674,18 @@ const MessagesScreen = ({ navigation }) => {
           <FontAwesomeIcon icon={faSearch} size={16} color="#000" />
           <TextInput
             style={{ fontSize: 15 }}
-            className="flex-1 ml-3 "
+            className="flex-1 ml-3"
             placeholder="Sohbet ara..."
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholderTextColor="#999"
           />
+          {isSearching && (
+            <ActivityIndicator size="small" color="#0ea5e9" className="ml-2" />
+          )}
         </View>
 
-        {/* ✅ Filter Buttons - Çalışır halde */}
+        {/* ✅ Enhanced Filter Buttons with search info */}
         <View className="w-full flex-row gap-2 items-center justify-start mt-4">
           <FilterButton
             filter="all"
@@ -429,27 +700,58 @@ const MessagesScreen = ({ navigation }) => {
             isActive={activeFilter === "unread"}
             onPress={() => setActiveFilter("unread")}
           />
+
+          {/* Search results info */}
+          {searchQuery.trim() && (
+            <Text className="text-gray-500 text-sm ml-2">
+              {isSearching
+                ? "Searching..."
+                : `${filteredPartners.length} result${
+                    filteredPartners.length !== 1 ? "s" : ""
+                  }`}
+            </Text>
+          )}
         </View>
       </View>
 
-      {/* Partners List */}
+      {/* ✅ Enhanced Partners List */}
       <FlatList
         data={filteredPartners}
         renderItem={renderPartner}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) =>
+          getPartnerId(item)?.toString() || Math.random().toString()
+        }
         className="flex-1"
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={partnersLoading}
+            refreshing={partnersLoading || unreadLoading}
             onRefresh={onRefresh}
             colors={["#0ea5e9"]}
             tintColor="#0ea5e9"
           />
         }
+        // ✅ Enhanced empty state with search context
         ListEmptyComponent={() => (
           <View className="flex-1 justify-center items-center py-20">
-            {activeFilter === "unread" && !searchQuery ? (
+            {isSearching ? (
+              <>
+                <ActivityIndicator size="large" color="#0ea5e9" />
+                <Text className="text-gray-500 mt-4 text-base text-center">
+                  Searching...
+                </Text>
+              </>
+            ) : searchQuery.trim() ? (
+              <>
+                <FontAwesomeIcon icon={faSearch} size={40} color="#ccc" />
+                <Text className="text-gray-500 mt-4 text-base text-center">
+                  "{searchQuery}" için sonuç bulunamadı
+                </Text>
+                <Text className="text-gray-400 mt-2 text-sm text-center">
+                  Farklı bir arama terimi deneyin
+                </Text>
+              </>
+            ) : activeFilter === "unread" ? (
               <>
                 <FontAwesomeIcon icon={faCircle} size={40} color="#ccc" />
                 <Text className="text-gray-500 mt-4 text-base text-center">
@@ -457,13 +759,6 @@ const MessagesScreen = ({ navigation }) => {
                 </Text>
                 <Text className="text-gray-400 mt-2 text-sm text-center">
                   Tüm mesajlarınızı okudunuz
-                </Text>
-              </>
-            ) : searchQuery ? (
-              <>
-                <FontAwesomeIcon icon={faSearch} size={40} color="#ccc" />
-                <Text className="text-gray-500 mt-4 text-base text-center">
-                  "{searchQuery}" için sonuç bulunamadı
                 </Text>
               </>
             ) : (
@@ -479,8 +774,17 @@ const MessagesScreen = ({ navigation }) => {
             )}
           </View>
         )}
-        onRefresh={onRefresh}
-        refreshing={partnersLoading}
+        // ✅ Performance optimizations
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={15}
+        windowSize={10}
+        getItemLayout={(data, index) => ({
+          length: 80, // Approximate height of each item
+          offset: 80 * index,
+          index,
+        })}
       />
 
       <SafeAreaView style={{ flex: 0, backgroundColor: "transparent" }} />

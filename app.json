@@ -7,7 +7,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-     "platforms": ["ios", "android"],
+    "platforms": ["ios", "android"],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -17,6 +17,7 @@
       "buildNumber": "14",
       "bundleIdentifier": "com.uygarcapar.kiraX",
       "supportsTablet": true,
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Bu uygulama konum bilginizi ilan oluştururken kullanır.",
         "NSLocationUsageDescription": "Bu uygulama konum bilginizi ilan oluştururken kullanır.",
@@ -28,18 +29,13 @@
       }
     },
     "android": {
-       "package": "com.uygarcapar.kiraX",
+      "package": "com.uygarcapar.kiraX",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
       "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "INTERNET",
-        "ACCESS_NETWORK_STATE",
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "INTERNET",
@@ -62,6 +58,23 @@
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "Bu uygulama konum bilginizi ilan oluştururken kullanır."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#ffffff"
+        }
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
         }
       ]
     ],

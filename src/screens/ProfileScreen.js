@@ -29,6 +29,7 @@ import {
 import { chatApiHelpers } from "../redux/api/chatApiSlice";
 import { useSignalR } from "../contexts/SignalRContext";
 import { authCleanupHelper } from "../utils/authCleanup";
+import { useNotificationToken } from "../hooks/useNotificationToken";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
   faChevronRight,
@@ -52,6 +53,9 @@ const ProfileScreen = ({ navigation }) => {
 
   // SignalR context for proper cleanup
   const { stopConnection } = useSignalR();
+  
+  // Notification token hook for manual FCM cleanup
+  const { manualUnregister: unregisterFcmToken } = useNotificationToken();
 
   // Animation setup
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -107,19 +111,33 @@ const ProfileScreen = ({ navigation }) => {
           console.log("👤 Current user being logged out:", currentUser?.id);
 
           try {
-            // 1. Stop SignalR connection first to prevent message sending with stale token
+            // 1. ✅ FIXED: Unregister FCM token BEFORE clearing auth token
+            console.log("🔕 Unregistering FCM token before logout...");
+            try {
+              const unregisterResult = await unregisterFcmToken();
+              if (unregisterResult.success) {
+                console.log("✅ FCM token unregistered successfully");
+              } else if (!unregisterResult.skipLogging) {
+                console.warn("⚠️ FCM token unregistration failed:", unregisterResult.error);
+              }
+            } catch (fcmError) {
+              console.warn("⚠️ FCM token unregistration error:", fcmError);
+              // Continue with logout even if FCM unregistration fails
+            }
+
+            // 2. Stop SignalR connection to prevent message sending with stale token
             console.log("🔌 Stopping SignalR connection...");
             await stopConnection();
 
-            // 2. Clear chat cache to remove old user's messages
+            // 3. Clear chat cache to remove old user's messages
             console.log("🧹 Clearing chat cache...");
             chatApiHelpers.clearChatCache(dispatch);
 
-            // 3. Comprehensive storage cleanup
+            // 4. Comprehensive storage cleanup
             console.log("🗑️ Performing comprehensive storage cleanup...");
             await authCleanupHelper.clearUserStorage();
 
-            // 4. Force logout to ensure complete state reset
+            // 5. Force logout to ensure complete state reset
             console.log("🔥 Executing force logout...");
             dispatch(forceLogout());
 

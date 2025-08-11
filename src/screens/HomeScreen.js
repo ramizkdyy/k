@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+// HomeScreen.js - Real-time Unread Count ile güncellenmiş
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -18,7 +19,14 @@ import NearbyProperties from "../components/NearbyProperties";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import { faBarsFilter, faSearch } from "@fortawesome/pro-solid-svg-icons";
 import { StatusBar } from "expo-status-bar";
-import { faEdit, faMessage, faFingerprint } from "@fortawesome/pro-regular-svg-icons";
+import {
+  faEdit,
+  faMessage,
+  faFingerprint,
+} from "@fortawesome/pro-regular-svg-icons";
+import { useGetUnreadCountQuery } from "../redux/api/chatApiSlice";
+import { useSignalR } from "../contexts/SignalRContext"; // ✅ SignalR context'i ekle
+import { useFocusEffect } from "@react-navigation/native"; // ✅ Focus effect ekle
 
 const HomeScreen = ({ navigation }) => {
   const userRole = useSelector(selectUserRole);
@@ -26,7 +34,73 @@ const HomeScreen = ({ navigation }) => {
   const userProfile = useSelector(selectUserProfile);
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("house"); // varsayılan olarak 'house' seçili
+  const [selectedCategory, setSelectedCategory] = useState("house");
+
+  // ✅ SignalR context'den connection ve status al
+  const { isConnected, connection } = useSignalR();
+
+  const {
+    data: unreadData,
+    isLoading: unreadLoading,
+    refetch: refetchUnread,
+  } = useGetUnreadCountQuery(undefined, {
+    refetchOnFocus: true,
+    refetchOnMountOrArgChange: true,
+  });
+
+  const totalUnreadCount = React.useMemo(() => {
+    console.log("HomeScreen - Unread Data Response:", unreadData);
+    return unreadData?.count || 0;
+  }, [unreadData]);
+
+  // ✅ Focus effect - Ekrana gelince unread count'u yenile
+  useFocusEffect(
+    useCallback(() => {
+      console.log("📱 HomeScreen focused, refreshing unread count...");
+      refetchUnread();
+    }, [refetchUnread])
+  );
+
+  // ✅ SignalR event listener'larını ekle
+  useEffect(() => {
+    if (!connection || !isConnected) return;
+
+    console.log("🔔 Setting up SignalR listeners for HomeScreen unread count");
+
+    const handleReceiveMessage = (messageData) => {
+      console.log("📨 New message received in HomeScreen:", messageData);
+      // Yeni mesaj geldiğinde unread count'u yenile
+      refetchUnread();
+    };
+
+    const handleMessageSent = (confirmationData) => {
+      console.log(
+        "✅ Message sent confirmation in HomeScreen:",
+        confirmationData
+      );
+      // Mesaj gönderildiğinde unread count'u yenile (diğer chat'lerden gelen mesajlar için)
+      refetchUnread();
+    };
+
+    const handleMessagesRead = (readData) => {
+      console.log("👁️ Messages read in HomeScreen:", readData);
+      // Mesajlar okunduğunda unread count'u yenile
+      refetchUnread();
+    };
+
+    // ✅ SignalR event'lerini dinle
+    connection.on("ReceiveMessage", handleReceiveMessage);
+    connection.on("MessageSent", handleMessageSent);
+    connection.on("MessagesRead", handleMessagesRead);
+
+    // ✅ Cleanup function
+    return () => {
+      console.log("🧹 Cleaning up SignalR listeners for HomeScreen");
+      connection.off("ReceiveMessage", handleReceiveMessage);
+      connection.off("MessageSent", handleMessageSent);
+      connection.off("MessagesRead", handleMessagesRead);
+    };
+  }, [connection, isConnected, refetchUnread]);
 
   // Check if profile needs to be completed
   const needsProfileCompletion =
@@ -36,10 +110,13 @@ const HomeScreen = ({ navigation }) => {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    // Simulate API call or actual refresh logic
     try {
-      // Add your refresh logic here (API calls, data fetching, etc.)
-      await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulated delay
+      // ✅ Refresh sırasında unread count'u da yenile
+      await Promise.all([
+        refetchUnread(),
+        // Diğer refresh işlemlerin...
+        new Promise((resolve) => setTimeout(resolve, 1500)), // Simulated delay
+      ]);
       console.log("Page refreshed successfully");
     } catch (error) {
       console.error("Refresh failed:", error);
@@ -63,7 +140,7 @@ const HomeScreen = ({ navigation }) => {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 0 }} // Tab bar için alan
+        contentContainerStyle={{ paddingBottom: 0 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -89,21 +166,23 @@ const HomeScreen = ({ navigation }) => {
               </Text>
             </View>
             <View className="flex-row gap-6 items-center justify-center">
-              {/* <TouchableOpacity
-                onPress={() => {
-                  navigation.navigate("Explore");
-                }}
-              >
-                <FontAwesomeIcon icon={faFingerprint} size={20} />
-              </TouchableOpacity> */}
               <TouchableOpacity
                 className="rounded-full justify-center items-center flex flex-col relative"
                 onPress={handleMessagesPress}
               >
                 <FontAwesomeIcon icon={faMessage} size={20} />
-                <View className="bg-red-500 rounded-full w-7 h-6 absolute -top-3 -right-3 flex justify-center items-center">
-                  <Text className="text-white font-semibold">12</Text>
-                </View>
+                {/* ✅ Real-time güncellenen unread count badge */}
+                {totalUnreadCount === 0 ? null : (
+                  <View className="bg-red-500 rounded-full w-7 h-6 absolute -top-3 -right-3 flex justify-center items-center">
+                    <Text className="text-white font-semibold">
+                      {totalUnreadCount > 99 ? "99+" : totalUnreadCount}
+                    </Text>
+                  </View>
+                )}
+                {/* ✅ Loading state için küçük indicator (opsiyonel) */}
+                {unreadLoading && (
+                  <View className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -118,8 +197,8 @@ const HomeScreen = ({ navigation }) => {
               <TextInput
                 className="w-full placeholder:text-gray-500 placeholder:text-[14px] py-4 text-normal"
                 style={{
-                  textAlignVertical: "center", // Android için
-                  includeFontPadding: false, // Android için
+                  textAlignVertical: "center",
+                  includeFontPadding: false,
                 }}
                 placeholder={
                   userRole === "KIRACI"
@@ -135,7 +214,6 @@ const HomeScreen = ({ navigation }) => {
 
         {/* Main Content */}
         <View className="">
-          {/* Nearby Properties Section - NEW COMPONENT */}
           <View style={{ zIndex: 1 }}>
             <NearbyProperties
               navigation={navigation}

@@ -1,4 +1,4 @@
-// screens/ChatDetailScreen.js - Fixed pagination with proper hasNextPage handling
+// screens/ChatDetailScreen.js - Backend'e uygun güncellemeler
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
@@ -64,7 +64,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isBackgroundLoading, setIsBackgroundLoading] = useState(false);
   const [backgroundLoadedUntilPage, setBackgroundLoadedUntilPage] = useState(2);
-  const [paginationComplete, setPaginationComplete] = useState(false); // ✅ New flag
+  const [paginationComplete, setPaginationComplete] = useState(false);
 
   const flatListRef = useRef();
   const typingTimeoutRef = useRef();
@@ -91,6 +91,45 @@ const ChatDetailScreen = ({ navigation, route }) => {
     connection,
     reconnect,
   } = useSignalR();
+
+  // ✅ Backend response format'ına uygun parseBackendResponse
+  const parseBackendResponse = (response) => {
+    if (!response) return { messages: [], hasNextPage: false, currentPage: 1 };
+
+    console.log("🔍 Parsing backend response:", response);
+
+    // Backend'den gelen format: { messages: [], hasNextPage: boolean, currentPage: number, pageSize: number }
+    if (response.messages && Array.isArray(response.messages)) {
+      const {
+        messages,
+        hasNextPage,
+        currentPage: respCurrentPage,
+        pageSize,
+      } = response;
+
+      console.log(
+        `📊 Backend response - Page ${respCurrentPage}: ${messages.length} messages, hasNextPage: ${hasNextPage}`
+      );
+
+      return {
+        messages,
+        hasNextPage: Boolean(hasNextPage),
+        currentPage: respCurrentPage || 1,
+        pageSize: pageSize || 20,
+      };
+    }
+
+    // Fallback: Eğer direkt array gelirse (eski format)
+    if (Array.isArray(response)) {
+      return {
+        messages: response,
+        hasNextPage: response.length === 20, // Backend 20+1 kontrolü yapıyor
+        currentPage: 1,
+      };
+    }
+
+    return { messages: [], hasNextPage: false, currentPage: 1 };
+  };
 
   // ✅ First 2 pages queries
   const {
@@ -122,8 +161,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
     }
   );
 
-  console.log("firstPageResponse:", firstPageResponse);
-
   // ✅ Dynamic page loading query (6+ pages)
   const {
     data: currentPageResponse,
@@ -154,14 +191,12 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
     requestAnimationFrame(() => {
       try {
-        // ✅ Inverted mode için scrollToOffset(0) kullan
         flatListRef.current?.scrollToOffset({
           offset: 0,
           animated,
         });
       } catch (error) {
         console.log("Scroll error:", error);
-        // Fallback: try scrolling to index 0
         try {
           flatListRef.current?.scrollToIndex({
             index: 0,
@@ -175,7 +210,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
     });
   }, []);
 
-  // ✅ Enhanced scroll to bottom with delay for better UX
   const scrollToBottomWithDelay = useCallback(
     (delay = 100, animated = true) => {
       requestAnimationFrame(() => {
@@ -187,36 +221,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
     [scrollToBottom]
   );
 
-  // ✅ Enhanced parseBackendResponse with better hasNextPage handling
-  const parseBackendResponse = (response) => {
-    if (!response) return { messages: [], hasNextPage: false, currentPage: 1 };
-
-    if (Array.isArray(response)) {
-      return {
-        messages: response,
-        hasNextPage: response.length === 20, // Only assume more if we got full page
-        currentPage: 1,
-      };
-    }
-
-    const hasNextPage = Boolean(response.hasNextPage);
-    const messages = response.messages || [];
-
-    console.log(
-      `📊 Parsing response - Page ${response.currentPage || "unknown"}: ${
-        messages.length
-      } messages, hasNextPage: ${hasNextPage}`
-    );
-
-    return {
-      messages,
-      hasNextPage,
-      currentPage: response.currentPage || 1,
-      pageSize: response.pageSize || 20,
-    };
-  };
-
-  // ✅ Enhanced background preloading with better completion detection
+  // ✅ Enhanced background preloading with backend format
   const startBackgroundPreloading = useCallback(async () => {
     if (
       !hasMoreMessages ||
@@ -240,7 +245,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
     );
     setIsBackgroundLoading(true);
 
-    // Load pages 3, 4, 5 one by one with delays
     for (let page = backgroundLoadedUntilPage + 1; page <= 5; page++) {
       if (loadedPages.has(page)) {
         console.log(`⏭️ Page ${page} already loaded, skipping`);
@@ -269,7 +273,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
           `✅ Background loaded page ${page}: ${pageMessages.length} messages, hasNext: ${hasNextPage}`
         );
 
-        // Add messages to state
         setMessages((prevMessages) => {
           const combinedMessages = [...prevMessages, ...pageMessages];
           const uniqueMessages = combinedMessages.filter(
@@ -291,17 +294,14 @@ const ChatDetailScreen = ({ navigation, route }) => {
           return uniqueMessages;
         });
 
-        // Mark page as loaded
         setLoadedPages((prev) => new Set([...prev, page]));
         setBackgroundLoadedUntilPage(page);
 
-        // ✅ Check if pagination should be complete
         if (!hasNextPage || pageMessages.length === 0) {
           setHasMoreMessages(false);
           setPaginationComplete(true);
           break;
         } else if (page === 5) {
-          // Continue with regular pagination for 6+ pages
           setHasMoreMessages(hasNextPage);
           break;
         }
@@ -322,7 +322,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
     paginationComplete,
   ]);
 
-  // ✅ Enhanced initial loading with proper completion detection
+  // ✅ Enhanced initial loading with proper backend format handling
   useEffect(() => {
     if (firstPageResponse && secondPageResponse && !hasLoadedInitialMessages) {
       const { messages: firstPageMessages, hasNextPage: firstHasNext } =
@@ -355,7 +355,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
       setLoadedPages(new Set([1, 2]));
       setCurrentPage(6);
 
-      // ✅ Check if we should stop pagination early
+      // ✅ Backend'in hasNextPage response'una göre pagination kontrolü
       if (!secondHasNext || secondPageMessages.length === 0) {
         console.log("🏁 Pagination complete after page 2");
         setHasMoreMessages(false);
@@ -366,7 +366,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
       setIsInitialLoading(false);
 
-      // ✅ Only start background preloading if there are more messages
       if (secondHasNext && secondPageMessages.length > 0) {
         setTimeout(() => {
           startBackgroundPreloading();
@@ -390,7 +389,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
       setLoadedPages(new Set([1]));
       setCurrentPage(2);
 
-      // ✅ Check if pagination is complete
       if (!hasNextPage || firstPageMessages.length === 0) {
         setHasMoreMessages(false);
         setPaginationComplete(true);
@@ -408,7 +406,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
     startBackgroundPreloading,
   ]);
 
-  // ✅ Handle dynamic page loading (6+ pages) with completion detection
+  // ✅ Handle dynamic page loading (6+ pages) with backend format
   useEffect(() => {
     if (
       currentPageResponse &&
@@ -423,7 +421,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
         hasNextPage,
       });
 
-      // ✅ Check if pagination should be complete
       if (!hasNextPage || currentPageMessages.length === 0) {
         console.log(`🏁 Pagination complete at page ${currentPage}`);
         setHasMoreMessages(false);
@@ -460,9 +457,8 @@ const ChatDetailScreen = ({ navigation, route }) => {
     }
   }, [currentPageResponse, currentPage, loadedPages]);
 
-  // ✅ FIXED: Load more messages with proper completion checking
+  // ✅ Enhanced load more with backend format
   const handleLoadMore = useCallback(async () => {
-    // ✅ Enhanced conditions to prevent unnecessary requests
     if (
       isLoadingMore ||
       !hasMoreMessages ||
@@ -482,7 +478,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
       return;
     }
 
-    // ✅ Load 5 pages at once for better UX
     const pagesToLoad = Math.min(5, Math.ceil(hasMoreMessages ? 5 : 1));
     const startPage = currentPage;
     const endPage = startPage + pagesToLoad - 1;
@@ -491,7 +486,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
     setIsLoadingMore(true);
 
     try {
-      // Load multiple pages in parallel
       const pagePromises = [];
       for (let page = startPage; page <= endPage; page++) {
         if (!loadedPages.has(page)) {
@@ -514,21 +508,17 @@ const ChatDetailScreen = ({ navigation, route }) => {
         allMessages = [...allMessages, ...pageMessages];
         finalHasMore = hasNextPage;
 
-        // ✅ Check if we should complete pagination
         if (!hasNextPage || pageMessages.length === 0) {
           shouldComplete = true;
           console.log(`🏁 Pagination should complete at page ${actualPage}`);
         }
 
-        // Mark pages as loaded
         setLoadedPages((prev) => new Set([...prev, actualPage]));
-
         console.log(
           `📖 Batch loaded page ${actualPage}: ${pageMessages.length} messages`
         );
       });
 
-      // Add all messages at once
       setMessages((prevMessages) => {
         const combinedMessages = [...prevMessages, ...allMessages];
         const uniqueMessages = combinedMessages.filter(
@@ -552,7 +542,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
       setCurrentPage(endPage + 1);
 
-      // ✅ Set completion state properly
       if (shouldComplete || !finalHasMore || allMessages.length === 0) {
         setHasMoreMessages(false);
         setPaginationComplete(true);
@@ -584,13 +573,11 @@ const ChatDetailScreen = ({ navigation, route }) => {
     triggerBackgroundLoad,
   ]);
 
-  // ✅ Enhanced scroll handler with better completion checking
+  // ✅ Enhanced scroll handler
   const handleScroll = useCallback(
     (event) => {
       const { contentOffset, contentSize, layoutMeasurement } =
         event.nativeEvent;
-
-      // ✅ Inverted mode için en üst = offset büyük değer
       const isAtTop =
         contentOffset.y >= contentSize.height - layoutMeasurement.height - 50;
 
@@ -640,7 +627,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
   const refreshMessages = useCallback(() => {
     console.log("🔄 Refreshing messages - resetting all pagination state");
 
-    // Clear all timeouts
     if (backgroundLoadingTimeoutRef.current) {
       clearTimeout(backgroundLoadingTimeoutRef.current);
     }
@@ -649,7 +635,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
     setMessages([]);
     setCurrentPage(1);
     setHasMoreMessages(true);
-    setPaginationComplete(false); // ✅ Reset completion flag
+    setPaginationComplete(false);
     setIsLoadingMore(false);
     setLoadedPages(new Set());
     setIsInitialLoading(true);
@@ -659,7 +645,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
     refetchFirstPage();
   }, [refetchFirstPage]);
 
-  // SignalR message listeners (unchanged)
+  // ✅ Enhanced SignalR message listeners - Backend field names ile uyumlu
   useEffect(() => {
     if (!connection || !isConnected) return;
 
@@ -671,17 +657,16 @@ const ChatDetailScreen = ({ navigation, route }) => {
         JSON.stringify(messageData, null, 2)
       );
 
-      if (
-        messageData.SenderUserId === partnerId ||
-        messageData.ReceiverUserId === partnerId
-      ) {
+      // ✅ Backend'den gelen field names'leri handle et
+      const senderId = messageData.SenderUserId || messageData.senderUserId;
+      const receiverId =
+        messageData.ReceiverUserId || messageData.receiverUserId;
+
+      if (senderId === partnerId || receiverId === partnerId) {
         const newMessage = {
           id: messageData.Id || messageData.id || `msg-${Date.now()}`,
-          senderUserId: messageData.SenderUserId || messageData.senderUserId,
-          receiverUserId:
-            messageData.ReceiverUserId ||
-            messageData.receiverUserId ||
-            currentUserId,
+          senderUserId: senderId,
+          receiverUserId: receiverId || currentUserId,
           content: messageData.Content || messageData.content,
           sentAt:
             messageData.SentAt ||
@@ -710,10 +695,10 @@ const ChatDetailScreen = ({ navigation, route }) => {
         });
 
         syncMessageToCache(messageData);
-
         scrollToBottomWithDelay(0, true);
 
-        if (messageData.SenderUserId === partnerId && isConnected) {
+        // ✅ Backend field name ile uyumlu
+        if (senderId === partnerId && isConnected) {
           setTimeout(() => {
             markMessagesAsRead(partnerId);
           }, 500);
@@ -737,7 +722,11 @@ const ChatDetailScreen = ({ navigation, route }) => {
                 confirmationData.SentAt ||
                 confirmationData.sentAt ||
                 msg.sentAt,
-              id: msg.id.startsWith("temp-") ? `msg-${Date.now()}` : msg.id,
+              id: msg.id.startsWith("temp-")
+                ? confirmationData.MessageId ||
+                  confirmationData.messageId ||
+                  `msg-${Date.now()}`
+                : msg.id,
             };
 
             syncMessageToCache({
@@ -759,7 +748,10 @@ const ChatDetailScreen = ({ navigation, route }) => {
     const handleMessagesRead = (readData) => {
       console.log("Messages marked as read:", readData);
 
-      if (readData.ReadByUserId === partnerId) {
+      // ✅ Backend field name ile uyumlu
+      const readByUserId = readData.ReadByUserId || readData.readByUserId;
+
+      if (readByUserId === partnerId) {
         setMessages((prevMessages) =>
           prevMessages.map((msg) =>
             msg.senderUserId === currentUserId ? { ...msg, isRead: true } : msg
@@ -809,6 +801,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
     markMessagesAsRead,
     syncMessageToCache,
     dispatch,
+    scrollToBottomWithDelay,
   ]);
 
   // Mark messages as read when entering chat
@@ -827,7 +820,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
     };
   }, [dispatch]);
 
-  // ✅ Enhanced debug logging with completion status
+  // Debug logging
   useEffect(() => {
     console.log("📊 Messages state updated:", {
       count: messages.length,
@@ -835,7 +828,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
       optimisticCount: messages.filter((m) => m.isOptimistic).length,
       currentPage,
       hasMoreMessages,
-      paginationComplete, // ✅ Added completion status
+      paginationComplete,
       loadedPages: Array.from(loadedPages),
       backgroundLoadedUntilPage,
       isBackgroundLoading,
@@ -867,7 +860,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
     }, 1000);
   }, [isTyping, isConnected, partnerId, startTyping, stopTyping]);
 
-  // Send message handler (unchanged)
+  // ✅ Enhanced send message handler - Backend API format'ına uygun
   const handleSendMessage = async () => {
     if (!message.trim() || !partnerId) {
       console.log("❌ Empty message or no partnerId");
@@ -904,7 +897,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
       return newMessages;
     });
 
-    // ✅ AUTO-SCROLL AFTER SENDING MESSAGE
     scrollToBottomWithDelay(0, true);
 
     try {
@@ -971,7 +963,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
     }
   };
 
-  // Helper functions (unchanged)
+  // Helper functions
   const isSameDay = (date1, date2) => {
     const d1 = new Date(date1);
     const d2 = new Date(date2);
@@ -1028,67 +1020,22 @@ const ChatDetailScreen = ({ navigation, route }) => {
     });
   };
 
-  // ✅ Updated renderMessage function with proper daily grouping
-  // FlatList'i inverted modda kullanarak en alttan başlatma
-
-  // 1. ✅ FlatList'i inverted moda alın ve data sıralamasını değiştirin
-  <Animated.FlatList
-    ref={flatListRef}
-    data={messages} // ✅ .reverse() kaldırıldı çünkü inverted kullanıyoruz
-    renderItem={renderMessage}
-    keyExtractor={(item) =>
-      item.id?.toString() || `${item.senderUserId}-${item.sentAt}`
-    }
-    className="flex-1 px-4"
-    contentContainerStyle={{
-      flexGrow: 1,
-      justifyContent: "flex-end", // ✅ İçerik en alta yaslanır
-    }}
-    keyboardDismissMode="interactive"
-    showsVerticalScrollIndicator={false}
-    onScroll={handleScroll}
-    scrollEventThrottle={100}
-    inverted={true} // ✅ Inverted mode - en alttan başlar
-    maintainVisibleContentPosition={{
-      minIndexForVisible: 0,
-    }}
-    ListEmptyComponent={() => (
-      <View className="flex-1 justify-center items-center py-20">
-        <Text className="text-gray-500 text-base text-center">
-          No messages yet. Start the conversation!
-        </Text>
-      </View>
-    )}
-    // ✅ Performance optimizations
-    removeClippedSubviews={true}
-    maxToRenderPerBatch={10}
-    updateCellsBatchingPeriod={50}
-    initialNumToRender={15}
-    windowSize={10}
-    legacyImplementation={false}
-    disableVirtualization={false}
-  />;
-
-  // 2. ✅ renderMessage fonksiyonunu inverted mode için güncelleme
+  // ✅ Enhanced renderMessage - Backend field names ile uyumlu
   const renderMessage = ({ item, index }) => {
     const isSent = item.senderUserId === currentUserId;
-
-    // ✅ Inverted mode için index hesaplaması değişti
     const prevMessage = index > 0 ? messages[index - 1] : null;
     const nextMessage =
       index < messages.length - 1 ? messages[index + 1] : null;
 
-    // ✅ Show date separator only when day changes
     const showDateSeparator =
       !nextMessage || !isSameDay(item.sentAt, nextMessage.sentAt);
-
     const showAvatar =
       !isSent &&
       (!prevMessage || prevMessage.senderUserId !== item.senderUserId);
 
     return (
       <View style={{ marginBottom: 1 }}>
-        {/* ✅ Date separator - shows only when day changes */}
+        {/* Date separator */}
         {showDateSeparator && (
           <View className="items-center my-4">
             <Text className="text-xs text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
@@ -1154,7 +1101,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
     );
   };
 
-  // ✅ Initial loading state (while first 2 pages are loading)
+  // ✅ Enhanced loading state
   if (isInitialLoading || (isLoadingFirstPage && !hasLoadedInitialMessages)) {
     return (
       <View className="flex-1 bg-white justify-center items-center">
@@ -1169,13 +1116,12 @@ const ChatDetailScreen = ({ navigation, route }) => {
     );
   }
 
-  // Error state
+  // ✅ Enhanced error state
   if (firstPageError && !hasLoadedInitialMessages) {
     return (
       <View className="flex-1 bg-white">
         <StatusBar style="dark" backgroundColor="transparent" translucent />
 
-        {/* Error content */}
         <View className="flex-1 justify-center items-center px-4">
           <FontAwesomeIcon
             icon={faExclamationCircle}
@@ -1196,7 +1142,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
           </TouchableOpacity>
         </View>
 
-        {/* ✅ BlurView Header for error state with manual safe area */}
+        {/* BlurView Header for error state */}
         <BlurView
           intensity={90}
           tint="light"
@@ -1217,7 +1163,9 @@ const ChatDetailScreen = ({ navigation, route }) => {
               <FontAwesomeIcon icon={faArrowLeft} size={20} color="#000" />
             </TouchableOpacity>
             <Text className="text-lg font-semibold text-gray-900">
-              {partnerName || partnerId}
+              {partner?.name && partner?.surname
+                ? `${partner.name} ${partner.surname}`
+                : partnerName || partnerId}
             </Text>
           </View>
         </BlurView>
@@ -1229,7 +1177,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
     <View style={{ flex: 1 }}>
       <StatusBar style="dark" backgroundColor="transparent" translucent />
 
-      {/* ✅ BlurView Header with manual safe area */}
+      {/* ✅ Enhanced BlurView Header - Backend partner data ile uyumlu */}
       <BlurView
         intensity={70}
         tint="light"
@@ -1272,8 +1220,9 @@ const ChatDetailScreen = ({ navigation, route }) => {
                     style={{ fontSize: 20 }}
                     className="text-gray-900 font-bold"
                   >
-                    {(partnerName || partnerId)?.charAt(0)?.toUpperCase() ||
-                      "P"}
+                    {(partner?.name || partnerName || partnerId)
+                      ?.charAt(0)
+                      ?.toUpperCase() || "P"}
                   </Text>
                 )}
               </View>
@@ -1282,7 +1231,10 @@ const ChatDetailScreen = ({ navigation, route }) => {
                   style={{ fontSize: 18 }}
                   className="font-semibold text-gray-900"
                 >
-                  {partner.name} {partner.surname}
+                  {/* ✅ Backend'den gelen partner data'sını kullan */}
+                  {partner?.name && partner?.surname
+                    ? `${partner.name} ${partner.surname}`
+                    : partnerName || partner?.userName || partnerId}
                 </Text>
                 <View className="flex-row items-center">
                   {isPartnerOnline ? (
@@ -1307,7 +1259,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
         </View>
       </BlurView>
 
-      {/* ✅ WhatsApp-style Keyboard Sticky Input Area with BlurView */}
+      {/* ✅ Enhanced Keyboard Sticky Input Area */}
       <KeyboardStickyView
         offset={{ closed: 0, opened: 28 }}
         style={{
@@ -1317,10 +1269,10 @@ const ChatDetailScreen = ({ navigation, route }) => {
           flex: 1,
         }}
       >
-        {/* ✅ Messages - FlatList with optimized performance */}
+        {/* ✅ Messages FlatList - Backend pagination ile uyumlu */}
         <Animated.FlatList
           ref={flatListRef}
-          data={messages} // ✅ .reverse() kaldırıldı çünkü inverted kullanıyoruz
+          data={messages}
           renderItem={renderMessage}
           keyExtractor={(item) =>
             item.id?.toString() || `${item.senderUserId}-${item.sentAt}`
@@ -1328,13 +1280,12 @@ const ChatDetailScreen = ({ navigation, route }) => {
           className="flex-1 px-4"
           contentContainerStyle={{
             flexGrow: 1,
-            justifyContent: "flex-end", // ✅ İçerik en alta yaslanır
           }}
           keyboardDismissMode="interactive"
           showsVerticalScrollIndicator={false}
           onScroll={handleScroll}
           scrollEventThrottle={100}
-          inverted={true} // ✅ Inverted mode - en alttan başlar
+          inverted={true}
           maintainVisibleContentPosition={{
             minIndexForVisible: 0,
           }}
@@ -1353,6 +1304,17 @@ const ChatDetailScreen = ({ navigation, route }) => {
           windowSize={10}
           legacyImplementation={false}
           disableVirtualization={false}
+          // ✅ Loading more indicator
+          ListHeaderComponent={() =>
+            isLoadingMore ? (
+              <View className="py-4 items-center">
+                <ActivityIndicator size="small" color="#0ea5e9" />
+                <Text className="mt-2 text-sm text-gray-500">
+                  Loading more messages...
+                </Text>
+              </View>
+            ) : null
+          }
         />
 
         {/* ✅ Enhanced Input Area with BlurView */}
