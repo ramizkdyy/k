@@ -4,8 +4,10 @@ import {
     Text,
     Animated,
     Image,
+    TouchableOpacity,
 } from "react-native";
 import { useSelector } from "react-redux";
+import { useNavigation } from "@react-navigation/native"; // Hook eklendi
 import { selectCurrentUser } from "../redux/slices/authSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
@@ -13,7 +15,8 @@ import {
 } from "@fortawesome/pro-solid-svg-icons";
 import { faHeart } from "@fortawesome/pro-solid-svg-icons";
 
-const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
+const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => { // navigation prop'u kaldırıldı
+    const navigation = useNavigation(); // Hook ile navigation al
     const currentUser = useSelector(selectCurrentUser);
     // Kullanıcı rolünü al
     const userRole = currentUser?.role || currentUser?.userRole;
@@ -195,21 +198,6 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
                 }
             }
 
-            // DEBUG: Post verilerini console'a yazdır
-            console.log("🔍 ExplorePostInfo - Post data:", {
-                postType: listing.postType,
-                postId: post.postId,
-                userId: post.user?.id,
-                userName: post.user?.name,
-                userSurname: post.user?.surname,
-                userProfilePicture: post.user?.profilePictureUrl,
-                rawMatchScore: rawMatchScore,
-                processedMatchScore: matchScore,
-                currentUserRole: userRole,
-                rawListing: listing,
-                rawPost: post
-            });
-
             return {
                 title: post.ilanBasligi || `${post.il} ${post.ilce} ${post.odaSayisi} Kiralık`,
                 description: post.postDescription || "",
@@ -219,6 +207,8 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
                 area: post.brutMetreKare ? `${post.brutMetreKare} m²` : "",
                 landlord: post.user ? `${post.user.name} ${post.user.surname}` : "",
                 landlordProfilePicture: post.user?.profilePictureUrl || null,
+                landlordUserId: post.user?.id || null, // Kullanıcı ID'sini ekle
+                landlordUserRole: "EVSAHIBI", // Ev sahibi rolünü ekle
                 matchScore: matchScore, // İşlenmiş match score
                 postId: post.postId,
                 type: "normal"
@@ -234,6 +224,8 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
                 area: "",
                 landlord: meta.hostName || "",
                 landlordProfilePicture: null,
+                landlordUserId: null,
+                landlordUserRole: null,
                 rating: meta.rating || null,
                 postId: meta.id,
                 type: "meta"
@@ -248,6 +240,8 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
             area: "",
             landlord: "",
             landlordProfilePicture: null,
+            landlordUserId: null,
+            landlordUserRole: null,
             matchScore: null,
             postId: null,
             type: "unknown"
@@ -256,16 +250,28 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
 
     const listingData = getListingData();
 
-    // DEBUG: Processed listing data'yı console'a yazdır
-    console.log("🎯 ExplorePostInfo - Processed listing data:", {
-        type: listingData.type,
-        landlord: listingData.landlord,
-        landlordProfilePicture: listingData.landlordProfilePicture,
-        matchScore: listingData.matchScore,
-        hasMatchScore: !!(listingData.matchScore && listingData.matchScore > 0),
-        userRole: userRole,
-        shouldShowMatchScore: userRole === "KIRACI"
-    });
+    // Kullanıcı profiline git fonksiyonu
+    const handleUserProfilePress = () => {
+        console.log('handleUserProfilePress called');
+        console.log('navigation object:', navigation);
+        console.log('landlordUserId:', listingData.landlordUserId);
+        console.log('landlordUserRole:', listingData.landlordUserRole);
+
+        if (listingData.landlordUserId && listingData.landlordUserRole) {
+            console.log('Attempting to navigate to UserProfile with params:', {
+                userId: listingData.landlordUserId,
+                userRole: listingData.landlordUserRole
+            });
+
+            // AppNavigator'da gördüğümüz gibi ekran adı "UserProfile" olmalı
+            navigation.navigate('UserProfile', {
+                userId: listingData.landlordUserId,
+                userRole: listingData.landlordUserRole
+            });
+        } else {
+            console.log('Navigation failed - missing user data');
+        }
+    };
 
     // Güçlü text shadow stil objesi
     const textShadowStyle = {
@@ -295,7 +301,7 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
                 right: 96,
                 bottom: safeAreaInsets.bottom + 60
             }}
-            pointerEvents="none" // ← GESTURE GEÇİRGEN
+        // pointerEvents="none" kaldırıldı - artık görünecek
         >
             <View className="px-3 py-3">
                 {/* Fiyat */}
@@ -341,8 +347,12 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
                 {/* Ev sahibi bilgisi - sadece Normal Post için */}
                 {listingData.type === "normal" && listingData.landlord && (
                     <View className="mt-1">
-                        {/* Ev sahibi profil resmi ve ismi */}
-                        <View className="flex-row items-center mb-2">
+                        {/* Ev sahibi profil resmi ve ismi - TouchableOpacity ile sarıldı */}
+                        <TouchableOpacity
+                            className="flex-row items-center mb-2"
+                            onPress={handleUserProfilePress}
+                            activeOpacity={0.7}
+                        >
                             {/* Profil Resmi */}
                             <View
                                 className="mr-2"
@@ -375,7 +385,7 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
                             >
                                 {listingData.landlord}
                             </Text>
-                        </View>
+                        </TouchableOpacity>
 
                         {/* Match Score bar - sadece KIRACI için ve score varsa göster */}
                         {userRole === "KIRACI" && listingData.matchScore && listingData.matchScore > 0 ? (
@@ -394,16 +404,6 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
                         ) : null}
                     </View>
                 )}
-
-                {/* Rating - sadece MetaPost için (değişiklik yok) */}
-                {/* {listingData.type === "meta" && listingData.rating && (
-                    <Text
-                        className="text-yellow-400 text-xs mt-1 font-medium"
-                        style={subtitleShadowStyle}
-                    >
-                        ⭐ {listingData.rating}
-                    </Text>
-                )} */}
             </View>
         </View>
     );

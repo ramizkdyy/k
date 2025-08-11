@@ -502,19 +502,19 @@ const ExploreDetailModal = ({
                 <ReAnimated.View style={[styles.modal, modalStyle]}>
                     {/* Header - GESTİKLİ ALAN */}
                     <GestureDetector gesture={panGesture}>
-                        <View className="items-center py-4 px-2 border-b border-gray-100 bg-white">
+                        <View className="items-center py-4 px-2 border-b border-[1px] border-gray-200 bg-white">
                             <View className="w-10 h-1 bg-gray-300 rounded-sm mb-3" />
                             <View className="flex-row justify-between items-center w-full">
                                 <View className="flex-row items-center">
-                                    <Text className="text-xl font-bold text-gray-900 ml-2">
+                                    <Text className="text-xl font-bold text-gray-900 px-2">
                                         İlan Detayları
                                     </Text>
                                 </View>
                                 <TouchableOpacity
                                     onPress={handleClose}
-                                    className="w-8 h-8 rounded-full bg-gray-100 items-center justify-center"
+                                    className="px-3 items-center justify-center"
                                 >
-                                    <FontAwesomeIcon icon={faTimes} size={16} color="#6B7280" />
+                                    <FontAwesomeIcon icon={faTimes} size={20} color="#6B7280" />
                                 </TouchableOpacity>
                             </View>
                         </View>
