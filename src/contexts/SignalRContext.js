@@ -43,7 +43,7 @@ export const SignalRProvider = ({ children }) => {
   const maxReconnectAttempts = 5;
 
   // ✅ Güncel ngrok URL'ini dinamik olarak al veya manuel güncelle
-  const SIGNALR_BASE_URL = "https://129d4a308991.ngrok-free.app"; // Bu URL'yi güncelleyin
+  const SIGNALR_BASE_URL = "https://b616de053604.ngrok-free.app"; // Bu URL'yi güncelleyin
 
   // SignalR bağlantısını başlat
   const startConnection = useCallback(async () => {

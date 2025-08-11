@@ -19,14 +19,19 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import { useLoginMutation } from "../redux/api/apiSlice";
+import { useRegisterNotificationTokenMutation } from "../redux/api/chatApiSlice";
 import {
   setCredentials,
   setHasUserProfile,
   selectCurrentUser,
+  setFcmToken,
+  setFcmTokenRegistered,
+  setExpoPushToken,
 } from "../redux/slices/authSlice";
 import { setUserProfile } from "../redux/slices/profileSlice";
 import { authCleanupHelper } from "../utils/authCleanup";
 import { chatApiHelpers } from "../redux/api/chatApiSlice";
+import notificationService from "../services/notificationService";
 
 const { width } = Dimensions.get("window");
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
@@ -48,6 +53,7 @@ const LoginScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const currentUser = useSelector(selectCurrentUser);
   const [login, { isLoading }] = useLoginMutation();
+  const [registerNotificationToken] = useRegisterNotificationTokenMutation();
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
@@ -63,7 +69,59 @@ const LoginScreen = ({ navigation }) => {
     };
   }, []);
 
-  // Handle login button press
+  // ✅ Enhanced FCM token registration function
+  const registerFcmTokenAfterLogin = async () => {
+    try {
+      console.log("📱 Starting FCM token registration after login...");
+
+      // Initialize notification service and get tokens
+      const tokens = await notificationService.initialize();
+
+      if (tokens?.fcmToken) {
+        // Store FCM token in Redux
+        dispatch(setFcmToken(tokens.fcmToken));
+        console.log(
+          "🔥 FCM token stored in Redux:",
+          tokens.fcmToken.substring(0, 20) + "..."
+        );
+
+        // Register FCM token with backend
+        console.log("📝 Registering FCM token with backend...");
+        const registerResult =
+          await notificationService.registerTokenWithServer(
+            registerNotificationToken
+          );
+
+        if (registerResult.success) {
+          dispatch(setFcmTokenRegistered(true));
+          console.log("✅ FCM token registered successfully after login");
+        } else if (!registerResult.skipLogging) {
+          console.error(
+            "❌ Failed to register FCM token after login:",
+            registerResult.error
+          );
+        }
+      } else {
+        console.log("⚠️ No FCM token available after login");
+      }
+
+      if (tokens?.expoToken) {
+        dispatch(setExpoPushToken(tokens.expoToken));
+        console.log(
+          "📱 Expo token stored in Redux:",
+          tokens.expoToken.substring(0, 20) + "..."
+        );
+      }
+    } catch (notificationError) {
+      console.error(
+        "❌ Notification setup failed after login:",
+        notificationError
+      );
+      // Don't fail the login process for notification errors
+    }
+  };
+
+  // ✅ Enhanced login handler with FCM token management
   const handleLogin = async () => {
     // Validate inputs
     if (!username.trim()) {
@@ -76,15 +134,16 @@ const LoginScreen = ({ navigation }) => {
     }
 
     try {
-      console.log("Giriş işlemi başlatılıyor...");
+      console.log("🚪 Login process starting...");
+      setErrorLogin(""); // Clear previous errors
 
-      // Call the login API
+      // 1. Call the login API
       const response = await login({
         userName: username.trim(),
         password: password.trim(),
       }).unwrap();
 
-      console.log("Login API yanıtı:", response);
+      console.log("✅ Login API response received:", response);
 
       // Check if login successful
       if (response && response.isSuccess) {
@@ -94,8 +153,8 @@ const LoginScreen = ({ navigation }) => {
             ? response.result.roles[0]
             : null;
 
-        console.log("API'den gelen rol dizisi:", response.result.roles);
-        console.log("Seçilen rol:", userRole);
+        console.log("👤 API roles array:", response.result.roles);
+        console.log("🏷️ Selected role:", userRole);
 
         // Kullanıcı nesnesini güncellenmiş rolle oluştur
         const updatedUser = {
@@ -103,13 +162,13 @@ const LoginScreen = ({ navigation }) => {
           role: response.result.user?.role || userRole,
         };
 
-        console.log("Güncellenmiş kullanıcı nesnesi:", updatedUser);
+        console.log("👤 Updated user object:", updatedUser);
 
         // API'den gelen hasUserProfile değerini al
         const hasUserProfile = response.result.hasUserProfile === true;
-        console.log("API'den gelen profil durumu:", hasUserProfile);
+        console.log("📋 Profile status from API:", hasUserProfile);
 
-        // ENHANCED: Handle potential user switching
+        // ✅ ENHANCED: Handle potential user switching with FCM cleanup
         const isUserSwitch =
           currentUser?.id &&
           updatedUser.id &&
@@ -121,6 +180,20 @@ const LoginScreen = ({ navigation }) => {
             newUserId: updatedUser.id,
           });
 
+          // Clean up previous user's FCM token
+          try {
+            console.log("🧹 Cleaning up previous user's FCM token...");
+            await notificationService.unregisterTokenWithServer(
+              registerNotificationToken
+            );
+            dispatch(setFcmTokenRegistered(false));
+          } catch (cleanupError) {
+            console.log(
+              "⚠️ FCM cleanup failed for previous user:",
+              cleanupError.message
+            );
+          }
+
           // Prepare for user switch - clean up old user data
           await authCleanupHelper.prepareForUserSwitch(
             currentUser.id,
@@ -131,7 +204,7 @@ const LoginScreen = ({ navigation }) => {
           chatApiHelpers.clearChatCache(dispatch);
         }
 
-        // Store credentials in Redux state
+        // 2. Store credentials in Redux state
         dispatch(
           setCredentials({
             user: updatedUser,
@@ -143,21 +216,23 @@ const LoginScreen = ({ navigation }) => {
         // Profil durumunu açıkça belirt (Redux persist için)
         dispatch(setHasUserProfile(hasUserProfile));
 
-        // Eğer kullanıcının profili varsa API'den profil bilgilerini çekeceğiz
-        // Bu işlem AppNavigator'daki ProfileLoader bileşeni tarafından yapılacak
-        // Geçici profil kullanmıyoruz artık
+        console.log("✅ Credentials stored in Redux");
+        console.log("🏷️ User role:", updatedUser.role);
+        console.log("📋 Profile status:", hasUserProfile);
 
-        console.log("Kimlik bilgileri Redux'a kaydedildi");
-        console.log("Kullanıcı rolü:", updatedUser.role);
-        console.log("Profil durumu:", hasUserProfile);
+        // 3. ✅ Setup FCM token for new login
+        await registerFcmTokenAfterLogin();
 
-        // Kullanıcı AppNavigator tarafından yönlendirilecek
-        console.log(
-          "Redux state güncellendi, AppNavigator tarafından yönlendirilecek"
-        );
+        console.log("🎉 Login process completed successfully");
+        console.log("🔄 AppNavigator will handle navigation");
+
+        // Clear form
+        setUsername("");
+        setPassword("");
+        setErrorLogin("");
       } else {
         // Show error if response is not successful
-        console.log("Giriş hatası:", response?.message);
+        console.log("❌ Login error:", response?.message);
         Alert.alert(
           "Giriş Başarısız",
           response?.message || "Kullanıcı adı veya şifre hatalı."
@@ -165,11 +240,14 @@ const LoginScreen = ({ navigation }) => {
       }
     } catch (error) {
       // Handle API call errors
-      console.error("Login error:", error);
-      setErrorLogin(
+      console.error("❌ Login error:", error);
+      const errorMessage =
         error.data?.message ||
-          "Giriş sırasında bir hata oluştu. Lütfen tekrar deneyin."
-      );
+        "Giriş sırasında bir hata oluştu. Lütfen tekrar deneyin.";
+      setErrorLogin(errorMessage);
+
+      // Show user-friendly error
+      Alert.alert("Giriş Hatası", errorMessage);
     }
   };
 
@@ -189,13 +267,20 @@ const LoginScreen = ({ navigation }) => {
     },
   };
 
-  // Loading indicator while API call in progress
+  // ✅ Enhanced loading state with better messaging
   if (isLoading) {
     return (
-      <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="small" color="#00000" />
-        <Text className="mt-3 text-base text-gray-500">Giriş yapılıyor...</Text>
-      </View>
+      <SafeAreaView className="flex-1 bg-white">
+        <View className="flex-1 justify-center items-center bg-white">
+          <ActivityIndicator size="large" color="#86efac" />
+          <Text className="mt-3 text-base text-gray-500">
+            Giriş yapılıyor...
+          </Text>
+          <Text className="mt-1 text-sm text-gray-400">
+            Bildirimler ayarlanıyor...
+          </Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -246,6 +331,7 @@ const LoginScreen = ({ navigation }) => {
                       onChangeText={setUsername}
                       keyboardType="email-address"
                       autoCapitalize="none"
+                      editable={!isLoading} // Disable during loading
                     />
                   </View>
 
@@ -260,32 +346,46 @@ const LoginScreen = ({ navigation }) => {
                         secureTextEntry={!showPassword}
                         value={password}
                         onChangeText={setPassword}
+                        editable={!isLoading} // Disable during loading
                       />
                     </View>
-                    <Pressable onPress={() => setShowPassword(!showPassword)}>
+                    <Pressable
+                      onPress={() => setShowPassword(!showPassword)}
+                      disabled={isLoading}
+                    >
                       <FontAwesomeIcon
                         icon={showPassword ? faEye : faEyeSlash}
                         size={20}
+                        color={isLoading ? "#ccc" : "#000"}
                       />
                     </Pressable>
                   </View>
-                </View>{" "}
+                </View>
+
                 <View className="flex-row justify-between items-center w-full">
                   <View className="items-center flex-row gap-2">
                     <Checkbox
                       value={isChecked}
                       onValueChange={setChecked}
                       color={isChecked ? "#86efac" : undefined}
+                      disabled={isLoading}
                       style={{
-                        borderColor: "#00000",
+                        borderColor: isLoading ? "#ccc" : "#00000",
                         borderRadius: 4,
                         borderWidth: 1.1,
                         width: 18,
                         height: 18,
                       }}
                     />
-                    <TouchableOpacity onPress={() => setChecked(!isChecked)}>
-                      <Text className="text-gray-900 font-normal text-lg">
+                    <TouchableOpacity
+                      onPress={() => setChecked(!isChecked)}
+                      disabled={isLoading}
+                    >
+                      <Text
+                        className={`font-normal text-lg ${
+                          isLoading ? "text-gray-400" : "text-gray-900"
+                        }`}
+                      >
                         Beni Hatırla
                       </Text>
                     </TouchableOpacity>
@@ -293,21 +393,34 @@ const LoginScreen = ({ navigation }) => {
                   <TouchableOpacity
                     onPress={() => navigation.navigate("ForgotPassword")}
                     className="self-end"
+                    disabled={isLoading}
                   >
-                    <Text className="text-gray-500 underline font-normal">
+                    <Text
+                      className={`underline font-normal ${
+                        isLoading ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    >
                       Şifreni mi unuttun?
                     </Text>
                   </TouchableOpacity>
                 </View>
               </View>
 
+              {/* ✅ Enhanced login button with better loading state */}
               <TouchableOpacity
-                className="rounded-xl bg-green-300 items-center justify-center py-3 w-full mt-3"
+                className={`rounded-xl items-center justify-center py-3 w-full mt-3 ${
+                  isLoading ? "bg-gray-300" : "bg-green-300"
+                }`}
                 onPress={handleLogin}
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <ActivityIndicator color="#006400" />
+                  <View className="flex-row items-center gap-2">
+                    <ActivityIndicator color="#006400" size="small" />
+                    <Text className="text-lg text-gray-600 font-semibold">
+                      Giriş yapılıyor...
+                    </Text>
+                  </View>
                 ) : (
                   <Text className="text-xl text-white font-semibold">
                     Giriş yap
@@ -315,9 +428,13 @@ const LoginScreen = ({ navigation }) => {
                 )}
               </TouchableOpacity>
 
-              {/* Hata Mesajı */}
+              {/* ✅ Enhanced error display */}
               {errorlogin ? (
-                <Text className="text-red-500 text-center">{errorlogin}</Text>
+                <View className="w-full bg-red-50 border border-red-200 rounded-lg p-3">
+                  <Text className="text-red-600 text-center font-medium">
+                    {errorlogin}
+                  </Text>
+                </View>
               ) : null}
 
               <View className="flex flex-row items-center w-full my-2">
@@ -331,10 +448,17 @@ const LoginScreen = ({ navigation }) => {
               {/* Social Login Butonları */}
               <View className="flex justify-center items-center gap-4 w-full">
                 <Pressable
-                  className="rounded-xl bg-white flex-row items-center px-4 py-3 gap-2 w-full border border-gray-900"
+                  className={`rounded-xl bg-white flex-row items-center px-4 py-3 gap-2 w-full border ${
+                    isLoading ? "border-gray-300" : "border-gray-900"
+                  }`}
                   onPress={() => console.log("Apple login")}
+                  disabled={isLoading}
                 >
-                  <FontAwesomeIcon icon={faApple} size={20} />
+                  <FontAwesomeIcon
+                    icon={faApple}
+                    size={20}
+                    color={isLoading ? "#ccc" : "#000"}
+                  />
                   <Text
                     className="absolute"
                     style={{
@@ -343,6 +467,7 @@ const LoginScreen = ({ navigation }) => {
                       left: 0,
                       right: 0,
                       textAlign: "center",
+                      color: isLoading ? "#ccc" : "#000",
                     }}
                   >
                     Apple ile devam et
@@ -350,10 +475,17 @@ const LoginScreen = ({ navigation }) => {
                 </Pressable>
 
                 <Pressable
-                  className="rounded-xl bg-white flex-row items-center px-4 py-3 gap-2 w-full border border-gray-900"
+                  className={`rounded-xl bg-white flex-row items-center px-4 py-3 gap-2 w-full border ${
+                    isLoading ? "border-gray-300" : "border-gray-900"
+                  }`}
                   onPress={() => console.log("Google login")}
+                  disabled={isLoading}
                 >
-                  <FontAwesomeIcon icon={faGoogle} size={20} />
+                  <FontAwesomeIcon
+                    icon={faGoogle}
+                    size={20}
+                    color={isLoading ? "#ccc" : "#000"}
+                  />
                   <Text
                     className="absolute"
                     style={{
@@ -362,25 +494,32 @@ const LoginScreen = ({ navigation }) => {
                       left: 0,
                       right: 0,
                       textAlign: "center",
+                      color: isLoading ? "#ccc" : "#000",
                     }}
                   >
                     Google ile devam et
                   </Text>
                 </Pressable>
               </View>
-              {/* Ayırıcı */}
-
-              {/* Giriş Yap Butonu */}
 
               {/* Alt Bilgi */}
               <View className="flex-row gap-2 justify-center mt-1 items-center">
-                <Text className="font-normal text-gray-500 text-base">
+                <Text
+                  className={`font-normal text-base ${
+                    isLoading ? "text-gray-400" : "text-gray-500"
+                  }`}
+                >
                   Henüz hesabın yok mu?
                 </Text>
                 <TouchableOpacity
                   onPress={() => navigation.navigate("Register")}
+                  disabled={isLoading}
                 >
-                  <Text className="text-gray-900 font-bold text-lg">
+                  <Text
+                    className={`font-bold text-lg ${
+                      isLoading ? "text-gray-400" : "text-gray-900"
+                    }`}
+                  >
                     Kayıt Ol
                   </Text>
                 </TouchableOpacity>

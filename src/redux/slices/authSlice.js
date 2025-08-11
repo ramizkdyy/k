@@ -12,37 +12,91 @@ const initialState = {
   isLoading: false,
   error: null,
   expoPushToken: null,
+
+  // ✅ FCM Token management
+  fcmToken: null,
+  fcmTokenRegistered: false,
+
+  // ✅ Additional tracking
+  lastLoginTime: null,
+  deviceInfo: null,
 };
 
 const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
+    // ✅ Enhanced loading states
+    loginStart: (state) => {
+      state.isLoading = true;
+      state.error = null;
+    },
+
+    loginSuccess: (state, action) => {
+      const { user, token, hasUserProfile } = action.payload;
+
+      state.user = user;
+      state.token = token;
+      state.isAuthenticated = true;
+      state.role = user?.role;
+      state.userRole = user?.role;
+      state.hasUserProfile = hasUserProfile || false;
+      state.isLoading = false;
+      state.error = null;
+      state.lastLoginTime = new Date().toISOString();
+
+      // Reset FCM registration status on new login (will be re-registered)
+      state.fcmTokenRegistered = false;
+
+      console.log("✅ Login successful - Redux state updated", {
+        userId: user?.id,
+        role: user?.role,
+        hasProfile: hasUserProfile,
+      });
+    },
+
+    loginFailure: (state, action) => {
+      state.isLoading = false;
+      state.error = action.payload;
+      state.isAuthenticated = false;
+      state.user = null;
+      state.token = null;
+      state.role = null;
+      state.userRole = null;
+      state.hasUserProfile = false;
+
+      console.log("❌ Login failed - Redux state cleared");
+    },
+
     // ENHANCED: Better user switching detection and cleanup in setCredentials
     setCredentials: (state, action) => {
       const { user, token, hasUserProfile } = action.payload;
       const previousUserId = state.user?.id;
       const currentUserId = user?.id;
-      
+
       // Detect user switch
-      const isUserSwitch = previousUserId && currentUserId && previousUserId !== currentUserId;
-      
+      const isUserSwitch =
+        previousUserId && currentUserId && previousUserId !== currentUserId;
+
       if (isUserSwitch) {
         console.log("🔄 USER SWITCH in setCredentials:", {
           previousUserId,
           currentUserId,
-          clearingPreviousData: true
+          clearingPreviousData: true,
         });
-        
+
         // Clear previous user's data completely for user switch
         Object.assign(state, initialState);
+        // Keep FCM token but reset registration status
+        state.fcmTokenRegistered = false;
       }
-      
+
       // Set new credentials
       state.user = user;
       state.token = token;
       state.isAuthenticated = true;
       state.hasUserProfile = hasUserProfile || false;
+      state.lastLoginTime = new Date().toISOString();
 
       if (user && user.role) {
         state.role = user.role;
@@ -66,31 +120,33 @@ const authSlice = createSlice({
       });
     },
 
-    // ENHANCED: More thorough logout with detailed logging and async storage cleanup
+    // ENHANCED: More thorough logout with detailed logging and FCM cleanup
     logout: (state) => {
       console.log("🚪 Logout initiated for user:", state.user?.id);
-      
+
       // Store previous user info for logging
       const previousUserId = state.user?.id;
       const previousRole = state.role;
-      
+      const hadFcmToken = state.fcmTokenRegistered;
+
       // Reset to initial state completely
       Object.assign(state, initialState);
-      
+
       console.log("🧹 Logout completed - all auth state cleared:", {
         previousUserId,
         previousRole,
-        stateReset: true
+        hadFcmToken,
+        stateReset: true,
       });
     },
 
     // NEW: Force clear all user data for hard reset (emergency logout)
     forceLogout: (state) => {
       console.log("🔥 FORCE LOGOUT initiated - clearing everything");
-      
+
       // Store previous info
       const previousUserId = state.user?.id;
-      
+
       // Hard reset - no partial state retention
       state.user = null;
       state.token = null;
@@ -100,10 +156,15 @@ const authSlice = createSlice({
       state.hasUserProfile = false;
       state.isLoading = false;
       state.error = null;
-      
+      state.fcmToken = null;
+      state.fcmTokenRegistered = false;
+      state.expoPushToken = null;
+      state.lastLoginTime = null;
+      state.deviceInfo = null;
+
       console.log("🔥 FORCE LOGOUT completed:", {
         previousUserId,
-        allDataCleared: true
+        allDataCleared: true,
       });
     },
 
@@ -203,6 +264,7 @@ const authSlice = createSlice({
 
     setError: (state, action) => {
       state.error = action.payload;
+      state.isLoading = false;
     },
 
     clearError: (state) => {
@@ -218,9 +280,55 @@ const authSlice = createSlice({
       console.log("User data cleared");
     },
 
+    // ✅ FCM Token management
+    setFcmToken: (state, action) => {
+      state.fcmToken = action.payload;
+      console.log(
+        "🔥 FCM token stored in Redux:",
+        action.payload?.substring(0, 20) + "..."
+      );
+    },
+
+    setFcmTokenRegistered: (state, action) => {
+      state.fcmTokenRegistered = action.payload;
+      console.log("📝 FCM token registration status updated:", action.payload);
+    },
+
+    clearFcmToken: (state) => {
+      state.fcmToken = null;
+      state.fcmTokenRegistered = false;
+      console.log("🗑️ FCM token cleared from Redux");
+    },
+
+    // ✅ Expo Push Token management
     setExpoPushToken: (state, action) => {
       state.expoPushToken = action.payload;
-      console.log("Expo push token set:", action.payload?.substring(0, 20) + "...");
+      console.log(
+        "📱 Expo push token stored:",
+        action.payload?.substring(0, 20) + "..."
+      );
+    },
+
+    clearExpoPushToken: (state) => {
+      state.expoPushToken = null;
+      console.log("🗑️ Expo push token cleared");
+    },
+
+    // ✅ Device info (optional)
+    setDeviceInfo: (state, action) => {
+      state.deviceInfo = action.payload;
+      console.log("📱 Device info stored:", action.payload);
+    },
+
+    // ✅ Loading states
+    setLoading: (state, action) => {
+      state.isLoading = action.payload;
+    },
+
+    // ✅ Complete reset (for app restart or critical errors)
+    resetAuthState: (state) => {
+      Object.assign(state, initialState);
+      console.log("🔄 Auth state completely reset");
     },
   },
 
@@ -243,6 +351,7 @@ const authSlice = createSlice({
           state.userRole = user?.role || null;
           state.hasUserProfile = hasUserProfile || false;
           state.error = null;
+          state.lastLoginTime = new Date().toISOString();
 
           console.log("Login API successful:", {
             userId: user?.id,
@@ -258,6 +367,7 @@ const authSlice = createSlice({
       (state, { payload }) => {
         state.error = payload?.message || "Login failed";
         state.isAuthenticated = false;
+        state.isLoading = false;
         console.error("Login failed:", payload);
       }
     );
@@ -281,6 +391,7 @@ const authSlice = createSlice({
           state.userRole = user?.role || null;
           state.hasUserProfile = hasUserProfile || false;
           state.error = null;
+          state.lastLoginTime = new Date().toISOString();
 
           console.log("Registration successful:", {
             userId: user?.id,
@@ -295,6 +406,7 @@ const authSlice = createSlice({
       apiSlice.endpoints.register?.matchRejected,
       (state, { payload }) => {
         state.error = payload?.message || "Registration failed";
+        state.isLoading = false;
         console.error("Registration failed:", payload);
       }
     );
@@ -329,6 +441,7 @@ const authSlice = createSlice({
       (state, { payload, meta }) => {
         console.error("Role assignment failed:", payload);
         console.log("Failed role assignment meta:", meta);
+        state.error = payload?.message || "Role assignment failed";
       }
     );
 
@@ -380,6 +493,8 @@ const authSlice = createSlice({
           sentData: meta.arg,
           currentUserId: state.user?.id,
         });
+        state.error =
+          payload?.message || "Landlord expectation creation failed";
       }
     );
 
@@ -405,15 +520,22 @@ const authSlice = createSlice({
           sentData: meta.arg,
           currentUserId: state.user?.id,
         });
+        state.error = payload?.message || "Tenant expectation creation failed";
       }
     );
   },
 });
 
 export const {
+  // ✅ Auth flow actions
+  loginStart,
+  loginSuccess,
+  loginFailure,
+
+  // ✅ Existing actions
   setCredentials,
   logout,
-  forceLogout, // NEW
+  forceLogout,
   setRole,
   setError,
   clearError,
@@ -421,13 +543,26 @@ export const {
   updateUserData,
   syncUserDataFromProfile,
   syncExpectationStatus,
-  clearUserData, // NEW
-  setExpoPushToken, // NEW
+  clearUserData,
+
+  // ✅ FCM token actions
+  setFcmToken,
+  setFcmTokenRegistered,
+  clearFcmToken,
+
+  // ✅ Expo token actions
+  setExpoPushToken,
+  clearExpoPushToken,
+
+  // ✅ Additional actions
+  setDeviceInfo,
+  setLoading,
+  resetAuthState,
 } = authSlice.actions;
 
 export default authSlice.reducer;
 
-// Selectors with better null checking
+// ✅ Enhanced selectors with better null checking
 export const selectCurrentUser = (state) => state.auth.user;
 export const selectCurrentUserId = (state) => state.auth.user?.id;
 export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
@@ -435,4 +570,40 @@ export const selectUserRole = (state) => state.auth.userRole || state.auth.role;
 export const selectAuthError = (state) => state.auth.error;
 export const selectAuthToken = (state) => state.auth.token;
 export const selectHasUserProfile = (state) => state.auth.hasUserProfile;
+export const selectIsLoading = (state) => state.auth.isLoading;
+
+// ✅ Notification token selectors
 export const selectExpoPushToken = (state) => state.auth.expoPushToken;
+export const selectFcmToken = (state) => state.auth.fcmToken;
+export const selectFcmTokenRegistered = (state) =>
+  state.auth.fcmTokenRegistered;
+
+// ✅ Computed selectors
+export const selectIsFullyAuthenticated = (state) =>
+  state.auth.isAuthenticated && !!state.auth.token && !!state.auth.user;
+
+export const selectUserInfo = (state) => ({
+  user: state.auth.user,
+  role: state.auth.userRole || state.auth.role,
+  hasProfile: state.auth.hasUserProfile,
+  isAuthenticated: state.auth.isAuthenticated,
+});
+
+export const selectNotificationTokens = (state) => ({
+  fcmToken: state.auth.fcmToken,
+  expoPushToken: state.auth.expoPushToken,
+  fcmRegistered: state.auth.fcmTokenRegistered,
+});
+
+export const selectCanReceiveNotifications = (state) =>
+  state.auth.isAuthenticated &&
+  state.auth.fcmToken &&
+  state.auth.fcmTokenRegistered;
+
+export const selectAuthStatus = (state) => ({
+  isAuthenticated: state.auth.isAuthenticated,
+  isLoading: state.auth.isLoading,
+  hasError: !!state.auth.error,
+  error: state.auth.error,
+  lastLoginTime: state.auth.lastLoginTime,
+});

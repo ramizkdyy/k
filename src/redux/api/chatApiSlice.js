@@ -1,7 +1,7 @@
 // redux/api/chatApiSlice.js - Fixed Pagination System with Lazy Query
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-const CHAT_BASE_URL = "https://129d4a308991.ngrok-free.app";
+const CHAT_BASE_URL = "https://b616de053604.ngrok-free.app";
 
 export const chatApiSlice = createApi({
   reducerPath: "chatApi",
@@ -56,7 +56,7 @@ export const chatApiSlice = createApi({
       return { error: "An unexpected error occurred" };
     },
   }),
-  tagTypes: ["ChatMessage", "ChatPartner", "UnreadCount"],
+  tagTypes: ["ChatMessage", "ChatPartner", "UnreadCount", "Notification"],
   // ✅ Reduced cache times for real-time updates
   keepUnusedDataFor: 60, // 1 minute cache for unused data
   refetchOnMountOrArgChange: true, // Refetch on component mount
@@ -242,6 +242,24 @@ export const chatApiSlice = createApi({
         };
       },
     }),
+
+    // Notification endpoints
+    registerNotificationToken: builder.mutation({
+      query: (tokenData) => ({
+        url: "/api/notification/register-token",
+        method: "POST",
+        body: tokenData,
+      }),
+      invalidatesTags: ["Notification"],
+    }),
+    unregisterNotificationToken: builder.mutation({
+      query: (tokenData) => ({
+        url: "/api/notification/unregister-token",
+        method: "POST",
+        body: tokenData,
+      }),
+      invalidatesTags: ["Notification"],
+    }),
   }),
 });
 
@@ -256,6 +274,8 @@ export const {
   useChatHealthCheckQuery,
   useGetUserOnlineStatusQuery,
   useGetChatStatsQuery,
+  useRegisterNotificationTokenMutation,
+  useUnregisterNotificationTokenMutation,
 } = chatApiSlice;
 
 // ✅ Enhanced SignalR ile real-time mesaj yönetimi için helper functions

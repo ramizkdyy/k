@@ -66,24 +66,6 @@ export const apiSlice = createApi({
       providesTags: ["Health"],
     }),
 
-    // Notification endpoints
-    registerNotificationToken: builder.mutation({
-      query: (tokenData) => ({
-        url: "/api/notification/register-token",
-        method: "POST",
-        body: tokenData,
-      }),
-      invalidatesTags: ["Notification"],
-    }),
-    unregisterNotificationToken: builder.mutation({
-      query: (tokenData) => ({
-        url: "/api/notification/unregister-token",
-        method: "POST",
-        body: tokenData,
-      }),
-      invalidatesTags: ["Notification"],
-    }),
-
     // Post endpoints
     // Eski getAllPosts endpoint'i (geriye dönük uyumluluk için)
     getAllPosts: builder.query({
@@ -983,10 +965,6 @@ export const {
 
   // Health hooks
   useHealthCheckQuery,
-
-  // Notification hooks
-  useRegisterNotificationTokenMutation,
-  useUnregisterNotificationTokenMutation,
 
   // Post hooks
   useGetAllPostsQuery, // Eski hook (geriye dönük uyumluluk için)
