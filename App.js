@@ -17,7 +17,6 @@ import {
   selectIsAuthenticated,
   selectCurrentUser,
   selectAuthToken,
-  setExpoPushToken,
   setFcmToken,
   setFcmTokenRegistered,
 } from "./src/redux/slices/authSlice";
@@ -34,16 +33,7 @@ import {
   initialWindowMetrics,
 } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Notifications from "expo-notifications";
 
-// Configure notification behavior
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
 
 // Loading component for PersistGate
 const LoadingScreen = () => (
@@ -102,13 +92,6 @@ const NotificationManager = () => {
           );
         }
 
-        if (tokens?.expoToken) {
-          dispatch(setExpoPushToken(tokens.expoToken));
-          console.log(
-            "✅ Expo token initialized:",
-            tokens.expoToken.substring(0, 20) + "..."
-          );
-        }
       } catch (error) {
         console.error("❌ Failed to initialize notification service:", error);
       }

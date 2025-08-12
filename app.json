@@ -24,6 +24,9 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Bu uygulama konum bilginizi ilan oluştururken kullanır.",
         "ITSAppUsesNonExemptEncryption": false
       },
+      "entitlements": {
+        "aps-environment": "development"
+      },
       "config": {
         "googleMapsApiKey": "AIzaSyBmN5yPYOrGCGaIzp8hcoWNkKFX0sqmI7g"
       }
@@ -58,13 +61,6 @@
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "Bu uygulama konum bilginizi ilan oluştururken kullanır."
-        }
-      ],
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/notification-icon.png",
-          "color": "#ffffff"
         }
       ],
       "@react-native-firebase/app",

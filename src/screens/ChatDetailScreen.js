@@ -1,4 +1,4 @@
-// screens/ChatDetailScreen.js - Backend'e uygun güncellemeler
+// screens/ChatDetailScreen.js - Global ve local handler'lar optimize edilmiş
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
@@ -601,16 +601,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
     ]
   );
 
-  // ✅ Function to sync message to cache
-  const syncMessageToCache = useCallback(
-    (messageData) => {
-      console.log("🔄 Syncing message to cache:", messageData);
-      chatApiHelpers.addMessageToCache(dispatch, partnerId, messageData);
-      chatApiHelpers.updatePartnersList(dispatch);
-    },
-    [dispatch, partnerId]
-  );
-
   // ✅ Cleanup timeouts
   useEffect(() => {
     return () => {
@@ -645,23 +635,24 @@ const ChatDetailScreen = ({ navigation, route }) => {
     refetchFirstPage();
   }, [refetchFirstPage]);
 
-  // ✅ Enhanced SignalR message listeners - Backend field names ile uyumlu
+  // ✅ OPTIMIZED: Screen-specific SignalR listeners - Sadece bu ekrana özel olanlar
   useEffect(() => {
     if (!connection || !isConnected) return;
 
-    console.log("Setting up SignalR listeners for chat:", partnerId);
+    console.log(
+      "🎯 Setting up SCREEN-SPECIFIC SignalR listeners for chat:",
+      partnerId
+    );
 
-    const handleReceiveMessage = (messageData) => {
-      console.log(
-        "📨 Received new message via SignalR:",
-        JSON.stringify(messageData, null, 2)
-      );
+    // ✅ Screen-specific: Sadece bu chat'e gelen mesajları real-time UI'da göster
+    const handleScreenReceiveMessage = (messageData) => {
+      console.log("📨 SCREEN: Received message for current chat:", messageData);
 
-      // ✅ Backend'den gelen field names'leri handle et
       const senderId = messageData.SenderUserId || messageData.senderUserId;
       const receiverId =
         messageData.ReceiverUserId || messageData.receiverUserId;
 
+      // Sadece bu chat ile ilgili mesajları UI'da göster
       if (senderId === partnerId || receiverId === partnerId) {
         const newMessage = {
           id: messageData.Id || messageData.id || `msg-${Date.now()}`,
@@ -686,18 +677,19 @@ const ChatDetailScreen = ({ navigation, route }) => {
           );
 
           if (!exists) {
-            console.log("✅ Adding new message to local state at index 0");
+            console.log(
+              "✅ SCREEN: Adding new message to local state at index 0"
+            );
             return [newMessage, ...prevMessages];
           } else {
-            console.log("⚠️ Duplicate message, not adding");
+            console.log("⚠️ SCREEN: Duplicate message, not adding");
           }
           return prevMessages;
         });
 
-        syncMessageToCache(messageData);
         scrollToBottomWithDelay(0, true);
 
-        // ✅ Backend field name ile uyumlu
+        // Partner'dan gelen mesajları otomatik okundu işaretle
         if (senderId === partnerId && isConnected) {
           setTimeout(() => {
             markMessagesAsRead(partnerId);
@@ -706,11 +698,9 @@ const ChatDetailScreen = ({ navigation, route }) => {
       }
     };
 
-    const handleMessageSent = (confirmationData) => {
-      console.log(
-        "✅ Message sent confirmation:",
-        JSON.stringify(confirmationData, null, 2)
-      );
+    // ✅ Screen-specific: Optimistic message'ların confirmation'ını handle et
+    const handleScreenMessageSent = (confirmationData) => {
+      console.log("✅ SCREEN: Message sent confirmation:", confirmationData);
 
       setMessages((prevMessages) =>
         prevMessages.map((msg) => {
@@ -728,16 +718,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
                   `msg-${Date.now()}`
                 : msg.id,
             };
-
-            syncMessageToCache({
-              Id: updatedMessage.id,
-              SenderUserId: updatedMessage.senderUserId,
-              ReceiverUserId: updatedMessage.receiverUserId,
-              Content: updatedMessage.content,
-              SentAt: updatedMessage.sentAt,
-              IsRead: updatedMessage.isRead,
-            });
-
             return updatedMessage;
           }
           return msg;
@@ -745,10 +725,10 @@ const ChatDetailScreen = ({ navigation, route }) => {
       );
     };
 
-    const handleMessagesRead = (readData) => {
-      console.log("Messages marked as read:", readData);
+    // ✅ Screen-specific: Bu chat'teki mesajların read status'unu güncelle
+    const handleScreenMessagesRead = (readData) => {
+      console.log("👁️ SCREEN: Messages marked as read:", readData);
 
-      // ✅ Backend field name ile uyumlu
       const readByUserId = readData.ReadByUserId || readData.readByUserId;
 
       if (readByUserId === partnerId) {
@@ -757,17 +737,12 @@ const ChatDetailScreen = ({ navigation, route }) => {
             msg.senderUserId === currentUserId ? { ...msg, isRead: true } : msg
           )
         );
-
-        chatApiHelpers.markCacheMessagesAsRead(
-          dispatch,
-          partnerId,
-          currentUserId
-        );
       }
     };
 
-    const handleMessageError = (errorData) => {
-      console.error("❌ Message error:", JSON.stringify(errorData, null, 2));
+    // ✅ Screen-specific: Message error handling
+    const handleScreenMessageError = (errorData) => {
+      console.error("❌ SCREEN: Message error:", errorData);
 
       setMessages((prevMessages) => {
         const filteredMessages = prevMessages.filter(
@@ -782,16 +757,18 @@ const ChatDetailScreen = ({ navigation, route }) => {
       );
     };
 
-    connection.on("ReceiveMessage", handleReceiveMessage);
-    connection.on("MessageSent", handleMessageSent);
-    connection.on("MessagesRead", handleMessagesRead);
-    connection.on("MessageError", handleMessageError);
+    // ✅ Sadece screen-specific listener'ları ekle
+    connection.on("ReceiveMessage", handleScreenReceiveMessage);
+    connection.on("MessageSent", handleScreenMessageSent);
+    connection.on("MessagesRead", handleScreenMessagesRead);
+    connection.on("MessageError", handleScreenMessageError);
 
     return () => {
-      connection.off("ReceiveMessage", handleReceiveMessage);
-      connection.off("MessageSent", handleMessageSent);
-      connection.off("MessagesRead", handleMessagesRead);
-      connection.off("MessageError", handleMessageError);
+      console.log("🧹 Cleaning up SCREEN-SPECIFIC SignalR listeners");
+      connection.off("ReceiveMessage", handleScreenReceiveMessage);
+      connection.off("MessageSent", handleScreenMessageSent);
+      connection.off("MessagesRead", handleScreenMessagesRead);
+      connection.off("MessageError", handleScreenMessageError);
     };
   }, [
     connection,
@@ -799,8 +776,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
     partnerId,
     currentUserId,
     markMessagesAsRead,
-    syncMessageToCache,
-    dispatch,
     scrollToBottomWithDelay,
   ]);
 
@@ -924,15 +899,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
             msg.id === optimisticMessage.id ? confirmedMessage : msg
           )
         );
-
-        syncMessageToCache({
-          Id: confirmedMessage.id,
-          SenderUserId: confirmedMessage.senderUserId,
-          ReceiverUserId: confirmedMessage.receiverUserId,
-          Content: confirmedMessage.content,
-          SentAt: confirmedMessage.sentAt,
-          IsRead: confirmedMessage.isRead,
-        });
       }
     } catch (error) {
       console.error("❌ Failed to send message:", error);
@@ -1172,7 +1138,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
       </View>
     );
   }
-
   return (
     <View style={{ flex: 1 }}>
       <StatusBar style="dark" backgroundColor="transparent" translucent />
