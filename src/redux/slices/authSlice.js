@@ -11,7 +11,6 @@ const initialState = {
   hasUserProfile: false,
   isLoading: false,
   error: null,
-  expoPushToken: null,
 
   // ✅ FCM Token management
   fcmToken: null,
@@ -158,7 +157,6 @@ const authSlice = createSlice({
       state.error = null;
       state.fcmToken = null;
       state.fcmTokenRegistered = false;
-      state.expoPushToken = null;
       state.lastLoginTime = null;
       state.deviceInfo = null;
 
@@ -300,19 +298,6 @@ const authSlice = createSlice({
       console.log("🗑️ FCM token cleared from Redux");
     },
 
-    // ✅ Expo Push Token management
-    setExpoPushToken: (state, action) => {
-      state.expoPushToken = action.payload;
-      console.log(
-        "📱 Expo push token stored:",
-        action.payload?.substring(0, 20) + "..."
-      );
-    },
-
-    clearExpoPushToken: (state) => {
-      state.expoPushToken = null;
-      console.log("🗑️ Expo push token cleared");
-    },
 
     // ✅ Device info (optional)
     setDeviceInfo: (state, action) => {
@@ -550,9 +535,6 @@ export const {
   setFcmTokenRegistered,
   clearFcmToken,
 
-  // ✅ Expo token actions
-  setExpoPushToken,
-  clearExpoPushToken,
 
   // ✅ Additional actions
   setDeviceInfo,
@@ -573,7 +555,6 @@ export const selectHasUserProfile = (state) => state.auth.hasUserProfile;
 export const selectIsLoading = (state) => state.auth.isLoading;
 
 // ✅ Notification token selectors
-export const selectExpoPushToken = (state) => state.auth.expoPushToken;
 export const selectFcmToken = (state) => state.auth.fcmToken;
 export const selectFcmTokenRegistered = (state) =>
   state.auth.fcmTokenRegistered;
@@ -591,7 +572,6 @@ export const selectUserInfo = (state) => ({
 
 export const selectNotificationTokens = (state) => ({
   fcmToken: state.auth.fcmToken,
-  expoPushToken: state.auth.expoPushToken,
   fcmRegistered: state.auth.fcmTokenRegistered,
 });
 

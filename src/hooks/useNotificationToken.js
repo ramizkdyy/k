@@ -13,7 +13,6 @@ import {
   selectFcmTokenRegistered,
   setFcmToken,
   setFcmTokenRegistered,
-  setExpoPushToken,
 } from "../redux/slices/authSlice";
 import notificationService from "../services/notificationService";
 import { Platform } from "react-native";
@@ -53,14 +52,6 @@ export const useNotificationToken = () => {
           console.log(
             "🔥 FCM token initialized in hook:",
             tokens.fcmToken.substring(0, 20) + "..."
-          );
-        }
-
-        if (tokens?.expoToken) {
-          dispatch(setExpoPushToken(tokens.expoToken));
-          console.log(
-            "📱 Expo token initialized in hook:",
-            tokens.expoToken.substring(0, 20) + "..."
           );
         }
       } catch (error) {
@@ -252,7 +243,6 @@ export const useNotificationToken = () => {
   const getLiveTokens = useCallback(() => {
     return {
       fcmToken: fcmToken || notificationService.getFCMTokenValue(),
-      expoToken: notificationService.getExpoPushToken(),
       platform:
         Platform.OS === "ios"
           ? "ios"
@@ -265,7 +255,6 @@ export const useNotificationToken = () => {
   return {
     // Token values
     fcmToken: fcmToken || notificationService.getFCMTokenValue(),
-    expoToken: notificationService.getExpoPushToken(),
     platform:
       Platform.OS === "ios"
         ? "ios"

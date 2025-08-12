@@ -26,7 +26,6 @@ import {
   selectCurrentUser,
   setFcmToken,
   setFcmTokenRegistered,
-  setExpoPushToken,
 } from "../redux/slices/authSlice";
 import { setUserProfile } from "../redux/slices/profileSlice";
 import { authCleanupHelper } from "../utils/authCleanup";
@@ -103,14 +102,6 @@ const LoginScreen = ({ navigation }) => {
         }
       } else {
         console.log("⚠️ No FCM token available after login");
-      }
-
-      if (tokens?.expoToken) {
-        dispatch(setExpoPushToken(tokens.expoToken));
-        console.log(
-          "📱 Expo token stored in Redux:",
-          tokens.expoToken.substring(0, 20) + "..."
-        );
       }
     } catch (notificationError) {
       console.error(
