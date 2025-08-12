@@ -1,4 +1,4 @@
-// screens/MessagesScreen.js - Backend Response Format'ına Uygun Güncellemeler
+// screens/MessagesScreen.js - Global SignalR handler'lar ile güncellenmiş
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
@@ -44,7 +44,7 @@ const MessagesScreen = ({ navigation }) => {
   const currentUser = useSelector(selectCurrentUser);
   const dispatch = useDispatch();
 
-  // ✅ ENHANCED: API calls with better error handling
+  // ✅ API calls with better error handling
   const {
     data: chatPartnersResponse,
     isLoading: partnersLoading,
@@ -53,7 +53,6 @@ const MessagesScreen = ({ navigation }) => {
   } = useGetChatPartnersQuery(undefined, {
     refetchOnFocus: true,
     refetchOnMountOrArgChange: true,
-    // ✅ Enhanced error handling
     onError: (error) => {
       console.error("❌ Chat partners fetch error:", error);
     },
@@ -67,23 +66,21 @@ const MessagesScreen = ({ navigation }) => {
   } = useGetUnreadCountQuery(undefined, {
     refetchOnFocus: true,
     refetchOnMountOrArgChange: true,
-    // ✅ Enhanced error handling
     onError: (error) => {
       console.error("❌ Unread count fetch error:", error);
     },
   });
 
-  // ✅ NEW: Search functionality
+  // ✅ Search functionality
   const [
     triggerSearch,
     { data: searchResponse, isLoading: isSearchLoading, error: searchError },
   ] = useLazySearchChatPartnersQuery();
 
-  // ✅ ENHANCED: API response handling with backend format compatibility
+  // ✅ API response handling with backend format compatibility
   const chatPartners = React.useMemo(() => {
     console.log("🔍 Chat Partners Response Processing:", chatPartnersResponse);
 
-    // Backend'in response format'ına göre handle et
     if (Array.isArray(chatPartnersResponse)) {
       console.log(
         `✅ Partners array format - ${chatPartnersResponse.length} partners`
@@ -91,7 +88,6 @@ const MessagesScreen = ({ navigation }) => {
       return chatPartnersResponse;
     }
 
-    // Nested response handling
     if (
       chatPartnersResponse?.result &&
       Array.isArray(chatPartnersResponse.result)
@@ -110,11 +106,10 @@ const MessagesScreen = ({ navigation }) => {
     return [];
   }, [chatPartnersResponse]);
 
-  // ✅ ENHANCED: Unread count handling with backend format compatibility
+  // ✅ Unread count handling with backend format compatibility
   const totalUnreadCount = React.useMemo(() => {
     console.log("🔍 Unread Data Response Processing:", unreadData);
 
-    // Backend'in response format'ına göre handle et
     if (typeof unreadData === "number") {
       return unreadData;
     }
@@ -131,7 +126,6 @@ const MessagesScreen = ({ navigation }) => {
       return Number(unreadData.data.count);
     }
 
-    // Backend'in direkt { count: number } format'ı
     if (typeof unreadData === "object" && unreadData !== null) {
       const numericValue = Object.values(unreadData).find(
         (val) => typeof val === "number"
@@ -145,7 +139,7 @@ const MessagesScreen = ({ navigation }) => {
     return 0;
   }, [unreadData]);
 
-  // ✅ ENHANCED: Search handling
+  // ✅ Search handling
   const handleSearch = useCallback(
     async (query) => {
       if (!query.trim() || query.length < 2) {
@@ -164,7 +158,6 @@ const MessagesScreen = ({ navigation }) => {
 
         console.log("🔍 Search result:", result);
 
-        // Backend format: { searchTerm: string, results: [], count: number }
         if (result?.results && Array.isArray(result.results)) {
           setSearchResults(result.results);
         } else if (Array.isArray(result)) {
@@ -175,8 +168,6 @@ const MessagesScreen = ({ navigation }) => {
       } catch (error) {
         console.error("❌ Search error:", error);
         setSearchResults([]);
-        // Optional: Show error to user
-        // Alert.alert("Search Error", "Failed to search chat partners. Please try again.");
       } finally {
         setIsSearching(false);
       }
@@ -193,12 +184,12 @@ const MessagesScreen = ({ navigation }) => {
         setSearchResults([]);
         setIsSearching(false);
       }
-    }, 500); // 500ms debounce
+    }, 500);
 
     return () => clearTimeout(timeoutId);
   }, [searchQuery, handleSearch]);
 
-  // Focus effect
+  // Focus effect - Sadece refetch yapıyoruz, SignalR listener'lar global olarak yönetiliyor
   useFocusEffect(
     useCallback(() => {
       console.log("📱 MessagesScreen focused, refreshing data...");
@@ -207,73 +198,10 @@ const MessagesScreen = ({ navigation }) => {
     }, [refetchPartners, refetchUnread])
   );
 
-  // ✅ ENHANCED: SignalR message listener with backend field names compatibility
-  useEffect(() => {
-    if (!connection || !isConnected) return;
+  // ✅ REMOVED: SignalR message listeners - Artık global olarak yönetiliyorlar
+  // Global SignalR handler'lar SignalRContext'te aktif olduğu için burada listener'lara gerek yok
 
-    console.log("🔔 Setting up SignalR listeners for MessagesScreen");
-
-    const handleReceiveMessage = (messageData) => {
-      console.log("📨 New message received in MessagesScreen:", messageData);
-
-      // ✅ Backend field names'leri log et
-      const senderId = messageData.SenderUserId || messageData.senderUserId;
-      const receiverId =
-        messageData.ReceiverUserId || messageData.receiverUserId;
-
-      console.log("📨 Message details:", {
-        senderId,
-        receiverId,
-        currentUserId: user?.id,
-      });
-
-      refetchPartners();
-      refetchUnread();
-    };
-
-    const handleMessageSent = (confirmationData) => {
-      console.log(
-        "✅ Message sent confirmation in MessagesScreen:",
-        confirmationData
-      );
-      refetchPartners();
-      refetchUnread();
-    };
-
-    const handleMessagesRead = (readData) => {
-      console.log("👁️ Messages read in MessagesScreen:", readData);
-      refetchUnread();
-    };
-
-    // ✅ NEW: Unread count update listener
-    const handleUnreadCountUpdate = (updateData) => {
-      console.log("📊 Unread count update in MessagesScreen:", updateData);
-      refetchUnread();
-    };
-
-    // ✅ NEW: Partner list update listener
-    const handlePartnerListUpdate = () => {
-      console.log("👥 Partner list update in MessagesScreen");
-      refetchPartners();
-    };
-
-    connection.on("ReceiveMessage", handleReceiveMessage);
-    connection.on("MessageSent", handleMessageSent);
-    connection.on("MessagesRead", handleMessagesRead);
-    connection.on("UnreadCountUpdate", handleUnreadCountUpdate);
-    connection.on("NewMessageNotification", handleReceiveMessage);
-
-    return () => {
-      console.log("🧹 Cleaning up SignalR listeners for MessagesScreen");
-      connection.off("ReceiveMessage", handleReceiveMessage);
-      connection.off("MessageSent", handleMessageSent);
-      connection.off("MessagesRead", handleMessagesRead);
-      connection.off("UnreadCountUpdate", handleUnreadCountUpdate);
-      connection.off("NewMessageNotification", handleReceiveMessage);
-    };
-  }, [connection, isConnected, refetchPartners, refetchUnread, user?.id]);
-
-  // ✅ ENHANCED: Refresh handler with better error handling
+  // ✅ Refresh handler with better error handling
   const onRefresh = useCallback(() => {
     console.log("🔄 Manual refresh requested");
 
@@ -294,13 +222,12 @@ const MessagesScreen = ({ navigation }) => {
       });
   }, [refetchPartners, refetchUnread]);
 
-  // ✅ ENHANCED: Helper functions with backend field names compatibility
+  // ✅ Helper functions with backend field names compatibility
   const getPartnerId = (partner) => {
     return partner.id || partner.Id;
   };
 
   const getPartnerName = (partner) => {
-    // ✅ Backend'den gelen field names'leri handle et
     const firstName = partner.name || partner.Name || "";
     const lastName = partner.surname || partner.Surname || "";
     const username = partner.userName || partner.UserName || "";
@@ -317,7 +244,6 @@ const MessagesScreen = ({ navigation }) => {
   };
 
   const getLastMessage = (partner) => {
-    // ✅ Backend'den gelen nested object'leri handle et
     const lastMessage = partner.lastMessage || partner.LastMessage;
 
     if (typeof lastMessage === "object" && lastMessage !== null) {
@@ -372,7 +298,6 @@ const MessagesScreen = ({ navigation }) => {
       const isFromMe = lastMessage.isFromMe || lastMessage.IsFromMe;
       const senderId = lastMessage.senderUserId || lastMessage.SenderUserId;
 
-      // Message okunmamış ve benden gelmiyorsa unread
       return !isRead && !isFromMe && senderId !== user?.id;
     }
 
@@ -383,25 +308,21 @@ const MessagesScreen = ({ navigation }) => {
     return partner.profileImageUrl || partner.ProfileImageUrl;
   };
 
-  // ✅ ENHANCED: Filter ve arama ile birleştirilmiş filtreleme
+  // ✅ Filter ve arama ile birleştirilmiş filtreleme
   const filteredPartners = React.useMemo(() => {
     let filtered = [];
 
-    // Arama yapılıyorsa search results'u kullan, yoksa normal partners
     if (searchQuery.trim() && searchResults.length > 0) {
       filtered = searchResults;
       console.log(`🔍 Using search results: ${filtered.length} partners`);
     } else if (searchQuery.trim() && !isSearching) {
-      // Arama yapıldı ama sonuç yok
       filtered = [];
       console.log("🔍 Search completed but no results");
     } else {
-      // Normal partner listesi
       filtered = chatPartners;
       console.log(`📝 Using normal partners: ${filtered.length} partners`);
     }
 
-    // Unread filtresini uygula
     if (activeFilter === "unread") {
       filtered = filtered.filter((partner) => isMessageUnread(partner));
       console.log(`🔍 After unread filter: ${filtered.length} partners`);
@@ -434,7 +355,7 @@ const MessagesScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
 
-  // ✅ ENHANCED: Partner item renderer with backend field names compatibility
+  // ✅ Partner item renderer with backend field names compatibility
   const renderPartner = ({ item: partner }) => {
     const partnerId = getPartnerId(partner);
     const partnerName = getPartnerName(partner);
@@ -454,7 +375,6 @@ const MessagesScreen = ({ navigation }) => {
             partnerName,
             partner: {
               ...partner,
-              // ✅ Normalize field names for consistency
               id: partnerId,
               name: partner.name || partner.Name,
               surname: partner.surname || partner.Surname,
@@ -477,7 +397,7 @@ const MessagesScreen = ({ navigation }) => {
           });
         }}
       >
-        {/* ✅ Enhanced Avatar with online indicator */}
+        {/* Avatar with online indicator */}
         <View
           style={{ width: 55, height: 55 }}
           className="justify-center items-center rounded-full border border-gray-100"
@@ -497,7 +417,6 @@ const MessagesScreen = ({ navigation }) => {
             </Text>
           )}
 
-          {/* Online status indicator */}
           {isOnline && (
             <View
               style={{ width: 20, height: 20, bottom: -4, right: -4 }}
@@ -511,7 +430,7 @@ const MessagesScreen = ({ navigation }) => {
           )}
         </View>
 
-        {/* ✅ Enhanced Partner info */}
+        {/* Partner info */}
         <View className="flex-1">
           <View className="flex-row justify-between items-center">
             <Text
@@ -561,7 +480,7 @@ const MessagesScreen = ({ navigation }) => {
     );
   };
 
-  // ✅ ENHANCED: Loading state with connection status
+  // Loading state
   if (partnersLoading && !chatPartners.length) {
     return (
       <View className="flex-1 bg-white justify-center items-center">
@@ -576,7 +495,7 @@ const MessagesScreen = ({ navigation }) => {
     );
   }
 
-  // ✅ ENHANCED: Error state with retry functionality
+  // Error state
   if (partnersError && !chatPartners.length) {
     return (
       <View className="flex-1 bg-white justify-center items-center px-4">
@@ -607,7 +526,7 @@ const MessagesScreen = ({ navigation }) => {
       <SafeAreaView style={{ flex: 0, backgroundColor: "#fff" }} />
       <StatusBar style="dark" backgroundColor="#fff" />
 
-      {/* ✅ Enhanced Header */}
+      {/* Header */}
       <View className="bg-white px-4 py-3">
         <View className="flex-row items-center justify-between mb-4">
           <TouchableOpacity
@@ -621,7 +540,6 @@ const MessagesScreen = ({ navigation }) => {
             <Text className="text-3xl ml-1 font-semibold text-gray-900">
               Mesajlar
             </Text>
-            {/* ✅ Connection status indicator */}
             {!isConnected && (
               <Text className="text-red-500 text-sm ml-1">⚠️ Offline mode</Text>
             )}
@@ -666,7 +584,7 @@ const MessagesScreen = ({ navigation }) => {
           </View>
         </View>
 
-        {/* ✅ Enhanced Search Bar with loading indicator */}
+        {/* Search Bar */}
         <View
           style={{ boxShadow: "0px 0px 12px #00000014" }}
           className=" rounded-full px-4 py-3 flex-row items-center"
@@ -685,7 +603,7 @@ const MessagesScreen = ({ navigation }) => {
           )}
         </View>
 
-        {/* ✅ Enhanced Filter Buttons with search info */}
+        {/* Filter Buttons */}
         <View className="w-full flex-row gap-2 items-center justify-start mt-4">
           <FilterButton
             filter="all"
@@ -701,7 +619,6 @@ const MessagesScreen = ({ navigation }) => {
             onPress={() => setActiveFilter("unread")}
           />
 
-          {/* Search results info */}
           {searchQuery.trim() && (
             <Text className="text-gray-500 text-sm ml-2">
               {isSearching
@@ -714,7 +631,7 @@ const MessagesScreen = ({ navigation }) => {
         </View>
       </View>
 
-      {/* ✅ Enhanced Partners List */}
+      {/* Partners List */}
       <FlatList
         data={filteredPartners}
         renderItem={renderPartner}
@@ -731,7 +648,6 @@ const MessagesScreen = ({ navigation }) => {
             tintColor="#0ea5e9"
           />
         }
-        // ✅ Enhanced empty state with search context
         ListEmptyComponent={() => (
           <View className="flex-1 justify-center items-center py-20">
             {isSearching ? (
@@ -774,14 +690,13 @@ const MessagesScreen = ({ navigation }) => {
             )}
           </View>
         )}
-        // ✅ Performance optimizations
         removeClippedSubviews={true}
         maxToRenderPerBatch={10}
         updateCellsBatchingPeriod={50}
         initialNumToRender={15}
         windowSize={10}
         getItemLayout={(data, index) => ({
-          length: 80, // Approximate height of each item
+          length: 80,
           offset: 80 * index,
           index,
         })}
