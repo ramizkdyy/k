@@ -7,7 +7,7 @@ import {
     TouchableOpacity,
 } from "react-native";
 import { useSelector } from "react-redux";
-import { useNavigation } from "@react-navigation/native"; // Hook eklendi
+import { useNavigation } from "@react-navigation/native";
 import { selectCurrentUser } from "../redux/slices/authSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
@@ -15,8 +15,8 @@ import {
 } from "@fortawesome/pro-solid-svg-icons";
 import { faHeart } from "@fortawesome/pro-solid-svg-icons";
 
-const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => { // navigation prop'u kaldırıldı
-    const navigation = useNavigation(); // Hook ile navigation al
+const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
+    const navigation = useNavigation();
     const currentUser = useSelector(selectCurrentUser);
     // Kullanıcı rolünü al
     const userRole = currentUser?.role || currentUser?.userRole;
@@ -250,6 +250,33 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => { // navigation pr
 
     const listingData = getListingData();
 
+    // İlan detayına git fonksiyonu - sadece normal postlar için
+    const handlePostDetailPress = () => {
+        console.log('handlePostDetailPress called');
+        console.log('navigation object:', navigation);
+        console.log('postId:', listingData.postId);
+        console.log('listing type:', listingData.type);
+
+        // Sadece normal postlarda çalışsın
+        if (listingData.type !== "normal") {
+            console.log('Navigation blocked - not a normal post');
+            return;
+        }
+
+        if (listingData.postId) {
+            console.log('Attempting to navigate to PostDetail with params:', {
+                postId: listingData.postId
+            });
+
+            // PostDetailScreen'e navigate et
+            navigation.navigate('PostDetail', {
+                postId: listingData.postId
+            });
+        } else {
+            console.log('Navigation failed - missing postId');
+        }
+    };
+
     // Kullanıcı profiline git fonksiyonu
     const handleUserProfilePress = () => {
         console.log('handleUserProfilePress called');
@@ -301,7 +328,6 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => { // navigation pr
                 right: 96,
                 bottom: safeAreaInsets.bottom + 60
             }}
-        // pointerEvents="none" kaldırıldı - artık görünecek
         >
             <View className="px-3 py-3">
                 {/* Fiyat */}
@@ -317,14 +343,30 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => { // navigation pr
                     </View>
                 )}
 
-                {/* İlan Başlığı */}
-                <Text
-                    className="text-white text-2xl font-bold mb-2"
-                    style={textShadowStyle}
-                    numberOfLines={2}
-                >
-                    {listingData.title}
-                </Text>
+                {/* İlan Başlığı - Sadece normal postlarda tıklanabilir */}
+                {listingData.type === "normal" ? (
+                    <TouchableOpacity
+                        onPress={handlePostDetailPress}
+                        activeOpacity={0.7}
+                        className="mb-2"
+                    >
+                        <Text
+                            className="text-white text-2xl font-bold"
+                            style={textShadowStyle}
+                            numberOfLines={2}
+                        >
+                            {listingData.title}
+                        </Text>
+                    </TouchableOpacity>
+                ) : (
+                    <Text
+                        className="text-white text-2xl font-bold mb-2"
+                        style={textShadowStyle}
+                        numberOfLines={2}
+                    >
+                        {listingData.title}
+                    </Text>
+                )}
 
                 {/* Konum */}
                 <View className="flex-row items-center mb-2 ">

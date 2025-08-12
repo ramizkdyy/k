@@ -1798,23 +1798,23 @@ const PostDetailScreen = ({ route, navigation }) => {
           {userRole === "EVSAHIBI" && post.userId === currentUser?.id && (
             <>
               <TouchableOpacity
-                className="flex-1 bg-green-50 py-3 rounded-lg mr-2"
+                className="flex-1 bg-white py-3 rounded-full border-[1px] border-gray-200 mr-2"
                 onPress={() =>
                   navigation.navigate("EditPost", { propertyData: post })
                 }
               >
-                <Text className="text-green-700 font-semibold text-center">
+                <Text className="text-gray-900 font-semibold text-center text-lg">
                   Düzenle
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                className="flex-1 bg-green-500 py-3 rounded-lg"
+                className="flex-1 bg-gray-900 py-3 rounded-full"
                 onPress={() =>
                   navigation.navigate("Offers", { postId: post.postId })
                 }
               >
-                <Text className="text-white font-semibold text-center">
+                <Text className="text-white font-semibold text-center text-lg">
                   Teklifleri Gör
                 </Text>
               </TouchableOpacity>

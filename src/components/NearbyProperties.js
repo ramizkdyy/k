@@ -251,38 +251,37 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
     }
   );
 
-  // Get data based on user role
-  const getBestForYouData = () => {
-    if (userRole === "KIRACI") {
-      // For tenants, use bestForYou from response (properties)
-      return nearbyData?.result?.bestForYou || [];
-    } else if (userRole === "EVSAHIBI") {
-      // For landlords, use bestTenantMatch from response (tenants)
-      return nearbyData?.result?.bestTenantMatch || [];
-    }
-    return [];
-  };
+  // YENİ MANTIK: Veri kaynaklarını doğru şekilde organize et
 
-  const getBestLandlordData = () => {
-    if (userRole === "KIRACI") {
-      // For tenants, show best landlord matches
+  // 1. Yakınındaki Evler - Herkes için aynı (mülkler)
+  const nearFromYouProperties = nearbyData?.result?.nearFromYou || [];
+
+  // 2. İkinci bölüm verileri
+  const getSecondSectionData = () => {
+    if (userRole === "EVSAHIBI") {
+      // Ev sahibi için: Size uygun kiracılar
+      return nearbyData?.result?.bestTenantMatch || [];
+    } else if (userRole === "KIRACI") {
+      // Kiracı için: Size uygun ev sahipleri
       return nearbyData?.result?.bestLandlordMatch || [];
     }
     return [];
   };
 
-  // Get similar posts for landlords (EVSAHIBI)
-  const getSimilarPostsData = () => {
+  // 3. Üçüncü bölüm verileri
+  const getThirdSectionData = () => {
     if (userRole === "EVSAHIBI") {
+      // Ev sahibi için: Benzer ilanlar (mülkler)
       return nearbyData?.result?.similarPost || [];
+    } else if (userRole === "KIRACI") {
+      // Kiracı için: Sizin için önerilen (mülkler)
+      return nearbyData?.result?.bestForYou || [];
     }
     return [];
   };
 
-  const nearbyProperties = getBestForYouData();
-  const nearFromYouProperties = nearbyData?.result?.nearFromYou || [];
-  const bestLandlordMatches = getBestLandlordData();
-  const similarPosts = getSimilarPostsData();
+  const secondSectionData = getSecondSectionData();
+  const thirdSectionData = getThirdSectionData();
 
   // Handle refresh from parent component
   useEffect(() => {
@@ -349,102 +348,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
     }
   };
 
-  // Benzer ilanlar için yeni render fonksiyonu - solda resim, sağda bilgiler
-  const renderSimilarPostCard = ({ item }) => (
-    <TouchableOpacity
-      activeOpacity={1}
-      className="overflow-hidden w-full flex flex-row items-center gap-4 py-2"
-      onPress={() => {
-        navigation.navigate("PostDetail", { postId: item.postId });
-      }}
-    >
-      {/* Sol taraf - Resim */}
-      <View className="relative">
-        <Image
-          style={{ width: 80, height: 80, boxShadow: "0px 0px 12px #00000014" }}
-          source={{
-            uri:
-              item.postImages && item.postImages.length > 0
-                ? item.postImages[0].postImageUrl
-                : item.firstPostİmageURL ||
-                "https://via.placeholder.com/120x120",
-          }}
-          className="rounded-2xl border border-gray-100"
-          resizeMode="cover"
-        />
-      </View>
-
-      {/* Sağ taraf - Bilgiler */}
-      <View className="flex-1 flex flex-col">
-        {/* Üst kısım - Başlık */}
-        <View>
-          <Text
-            style={{ fontSize: 16, fontWeight: 600 }}
-            className="text-gray-800 mb-2"
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {item.ilanBasligi || item.title || "İlan Başlığı"}
-          </Text>
-        </View>
-
-        {/* Alt kısım - Fiyat ve match score */}
-        <View>
-          {/* Fiyat */}
-          <Text
-            style={{ fontSize: 14, fontWeight: 600 }}
-            className="text-gray-400 mb-2"
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {item.kiraFiyati || item.rent
-              ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
-              }`
-              : "Fiyat belirtilmemiş"}
-          </Text>
-
-          {/* Match Score */}
-          {item.matchScore && (
-            <MatchScoreBar
-              matchScore={item.matchScore}
-              showBar={true}
-              size="xs"
-            />
-          )}
-        </View>
-
-        {/* Konum */}
-        {/* <View className="flex-row items-center gap-1 mb-2">
-          <FontAwesomeIcon size={12} color="#9CA3AF" icon={faLocationDot} />
-          <Text
-            className="text-gray-500 text-sm flex-1"
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {item.ilce && item.il
-              ? `${item.ilce}, ${item.il}`
-              : item.location || "Konum bilgisi yok"}
-          </Text>
-        </View> */}
-        <View className="flex flex-row gap-4 items-center">
-          <View className="flex flex-row gap-2 items-center">
-            <FontAwesomeIcon color="#6B7280" icon={faBath} />
-            <Text style={{ fontSize: 12 }} className="text-gray-500">
-              {item.banyoSayisi} Banyo
-            </Text>
-          </View>
-          <View className="flex flex-row gap-2 items-center">
-            <FontAwesomeIcon color="#6B7280" icon={faBed} />
-            <Text style={{ fontSize: 12 }} className="text-gray-500">
-              {item.banyoSayisi} Yatak odası
-            </Text>
-          </View>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-
-  // Render property card for KIRACI (tenant)
+  // Horizontal Property Card - Sadece 1. bölüm için kullanılacak
   const renderPropertyCard = ({ item }) => (
     <TouchableOpacity
       activeOpacity={1}
@@ -520,7 +424,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
             className="text-gray-800"
             numberOfLines={2}
           >
-            {item.il} {item.ilce} {item.odaSayisi} Kiralık Daire
+            {item.ilanBasligi || item.title || `${item.il} ${item.ilce} ${item.odaSayisi} Kiralık Daire`}
           </Text>
         </View>
         <View className="flex justify-between flex-row items-center mt-1">
@@ -540,7 +444,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
         </View>
 
         {/* Compatibility Level for recommended properties */}
-        {item.compatibilityLevel && item.matchScore && (
+        {item.matchScore && (
           <View className="mt-2">
             <MatchScoreBar
               matchScore={item.matchScore}
@@ -553,26 +457,116 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
     </TouchableOpacity>
   );
 
-  // Render tenant card for EVSAHIBI (landlord)
-  const renderTenantCard = ({ item }) => (
+  // Vertical Property Card - 3. bölüm için kullanılacak (hem benzer ilanlar hem önerilen)
+  const renderVerticalPropertyCard = ({ item }) => (
+    <TouchableOpacity
+      activeOpacity={1}
+      className="overflow-hidden w-full flex flex-row items-center gap-4 py-2"
+      onPress={() => {
+        navigation.navigate("PostDetail", { postId: item.postId });
+      }}
+    >
+      {/* Sol taraf - Resim */}
+      <View className="relative">
+        <Image
+          style={{ width: 80, height: 80, boxShadow: "0px 0px 12px #00000014" }}
+          source={{
+            uri:
+              item.postImages && item.postImages.length > 0
+                ? item.postImages[0].postImageUrl
+                : item.firstPostİmageURL ||
+                "https://via.placeholder.com/120x120",
+          }}
+          className="rounded-2xl border border-gray-100"
+          resizeMode="cover"
+        />
+      </View>
+
+      {/* Sağ taraf - Bilgiler */}
+      <View className="flex-1 flex flex-col">
+        {/* Üst kısım - Başlık */}
+        <View>
+          <Text
+            style={{ fontSize: 16, fontWeight: 600 }}
+            className="text-gray-800 mb-2"
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {item.ilanBasligi || item.title || `${item.il} ${item.ilce} Kiralık Daire`}
+          </Text>
+        </View>
+
+        {/* Alt kısım - Fiyat ve match score */}
+        <View>
+          {/* Fiyat */}
+          <Text
+            style={{ fontSize: 14, fontWeight: 600 }}
+            className="text-gray-400 mb-2"
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {item.kiraFiyati || item.rent
+              ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
+              }`
+              : "Fiyat belirtilmemiş"}
+          </Text>
+
+          {/* Match Score */}
+          {item.matchScore && (
+            <MatchScoreBar
+              matchScore={item.matchScore}
+              showBar={true}
+              size="xs"
+            />
+          )}
+        </View>
+
+        {/* Oda ve banyo bilgileri */}
+        <View className="flex flex-row gap-4 items-center">
+          <View className="flex flex-row gap-2 items-center">
+            <FontAwesomeIcon color="#6B7280" icon={faBath} />
+            <Text style={{ fontSize: 12 }} className="text-gray-500">
+              {item.banyoSayisi || "N/A"} Banyo
+            </Text>
+          </View>
+          <View className="flex flex-row gap-2 items-center">
+            <FontAwesomeIcon color="#6B7280" icon={faBed} />
+            <Text style={{ fontSize: 12 }} className="text-gray-500">
+              {item.odaSayisi || "N/A"} Yatak odası
+            </Text>
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  // UNIFIED Person Card - Hem kiracı hem ev sahibi için kullanılacak
+  const renderPersonCard = ({ item }) => (
     <TouchableOpacity
       style={{ boxShadow: "0px 0px 12px #00000014", borderRadius: 25 }}
       activeOpacity={1}
       className="mr-4 mb-3 overflow-hidden w-72 flex flex-col bg-white border border-gray-200 p-4"
       onPress={() => {
-        // Navigate to user profile screen with tenant role
-        navigation.navigate("UserProfile", {
-          userId: item.userId,
-          userRole: "KIRACI"
-        });
+        if (userRole === "EVSAHIBI") {
+          // Ev sahibi kiracı profiline gidiyor
+          navigation.navigate("UserProfile", {
+            userId: item.userId,
+            userRole: "KIRACI"
+          });
+        } else {
+          // Kiracı ev sahibinin ilanına gidiyor
+          navigation.navigate("PostDetail", { postId: item.propertyId });
+        }
       }}
     >
-      {/* Tenant Image and Basic Info */}
+      {/* Person Image and Basic Info */}
       <View className="flex-row items-center mb-3">
         <Image
           style={{ width: 60, height: 60, boxShadow: "0px 0px 12px #00000020" }}
           source={{
-            uri: item.tenantURL || "https://via.placeholder.com/60x60",
+            uri: userRole === "EVSAHIBI"
+              ? (item.tenantURL || "https://via.placeholder.com/60x60")
+              : (item.landlordProfileURL || "https://via.placeholder.com/60x60")
           }}
           className="rounded-full border border-gray-100"
           resizeMode="cover"
@@ -584,45 +578,89 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
             className="text-gray-800 mb-1"
             numberOfLines={1}
           >
-            {item.tenantName || "Kiracı"}
+            {userRole === "EVSAHIBI"
+              ? (item.tenantName || "Kiracı")
+              : (item.landlordName || "Ev Sahibi")
+            }
           </Text>
           <View className="flex flex-row items-center gap-1">
-            {" "}
             <Text className="text-gray-500" style={{ fontSize: 12 }}>
-              Profili görüntüle
+              {userRole === "EVSAHIBI" ? "Profili görüntüle" : "İlanı görüntüle"}
             </Text>
             <FontAwesomeIcon size={12} color="#dee0ea" icon={faChevronRight} />
           </View>
         </View>
       </View>
 
-      {/* Tenant Details */}
+      {/* Person Details */}
       <View className="space-y-2">
-        {/* Budget */}
-        <View className="flex-row justify-between">
-          <Text className="text-gray-600 text-sm">Bütçe:</Text>
-          <Text className="text-gray-800 text-sm font-medium">
-            {item.details?.budget?.toLocaleString()} ₺
-          </Text>
-        </View>
+        {userRole === "EVSAHIBI" ? (
+          // Kiracı detayları (ev sahibi için)
+          <>
+            {/* Budget */}
+            <View className="flex-row justify-between">
+              <Text className="text-gray-600 text-sm">Bütçe:</Text>
+              <Text className="text-gray-800 text-sm font-medium">
+                {item.details?.budget?.toLocaleString()} ₺
+              </Text>
+            </View>
 
-        {/* Preferred Location */}
-        <View className="flex-row justify-between">
-          <Text className="text-gray-600 text-sm">Tercih Edilen Bölge:</Text>
-          <Text className="text-gray-800 text-sm font-medium" numberOfLines={1}>
-            {item.details?.preferredLocation || "Belirtilmemiş"}
-          </Text>
-        </View>
+            {/* Preferred Location */}
+            <View className="flex-row justify-between">
+              <Text className="text-gray-600 text-sm">Tercih Edilen Bölge:</Text>
+              <Text className="text-gray-800 text-sm font-medium" numberOfLines={1}>
+                {item.details?.preferredLocation || "Belirtilmemiş"}
+              </Text>
+            </View>
 
-        {/* Room Preference */}
-        <View className="flex-row justify-between">
-          <Text className="text-gray-600 text-sm">Min. Oda Sayısı:</Text>
-          <Text className="text-gray-800 text-sm font-medium">
-            {item.details?.minRooms || "Belirtilmemiş"}
-          </Text>
-        </View>
+            {/* Room Preference */}
+            <View className="flex-row justify-between">
+              <Text className="text-gray-600 text-sm">Min. Oda Sayısı:</Text>
+              <Text className="text-gray-800 text-sm font-medium">
+                {item.details?.minRooms || "Belirtilmemiş"}
+              </Text>
+            </View>
+          </>
+        ) : (
+          // Ev sahibi detayları (kiracı için)
+          <>
+            {/* Property Title */}
+            <Text
+              style={{ fontSize: 14, fontWeight: 600 }}
+              className="text-gray-800 mb-2"
+              numberOfLines={2}
+            >
+              {item.propertyTitle || "Mülk Başlığı"}
+            </Text>
 
-        {/* Compatibility Level */}
+            {/* Rent */}
+            <View className="flex-row justify-between">
+              <Text className="text-gray-600 text-sm">Kira:</Text>
+              <Text className="text-gray-800 text-sm font-medium">
+                {item.rent?.toLocaleString()} {item.currency || "₺"}
+              </Text>
+            </View>
+
+            {/* Location */}
+            <View className="flex-row justify-between">
+              <Text className="text-gray-600 text-sm">Konum:</Text>
+              <Text className="text-gray-800 text-sm font-medium" numberOfLines={1}>
+                {item.location || "Konum bilgisi yok"}
+              </Text>
+            </View>
+
+            {/* Property Details */}
+            <View className="flex-row justify-between">
+              <Text className="text-gray-600 text-sm">Detaylar:</Text>
+              <Text className="text-gray-800 text-sm font-medium">
+                {item.propertyDetails?.rooms || "N/A"} •{" "}
+                {item.propertyDetails?.size || "N/A"}m²
+              </Text>
+            </View>
+          </>
+        )}
+
+        {/* Compatibility Level - Her ikisi için de aynı */}
         <View className="py-1">
           <MatchScoreBar
             matchScore={item.matchScore}
@@ -641,113 +679,23 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
     </TouchableOpacity>
   );
 
-  // Render landlord card for KIRACI (tenant)
-  const renderLandlordCard = ({ item }) => (
-    <TouchableOpacity
-      activeOpacity={1}
-      className="mr-4 overflow-hidden w-72 flex flex-col bg-white border border-gray-200 rounded-2xl p-4"
-      onPress={() => {
-        navigation.navigate("PostDetail", { postId: item.propertyId });
-      }}
-    >
-      {/* Landlord Image and Basic Info */}
-      <View className="flex-row items-center mb-3">
-        <Image
-          style={{ width: 60, height: 60 }}
-          source={{
-            uri: item.landlordProfileURL || "https://via.placeholder.com/60x60",
-          }}
-          className="rounded-full"
-          resizeMode="cover"
-        />
-
-        <View className="flex-1 ml-3">
-          <Text
-            style={{ fontSize: 16, fontWeight: 700 }}
-            className="text-gray-800 mb-1"
-            numberOfLines={1}
-          >
-            {item.landlordName || "Ev Sahibi"}
-          </Text>
-
-          {/* Match Score */}
-          <View className="flex-row items-center">
-            <MatchScoreBar
-              matchScore={item.matchScore}
-              showBar={true}
-              size="xs"
-            />
-          </View>
-        </View>
-      </View>
-
-      {/* Property Details */}
-      <View className="space-y-2">
-        {/* Property Title */}
-        <Text
-          style={{ fontSize: 14, fontWeight: 600 }}
-          className="text-gray-800 mb-2"
-          numberOfLines={2}
-        >
-          {item.propertyTitle || "Mülk Başlığı"}
-        </Text>
-
-        {/* Rent */}
-        <View className="flex-row justify-between">
-          <Text className="text-gray-600 text-sm">Kira:</Text>
-          <Text className="text-gray-800 text-sm font-medium">
-            {item.rent?.toLocaleString()} {item.currency || "₺"}
-          </Text>
-        </View>
-
-        {/* Location */}
-        <View className="flex-row justify-between">
-          <Text className="text-gray-600 text-sm">Konum:</Text>
-          <Text className="text-gray-800 text-sm font-medium" numberOfLines={1}>
-            {item.location || "Konum bilgisi yok"}
-          </Text>
-        </View>
-
-        {/* Property Details */}
-        <View className="flex-row justify-between">
-          <Text className="text-gray-600 text-sm">Detaylar:</Text>
-          <Text className="text-gray-800 text-sm font-medium">
-            {item.propertyDetails?.rooms || "N/A"} •{" "}
-            {item.propertyDetails?.size || "N/A"}m²
-          </Text>
-        </View>
-
-        {/* Compatibility Level */}
-        <View className="mt-2 pt-2 border-t border-gray-100">
-          <MatchScoreBar
-            matchScore={item.matchScore}
-            showBar={true}
-            size="sm"
-          />
-
-          {/* Match Reasons */}
-          {item.matchReasons && item.matchReasons.length > 0 && (
-            <Text className="text-xs text-gray-500 mt-1">
-              {item.matchReasons[0]}
-            </Text>
-          )}
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-
   const handleSeeAll = (type) => {
     console.log("handleSeeAll called with type:", type);
 
     // Type ve user role'e göre farklı navigation
-    if (type === "similarPosts") {
-      // Benzer ilanlar için AllSimilarProperties
-      navigation.navigate("AllSimilarProperties", {
-        userLocation: userLocation,
-        similarPosts: similarPosts,
-        searchType: "general",
-        landlordUserId: currentUser?.id,
-      });
+    if (type === "similarPosts" || type === "recommendedForYou") {
+      if (userRole === "EVSAHIBI") {
+        // Ev sahibi benzer ilanlar
+        navigation.navigate("AllSimilarProperties", {
+          userLocation: userLocation,
+          similarPosts: thirdSectionData,
+          searchType: "general",
+          landlordUserId: currentUser?.id,
+        });
+      } else {
+        // Kiracı önerilen ilanlar
+        navigation.navigate("AllRecommendedPosts");
+      }
     } else if (type === "bestTenants") {
       // Size uygun kiracılar için AllMatchingUsers (landlord için)
       navigation.navigate("AllMatchingUsers", {
@@ -760,11 +708,8 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
         initialLocation: userLocation,
         searchType: type,
       });
-    } else if (type === "bestForYou" && userRole === "KIRACI") {
-      // KIRACILARIN "Sizin İçin Önerilen" için yeni AllRecommendedPostsScreen
-      navigation.navigate("AllRecommendedPosts");
     } else {
-      // nearby, bestForYou (ev sahibi için) ve diğerleri için AllNearbyProperties
+      // nearby ve diğerleri için AllNearbyProperties
       navigation.navigate("AllNearbyProperties", {
         initialLocation: userLocation,
         searchType: type,
@@ -806,7 +751,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
         </View>
       ) : (
         <>
-          {/* Near From You Section - Always show properties */}
+          {/* 1. BÖLÜM: Yakınındaki Evler - Herkes için aynı (mülkler) */}
           {nearFromYouProperties.length > 0 && (
             <View className="">
               {/* Header */}
@@ -861,8 +806,8 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
             </View>
           )}
 
-          {/* Best For You Section - Different content based on user role */}
-          {nearbyProperties.length > 0 && (
+          {/* 2. BÖLÜM: Kişiler - Ev sahibi için kiracılar, Kiracı için ev sahipleri */}
+          {secondSectionData.length > 0 && (
             <View className="">
               {/* Header */}
               <View className="flex-row justify-between items-center mb-5 mt-6 px-5">
@@ -871,9 +816,9 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
                     style={{ fontSize: 20 }}
                     className="font-semibold text-gray-900"
                   >
-                    {userRole === "KIRACI"
-                      ? "Sizin İçin Önerilen"
-                      : "Size Uygun Kiracılar"}
+                    {userRole === "EVSAHIBI"
+                      ? "Size Uygun Kiracılar"
+                      : "Size Uygun Ev Sahipleri"}
                   </Text>
                 </View>
 
@@ -881,7 +826,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
                   className="flex flex-row gap-1 items-center"
                   onPress={() =>
                     handleSeeAll(
-                      userRole === "KIRACI" ? "bestForYou" : "bestTenants"
+                      userRole === "EVSAHIBI" ? "bestTenants" : "bestLandlords"
                     )
                   }
                 >
@@ -892,17 +837,15 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
                 </TouchableOpacity>
               </View>
 
-              {/* List - Properties for tenants, Tenants for landlords */}
+              {/* Person List */}
               <FlatList
                 style={{ paddingLeft: 16 }}
-                data={nearbyProperties}
-                renderItem={
-                  userRole === "KIRACI" ? renderPropertyCard : renderTenantCard
-                }
+                data={secondSectionData}
+                renderItem={renderPersonCard}
                 keyExtractor={(item, index) =>
-                  userRole === "KIRACI"
-                    ? `best_${item.postId}_${index}`
-                    : `tenant_${item.tenantProfileId}_${index}`
+                  userRole === "EVSAHIBI"
+                    ? `tenant_${item.tenantProfileId}_${index}`
+                    : `landlord_${item.landlordProfileId}_${index}`
                 }
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -929,66 +872,8 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
             </View>
           )}
 
-          {/* Best Landlord Matches Section - Only for tenants */}
-          {userRole === "KIRACI" && bestLandlordMatches.length > 0 && (
-            <View className="">
-              {/* Header */}
-              <View className="flex-row justify-between items-center mb-5 mt-6 px-5">
-                <View>
-                  <Text
-                    style={{ fontSize: 20 }}
-                    className="font-semibold text-gray-900"
-                  >
-                    Size Uygun Ev Sahipleri
-                  </Text>
-                </View>
-
-                <TouchableOpacity
-                  className="flex flex-row gap-1 items-center"
-                  onPress={() => handleSeeAll("bestLandlords")}
-                >
-                  <Text style={{ fontSize: 12 }} className="text-gray-900">
-                    Tümünü gör
-                  </Text>
-                  <FontAwesomeIcon icon={faChevronRight} />
-                </TouchableOpacity>
-              </View>
-
-              {/* Landlords List */}
-              <FlatList
-                style={{ paddingLeft: 16 }}
-                data={bestLandlordMatches}
-                renderItem={renderLandlordCard}
-                keyExtractor={(item, index) =>
-                  `landlord_${item.landlordProfileId}_${index}`
-                }
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                showsVerticalScrollIndicator={false}
-                scrollEnabled={true}
-                className="pt-2"
-                contentContainerStyle={{ paddingRight: 20 }}
-                onScrollBeginDrag={() => {
-                  navigation.getParent()?.setOptions({
-                    swipeEnabled: false,
-                  });
-                }}
-                onScrollEndDrag={() => {
-                  navigation.getParent()?.setOptions({
-                    swipeEnabled: true,
-                  });
-                }}
-                onMomentumScrollEnd={() => {
-                  navigation.getParent()?.setOptions({
-                    swipeEnabled: true,
-                  });
-                }}
-              />
-            </View>
-          )}
-
-          {/* Similar Posts Section - Only for landlords (EVSAHIBI) */}
-          {userRole === "EVSAHIBI" && similarPosts.length > 0 && (
+          {/* 3. BÖLÜM: Mülkler - Ev sahibi için benzer ilanlar, Kiracı için önerilen ilanlar */}
+          {thirdSectionData.length > 0 && (
             <View className="">
               {/* Header */}
               <View className="flex-row justify-between items-center mb-4 mt-3 px-5">
@@ -997,13 +882,19 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
                     style={{ fontSize: 20 }}
                     className="font-semibold text-gray-900"
                   >
-                    Benzer İlanlar
+                    {userRole === "EVSAHIBI"
+                      ? "Benzer İlanlar"
+                      : "Sizin İçin Önerilen"}
                   </Text>
                 </View>
 
                 <TouchableOpacity
                   className="flex flex-row gap-1 items-center"
-                  onPress={() => handleSeeAll("similarPosts")}
+                  onPress={() =>
+                    handleSeeAll(
+                      userRole === "EVSAHIBI" ? "similarPosts" : "recommendedForYou"
+                    )
+                  }
                 >
                   <Text style={{ fontSize: 12 }} className="text-gray-900">
                     Tümünü gör
@@ -1012,13 +903,13 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
                 </TouchableOpacity>
               </View>
 
-              {/* Similar Posts List */}
+              {/* Vertical Properties List */}
               <FlatList
                 style={{ paddingLeft: 16, marginBottom: 60 }}
-                data={similarPosts.slice(0, 4)}
-                renderItem={renderSimilarPostCard}
+                data={thirdSectionData.slice(0, 4)}
+                renderItem={renderVerticalPropertyCard}
                 keyExtractor={(item, index) =>
-                  `similar_${item.postId}_${index}`
+                  `third_${item.postId}_${index}`
                 }
                 vertical
                 showsHorizontalScrollIndicator={false}
@@ -1047,9 +938,8 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
 
           {/* Empty State - Only show if relevant arrays are empty */}
           {nearFromYouProperties.length === 0 &&
-            nearbyProperties.length === 0 &&
-            (userRole !== "KIRACI" || bestLandlordMatches.length === 0) &&
-            (userRole !== "EVSAHIBI" || similarPosts.length === 0) && (
+            secondSectionData.length === 0 &&
+            thirdSectionData.length === 0 && (
               <View
                 style={{ marginTop: 180 }}
                 className="flex-1 justify-center items-center"

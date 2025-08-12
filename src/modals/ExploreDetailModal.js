@@ -87,7 +87,7 @@ const ExploreDetailModal = ({
     // Modal boyutları - CommentsBottomSheet'teki gibi
     const SNAP_POINTS = {
         MEDIUM: SCREEN_HEIGHT * 0.35,  // %65 ekran (orta boyut)
-        LARGE: SCREEN_HEIGHT * 0.15,   // %95 ekran (büyük boyut)
+        LARGE: SCREEN_HEIGHT * 0.1,   // %95 ekran (büyük boyut)
         CLOSED: SCREEN_HEIGHT
     };
 

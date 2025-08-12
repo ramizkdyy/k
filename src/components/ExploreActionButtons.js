@@ -30,6 +30,7 @@ import Animated, {
     useAnimatedStyle,
     withSpring,
     withTiming,
+    runOnJS,
 } from "react-native-reanimated";
 import ExploreDetailModal from "../modals/ExploreDetailModal";
 
@@ -43,9 +44,11 @@ const ExploreActionButtons = memo(({
     totalImages = 0
 }) => {
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
+    // Animasyon state'leri sadece normal post için
     const [isExpanded, setIsExpanded] = useState(false);
+    const [isAnimating, setIsAnimating] = useState(false);
 
-    // Animation values
+    // Animation values (sadece normal post için kullanılacak)
     const expandedHeight = useSharedValue(0);
     const chevronRotation = useSharedValue(0);
 
@@ -108,72 +111,84 @@ const ExploreActionButtons = memo(({
     const details = getListingDetails();
     if (!details) return null;
 
-    // Toggle function
+    // ANIMASYON BİTİŞ CALLBACK'İ (sadece normal post için)
+    const onAnimationComplete = (expanded) => {
+        'worklet';
+        runOnJS(setIsAnimating)(false);
+        runOnJS(setIsExpanded)(expanded);
+    };
+
+    // TOGGLE FUNCTION (sadece normal post için)
     const toggleExpanded = () => {
+        if (isAnimating || details.type !== "normal") return;
+
+        setIsAnimating(true);
         const newExpanded = !isExpanded;
-        setIsExpanded(newExpanded);
 
         if (newExpanded) {
-            // Açılıyor - Height animasyonu
-            expandedHeight.value = withTiming(250, { // Yaklaşık height değeri
-                duration: 400,
+            expandedHeight.value = withTiming(250, {
+                duration: 200
+            }, (finished) => {
+                if (finished) onAnimationComplete(true);
             });
             chevronRotation.value = withTiming(180, { duration: 300 });
         } else {
-            // Kapanıyor
             expandedHeight.value = withTiming(0, {
-                duration: 250,
+                duration: 200
+            }, (finished) => {
+                if (finished) onAnimationComplete(false);
             });
             chevronRotation.value = withTiming(0, { duration: 300 });
         }
     };
 
-    // Animated styles
+    // Animated styles (sadece normal post için)
     const expandedAnimatedStyle = useAnimatedStyle(() => ({
         height: expandedHeight.value,
         opacity: expandedHeight.value > 0 ? 1 : 0,
-        // overflow: 'hidden',
     }));
 
     const chevronAnimatedStyle = useAnimatedStyle(() => ({
         transform: [{ rotate: `${chevronRotation.value}deg` }],
     }));
 
-    // Text shadow stilleri
+    // INSTAGRAM REELS STİLİ SHADOW EFEKTLERİ
     const textShadowStyle = {
-        textShadowColor: 'rgba(0, 0, 0, 0.9)',
-        textShadowOffset: { width: 0, height: 2 },
-        textShadowRadius: 4,
+        textShadowColor: 'rgba(0, 0, 0, 0.8)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 6,
     };
 
     const subtitleShadowStyle = {
-        textShadowColor: 'rgba(0, 0, 0, 0.8)',
+        textShadowColor: 'rgba(0, 0, 0, 0.7)',
         textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 3,
+        textShadowRadius: 4,
     };
 
     const iconShadowStyle = {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.9,
-        shadowRadius: 4,
+        shadowColor: 'rgba(0, 0, 0, 0.8)',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 1,
+        shadowRadius: 6,
+        elevation: 8,
     };
 
-    // Temel detaylar (her zaman görünür)
+    const counterShadowStyle = {
+        textShadowColor: 'rgba(0, 0, 0, 0.9)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 8,
+    };
+
+    // Temel detaylar (her zaman görünür - normal post için)
     const basicDetails = [];
     if (details.type === "normal") {
         if (details.rooms) basicDetails.push({ icon: faBed, value: details.rooms, label: "Oda" });
         if (details.bedrooms) basicDetails.push({ icon: faBedBunk, value: details.bedrooms, label: "Y.Odası" });
         if (details.bathrooms) basicDetails.push({ icon: faShower, value: details.bathrooms, label: "Banyo" });
         if (details.area) basicDetails.push({ icon: faRuler, value: `${details.area}m²`, label: "Alan" });
-    } else {
-        if (details.rooms) basicDetails.push({ icon: faBed, value: details.rooms, label: "Oda" });
-        if (details.bathrooms) basicDetails.push({ icon: faShower, value: details.bathrooms, label: "Banyo" });
-        if (details.capacity) basicDetails.push({ icon: faUsers, value: `${details.capacity} kişi`, label: "Kapasite" });
-        if (details.rating) basicDetails.push({ icon: faStar, value: details.rating.toFixed(2), label: "Puan" });
     }
 
-    // Ek detaylar (açılınca görünür)
+    // Ek detaylar (animasyonla açılır - sadece normal post için)
     const additionalDetails = [];
     if (details.type === "normal") {
         if (details.floor !== undefined) additionalDetails.push({
@@ -196,12 +211,16 @@ const ExploreActionButtons = memo(({
             value: `${details.deposit}₺`,
             label: "Depozito"
         });
-    } else {
-        if (details.propertyType) additionalDetails.push({
-            icon: faHome,
-            value: details.propertyType,
-            label: "Tür"
-        });
+    }
+
+    // Meta post için tüm detaylar (animasyon yok, hep görünür)
+    const metaPostDetails = [];
+    if (details.type === "meta") {
+        if (details.rooms) metaPostDetails.push({ icon: faBed, value: details.rooms, label: "Oda" });
+        if (details.bathrooms) metaPostDetails.push({ icon: faShower, value: details.bathrooms, label: "Banyo" });
+        if (details.capacity) metaPostDetails.push({ icon: faUsers, value: `${details.capacity} kişi`, label: "Kapasite" });
+        if (details.rating) metaPostDetails.push({ icon: faStar, value: details.rating.toFixed(2), label: "Puan" });
+        if (details.propertyType) metaPostDetails.push({ icon: faHome, value: details.propertyType, label: "Tür" });
     }
 
     const DetailItem = ({ detail }) => (
@@ -217,17 +236,17 @@ const ExploreActionButtons = memo(({
             <View style={iconShadowStyle}>
                 <FontAwesomeIcon
                     icon={detail.icon}
-                    size={18}
+                    size={22}
                     color="white"
                 />
             </View>
             <Text
                 style={{
                     color: 'white',
-                    marginTop: 3,
+                    marginTop: 4,
                     textAlign: 'center',
                     fontWeight: '600',
-                    fontSize: 12,
+                    fontSize: 13,
                     ...textShadowStyle,
                 }}
                 numberOfLines={1}
@@ -236,9 +255,10 @@ const ExploreActionButtons = memo(({
             </Text>
             <Text
                 style={{
-                    color: 'rgba(255,255,255,0.9)',
+                    color: 'rgba(255,255,255,0.95)',
                     textAlign: 'center',
-                    fontSize: 10,
+                    fontSize: 12,
+                    fontWeight: '500',
                     ...subtitleShadowStyle,
                 }}
                 numberOfLines={1}
@@ -250,18 +270,17 @@ const ExploreActionButtons = memo(({
 
     return (
         <>
-            {/* Ana container - Orijinal pozisyon */}
             <View
                 className="absolute right-1"
                 style={{
-                    top: safeAreaInsets.top + 60,
+                    top: safeAreaInsets.top + 20,
                     zIndex: 1000,
                     width: 60,
                     maxHeight: 600,
                 }}
             >
                 <View className="py-1">
-                    {/* 1. RESİM SAYACI - İlk sırada */}
+                    {/* 1. RESİM SAYACI */}
                     {totalImages > 1 && (
                         <View
                             style={{
@@ -280,7 +299,7 @@ const ExploreActionButtons = memo(({
                                         fontSize: 16,
                                         fontWeight: '700',
                                         textAlign: 'center',
-                                        ...textShadowStyle,
+                                        ...counterShadowStyle,
                                     }}
                                 >
                                     {currentImageIndex + 1}/{totalImages}
@@ -289,7 +308,7 @@ const ExploreActionButtons = memo(({
                         </View>
                     )}
 
-                    {/* 2. DETAYLAR BUTONU - İkinci sırada, sabit */}
+                    {/* 2. DETAYLAR BUTONU */}
                     <TouchableOpacity
                         style={{
                             alignItems: 'center',
@@ -322,7 +341,7 @@ const ExploreActionButtons = memo(({
                         </Text>
                     </TouchableOpacity>
 
-                    {/* 3. SCROLL VIEW - Temel bilgiler ve dinamik içerik */}
+                    {/* 3. SCROLL VIEW - İçerik türüne göre farklı render */}
                     <ScrollView
                         showsVerticalScrollIndicator={false}
                         bounces={false}
@@ -331,84 +350,99 @@ const ExploreActionButtons = memo(({
                             alignItems: 'center',
                         }}
                     >
-                        {/* Temel detaylar - Her zaman görünür */}
-                        {basicDetails.map((detail, index) => (
-                            <DetailItem key={`basic-${index}`} detail={detail} />
-                        ))}
-
-                        {/* KAPALI durumdayken "Daha Fazla" butonu temel bilgilerin altında */}
-                        {additionalDetails.length > 0 && !isExpanded && (
-                            <TouchableOpacity
-                                style={{
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '100%',
-                                    paddingVertical: 8,
-                                }}
-                                onPress={toggleExpanded}
-                            >
-                                <Animated.View style={[iconShadowStyle, chevronAnimatedStyle]}>
-                                    <FontAwesomeIcon
-                                        icon={faChevronDown}
-                                        size={16}
-                                        color="white"
-                                    />
-                                </Animated.View>
-                                <Text
-                                    style={{
-                                        color: 'rgba(255,255,255,0.9)',
-                                        marginTop: 2,
-                                        textAlign: 'center',
-                                        fontWeight: '500',
-                                        fontSize: 10,
-                                        ...subtitleShadowStyle,
-                                    }}
-                                >
-                                    Daha Fazla
-                                </Text>
-                            </TouchableOpacity>
-                        )}
-
-                        {/* Ek detaylar - Açılınca "Daha Fazla" butonunun yerinde renderlanır */}
-                        {additionalDetails.length > 0 && (
-                            <Animated.View style={[expandedAnimatedStyle, { width: '100%' }]}>
-                                {additionalDetails.map((detail, index) => (
-                                    <DetailItem key={`additional-${index}`} detail={detail} />
+                        {/* META POST İÇİN - Tüm detaylar direkt görünür */}
+                        {details.type === "meta" && (
+                            <>
+                                {metaPostDetails.map((detail, index) => (
+                                    <DetailItem key={`meta-${index}`} detail={detail} />
                                 ))}
-                            </Animated.View>
+                            </>
                         )}
 
-                        {/* AÇIK durumdayken "Daha Az" butonu en altta */}
-                        {additionalDetails.length > 0 && isExpanded && (
-                            <TouchableOpacity
-                                style={{
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '100%',
-                                    paddingVertical: 8,
-                                }}
-                                onPress={toggleExpanded}
-                            >
-                                <Animated.View style={[iconShadowStyle, chevronAnimatedStyle]}>
-                                    <FontAwesomeIcon
-                                        icon={faChevronDown}
-                                        size={16}
-                                        color="white"
-                                    />
-                                </Animated.View>
-                                <Text
-                                    style={{
-                                        color: 'rgba(255,255,255,0.9)',
-                                        marginTop: 2,
-                                        textAlign: 'center',
-                                        fontWeight: '500',
-                                        fontSize: 10,
-                                        ...subtitleShadowStyle,
-                                    }}
-                                >
-                                    Daha Az
-                                </Text>
-                            </TouchableOpacity>
+                        {/* NORMAL POST İÇİN - Animasyonlu yapı */}
+                        {details.type === "normal" && (
+                            <>
+                                {/* Temel detaylar - Her zaman görünür */}
+                                {basicDetails.map((detail, index) => (
+                                    <DetailItem key={`basic-${index}`} detail={detail} />
+                                ))}
+
+                                {/* KAPALI durumdayken "Daha Fazla" butonu */}
+                                {additionalDetails.length > 0 && !isExpanded && !isAnimating && (
+                                    <TouchableOpacity
+                                        style={{
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            width: '100%',
+                                            paddingVertical: 8,
+                                        }}
+                                        onPress={toggleExpanded}
+                                    >
+                                        <Animated.View style={[iconShadowStyle, chevronAnimatedStyle]}>
+                                            <FontAwesomeIcon
+                                                icon={faChevronDown}
+                                                size={22}
+                                                color="white"
+                                            />
+                                        </Animated.View>
+                                        <Text
+                                            style={{
+                                                color: 'rgba(255,255,255,0.95)',
+                                                marginTop: 2,
+                                                textAlign: 'center',
+                                                fontWeight: '500',
+                                                fontSize: 11,
+                                                ...subtitleShadowStyle,
+                                            }}
+                                        >
+                                            Daha Fazla
+                                        </Text>
+                                    </TouchableOpacity>
+                                )}
+
+                                {/* Ek detaylar - Animasyonla açılır/kapanır */}
+                                {additionalDetails.length > 0 && (
+                                    <Animated.View style={[expandedAnimatedStyle, { width: '100%' }]}>
+                                        {additionalDetails.map((detail, index) => (
+                                            <DetailItem key={`additional-${index}`} detail={detail} />
+                                        ))}
+                                    </Animated.View>
+                                )}
+
+                                {/* AÇIK durumdayken "Daha Az" butonu */}
+                                {additionalDetails.length > 0 && isExpanded && !isAnimating && (
+                                    <TouchableOpacity
+                                        style={{
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            width: '100%',
+                                            paddingVertical: 8,
+                                            marginTop: 16,
+                                        }}
+                                        onPress={toggleExpanded}
+                                    >
+                                        <Animated.View style={[iconShadowStyle, chevronAnimatedStyle]}>
+                                            <FontAwesomeIcon
+                                                icon={faChevronDown}
+                                                size={22}
+                                                color="white"
+                                            />
+                                        </Animated.View>
+                                        <Text
+                                            style={{
+                                                color: 'rgba(255,255,255,0.95)',
+                                                marginTop: 2,
+                                                textAlign: 'center',
+                                                fontWeight: '500',
+                                                fontSize: 11,
+                                                ...subtitleShadowStyle,
+                                            }}
+                                        >
+                                            Daha Az
+                                        </Text>
+                                    </TouchableOpacity>
+                                )}
+                            </>
                         )}
                     </ScrollView>
                 </View>
