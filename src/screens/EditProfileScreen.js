@@ -2172,51 +2172,42 @@ const EditProfileScreen = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
         >
           {/* Profile image and cover photo section */}
-          <View className="relative mb-16">
-            {/* Cover photo */}
+          <View className="relative mb-6 mt-4 px-5">
+            {/* Profile picture container - ortalanmış */}
             <TouchableOpacity
-              className="w-full h-40 bg-gray-200"
-              onPress={() => handleImageSelection("cover")}
-            >
-              {previewCoverImage ? (
-                <Image
-                  source={{ uri: previewCoverImage }}
-                  className="w-full h-full"
-                  resizeMode="cover"
-                />
-              ) : (
-                <View className="w-full h-full justify-center items-center">
-                  <Text className="text-gray-500">Kapak Fotoğrafı Ekle</Text>
-                </View>
-              )}
-              <View className="absolute right-4 bottom-4 bg-white p-2 rounded-full shadow">
-                <Text className="text-green-600 font-bold">Düzenle</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Profile picture */}
-            <TouchableOpacity
-              className="absolute bottom-[-50] left-5"
+              activeOpacity={1}
+              className="overflow-hidden justify-center items-center"
               onPress={() => handleImageSelection("profile")}
             >
-              <View className="w-24 h-24 rounded-full bg-white border-4 border-white shadow-md overflow-hidden">
-                {previewProfileImage ? (
+              {previewProfileImage ? (
+                <View className="w-36 h-36 rounded-full bg-white border-4 border-white shadow-md overflow-hidden">
                   <Image
                     source={{ uri: previewProfileImage }}
                     className="w-full h-full"
                     resizeMode="cover"
                   />
-                ) : (
-                  <View className="w-full h-full bg-gray-200 justify-center items-center">
-                    <Text className="text-gray-600 text-3xl font-bold">
-                      {currentUser?.name?.charAt(0) || "P"}
-                    </Text>
+                  {/* Profile photo edit button */}
+                  <View
+                    style={{ boxShadow: "0px 0px 12px #00000014" }}
+                    className="absolute right-[-12] bottom-[-12] bg-green-600 w-8 h-8 rounded-full justify-center items-center"
+                  >
+                    <FontAwesomeIcon icon={faPlus} size={16} color="#fff" />
                   </View>
-                )}
-              </View>
-              <View className="absolute right-0 bottom-0 bg-green-600 w-8 h-8 rounded-full justify-center items-center">
-                <FontAwesomeIcon icon={faPlus} size={16} color="#fff" />
-              </View>
+                </View>
+              ) : (
+                <View className="w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-md justify-center items-center">
+                  <Text className="text-gray-600 text-3xl font-bold">
+                    {currentUser?.name?.charAt(0) || "P"}
+                  </Text>
+                  {/* Add profile photo button */}
+                  <View
+                    style={{ boxShadow: "0px 0px 12px #00000014" }}
+                    className="absolute right-[-12] bottom-[-12] bg-green-600 w-8 h-8 rounded-full justify-center items-center"
+                  >
+                    <FontAwesomeIcon icon={faPlus} size={16} color="#fff" />
+                  </View>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
 

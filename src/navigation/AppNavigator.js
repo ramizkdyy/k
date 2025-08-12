@@ -3,14 +3,7 @@ import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { createDrawerNavigator } from "@react-navigation/drawer";
-import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
-import { useDrawerProgress } from "@react-navigation/drawer";
-import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
-import Animated, {
-  interpolate,
-  useAnimatedStyle,
-} from "react-native-reanimated";
+
 
 import { useSelector, useDispatch } from "react-redux";
 import {
@@ -105,6 +98,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from "react-native";
+import PropertiesFilterScreen from "../screens/PropertiesFilterScreen";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -121,7 +115,6 @@ const AuthStack = createStackNavigator();
 const MainStack = createStackNavigator();
 const RootStack = createStackNavigator(); // Yeni: Ana stack
 const Tab = createBottomTabNavigator();
-const Drawer = createDrawerNavigator();
 
 // Custom Drawer Content
 const CustomDrawerContent = (props) => {
@@ -882,7 +875,11 @@ const MainStackNavigator = () => {
         component={EditProfileScreen}
         options={{ headerShown: false }}
       />
-
+      <RootStack.Screen
+        name="Offers"
+        component={OffersScreen}
+        options={{ headerShown: false }}
+      />
       <RootStack.Screen
         name="Messages"
         component={MessagesScreen}
@@ -894,7 +891,11 @@ const MainStackNavigator = () => {
         component={ChatDetailScreen}
         options={{ headerShown: false }}
       />
-
+      <RootStack.Screen
+        name="PropertiesFilter"
+        component={PropertiesFilterScreen}
+        options={{ headerShown: false }}
+      />
       <RootStack.Screen
         name="AllNearbyProperties"
         component={AllNearbyPropertiesScreen}
@@ -1107,12 +1108,8 @@ const AppNavigatorContent = () => {
                   options={{ headerShown: false }}
                 />
               </MainStack.Navigator>
-            ) : userRole === "EVSAHIBI" ? (
-              <LandlordDrawerNavigator />
-            ) : userRole === "KIRACI" ? (
-              <TenantDrawerNavigator />
             ) : (
-              <OnboardingNavigator />
+              <MainStackNavigator />
             )}
           </ProfileLoader>
         </View>

@@ -1070,7 +1070,7 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
               }}
               style={{ width: "100%" }}
             >
-              <View className="flex-row">
+              {/* <View className="flex-row">
                 <TouchableOpacity
                   activeOpacity={1}
                   className="mr-3 px-4 py-2 rounded-full border bg-white border-white"
@@ -1079,7 +1079,7 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
                     Benzerlik Sırası
                   </Text>
                 </TouchableOpacity>
-              </View>
+              </View> */}
             </ScrollView>
           </Animated.View>
         </Animated.View>

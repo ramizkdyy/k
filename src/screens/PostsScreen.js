@@ -37,7 +37,6 @@ import {
 import { faSearch } from "@fortawesome/pro-solid-svg-icons";
 import { BlurView } from "expo-blur";
 import { faEdit, faTrash } from "@fortawesome/pro-light-svg-icons";
-import PropertiesFilterModal from "../modals/PropertiesFilterModal";
 
 // Logger utility
 const Logger = {
@@ -196,6 +195,12 @@ const PostsScreen = ({ navigation }) => {
       setIsLoadingMore(false);
     }
   }, [paginatedPostsResponse, userRole, currentPage]);
+  const handleFilterPress = () => {
+    navigation.navigate('PropertiesFilter', {
+      currentFilters: filters,
+      userRole: userRole,
+    });
+  };
 
   // Refresh when screen is focused
   useFocusEffect(
@@ -563,8 +568,8 @@ const PostsScreen = ({ navigation }) => {
                   {item.status === 0
                     ? "Aktif"
                     : item.status === 1
-                    ? "Kiralandı"
-                    : "Kapalı"}
+                      ? "Kiralandı"
+                      : "Kapalı"}
                 </Text>
               </View>
             </BlurView>
@@ -787,23 +792,19 @@ const PostsScreen = ({ navigation }) => {
 
         <TouchableOpacity
           style={{ boxShadow: "0px 0px 12px #00000014" }}
-          className={`p-3 rounded-full ${
-            isFilterVisible ||
+          className={`p-3 rounded-full ${isFilterVisible ||
             Object.values(filters).some((val) => val !== null)
-              ? "bg-gray-700"
-              : "bg-white"
-          }`}
-          onPress={() => {
-            Logger.event("toggle_filter_panel", { show: !isFilterVisible });
-            setIsFilterVisible(!isFilterVisible);
-          }}
+            ? "bg-gray-700"
+            : "bg-white"
+            }`}
+          onPress={handleFilterPress}
         >
           <FontAwesomeIcon
             icon={faSliders}
             size={18}
             color={
               isFilterVisible ||
-              Object.values(filters).some((val) => val !== null)
+                Object.values(filters).some((val) => val !== null)
                 ? "lightgray"
                 : "#000"
             }
@@ -845,8 +846,8 @@ const PostsScreen = ({ navigation }) => {
               {filters.status === 0
                 ? "Aktif"
                 : filters.status === 1
-                ? "Kiralandı"
-                : "Kapalı"}
+                  ? "Kiralandı"
+                  : "Kapalı"}
             </Text>
             <TouchableOpacity
               onPress={() => {
@@ -960,24 +961,12 @@ const PostsScreen = ({ navigation }) => {
             // Prevent text disappearing issues
             getItemLayout={undefined} // getItemLayout kaldırıldı
             // Improve stability
-            extraData={`${searchQuery}_${JSON.stringify(filters)}_${
-              allPostsData.length
-            }`}
+            extraData={`${searchQuery}_${JSON.stringify(filters)}_${allPostsData.length
+              }`}
           />
         )}
       </View>
 
-      {/* Properties Filter Modal */}
-      <PropertiesFilterModal
-        visible={isFilterVisible}
-        onClose={() => setIsFilterVisible(false)}
-        onApply={(appliedFilters) => {
-          console.log("Applied filters:", appliedFilters);
-          setIsFilterVisible(false);
-        }}
-        currentFilters={filters}
-        userRole={userRole}
-      />
     </SafeAreaView>
   );
 };
