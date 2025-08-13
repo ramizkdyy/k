@@ -1,6 +1,7 @@
 import * as Device from "expo-device";
 import { Platform } from "react-native";
 import messaging, { firebase } from "@react-native-firebase/messaging";
+import customNotificationService from "./customNotificationService";
 
 class NotificationService {
   constructor() {
@@ -63,18 +64,20 @@ class NotificationService {
     }
   }
 
-
   setupNotificationListeners() {
     // Handle foreground messages
     this.notificationListener = messaging().onMessage(async (remoteMessage) => {
-      console.log('FCM Message received in foreground:', remoteMessage);
+      console.log("FCM Message received in foreground:", remoteMessage);
       // Handle foreground notification here
       this.handleForegroundMessage(remoteMessage);
     });
 
     // Handle notification opened app from background/quit state
     messaging().onNotificationOpenedApp((remoteMessage) => {
-      console.log('FCM Notification caused app to open from background state:', remoteMessage);
+      console.log(
+        "FCM Notification caused app to open from background state:",
+        remoteMessage
+      );
       this.handleNotificationResponse(remoteMessage);
     });
 
@@ -83,7 +86,10 @@ class NotificationService {
       .getInitialNotification()
       .then((remoteMessage) => {
         if (remoteMessage) {
-          console.log('FCM Notification caused app to open from quit state:', remoteMessage);
+          console.log(
+            "FCM Notification caused app to open from quit state:",
+            remoteMessage
+          );
           this.handleNotificationResponse(remoteMessage);
         }
       });
@@ -91,35 +97,107 @@ class NotificationService {
 
   handleForegroundMessage(remoteMessage) {
     // Handle foreground message display
-    console.log('Handling foreground message:', remoteMessage.notification?.title);
-    // You can show custom in-app notification here
+    console.log("🔥 Firebase foreground message received:", remoteMessage);
+
+    const { notification, data } = remoteMessage;
+
+    if (notification) {
+      const messageId = data?.messageId || data?.id || `firebase-${Date.now()}`;
+      
+      console.log("🔥 Firebase notification details:", {
+        title: notification.title,
+        body: notification.body,
+        messageId: messageId,
+        data: data,
+        timestamp: new Date().toISOString()
+      });
+
+      // Show in-app custom notification with Firebase source
+      customNotificationService.showFirebaseNotification({
+        title: notification.title,
+        body: notification.body,
+        data: {
+          ...data,
+          messageId,
+          profileImage: data?.senderImage || data?.profileImage,
+          isOnline: data?.isOnline || false,
+        },
+      });
+    }
   }
 
   handleNotificationResponse(remoteMessage) {
     const data = remoteMessage.data;
+    this.handleNotificationTap(data);
+  }
 
+  handleNotificationTap(data) {
     // Handle different notification types
     switch (data?.type) {
-      case "chat_message":
+      case "new_message":
         // Navigate to chat detail screen
-        // You can use navigation service or Redux action here
         console.log("Navigate to chat:", data.chatId);
+        this.navigateToChat(data.chatId);
+        break;
+      case "chat_message":
+        // Legacy support for old notification type
+        console.log("Navigate to chat:", data.chatId);
+        this.navigateToChat(data.chatId);
         break;
       case "new_offer":
         // Navigate to offers screen
         console.log("Navigate to offers");
+        this.navigateToOffers();
         break;
       case "offer_response":
         // Navigate to specific offer
         console.log("Navigate to offer:", data.offerId);
+        this.navigateToOffers();
         break;
       default:
         console.log("Unknown notification type:", data?.type);
     }
   }
 
+  // Navigation methods - these will be set from the navigation context
+  setNavigationRef(navigationRef) {
+    this.navigationRef = navigationRef;
+  }
 
+  navigateToChat(chatId) {
+    if (this.navigationRef && chatId) {
+      console.log("Navigating to chat:", chatId);
+      this.navigationRef.navigate("Messages", {
+        screen: "ChatDetail",
+        params: { chatId },
+      });
+    }
+  }
 
+  navigateToOffers() {
+    if (this.navigationRef) {
+      console.log("Navigating to offers");
+      this.navigationRef.navigate("Offers");
+    }
+  }
+
+  scheduleLocalNotification(title, body, data = {}) {
+    // This method is called when app is in background
+    // For foreground notifications, we use Toast in SignalR context
+    console.log("Local notification scheduled:", { title, body, data });
+
+    // If app is in foreground, show custom notification instead
+    if (data.type === "chat_message") {
+      customNotificationService.showChatMessage({
+        senderName: title,
+        messageContent: body,
+        senderImage: data?.profileImage,
+        chatId: data?.chatId,
+        messageId: data?.messageId,
+        isOnline: data?.isOnline || false,
+      });
+    }
+  }
 
   async registerTokenWithServer(registerTokenMutation) {
     try {
@@ -204,7 +282,6 @@ class NotificationService {
   getFCMTokenValue() {
     return this.fcmToken;
   }
-
 
   getPlatform() {
     return Platform.OS === "ios"

@@ -32,8 +32,10 @@ import {
   SafeAreaView,
   initialWindowMetrics,
 } from "react-native-safe-area-context";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
+import { NotificationProvider } from "./src/contexts/NotificationContext";
+import NotificationContainer from "./src/components/NotificationContainer";
 
 // Loading component for PersistGate
 const LoadingScreen = () => (
@@ -91,7 +93,6 @@ const NotificationManager = () => {
             tokens.fcmToken.substring(0, 20) + "..."
           );
         }
-
       } catch (error) {
         console.error("❌ Failed to initialize notification service:", error);
       }
@@ -297,25 +298,30 @@ const App = () => {
   return (
     <Provider store={store}>
       <PersistGate loading={<LoadingScreen />} persistor={persistor}>
-        <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-          <View style={{ flex: 1, backgroundColor: "transparent" }}>
-            <StatusBar
-              barStyle="light-content"
-              backgroundColor="transparent"
-              translucent={true}
-            />
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+            <View style={{ flex: 1, backgroundColor: "transparent" }}>
+              <StatusBar
+                barStyle="light-content"
+                backgroundColor="transparent"
+                translucent={true}
+              />
 
-            <KeyboardProvider
-              statusBarTranslucent={true}
-              navigationBarTranslucent={false}
-            >
-              <SignalRProvider>
-                <NotificationManager />
-                <AppNavigator />
-              </SignalRProvider>
-            </KeyboardProvider>
-          </View>
-        </SafeAreaProvider>
+              <KeyboardProvider
+                statusBarTranslucent={true}
+                navigationBarTranslucent={false}
+              >
+                <NotificationProvider>
+                  <SignalRProvider>
+                    <NotificationManager />
+                    <AppNavigator />
+                  </SignalRProvider>
+                  <NotificationContainer />
+                </NotificationProvider>
+              </KeyboardProvider>
+            </View>
+          </SafeAreaProvider>
+        </GestureHandlerRootView>
         {__DEV__ && <ReduxTester />}
       </PersistGate>
     </Provider>

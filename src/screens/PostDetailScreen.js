@@ -457,7 +457,7 @@ const PostDetailScreen = ({ route, navigation }) => {
               item.postImages && item.postImages.length > 0
                 ? item.postImages[0].postImageUrl
                 : item.firstPostİmageURL ||
-                "https://via.placeholder.com/300x200",
+                  "https://via.placeholder.com/300x200",
           }}
           className="w-full"
           resizeMode="cover"
@@ -482,8 +482,9 @@ const PostDetailScreen = ({ route, navigation }) => {
               className="text-gray-500"
             >
               {item.kiraFiyati
-                ? `${item.kiraFiyati.toLocaleString()} ${item.paraBirimi || "₺"
-                }`
+                ? `${item.kiraFiyati.toLocaleString()} ${
+                    item.paraBirimi || "₺"
+                  }`
                 : "Fiyat belirtilmemiş"}
             </Text>
             <Text className="text-sm text-gray-400 ml-1">/ay</Text>
@@ -503,7 +504,7 @@ const PostDetailScreen = ({ route, navigation }) => {
         // Navigate to user profile screen with tenant role
         navigation.navigate("UserProfile", {
           userId: item.tenantUserId || item.userId,
-          userRole: "KIRACI"
+          userRole: "KIRACI",
         });
       }}
     >
@@ -643,7 +644,7 @@ const PostDetailScreen = ({ route, navigation }) => {
       Alert.alert(
         "Hata",
         error.data?.message ||
-        "Teklif gönderilirken bir hata oluştu. Lütfen tekrar deneyin."
+          "Teklif gönderilirken bir hata oluştu. Lütfen tekrar deneyin."
       );
     }
   };
@@ -995,10 +996,11 @@ const PostDetailScreen = ({ route, navigation }) => {
                       {images.map((_, index) => (
                         <TouchableOpacity
                           key={`dot-${index}`}
-                          className={`mx-1 h-2 w-2 rounded-full ${index === currentImageIndex
-                            ? "bg-white"
-                            : "bg-gray-400"
-                            }`}
+                          className={`mx-1 h-2 w-2 rounded-full ${
+                            index === currentImageIndex
+                              ? "bg-white"
+                              : "bg-gray-400"
+                          }`}
                           onPress={() => handleThumbnailPress(index)}
                         />
                       ))}
@@ -1187,7 +1189,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                 onPress={() =>
                   navigation.navigate("UserProfile", {
                     userId: post.userId, // landlordId değil, userId kullanın
-                    userRole: "EVSAHIBI"
+                    userRole: "EVSAHIBI",
                   })
                 }
               >
@@ -1268,8 +1270,8 @@ const PostDetailScreen = ({ route, navigation }) => {
                     {post.status === 0
                       ? "Aktif"
                       : post.status === 1
-                        ? "Kiralandı"
-                        : "Kapalı"}
+                      ? "Kiralandı"
+                      : "Kapalı"}
                   </Text>
                 </View>
 
@@ -1744,84 +1746,87 @@ const PostDetailScreen = ({ route, navigation }) => {
       </Animated.ScrollView>
 
       {/* Sticky Bottom Action Bar */}
-      <BlurView
-        intensity={70}
-        tint="light"
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          paddingVertical: 12,
-          paddingHorizontal: 16,
-          paddingBottom: insets.bottom + 12,
-          shadowColor: "#000",
-          shadowOffset: {
-            width: 0,
-            height: -2,
-          },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-          elevation: 10,
-        }}
-      >
-        <View className="flex-row justify-between items-center px-2">
-          {userRole === "KIRACI" && (
-            <>
-              {/* Favorileme butonu artık burada yok, üstte floating olarak */}
-              <View className="flex-row items-center ">
-                <Text style={{ fontSize: 14 }} className="text-gray-500">
-                  <Text
-                    className="underline text-gray-900 font-medium"
-                    style={{ fontSize: 24 }}
-                  >
-                    {post.kiraFiyati
-                      ? post.kiraFiyati.toLocaleString("tr-TR")
-                      : "0"}{" "}
-                    <Text>{getCurrencyText(post.paraBirimi)}</Text>
-                  </Text>{" "}
-                  /ay
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={{ borderRadius: 20, paddingHorizontal: 60 }}
-                className=" bg-gray-900 py-4 "
-                onPress={() => setIsOfferModalVisible(true)}
-                disabled={post.status !== 0}
-              >
-                <Text className="text-white font-semibold text-center">
-                  {post.status === 0 ? "Teklif Ver" : "Bu ilan kapalı"}
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
-          {userRole === "EVSAHIBI" && post.userId === currentUser?.id && (
-            <>
-              <TouchableOpacity
-                className="flex-1 bg-white py-3 rounded-full border-[1px] border-gray-200 mr-2"
-                onPress={() =>
-                  navigation.navigate("EditPost", { propertyData: post })
-                }
-              >
-                <Text className="text-gray-900 font-semibold text-center text-lg">
-                  Düzenle
-                </Text>
-              </TouchableOpacity>
 
-              <TouchableOpacity
-                className="flex-1 bg-gray-900 py-3 rounded-full"
-                onPress={() =>
-                  navigation.navigate("Offers", { postId: post.postId })
-                }
-              >
-                <Text className="text-white font-semibold text-center text-lg">
-                  Teklifleri Gör
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </BlurView>
+      {userRole === "KIRACI" && (
+        <BlurView
+          intensity={70}
+          tint="light"
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            paddingBottom: insets.bottom + 12,
+            shadowColor: "#000",
+            shadowOffset: {
+              width: 0,
+              height: -2,
+            },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 10,
+          }}
+        >
+          <View className="flex-row justify-between items-center px-2">
+            {userRole === "KIRACI" && (
+              <>
+                {/* Favorileme butonu artık burada yok, üstte floating olarak */}
+                <View className="flex-row items-center ">
+                  <Text style={{ fontSize: 14 }} className="text-gray-500">
+                    <Text
+                      className="underline text-gray-900 font-medium"
+                      style={{ fontSize: 24 }}
+                    >
+                      {post.kiraFiyati
+                        ? post.kiraFiyati.toLocaleString("tr-TR")
+                        : "0"}{" "}
+                      <Text>{getCurrencyText(post.paraBirimi)}</Text>
+                    </Text>{" "}
+                    /ay
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={{ borderRadius: 20, paddingHorizontal: 60 }}
+                  className=" bg-gray-900 py-4 "
+                  onPress={() => setIsOfferModalVisible(true)}
+                  disabled={post.status !== 0}
+                >
+                  <Text className="text-white font-semibold text-center">
+                    {post.status === 0 ? "Teklif Ver" : "Bu ilan kapalı"}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+            {userRole === "EVSAHIBI" && post.userId === currentUser?.id && (
+              <>
+                <TouchableOpacity
+                  className="flex-1 bg-white py-3 rounded-full border-[1px] border-gray-200 mr-2"
+                  onPress={() =>
+                    navigation.navigate("EditPost", { propertyData: post })
+                  }
+                >
+                  <Text className="text-gray-900 font-semibold text-center text-lg">
+                    Düzenle
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  className="flex-1 bg-gray-900 py-3 rounded-full"
+                  onPress={() =>
+                    navigation.navigate("Offers", { postId: post.postId })
+                  }
+                >
+                  <Text className="text-white font-semibold text-center text-lg">
+                    Teklifleri Gör
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </BlurView>
+      )}
 
       {/* Fullscreen Image Modal */}
       <Modal

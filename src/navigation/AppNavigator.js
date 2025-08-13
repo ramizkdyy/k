@@ -1,9 +1,8 @@
 // navigation/AppNavigator.js
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-
 
 import { useSelector, useDispatch } from "react-redux";
 import {
@@ -26,6 +25,7 @@ import {
 
 // ✅ SignalR Provider import eklendi
 import { SignalRProvider } from "../contexts/SignalRContext";
+import notificationService from "../services/notificationService";
 
 // Import screens
 import AllNearbyPropertiesScreen from "../screens/AllNearbyPropertiesScreen";
@@ -47,8 +47,7 @@ import MessagesScreen from "../screens/MessagesScreen";
 import ChatDetailScreen from "../screens/ChatDetailScreen";
 import AllRecommendedPostsScreen from "../screens/AllRecommendedPostsScreen";
 import UserProfileScreen from "../screens/UserProfileScreen";
-import ExploreScreen from '../screens/ExploreScreen';
-
+import ExploreScreen from "../screens/ExploreScreen";
 
 // Import icons
 import { BlurView } from "expo-blur";
@@ -87,8 +86,7 @@ import {
   faQuestionCircle as faQuestionCircleRegular,
   faMagnifyingGlass as faMagnifyingGlassLight,
   faSignOutAlt as faSignOutAltRegular,
-  faFingerprint as faFingerprintRegular
-
+  faFingerprint as faFingerprintRegular,
 } from "@fortawesome/pro-regular-svg-icons";
 
 import {
@@ -390,11 +388,11 @@ const OnboardingNavigator = () => {
 // ✅ Sadece 4 tab için Tab Navigator - Landlord
 const LandlordTabNavigator = () => {
   const userProfile = useSelector(selectUserProfile);
-  const [currentRoute, setCurrentRoute] = useState('Home');
+  const [currentRoute, setCurrentRoute] = useState("Home");
 
   // Tab bar stilini route'a göre belirle
   const getTabBarStyle = (routeName) => {
-    if (routeName === 'Explore') {
+    if (routeName === "Explore") {
       return {
         position: "absolute",
         bottom: 0,
@@ -402,7 +400,7 @@ const LandlordTabNavigator = () => {
         right: 0,
         elevation: 0,
         borderTopWidth: 0,
-        backgroundColor: 'transparent',
+        backgroundColor: "transparent",
         paddingTop: 5,
         paddingBottom: 5,
       };
@@ -423,13 +421,13 @@ const LandlordTabNavigator = () => {
 
   // Tab bar background component'ini route'a göre belirle
   const getTabBarBackground = (routeName) => {
-    if (routeName === 'Explore') {
+    if (routeName === "Explore") {
       return () => (
         <BlurView
           intensity={40}
           tint="dark"
           style={{
-            position: 'absolute',
+            position: "absolute",
             top: 0,
             left: 0,
             bottom: 0,
@@ -445,8 +443,9 @@ const LandlordTabNavigator = () => {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: currentRoute === 'Explore' ? "white" : "#000",
-        tabBarInactiveTintColor: currentRoute === 'Explore' ? "rgba(255, 255, 255, 0.6)" : "#999999",
+        tabBarActiveTintColor: currentRoute === "Explore" ? "white" : "#000",
+        tabBarInactiveTintColor:
+          currentRoute === "Explore" ? "rgba(255, 255, 255, 0.6)" : "#999999",
         tabBarStyle: getTabBarStyle(currentRoute),
         tabBarBackground: getTabBarBackground(currentRoute),
         headerShown: false,
@@ -472,7 +471,15 @@ const LandlordTabNavigator = () => {
             <FontAwesomeIcon
               icon={focused ? faMagnifyingGlassSolid : faMagnifyingGlassLight}
               size={24}
-              color={focused ? (currentRoute === 'Explore' ? "white" : "#000") : (currentRoute === 'Explore' ? "rgba(255, 255, 255, 0.6)" : "#999999")}
+              color={
+                focused
+                  ? currentRoute === "Explore"
+                    ? "white"
+                    : "#000"
+                  : currentRoute === "Explore"
+                  ? "rgba(255, 255, 255, 0.6)"
+                  : "#999999"
+              }
             />
           ),
         }}
@@ -481,13 +488,21 @@ const LandlordTabNavigator = () => {
         name="Explore"
         component={ExploreScreen}
         options={{
-          tabBarLabel: '',
+          tabBarLabel: "",
           headerShown: false,
           tabBarIcon: ({ focused }) => (
             <FontAwesomeIcon
               icon={focused ? faFingerprintSolid : faFingerprintRegular}
               size={22}
-              color={focused ? (currentRoute === 'Explore' ? "white" : "#000") : (currentRoute === 'Explore' ? "rgba(255, 255, 255, 0.6)" : "#999999")}
+              color={
+                focused
+                  ? currentRoute === "Explore"
+                    ? "white"
+                    : "#000"
+                  : currentRoute === "Explore"
+                  ? "rgba(255, 255, 255, 0.6)"
+                  : "#999999"
+              }
             />
           ),
         }}
@@ -504,7 +519,15 @@ const LandlordTabNavigator = () => {
             <FontAwesomeIcon
               icon={focused ? faHouseSolid : faHouseRegular}
               size={24}
-              color={focused ? (currentRoute === 'Explore' ? "white" : "#000") : (currentRoute === 'Explore' ? "rgba(255, 255, 255, 0.6)" : "#999999")}
+              color={
+                focused
+                  ? currentRoute === "Explore"
+                    ? "white"
+                    : "#000"
+                  : currentRoute === "Explore"
+                  ? "rgba(255, 255, 255, 0.6)"
+                  : "#999999"
+              }
             />
           ),
         }}
@@ -521,7 +544,15 @@ const LandlordTabNavigator = () => {
             <FontAwesomeIcon
               icon={focused ? faEnvelopeSolid : faEnvelopeRegular}
               size={24}
-              color={focused ? (currentRoute === 'Explore' ? "white" : "#000") : (currentRoute === 'Explore' ? "rgba(255, 255, 255, 0.6)" : "#999999")}
+              color={
+                focused
+                  ? currentRoute === "Explore"
+                    ? "white"
+                    : "#000"
+                  : currentRoute === "Explore"
+                  ? "rgba(255, 255, 255, 0.6)"
+                  : "#999999"
+              }
             />
           ),
         }}
@@ -556,7 +587,8 @@ const LandlordTabNavigator = () => {
                       bottom: -2,
                       borderRadius: 16,
                       borderWidth: 2,
-                      borderColor: currentRoute === 'Explore' ? "white" : "#000",
+                      borderColor:
+                        currentRoute === "Explore" ? "white" : "#000",
                     }}
                   />
                 )}
@@ -591,7 +623,8 @@ const LandlordTabNavigator = () => {
                       bottom: -2,
                       borderRadius: 16,
                       borderWidth: 2,
-                      borderColor: currentRoute === 'Explore' ? "white" : "#000",
+                      borderColor:
+                        currentRoute === "Explore" ? "white" : "#000",
                     }}
                   />
                 )}
@@ -607,11 +640,11 @@ const LandlordTabNavigator = () => {
 // ✅ Sadece 4 tab için Tab Navigator - Tenant
 const TenantTabNavigator = () => {
   const userProfile = useSelector(selectUserProfile);
-  const [currentRoute, setCurrentRoute] = useState('Home');
+  const [currentRoute, setCurrentRoute] = useState("Home");
 
   // Tab bar stilini route'a göre belirle
   const getTabBarStyle = (routeName) => {
-    if (routeName === 'Explore') {
+    if (routeName === "Explore") {
       return {
         position: "absolute",
         bottom: 0,
@@ -619,7 +652,7 @@ const TenantTabNavigator = () => {
         right: 0,
         elevation: 0,
         borderTopWidth: 0,
-        backgroundColor: 'transparent',
+        backgroundColor: "transparent",
         paddingTop: 5,
         paddingBottom: 5,
       };
@@ -640,13 +673,13 @@ const TenantTabNavigator = () => {
 
   // Tab bar background component'ini route'a göre belirle
   const getTabBarBackground = (routeName) => {
-    if (routeName === 'Explore') {
+    if (routeName === "Explore") {
       return () => (
         <BlurView
           intensity={15}
           tint="dark"
           style={{
-            position: 'absolute',
+            position: "absolute",
             top: 0,
             left: 0,
             bottom: 0,
@@ -662,8 +695,9 @@ const TenantTabNavigator = () => {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: currentRoute === 'Explore' ? "white" : "#000",
-        tabBarInactiveTintColor: currentRoute === 'Explore' ? "rgba(255, 255, 255, 0.6)" : "#999999",
+        tabBarActiveTintColor: currentRoute === "Explore" ? "white" : "#000",
+        tabBarInactiveTintColor:
+          currentRoute === "Explore" ? "rgba(255, 255, 255, 0.6)" : "#999999",
         tabBarStyle: getTabBarStyle(currentRoute),
         tabBarBackground: getTabBarBackground(currentRoute),
         headerShown: false,
@@ -689,7 +723,15 @@ const TenantTabNavigator = () => {
             <FontAwesomeIcon
               icon={focused ? faSearchSolid : faSearchRegular}
               size={24}
-              color={focused ? (currentRoute === 'Explore' ? "white" : "#000") : (currentRoute === 'Explore' ? "rgba(255, 255, 255, 0.6)" : "#999999")}
+              color={
+                focused
+                  ? currentRoute === "Explore"
+                    ? "white"
+                    : "#000"
+                  : currentRoute === "Explore"
+                  ? "rgba(255, 255, 255, 0.6)"
+                  : "#999999"
+              }
             />
           ),
         }}
@@ -698,13 +740,21 @@ const TenantTabNavigator = () => {
         name="Explore"
         component={ExploreScreen}
         options={{
-          tabBarLabel: '',
+          tabBarLabel: "",
           headerShown: false,
           tabBarIcon: ({ focused }) => (
             <FontAwesomeIcon
               icon={focused ? faFingerprintSolid : faFingerprintRegular}
               size={22}
-              color={focused ? (currentRoute === 'Explore' ? "white" : "#000") : (currentRoute === 'Explore' ? "rgba(255, 255, 255, 0.6)" : "#999999")}
+              color={
+                focused
+                  ? currentRoute === "Explore"
+                    ? "white"
+                    : "#000"
+                  : currentRoute === "Explore"
+                  ? "rgba(255, 255, 255, 0.6)"
+                  : "#999999"
+              }
             />
           ),
         }}
@@ -721,7 +771,15 @@ const TenantTabNavigator = () => {
             <FontAwesomeIcon
               icon={focused ? faHouseSolid : faHouseRegular}
               size={24}
-              color={focused ? (currentRoute === 'Explore' ? "white" : "#000") : (currentRoute === 'Explore' ? "rgba(255, 255, 255, 0.6)" : "#999999")}
+              color={
+                focused
+                  ? currentRoute === "Explore"
+                    ? "white"
+                    : "#000"
+                  : currentRoute === "Explore"
+                  ? "rgba(255, 255, 255, 0.6)"
+                  : "#999999"
+              }
             />
           ),
         }}
@@ -738,7 +796,15 @@ const TenantTabNavigator = () => {
             <FontAwesomeIcon
               icon={focused ? faEnvelopeSolid : faEnvelopeRegular}
               size={24}
-              color={focused ? (currentRoute === 'Explore' ? "white" : "#000") : (currentRoute === 'Explore' ? "rgba(255, 255, 255, 0.6)" : "#999999")}
+              color={
+                focused
+                  ? currentRoute === "Explore"
+                    ? "white"
+                    : "#000"
+                  : currentRoute === "Explore"
+                  ? "rgba(255, 255, 255, 0.6)"
+                  : "#999999"
+              }
             />
           ),
         }}
@@ -773,7 +839,8 @@ const TenantTabNavigator = () => {
                       bottom: -2,
                       borderRadius: 16,
                       borderWidth: 2,
-                      borderColor: currentRoute === 'Explore' ? "white" : "#000",
+                      borderColor:
+                        currentRoute === "Explore" ? "white" : "#000",
                     }}
                   />
                 )}
@@ -808,7 +875,8 @@ const TenantTabNavigator = () => {
                       bottom: -2,
                       borderRadius: 16,
                       borderWidth: 2,
-                      borderColor: currentRoute === 'Explore' ? "white" : "#000",
+                      borderColor:
+                        currentRoute === "Explore" ? "white" : "#000",
                     }}
                   />
                 )}
@@ -847,7 +915,9 @@ const MainStackNavigator = () => {
       {/* Ana Tab Navigator */}
       <RootStack.Screen
         name="MainTabs"
-        component={userRole === "EVSAHIBI" ? LandlordTabNavigator : TenantTabNavigator}
+        component={
+          userRole === "EVSAHIBI" ? LandlordTabNavigator : TenantTabNavigator
+        }
         options={{ headerShown: false }}
       />
 
@@ -932,14 +1002,14 @@ const MainStackNavigator = () => {
         options={{ headerShown: false }}
       />
       {/* <RootStack.Screen
-        name="Explore"
-        component={ExploreScreen}
-        options={{
-          headerShown: false, // Kendi header'ımız var
-          gestureEnabled: true,
-          animationTypeForReplace: 'push',
-        }}
-      /> */}
+          name="Explore"
+          component={ExploreScreen}
+          options={{
+            headerShown: false, // Kendi header'ımız var
+            gestureEnabled: true,
+            animationTypeForReplace: 'push',
+          }}
+        /> */}
     </RootStack.Navigator>
   );
 };
@@ -1051,10 +1121,10 @@ const ProfileLoader = ({ children }) => {
     isLoading,
     error,
   } = userRole === "EVSAHIBI"
-      ? useGetLandlordProfileQuery(currentUser?.id, {
+    ? useGetLandlordProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       })
-      : useGetTenantProfileQuery(currentUser?.id, {
+    : useGetTenantProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       });
 
@@ -1091,9 +1161,18 @@ const AppNavigatorContent = () => {
     isAuthenticated && userRole && (!hasUserProfile || !profileExists);
   const shouldShowRoleSelection = isAuthenticated && !userRole;
 
+  const navigationRef = useRef();
+
+  // Set up navigation reference for notification service
+  const onNavigationReady = () => {
+    if (navigationRef.current) {
+      notificationService.setNavigationRef(navigationRef.current);
+    }
+  };
+
   return (
     <View className="flex-1 bg-transparent">
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef} onReady={onNavigationReady}>
         <View style={{ flex: 1 }}>
           <ProfileLoader>
             {!isAuthenticated ? (

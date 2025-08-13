@@ -1,4 +1,4 @@
-// contexts/SignalRContext.js - Optimize edilmiş global mesaj handling
+// contexts/SignalRContext.js - Complete optimized version with duplicate prevention
 import React, {
   createContext,
   useContext,
@@ -16,6 +16,8 @@ import { useSelector, useDispatch } from "react-redux";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import notificationService from "../services/notificationService";
 import { chatApiHelpers } from "../redux/api/chatApiSlice";
+import customNotificationService from "../services/customNotificationService";
+import { AppState } from "react-native";
 
 const SignalRContext = createContext();
 
@@ -35,6 +37,7 @@ export const SignalRProvider = ({ children }) => {
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [typingUsers, setTypingUsers] = useState(new Set());
   const [lastPingTime, setLastPingTime] = useState(null);
+  const [processedMessages] = useState(new Set()); // ✅ Message deduplication
 
   const { token, user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
@@ -44,6 +47,9 @@ export const SignalRProvider = ({ children }) => {
   const heartbeatIntervalRef = useRef(null);
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
+  const currentHandlersRef = useRef(new Set()); // ✅ Track active handlers
+  const previousUserIdRef = useRef(null);
+  const isUserSwitchingRef = useRef(false);
 
   // ✅ Güncel ngrok URL'ini dinamik olarak al veya manuel güncelle
   const SIGNALR_BASE_URL = "https://chatapi.justkey.online/";
@@ -62,7 +68,44 @@ export const SignalRProvider = ({ children }) => {
     };
   };
 
-  // ✅ GLOBAL MESAJ HANDLER - Tüm ekranlarda çalışacak
+  // ✅ ENHANCED: Message deduplication helper
+  const isMessageProcessed = useCallback(
+    (messageData) => {
+      const messageId =
+        messageData.Id || messageData.id || messageData.MessageId;
+      const content = messageData.Content || messageData.content;
+      const senderId = messageData.SenderUserId || messageData.senderUserId;
+      const receiverId =
+        messageData.ReceiverUserId || messageData.receiverUserId;
+
+      // Create multiple keys for different scenarios
+      const keys = [
+        messageId,
+        `${senderId}-${receiverId}-${content?.substring(0, 50)}`,
+        `${messageId}-${senderId}-${receiverId}`,
+      ].filter(Boolean);
+
+      // Check if any key exists
+      const isProcessed = keys.some((key) => processedMessages.has(key));
+
+      if (!isProcessed) {
+        // Add all keys to processed set
+        keys.forEach((key) => processedMessages.add(key));
+
+        // Clean up old messages (keep last 300)
+        if (processedMessages.size > 300) {
+          const array = Array.from(processedMessages);
+          processedMessages.clear();
+          array.slice(-150).forEach((id) => processedMessages.add(id));
+        }
+      }
+
+      return isProcessed;
+    },
+    [processedMessages]
+  );
+
+  // ✅ GLOBAL MESAJ HANDLER - Complete with enhanced deduplication
   const setupGlobalMessageHandlers = useCallback(
     (conn) => {
       if (!conn || !user?.id) return;
@@ -72,19 +115,57 @@ export const SignalRProvider = ({ children }) => {
         user.id
       );
 
-      // ✅ Global mesaj alma handler'ı
+      // ✅ FIRST: Remove ALL existing handlers completely
+      const eventNames = [
+        "ReceiveMessage",
+        "MessageSent",
+        "MessagesRead",
+        "MessageError",
+        "UnreadCountUpdate",
+        "PartnerListUpdate",
+        "NewMessageNotification",
+        "UnreadSummaryUpdate",
+        "UserStatusChanged",
+        "UserStartedTyping",
+        "UserStoppedTyping",
+        "HeartbeatResponse",
+        "ConnectionEstablished",
+        "Pong",
+        "TestResponse",
+        "UserStatusResponse",
+      ];
+
+      // Remove all existing handlers first
+      eventNames.forEach((eventName) => {
+        conn.off(eventName);
+      });
+
+      // Clear tracked handlers
+      currentHandlersRef.current.clear();
+
+      // ✅ Global mesaj alma handler'ı - Enhanced with deduplication
       const handleGlobalReceiveMessage = (messageData) => {
         console.log("📨 GLOBAL message received:", messageData);
+
+        // ✅ Duplicate check first
+        if (isMessageProcessed(messageData)) {
+          console.log("🔄 Duplicate ReceiveMessage ignored");
+          return;
+        }
 
         const senderId = messageData.SenderUserId || messageData.senderUserId;
         const receiverId =
           messageData.ReceiverUserId || messageData.receiverUserId;
+        const content = messageData.Content || messageData.content;
+        const messageId =
+          messageData.Id || messageData.id || messageData.MessageId;
 
         console.log("📨 Global message details:", {
           senderId,
           receiverId,
           currentUserId: user?.id,
-          content: messageData.Content || messageData.content,
+          content: content?.substring(0, 50),
+          messageId,
         });
 
         // ✅ Doğru partnerId hesaplama
@@ -94,44 +175,54 @@ export const SignalRProvider = ({ children }) => {
         if (receiverId === user?.id && senderId !== user?.id) {
           partnerId = senderId;
           console.log("📦 GLOBAL: Received message from partner:", partnerId);
+
+          // ✅ Cache'e ekle
+          chatApiHelpers.addMessageToCache(dispatch, partnerId, messageData);
+          chatApiHelpers.updatePartnersList(dispatch);
+          chatApiHelpers.updateUnreadCount(dispatch);
+
+          // ✅ Notification gönder (sadece alınan mesajlar için)
+          const senderName = messageData.SenderName || messageData.senderName;
+          const senderImage =
+            messageData.SenderImage || messageData.senderImage;
+
+          if (senderName && content) {
+            // Firebase handles foreground notifications, SignalR handles background only
+            if (AppState.currentState !== "active") {
+              // App is in background - show regular notification
+              notificationService.scheduleLocalNotification(
+                senderName,
+                content,
+                {
+                  type: "chat_message",
+                  chatId: senderId,
+                  senderName: senderName,
+                  messageId: messageId,
+                }
+              );
+            }
+          }
         }
         // Eğer biz mesajı gönderdiysek, alıcı kişi partner'dır
         else if (senderId === user?.id && receiverId !== user?.id) {
           partnerId = receiverId;
           console.log("📦 GLOBAL: Sent message to partner:", partnerId);
-        }
 
-        // ✅ Her durumda cache'e ekle
-        if (partnerId) {
-          console.log(
-            "💾 GLOBAL: Adding message to cache for partner:",
-            partnerId
-          );
+          // ✅ Cache'e ekle (sent message confirmation)
           chatApiHelpers.addMessageToCache(dispatch, partnerId, messageData);
           chatApiHelpers.updatePartnersList(dispatch);
-          chatApiHelpers.updateUnreadCount(dispatch);
-        }
-
-        // ✅ Notification gönder (sadece alınan mesajlar için)
-        if (receiverId === user?.id && senderId !== user?.id) {
-          const senderName = messageData.SenderName || messageData.senderName;
-          const content = messageData.Content || messageData.content;
-
-          if (senderName && content) {
-            notificationService.scheduleLocalNotification(senderName, content, {
-              type: "chat_message",
-              chatId: senderId,
-              senderName: senderName,
-              messageId:
-                messageData.Id || messageData.id || messageData.MessageId,
-            });
-          }
         }
       };
 
       // ✅ Global mesaj gönderildi confirmation handler'ı
       const handleGlobalMessageSent = (confirmationData) => {
         console.log("✅ GLOBAL message sent confirmation:", confirmationData);
+
+        // ✅ Duplicate check
+        if (isMessageProcessed(confirmationData)) {
+          console.log("🔄 Duplicate MessageSent ignored");
+          return;
+        }
 
         const receiverId =
           confirmationData.ReceiverUserId || confirmationData.receiverUserId;
@@ -183,7 +274,6 @@ export const SignalRProvider = ({ children }) => {
       // ✅ Global mesaj hatası handler'ı
       const handleGlobalMessageError = (errorData) => {
         console.error("❌ GLOBAL message error:", errorData);
-        // Global error handling - UI'da gösterilecek error'lar için
         const error = errorData.Error || errorData.error;
         const details = errorData.Details || errorData.details;
         console.error("❌ Global error details:", { error, details });
@@ -213,7 +303,7 @@ export const SignalRProvider = ({ children }) => {
         chatApiHelpers.updatePartnersList(dispatch);
       };
 
-      // ✅ Global new message notification handler'ı
+      // ✅ Global new message notification handler'ı - Enhanced with deduplication
       const handleGlobalNewMessageNotification = (notificationData) => {
         console.log("🔔 GLOBAL new message notification:", notificationData);
 
@@ -225,6 +315,22 @@ export const SignalRProvider = ({ children }) => {
           notificationData.SenderName || notificationData.senderName;
         const senderSurname =
           notificationData.SenderSurname || notificationData.senderSurname;
+
+        // ✅ Skip if we already processed this message or it's our own
+        if (senderId === user?.id) {
+          console.log("🔄 Skipping own message notification:", messageId);
+          return;
+        }
+
+        // ✅ Duplicate check with notification data
+        const notificationKey = `notification-${
+          messageId || "no-id"
+        }-${senderId}`;
+        if (processedMessages.has(notificationKey)) {
+          console.log("🔄 Duplicate notification ignored:", notificationKey);
+          return;
+        }
+        processedMessages.add(notificationKey);
 
         if (senderId && senderId !== user?.id && message) {
           const fullMessageData = {
@@ -245,21 +351,23 @@ export const SignalRProvider = ({ children }) => {
           chatApiHelpers.updatePartnersList(dispatch);
           chatApiHelpers.updateUnreadCount(dispatch);
 
-          // Local notification göster
-          const fullSenderName = senderSurname
-            ? `${senderName} ${senderSurname}`
-            : senderName;
-          if (fullSenderName && message) {
-            notificationService.scheduleLocalNotification(
-              fullSenderName,
-              message,
-              {
-                type: "chat_message",
-                chatId: senderId,
-                senderName: fullSenderName,
-                messageId: messageId,
-              }
-            );
+          // ✅ Show notification only if app is in background (Firebase handles foreground)
+          if (AppState.currentState !== "active") {
+            const fullSenderName = senderSurname
+              ? `${senderName} ${senderSurname}`
+              : senderName;
+            if (fullSenderName && message) {
+              notificationService.scheduleLocalNotification(
+                fullSenderName,
+                message,
+                {
+                  type: "chat_message",
+                  chatId: senderId,
+                  senderName: fullSenderName,
+                  messageId: messageId,
+                }
+              );
+            }
           }
         }
       };
@@ -364,59 +472,65 @@ export const SignalRProvider = ({ children }) => {
         });
       };
 
-      // ✅ Event listener'ları ekle
-      conn.on("ReceiveMessage", handleGlobalReceiveMessage);
-      conn.on("MessageSent", handleGlobalMessageSent);
-      conn.on("MessagesRead", handleGlobalMessagesRead);
-      conn.on("MessageError", handleGlobalMessageError);
-      conn.on("UnreadCountUpdate", handleGlobalUnreadCountUpdate);
-      conn.on("PartnerListUpdate", handleGlobalPartnerListUpdate);
-      conn.on("NewMessageNotification", handleGlobalNewMessageNotification);
-      conn.on("UnreadSummaryUpdate", handleGlobalUnreadSummaryUpdate);
-      conn.on("UserStatusChanged", handleGlobalUserStatusChanged);
-      conn.on("UserStartedTyping", handleGlobalUserStartedTyping);
-      conn.on("UserStoppedTyping", handleGlobalUserStoppedTyping);
-      conn.on("HeartbeatResponse", handleGlobalHeartbeatResponse);
-      conn.on("ConnectionEstablished", handleGlobalConnectionEstablished);
-
       // ✅ Backward compatibility handlers
-      conn.on("Pong", (timestamp) => {
+      const handleGlobalPong = (timestamp) => {
         console.log("🏓 Global Pong received:", timestamp);
         setLastPingTime(new Date(timestamp));
-      });
+      };
 
-      conn.on("TestResponse", (message) => {
+      const handleGlobalTestResponse = (message) => {
         console.log("🧪 Global test response:", message);
-      });
+      };
 
-      conn.on("UserStatusResponse", (statusResponse) => {
+      const handleGlobalUserStatusResponse = (statusResponse) => {
         console.log("👤 Global user status response:", statusResponse);
+      };
+
+      // ✅ Register all handlers and track them
+      const handlers = [
+        ["ReceiveMessage", handleGlobalReceiveMessage],
+        ["MessageSent", handleGlobalMessageSent],
+        ["MessagesRead", handleGlobalMessagesRead],
+        ["MessageError", handleGlobalMessageError],
+        ["UnreadCountUpdate", handleGlobalUnreadCountUpdate],
+        ["PartnerListUpdate", handleGlobalPartnerListUpdate],
+        ["NewMessageNotification", handleGlobalNewMessageNotification],
+        ["UnreadSummaryUpdate", handleGlobalUnreadSummaryUpdate],
+        ["UserStatusChanged", handleGlobalUserStatusChanged],
+        ["UserStartedTyping", handleGlobalUserStartedTyping],
+        ["UserStoppedTyping", handleGlobalUserStoppedTyping],
+        ["HeartbeatResponse", handleGlobalHeartbeatResponse],
+        ["ConnectionEstablished", handleGlobalConnectionEstablished],
+        ["Pong", handleGlobalPong],
+        ["TestResponse", handleGlobalTestResponse],
+        ["UserStatusResponse", handleGlobalUserStatusResponse],
+      ];
+
+      // Register all handlers
+      handlers.forEach(([eventName, handler]) => {
+        conn.on(eventName, handler);
+        currentHandlersRef.current.add(eventName);
       });
 
       console.log("✅ GLOBAL SignalR handlers setup completed");
 
-      // ✅ Cleanup function return et
+      // ✅ Enhanced cleanup function
       return () => {
         console.log("🧹 Cleaning up GLOBAL SignalR handlers");
-        conn.off("ReceiveMessage", handleGlobalReceiveMessage);
-        conn.off("MessageSent", handleGlobalMessageSent);
-        conn.off("MessagesRead", handleGlobalMessagesRead);
-        conn.off("MessageError", handleGlobalMessageError);
-        conn.off("UnreadCountUpdate", handleGlobalUnreadCountUpdate);
-        conn.off("PartnerListUpdate", handleGlobalPartnerListUpdate);
-        conn.off("NewMessageNotification", handleGlobalNewMessageNotification);
-        conn.off("UnreadSummaryUpdate", handleGlobalUnreadSummaryUpdate);
-        conn.off("UserStatusChanged", handleGlobalUserStatusChanged);
-        conn.off("UserStartedTyping", handleGlobalUserStartedTyping);
-        conn.off("UserStoppedTyping", handleGlobalUserStoppedTyping);
-        conn.off("HeartbeatResponse", handleGlobalHeartbeatResponse);
-        conn.off("ConnectionEstablished", handleGlobalConnectionEstablished);
-        conn.off("Pong");
-        conn.off("TestResponse");
-        conn.off("UserStatusResponse");
+        handlers.forEach(([eventName, handler]) => {
+          try {
+            conn.off(eventName, handler);
+          } catch (error) {
+            console.log(
+              `⚠️ Error removing handler ${eventName}:`,
+              error.message
+            );
+          }
+        });
+        currentHandlersRef.current.clear();
       };
     },
-    [user?.id, dispatch]
+    [user?.id, dispatch, isMessageProcessed]
   );
 
   // ✅ ENHANCED: Heartbeat gönderme fonksiyonu (Backend'deki HeartbeatTimer ile uyumlu)
@@ -441,7 +555,7 @@ export const SignalRProvider = ({ children }) => {
     }, 25000); // 25 saniye
   }, []);
 
-  // SignalR bağlantısını başlat
+  // ✅ ENHANCED: SignalR bağlantısını başlat
   const startConnection = useCallback(async () => {
     if (!token || !user?.id) {
       console.log(
@@ -467,9 +581,13 @@ export const SignalRProvider = ({ children }) => {
       console.log("👤 User ID:", user.id);
       console.log("🔑 Token preview:", token.substring(0, 20) + "...");
 
-      // ✅ FIXED: Mevcut bağlantıyı temizle - Better cleanup
+      // ✅ ENHANCED: Mevcut bağlantıyı temizle - Better cleanup
       if (connectionRef.current) {
         try {
+          // ✅ Clear notification cache on connection change
+          customNotificationService.clearCache();
+          processedMessages.clear();
+
           // ✅ Global handler'ları önce temizle
           if (
             connectionRef.current.cleanup &&
@@ -478,7 +596,7 @@ export const SignalRProvider = ({ children }) => {
             connectionRef.current.cleanup();
           }
           await connectionRef.current.stop();
-          console.log("✅ Old connection stopped");
+          console.log("✅ Old connection stopped and cleaned");
         } catch (error) {
           console.log("⚠️ Old connection stop error:", error.message);
         }
@@ -505,7 +623,7 @@ export const SignalRProvider = ({ children }) => {
         .configureLogging(LogLevel.Warning) // ✅ FIXED: Reduce log spam
         .build();
 
-      // Event listeners
+      // Enhanced event listeners
       newConnection.onclose((error) => {
         console.log(
           "❌ SignalR bağlantısı kapandı:",
@@ -513,6 +631,10 @@ export const SignalRProvider = ({ children }) => {
         );
         setIsConnected(false);
         setConnectionError(error?.message || "Connection closed");
+
+        // ✅ Clear state on close
+        setOnlineUsers(new Set());
+        setTypingUsers(new Set());
 
         // Heartbeat'i durdur
         if (heartbeatIntervalRef.current) {
@@ -551,6 +673,7 @@ export const SignalRProvider = ({ children }) => {
         // ✅ FIXED: Reconnect durumunda state'i temizle
         setOnlineUsers(new Set());
         setTypingUsers(new Set());
+        processedMessages.clear();
 
         // Heartbeat'i yeniden başlat
         startHeartbeat();
@@ -700,8 +823,6 @@ export const SignalRProvider = ({ children }) => {
         // First try to leave any groups/rooms server-side
         if (connectionRef.current.state === HubConnectionState.Connected) {
           try {
-            // ✅ Backend'de böyle bir method yoksa comment out edebilirsin
-            // await connectionRef.current.invoke("Disconnect");
             console.log("🚪 User disconnecting...");
           } catch (disconnectError) {
             console.log(
@@ -729,8 +850,12 @@ export const SignalRProvider = ({ children }) => {
     connectionRef.current = null;
     reconnectAttempts.current = 0;
 
+    // ✅ Clear caches
+    customNotificationService.clearCache();
+    processedMessages.clear();
+
     console.log("🧹 SignalR state completely reset");
-  }, []);
+  }, [processedMessages]);
 
   // ✅ ENHANCED: Mesaj gönderme - Better user validation and auth checking
   const sendMessage = useCallback(
@@ -795,7 +920,7 @@ export const SignalRProvider = ({ children }) => {
     [user?.id, token]
   );
 
-  // Typing durumu
+  // ✅ Typing durumu
   const startTyping = useCallback(async (receiverUserId) => {
     if (
       !connectionRef.current ||
@@ -826,7 +951,7 @@ export const SignalRProvider = ({ children }) => {
     }
   }, []);
 
-  // Mesajları okundu işaretle
+  // ✅ Mesajları okundu işaretle
   const markMessagesAsRead = useCallback(async (senderUserId) => {
     if (
       !connectionRef.current ||
@@ -877,7 +1002,7 @@ export const SignalRProvider = ({ children }) => {
     }
   }, []);
 
-  // Manuel yeniden bağlanma
+  // ✅ Manuel yeniden bağlanma
   const reconnect = useCallback(() => {
     console.log("🔄 Manuel yeniden bağlanma başlatılıyor...");
     reconnectAttempts.current = 0;
@@ -889,9 +1014,6 @@ export const SignalRProvider = ({ children }) => {
   }, [startConnection, stopConnection]);
 
   // ✅ ENHANCED: Auth changes listener with better user switching detection
-  const previousUserIdRef = useRef(null);
-  const isUserSwitchingRef = useRef(false);
-
   useEffect(() => {
     const currentUserId = user?.id;
     const previousUserId = previousUserIdRef.current;
@@ -934,6 +1056,8 @@ export const SignalRProvider = ({ children }) => {
 
           // ✅ Cache'i temizle user switch durumunda
           chatApiHelpers.clearChatCache(dispatch);
+          customNotificationService.clearCache();
+          processedMessages.clear();
 
           // Longer delay for user switches to ensure backend cleanup
           setTimeout(() => {
@@ -970,11 +1094,21 @@ export const SignalRProvider = ({ children }) => {
       // ✅ FIXED: Don't stop connection on every render
       // stopConnection();
     };
-  }, [token, user?.id, startConnection, stopConnection, dispatch]);
+  }, [
+    token,
+    user?.id,
+    startConnection,
+    stopConnection,
+    dispatch,
+    connection,
+    isConnecting,
+    processedMessages,
+  ]);
 
-  // Cleanup
+  // ✅ Cleanup on unmount
   useEffect(() => {
     return () => {
+      console.log("🧹 Component unmounting - cleaning up SignalR");
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
@@ -988,6 +1122,7 @@ export const SignalRProvider = ({ children }) => {
     };
   }, [stopConnection]);
 
+  // ✅ Context value with all methods
   const contextValue = {
     connection: connectionRef.current,
     isConnected,
