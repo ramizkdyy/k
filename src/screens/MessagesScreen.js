@@ -26,9 +26,11 @@ import {
   useGetChatPartnersQuery,
   useGetUnreadCountQuery,
   useLazySearchChatPartnersQuery,
+  useGetUnreadCountForChatQuery,
   chatApiHelpers,
 } from "../redux/api/chatApiSlice";
 import { useSignalR } from "../contexts/SignalRContext";
+import { useNotification } from "../contexts/NotificationContext";
 import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser } from "../redux/slices/authSlice";
 import { useFocusEffect } from "@react-navigation/native";
@@ -41,6 +43,7 @@ const MessagesScreen = ({ navigation }) => {
 
   const { user } = useSelector((state) => state.auth);
   const { isConnected, onlineUsers, connection } = useSignalR();
+  const { updateCurrentScreen } = useNotification();
   const currentUser = useSelector(selectCurrentUser);
   const dispatch = useDispatch();
 
@@ -71,6 +74,19 @@ const MessagesScreen = ({ navigation }) => {
     },
   });
 
+  const {
+    data: unreadEachChatData,
+    isLoading: unreadEachChatLoading,
+    error: unreadEachChatError,
+    refetch: refetchEachChat,
+  } = useGetUnreadCountForChatQuery(undefined, {
+    refetchOnFocus: true,
+    refetchOnMountOrArgChange: true,
+    onError: (error) => {
+      console.error("❌ Unread count fetch error:", error);
+    },
+  });
+
   // ✅ Search functionality
   const [
     triggerSearch,
@@ -79,7 +95,7 @@ const MessagesScreen = ({ navigation }) => {
 
   // ✅ API response handling with backend format compatibility
   const chatPartners = React.useMemo(() => {
-    console.log("🔍 Chat Partners Response Processing:", chatPartnersResponse);
+    console.log("🔍 Chat Partners Response Processing:", unreadEachChatData);
 
     if (Array.isArray(chatPartnersResponse)) {
       console.log(
@@ -174,6 +190,20 @@ const MessagesScreen = ({ navigation }) => {
     },
     [triggerSearch]
   );
+
+  // Register current screen for notification filtering
+  useEffect(() => {
+    console.log(
+      "📍 MessagesScreen: Registering current screen for notification filtering"
+    );
+    updateCurrentScreen("MessagesScreen", null);
+
+    // Cleanup when leaving screen
+    return () => {
+      console.log("📍 MessagesScreen: Clearing current screen");
+      updateCurrentScreen(null, null);
+    };
+  }, [updateCurrentScreen]);
 
   // ✅ Search debounce effect
   useEffect(() => {

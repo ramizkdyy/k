@@ -39,43 +39,56 @@ export const NotificationProvider = ({ children }) => {
       notificationMessage: notification?.message?.substring(0, 50)
     });
     
-    // Only filter if we're on ChatDetailScreen and it's a chat message
-    if (screenName === 'ChatDetailScreen' && notification?.data?.type === 'new_message') {
-      const notificationSenderId = notification?.data?.senderId;
-      const notificationChatId = notification?.data?.chatId;
-      
-      // Check if notification is from current partner by comparing senderId directly
-      // or checking if current partner is in the chatId
-      const isFromCurrentPartner = 
-        notificationSenderId === currentPartnerId || 
-        (notificationChatId && notificationChatId.includes(currentPartnerId));
-      
-      console.log('📋 DETAILED FILTERING CHECK:', {
-        isOnChatDetailScreen: screenName === 'ChatDetailScreen',
-        isNewMessage: notification?.data?.type === 'new_message',
-        currentPartnerId,
-        notificationSenderId,
-        notificationChatId,
-        senderIdMatch: notificationSenderId === currentPartnerId,
-        chatIdContainsPartner: notificationChatId?.includes(currentPartnerId),
-        isFromCurrentPartner,
-        currentPartnerType: typeof currentPartnerId,
-        senderIdType: typeof notificationSenderId
-      });
-      
-      if (isFromCurrentPartner && currentPartnerId) {
-        console.log('🚫 FILTERING NOTIFICATION from current chat partner:', {
+    // Filter chat notifications based on current screen
+    if (notification?.data?.type === 'new_message') {
+      // If on MessagesScreen, filter all chat notifications
+      if (screenName === 'MessagesScreen') {
+        console.log('🚫 FILTERING ALL CHAT NOTIFICATIONS on MessagesScreen:', {
           currentScreen: screenName,
+          notificationTitle: notification?.title,
+          notificationMessage: notification?.message?.substring(0, 50)
+        });
+        return true; // Filter out all chat notifications
+      }
+      
+      // If on ChatDetailScreen, filter notifications from current chat partner
+      if (screenName === 'ChatDetailScreen') {
+        const notificationSenderId = notification?.data?.senderId;
+        const notificationChatId = notification?.data?.chatId;
+        
+        // Check if notification is from current partner by comparing senderId directly
+        // or checking if current partner is in the chatId
+        const isFromCurrentPartner = 
+          notificationSenderId === currentPartnerId || 
+          (notificationChatId && notificationChatId.includes(currentPartnerId));
+        
+        console.log('📋 DETAILED FILTERING CHECK for ChatDetailScreen:', {
+          isOnChatDetailScreen: screenName === 'ChatDetailScreen',
+          isNewMessage: notification?.data?.type === 'new_message',
           currentPartnerId,
           notificationSenderId,
-          notificationTitle: notification?.title
+          notificationChatId,
+          senderIdMatch: notificationSenderId === currentPartnerId,
+          chatIdContainsPartner: notificationChatId?.includes(currentPartnerId),
+          isFromCurrentPartner,
+          currentPartnerType: typeof currentPartnerId,
+          senderIdType: typeof notificationSenderId
         });
-        return true; // Filter out this notification
-      } else {
-        console.log('✅ ALLOWING NOTIFICATION - different partner or conditions not met');
+        
+        if (isFromCurrentPartner && currentPartnerId) {
+          console.log('🚫 FILTERING NOTIFICATION from current chat partner:', {
+            currentScreen: screenName,
+            currentPartnerId,
+            notificationSenderId,
+            notificationTitle: notification?.title
+          });
+          return true; // Filter out this notification
+        } else {
+          console.log('✅ ALLOWING NOTIFICATION - different partner');
+        }
       }
     } else {
-      console.log('✅ ALLOWING NOTIFICATION - not on ChatDetailScreen or not new_message type');
+      console.log('✅ ALLOWING NOTIFICATION - not a chat message type');
     }
     
     return false; // Don't filter
