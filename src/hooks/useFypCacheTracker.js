@@ -1,58 +1,84 @@
 // src/hooks/useFypCacheTracker.js
-import { useRef } from 'react';
+import { useRef, useState, useCallback } from 'react';
 
 export const useFypCacheTracker = () => {
-    const lastCallRef = useRef(null);
+    // Son gerçek API çağrısının zamanı
+    const lastApiCallTimeRef = useRef(null);
+    // Cache state'i - component re-render'larında korunur
+    const [cacheEnabled, setCacheEnabled] = useState(false);
 
-    const shouldUseCache = () => {
+    // Cache durumunu hesapla ve state'i güncelle
+    const calculateCacheStatus = useCallback(() => {
         const now = Date.now();
-        const CACHE_THRESHOLD = 10000; // 10 saniye
+        const CACHE_DURATION = 10000; // 10 saniye
 
-        // Eğer son çağrı 10 saniye içindeyse cache kullan
-        const shouldCache = lastCallRef.current && (now - lastCallRef.current) < CACHE_THRESHOLD;
-
-        // Debug için log
-        if (shouldCache) {
-            console.log('🚀 FYP Cache - Using Cache:', {
-                lastCall: new Date(lastCallRef.current).toLocaleTimeString(),
-                currentCall: new Date(now).toLocaleTimeString(),
-                timeDiff: `${(now - lastCallRef.current) / 1000}s`,
-                isCached: true
+        if (!lastApiCallTimeRef.current) {
+            // İlk çağrı
+            console.log('🆕 İlk API çağrısı yapılıyor - Cache: FALSE', {
+                time: new Date(now).toLocaleTimeString()
             });
-        } else {
-            console.log('🆕 FYP Cache - Fresh Call:', {
-                lastCall: lastCallRef.current ? new Date(lastCallRef.current).toLocaleTimeString() : 'First call',
-                currentCall: new Date(now).toLocaleTimeString(),
-                isCached: false
-            });
+            lastApiCallTimeRef.current = now;
+            setCacheEnabled(false);
+            return false;
         }
 
-        // Timestamp'i güncelle
-        lastCallRef.current = now;
+        const timeSinceLastCall = now - lastApiCallTimeRef.current;
 
-        return shouldCache;
-    };
+        if (timeSinceLastCall < CACHE_DURATION) {
+            // 10 saniye içinde - CACHE KULLAN
+            console.log('🚀 Cache AKTIF - 10 saniye içinde', {
+                currentTime: new Date(now).toLocaleTimeString(),
+                lastCallTime: new Date(lastApiCallTimeRef.current).toLocaleTimeString(),
+                timeDiff: `${(timeSinceLastCall / 1000).toFixed(1)} saniye`
+            });
+            setCacheEnabled(true);
+            return true;
+        } else {
+            // 10 saniye geçmiş - YENİ DATA
+            console.log('⏰ Cache SÜRESİ DOLDU - Yeni data çekiliyor', {
+                currentTime: new Date(now).toLocaleTimeString(),
+                lastCallTime: new Date(lastApiCallTimeRef.current).toLocaleTimeString(),
+                timeDiff: `${(timeSinceLastCall / 1000).toFixed(1)} saniye`
+            });
+            lastApiCallTimeRef.current = now;
+            setCacheEnabled(false);
+            return false;
+        }
+    }, []);
 
-    // Manuel cache reset fonksiyonu
-    const resetCache = () => {
-        console.log('🔄 FYP Cache manually reset');
-        lastCallRef.current = null;
-    };
+    // Manuel refresh için cache reset
+    const resetCache = useCallback(() => {
+        console.log('🔄 Cache manuel olarak resetlendi');
+        lastApiCallTimeRef.current = null;
+        setCacheEnabled(false);
+    }, []);
 
-    // Cache bilgilerini döndür
-    const getCacheInfo = () => {
+    // Debug bilgileri
+    const getCacheInfo = useCallback(() => {
         const now = Date.now();
+        if (!lastApiCallTimeRef.current) {
+            return {
+                status: 'İlk çağrı bekleniyor',
+                cacheEnabled: false
+            };
+        }
+
+        const timeSinceLastCall = now - lastApiCallTimeRef.current;
+        const timeUntilExpire = Math.max(0, 10000 - timeSinceLastCall);
+
         return {
-            lastCallTimestamp: lastCallRef.current,
-            lastCallTime: lastCallRef.current ? new Date(lastCallRef.current).toLocaleTimeString() : null,
-            timeSinceLastCall: lastCallRef.current ? now - lastCallRef.current : null,
-            isWithinCacheThreshold: lastCallRef.current ? (now - lastCallRef.current) < 10000 : false,
+            status: cacheEnabled ? 'Cache AKTIF' : 'Cache KAPALI',
+            lastCallTime: new Date(lastApiCallTimeRef.current).toLocaleTimeString(),
+            timeSinceLastCall: `${(timeSinceLastCall / 1000).toFixed(1)} saniye`,
+            timeUntilExpire: `${(timeUntilExpire / 1000).toFixed(1)} saniye`,
+            cacheEnabled: cacheEnabled
         };
-    };
+    }, [cacheEnabled]);
 
     return {
-        shouldUseCache,
-        resetCache,
-        getCacheInfo
+        cacheEnabled,           // State olarak tutulan cache durumu
+        calculateCacheStatus,   // Cache durumunu hesapla
+        resetCache,            // Manuel reset
+        getCacheInfo          // Debug bilgileri
     };
 };
