@@ -795,6 +795,22 @@ const ChatDetailScreen = ({ navigation, route }) => {
     };
   }, [dispatch]);
 
+  // Auto-focus keyboard when navigated from notification
+  useEffect(() => {
+    if (hasLoadedInitialMessages && textInputRef.current) {
+      // Check if this navigation came from a notification
+      const fromNotification = route.params?.fromNotification || route.params?.type === "new_message";
+      
+      if (fromNotification) {
+        console.log("🎯 Auto-focusing keyboard from notification");
+        // Add a small delay to ensure screen is fully rendered
+        setTimeout(() => {
+          textInputRef.current?.focus();
+        }, 500);
+      }
+    }
+  }, [hasLoadedInitialMessages, route.params]);
+
   // Debug logging
   useEffect(() => {
     console.log("📊 Messages state updated:", {

@@ -52,7 +52,7 @@ export const SignalRProvider = ({ children }) => {
   const isUserSwitchingRef = useRef(false);
 
   // ✅ Güncel ngrok URL'ini dinamik olarak al veya manuel güncelle
-  const SIGNALR_BASE_URL = "https://chatapi.justkey.online/";
+  const SIGNALR_BASE_URL = "https://chatapi.justkey.online";
 
   // ✅ UTILITY: Throttle function for preventing spam
   const throttle = (func, limit) => {

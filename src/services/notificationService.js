@@ -103,13 +103,13 @@ class NotificationService {
 
     if (notification) {
       const messageId = data?.messageId || data?.id || `firebase-${Date.now()}`;
-      
+
       console.log("🔥 Firebase notification details:", {
         title: notification.title,
         body: notification.body,
         messageId: messageId,
         data: data,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       // Show in-app custom notification with Firebase source
@@ -164,12 +164,20 @@ class NotificationService {
     this.navigationRef = navigationRef;
   }
 
-  navigateToChat(chatId) {
-    if (this.navigationRef && chatId) {
-      console.log("Navigating to chat:", chatId);
-      this.navigationRef.navigate("Messages", {
-        screen: "ChatDetail",
-        params: { chatId },
+  navigateToChat(data) {
+    // Handle both old format (just chatId) and new format (full data object)
+    const chatId = typeof data === 'string' ? data : data?.chatId;
+    const senderId = data?.senderId || chatId;
+    const senderName = data?.senderName || "Chat";
+    
+    if (this.navigationRef && senderId) {
+      console.log("Navigating to chat:", { senderId, senderName, chatId });
+      // Direct navigation to ChatDetail in RootStack
+      // Use senderId as partnerId (the actual user ID)
+      this.navigationRef.navigate("ChatDetail", { 
+        partnerId: senderId,
+        partnerName: senderName,
+        fromNotification: true
       });
     }
   }

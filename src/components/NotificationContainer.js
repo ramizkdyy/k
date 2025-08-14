@@ -1,12 +1,14 @@
-import React, { useEffect } from 'react';
-import { View } from 'react-native';
-import { useNotification } from '../contexts/NotificationContext';
-import AnimatedNotification from './AnimatedNotification';
-import notificationService from '../services/notificationService';
-import customNotificationService from '../services/customNotificationService';
+import React, { useEffect } from "react";
+import { View } from "react-native";
+import { useNotification } from "../contexts/NotificationContext";
+import { useNavigationState } from "@react-navigation/native";
+import AnimatedNotification from "./AnimatedNotification";
+import notificationService from "../services/notificationService";
+import customNotificationService from "../services/customNotificationService";
 
 const NotificationContainer = () => {
-  const { notifications, hideNotification, showNotification } = useNotification();
+  const { notifications, hideNotification, showNotification } =
+    useNotification();
 
   // Set up custom notification service
   useEffect(() => {
@@ -15,9 +17,9 @@ const NotificationContainer = () => {
 
   const handleNotificationPress = (data) => {
     // Handle navigation based on notification data
-    if (data?.type === 'new_message' && data?.chatId) {
-      notificationService.navigateToChat(data.chatId);
-    } else if (data?.type === 'new_offer') {
+    if (data?.type === "new_message" && (data?.chatId || data?.senderId)) {
+      notificationService.navigateToChat(data);
+    } else if (data?.type === "new_offer") {
       notificationService.navigateToOffers();
     }
   };
@@ -27,7 +29,9 @@ const NotificationContainer = () => {
   };
 
   return (
-    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000 }}>
+    <View
+      style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 1000 }}
+    >
       {notifications.map((notification, index) => (
         <AnimatedNotification
           key={notification.id}

@@ -73,6 +73,9 @@ const LoginScreen = ({ navigation }) => {
     try {
       console.log("📱 Starting FCM token registration after login...");
 
+      // Wait a bit for auth state to fully propagate to RTK Query
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Initialize notification service and get tokens
       const tokens = await notificationService.initialize();
 
@@ -83,6 +86,9 @@ const LoginScreen = ({ navigation }) => {
           "🔥 FCM token stored in Redux:",
           tokens.fcmToken.substring(0, 20) + "..."
         );
+
+        // Wait another bit to ensure RTK Query has the auth token in its state
+        await new Promise(resolve => setTimeout(resolve, 200));
 
         // Register FCM token with backend
         console.log("📝 Registering FCM token with backend...");

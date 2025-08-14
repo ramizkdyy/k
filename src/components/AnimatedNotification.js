@@ -7,14 +7,9 @@ import { faUserCircle } from "@fortawesome/pro-solid-svg-icons";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  useAnimatedGestureHandler,
   withSpring,
   withTiming,
-  runOnJS,
-  interpolate,
-  Extrapolate,
 } from "react-native-reanimated";
-import { PanGestureHandler } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -38,10 +33,6 @@ const AnimatedNotification = ({
   const isExitingRef = useRef(false);
 
   const { title, message, profileImage, isOnline, data = {} } = notification;
-
-  // Animation values for gesture
-  const gestureTranslateY = useSharedValue(0);
-  const gestureOpacity = useSharedValue(1);
 
   // Enhanced exit animation function
   const exitAnimation = (callback) => {
@@ -128,230 +119,140 @@ const AnimatedNotification = ({
     };
   }, [index, insets.top, duration]); // duration dependency eklendi
 
-  // Enhanced gesture handler for swipe to dismiss
-  const gestureHandler = useAnimatedGestureHandler({
-    onStart: (_, context) => {
-      context.startY = gestureTranslateY.value;
-      // Pause auto-hide timer when user starts interacting
-      runOnJS(() => {
-        if (autoHideTimerRef.current) {
-          clearTimeout(autoHideTimerRef.current);
-          autoHideTimerRef.current = null;
-        }
-      })();
-    },
-    onActive: (event, context) => {
-      const translationY = event.translationY;
-
-      // Allow both upward and slight downward swipes for better UX
-      if (translationY < 50) {
-        // Allow small downward movement
-        gestureTranslateY.value = context.startY + translationY;
-
-        // Calculate opacity based on drag distance
-        const dragProgress = Math.abs(translationY) / 100;
-        gestureOpacity.value = Math.max(0.3, 1 - dragProgress * 0.7);
-      }
-    },
-    onEnd: (event) => {
-      const { translationY, velocityY } = event;
-
-      // Enhanced dismiss thresholds
-      const shouldDismiss =
-        Math.abs(translationY) > 60 || // Distance threshold
-        (Math.abs(velocityY) > 600 && translationY < 0); // Velocity threshold (upward)
-
-      if (shouldDismiss) {
-        // Animate out with gesture momentum - yuavaşça yukarı kayma
-        gestureTranslateY.value = withSpring(-250, {
-          damping: 25,
-          stiffness: 90,
-          mass: 1.2,
-        });
-        gestureOpacity.value = withTiming(0, { duration: 700 });
-
-        setTimeout(() => {
-          runOnJS(exitAnimation)();
-        }, 100);
-      } else {
-        // Snap back to original position and restart auto-hide timer
-        gestureTranslateY.value = withSpring(0, {
-          damping: 20,
-          stiffness: 300,
-        });
-        gestureOpacity.value = withSpring(1, {
-          damping: 20,
-          stiffness: 300,
-        });
-
-        // Restart auto-hide timer
-        runOnJS(() => {
-          if (!isExitingRef.current) {
-            autoHideTimerRef.current = setTimeout(() => {
-              if (!isExitingRef.current) {
-                console.log(
-                  "⏰ AnimatedNotification: Resumed auto-hide timer after gesture"
-                );
-                exitAnimation();
-              }
-            }, duration / 2); // Half duration remaining
-          }
-        })();
-      }
-    },
-  });
+  // No gesture interactions - notification only auto-hides
 
   // Animated styles
   const animatedStyle = useAnimatedStyle(() => {
     return {
-      transform: [
-        { translateY: translateY.value + gestureTranslateY.value },
-        { scale: scale.value },
-      ],
-      opacity: opacity.value * gestureOpacity.value,
+      transform: [{ translateY: translateY.value }, { scale: scale.value }],
+      opacity: opacity.value,
     };
   });
-
-  const handlePress = () => {
-    onPress?.(data);
-    exitAnimation();
-  };
 
   const handleClose = () => {
     exitAnimation();
   };
 
-  // Pause auto-hide on press down, resume on press up
-  const handlePressIn = () => {
-    if (autoHideTimerRef.current) {
-      clearTimeout(autoHideTimerRef.current);
-      autoHideTimerRef.current = null;
-    }
-  };
-
-  const handlePressOut = () => {
-    if (!isExitingRef.current) {
-      autoHideTimerRef.current = setTimeout(() => {
-        if (!isExitingRef.current) {
-          console.log(
-            "⏰ AnimatedNotification: Press-out auto-hide timer triggered"
-          );
-          exitAnimation();
-        }
-      }, duration / 2);
-    }
-  };
-
   return (
-    <PanGestureHandler onGestureEvent={gestureHandler}>
-      <Animated.View
-        style={[
-          {
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 1000 + index,
-            paddingHorizontal: "5%",
-          },
-          animatedStyle,
-        ]}
+    <Animated.View
+      style={[
+        {
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1000 + index,
+          paddingHorizontal: "5%",
+        },
+        animatedStyle,
+      ]}
+    >
+      <BlurView
+        intensity={80}
+        tint="regular"
+        style={{
+          width: "100%",
+          minHeight: 70,
+          borderRadius: 100,
+          overflow: "hidden",
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.15,
+          shadowRadius: 12,
+          elevation: 8,
+        }}
       >
-        <BlurView
-          intensity={80}
-          tint="regular"
-          style={{
-            width: "100%",
-            minHeight: 70,
-            borderRadius: 100,
-            overflow: "hidden",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.15,
-            shadowRadius: 12,
-            elevation: 8,
+        <TouchableOpacity
+          onPress={() => {
+            if (data?.chatId) {
+              console.log("🔗 Navigating to chat:", data.chatId);
+              console.log("🔗 Notification data:", data);
+              // Ensure type is set for proper navigation
+              const navigationData = {
+                ...data,
+                type: data?.type || "new_message",
+                fromNotification: true,
+              };
+              onPress?.(navigationData);
+              exitAnimation();
+            } else {
+              console.warn("⚠️ No chatId found in notification data");
+            }
           }}
+          style={{
+            flex: 1,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            flexDirection: "row",
+            alignItems: "center",
+          }}
+          activeOpacity={0.8}
         >
-          <TouchableOpacity
-            onPress={handlePress}
-            onPressIn={handlePressIn}
-            onPressOut={handlePressOut}
-            style={{
-              flex: 1,
-              paddingHorizontal: 16,
-              paddingVertical: 12,
-              flexDirection: "row",
-              alignItems: "center",
-            }}
-            activeOpacity={0.9}
-          >
-            {/* Avatar/Icon */}
-            <View style={{ marginRight: 12 }}>
-              <View
-                style={{ width: 45, height: 45 }}
-                className="justify-center items-center rounded-full border border-gray-900"
-              >
-                {profileImage &&
-                profileImage !== "default_profile_image_url" ? (
-                  <Image
-                    source={{ uri: profileImage }}
-                    className="w-full h-full rounded-full"
-                    resizeMode="cover"
-                    onError={(error) => {
-                      console.log("❌ Profile image load error:", error);
-                    }}
-                  />
-                ) : (
-                  <Text
-                    style={{ fontSize: 20 }}
-                    className="text-gray-900 font-bold"
-                  >
-                    {title?.charAt(0)?.toUpperCase() || "P"}
-                  </Text>
-                )}
-
-                {isOnline && (
-                  <View
-                    style={{ width: 16, height: 16, bottom: -2, right: -2 }}
-                    className="absolute flex justify-center items-center rounded-full bg-white"
-                  >
-                    <View
-                      style={{ width: 10, height: 10 }}
-                      className="flex justify-center items-center rounded-full bg-green-500"
-                    />
-                  </View>
-                )}
-              </View>
-            </View>
-
-            {/* Content */}
-            <View className="flex-1">
-              {/* Sender Name */}
-              <Text
-                className="font-semibold text-gray-900 text-base"
-                numberOfLines={1}
-              >
-                {title}
-              </Text>
-
-              {/* Message Content */}
-              <Text className="text-gray-700 text-base" numberOfLines={2}>
-                {message}
-              </Text>
-            </View>
-
-            {/* Close Button */}
-            <TouchableOpacity
-              onPress={handleClose}
-              className="ml-2 p-1"
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          {/* Avatar/Icon */}
+          <View style={{ marginRight: 12 }}>
+            <View
+              style={{ width: 45, height: 45 }}
+              className="justify-center items-center rounded-full border border-gray-900"
             >
-              <FontAwesomeIcon icon={faXmark} size={16} color="#000" />
-            </TouchableOpacity>
+              {profileImage && profileImage !== "default_profile_image_url" ? (
+                <Image
+                  source={{ uri: profileImage }}
+                  className="w-full h-full rounded-full"
+                  resizeMode="cover"
+                  onError={(error) => {
+                    console.log("❌ Profile image load error:", error);
+                  }}
+                />
+              ) : (
+                <Text
+                  style={{ fontSize: 20 }}
+                  className="text-gray-900 font-bold"
+                >
+                  {title?.charAt(0)?.toUpperCase() || "P"}
+                </Text>
+              )}
+
+              {isOnline && (
+                <View
+                  style={{ width: 16, height: 16, bottom: -2, right: -2 }}
+                  className="absolute flex justify-center items-center rounded-full bg-white"
+                >
+                  <View
+                    style={{ width: 10, height: 10 }}
+                    className="flex justify-center items-center rounded-full bg-green-500"
+                  />
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Content */}
+          <View className="flex-1">
+            {/* Sender Name */}
+            <Text
+              className="font-semibold text-gray-900 text-base"
+              numberOfLines={1}
+            >
+              {title}
+            </Text>
+
+            {/* Message Content */}
+            <Text className="text-gray-700 text-base" numberOfLines={2}>
+              {message}
+            </Text>
+          </View>
+
+          {/* Close Button */}
+          <TouchableOpacity
+            onPress={handleClose}
+            className="ml-2 p-1"
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <FontAwesomeIcon icon={faXmark} size={16} color="#000" />
           </TouchableOpacity>
-        </BlurView>
-      </Animated.View>
-    </PanGestureHandler>
+        </TouchableOpacity>
+      </BlurView>
+    </Animated.View>
   );
 };
 

@@ -9,12 +9,17 @@ export const chatApiSlice = createApi({
     baseUrl: CHAT_BASE_URL,
     prepareHeaders: (headers, { getState }) => {
       const token = getState().auth.token;
-      console.log("CHAT BEARER TOKEN:", token);
+      console.log(
+        "CHAT BEARER TOKEN:",
+        token ? `${token.substring(0, 20)}...` : "❌ NO TOKEN"
+      );
 
       if (token) {
         headers.set("authorization", `Bearer ${token}`);
         headers.set("ngrok-skip-browser-warning", "true");
         headers.set("Content-Type", "application/json");
+      } else {
+        console.error("❌ No auth token available for API call");
       }
 
       return headers;
