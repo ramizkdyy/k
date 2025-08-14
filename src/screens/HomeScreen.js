@@ -24,7 +24,7 @@ import {
   faMessage,
   faFingerprint,
 } from "@fortawesome/pro-regular-svg-icons";
-import { useGetUnreadCountQuery } from "../redux/api/chatApiSlice";
+import { useGetUnreadSummaryQuery } from "../redux/api/chatApiSlice";
 import { useSignalR } from "../contexts/SignalRContext"; // ✅ SignalR context'i ekle
 import { useFocusEffect } from "@react-navigation/native"; // ✅ Focus effect ekle
 
@@ -43,15 +43,15 @@ const HomeScreen = ({ navigation }) => {
     data: unreadData,
     isLoading: unreadLoading,
     refetch: refetchUnread,
-  } = useGetUnreadCountQuery(undefined, {
+  } = useGetUnreadSummaryQuery(undefined, {
     refetchOnFocus: true,
     refetchOnMountOrArgChange: true,
   });
 
   const totalUnreadCount = React.useMemo(() => {
     console.log("HomeScreen - Unread Data Response:", unreadData);
-    return unreadData?.count || 0;
-  }, [unreadData]);
+    return unreadData?.totalUnreadChats || 0;
+  }, [unreadData?.totalUnreadChats]);
 
   // ✅ Focus effect - Ekrana gelince unread count'u yenile
   useFocusEffect(

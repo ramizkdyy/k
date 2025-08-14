@@ -35,6 +35,7 @@ import {
   chatApiHelpers,
 } from "../redux/api/chatApiSlice";
 import { useSignalR } from "../contexts/SignalRContext";
+import { useNotification } from "../contexts/NotificationContext";
 import { useSelector, useDispatch } from "react-redux";
 import { BlurView } from "expo-blur";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -77,6 +78,9 @@ const ChatDetailScreen = ({ navigation, route }) => {
   const { user } = useSelector((state) => state.auth);
   const currentUserId = user?.id || user?.userId;
   const dispatch = useDispatch();
+  
+  // Get notification context for screen tracking
+  const { updateCurrentScreen } = useNotification();
 
   const {
     isConnected,
@@ -181,6 +185,25 @@ const ChatDetailScreen = ({ navigation, route }) => {
   ] = useLazyGetChatHistoryQuery();
 
   const [sendMessage, { isLoading: isSending }] = useSendMessageMutation();
+
+  // Register current screen for notification filtering
+  useEffect(() => {
+    if (partnerId) {
+      console.log('📍 ChatDetailScreen: Registering current screen for notification filtering', { 
+        partnerId, 
+        partnerName,
+        timestamp: new Date().toISOString()
+      });
+      
+      updateCurrentScreen('ChatDetailScreen', partnerId);
+    }
+
+    // Cleanup when leaving screen
+    return () => {
+      console.log('📍 ChatDetailScreen: Clearing current screen');
+      updateCurrentScreen(null, null);
+    };
+  }, [partnerId, updateCurrentScreen]);
 
   // Partner online status
   const isPartnerOnline = onlineUsers.has(partnerId);
@@ -794,6 +817,22 @@ const ChatDetailScreen = ({ navigation, route }) => {
       chatApiHelpers.updateUnreadCount(dispatch);
     };
   }, [dispatch]);
+
+  // Auto-focus keyboard when navigated from notification
+  useEffect(() => {
+    if (hasLoadedInitialMessages && textInputRef.current) {
+      // Check if this navigation came from a notification
+      const fromNotification = route.params?.fromNotification || route.params?.type === "new_message";
+      
+      if (fromNotification) {
+        console.log("🎯 Auto-focusing keyboard from notification");
+        // Add a small delay to ensure screen is fully rendered
+        setTimeout(() => {
+          textInputRef.current?.focus();
+        }, 500);
+      }
+    }
+  }, [hasLoadedInitialMessages, route.params]);
 
   // Debug logging
   useEffect(() => {
