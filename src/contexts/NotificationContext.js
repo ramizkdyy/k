@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useRef } from "react";
 
 const NotificationContext = createContext();
 
@@ -12,9 +12,83 @@ export const useNotification = () => {
 
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
+  
+  // Store current screen info manually
+  const currentScreenInfo = useRef({ screenName: null, partnerId: null });
+  
+  // Function to update current screen info (to be called from screens)
+  const updateCurrentScreen = useCallback((screenName, partnerId = null) => {
+    currentScreenInfo.current = { screenName, partnerId };
+    console.log('📱 Current screen updated:', { screenName, partnerId });
+  }, []);
+  
+  // Helper function to get current screen info
+  const getCurrentScreenInfo = useCallback(() => {
+    return currentScreenInfo.current;
+  }, []);
+  
+  // Check if notification should be filtered (user is on ChatDetailScreen with same partner)
+  const shouldFilterNotification = useCallback((notification) => {
+    const { screenName, partnerId: currentPartnerId } = getCurrentScreenInfo();
+    
+    console.log('🔍 NOTIFICATION FILTERING DEBUG:', {
+      currentScreen: screenName,
+      currentPartnerId,
+      notificationData: notification?.data,
+      notificationTitle: notification?.title,
+      notificationMessage: notification?.message?.substring(0, 50)
+    });
+    
+    // Only filter if we're on ChatDetailScreen and it's a chat message
+    if (screenName === 'ChatDetailScreen' && notification?.data?.type === 'new_message') {
+      const notificationSenderId = notification?.data?.senderId;
+      const notificationChatId = notification?.data?.chatId;
+      
+      // Check if notification is from current partner by comparing senderId directly
+      // or checking if current partner is in the chatId
+      const isFromCurrentPartner = 
+        notificationSenderId === currentPartnerId || 
+        (notificationChatId && notificationChatId.includes(currentPartnerId));
+      
+      console.log('📋 DETAILED FILTERING CHECK:', {
+        isOnChatDetailScreen: screenName === 'ChatDetailScreen',
+        isNewMessage: notification?.data?.type === 'new_message',
+        currentPartnerId,
+        notificationSenderId,
+        notificationChatId,
+        senderIdMatch: notificationSenderId === currentPartnerId,
+        chatIdContainsPartner: notificationChatId?.includes(currentPartnerId),
+        isFromCurrentPartner,
+        currentPartnerType: typeof currentPartnerId,
+        senderIdType: typeof notificationSenderId
+      });
+      
+      if (isFromCurrentPartner && currentPartnerId) {
+        console.log('🚫 FILTERING NOTIFICATION from current chat partner:', {
+          currentScreen: screenName,
+          currentPartnerId,
+          notificationSenderId,
+          notificationTitle: notification?.title
+        });
+        return true; // Filter out this notification
+      } else {
+        console.log('✅ ALLOWING NOTIFICATION - different partner or conditions not met');
+      }
+    } else {
+      console.log('✅ ALLOWING NOTIFICATION - not on ChatDetailScreen or not new_message type');
+    }
+    
+    return false; // Don't filter
+  }, [getCurrentScreenInfo]);
 
   const showNotification = useCallback(
     (notification) => {
+      // First check if notification should be filtered based on current screen
+      if (shouldFilterNotification(notification)) {
+        console.log("🚫 Notification filtered - user is viewing this chat");
+        return null;
+      }
+      
       const now = Date.now();
 
       // Check if there's already a visible notification
@@ -78,7 +152,7 @@ export const NotificationProvider = ({ children }) => {
         return id;
       }
     },
-    [notifications]
+    [notifications, shouldFilterNotification]
   );
 
   const hideNotification = useCallback((id) => {
@@ -108,6 +182,8 @@ export const NotificationProvider = ({ children }) => {
     hideNotification,
     hideAllNotifications,
     updateNotification,
+    shouldFilterNotification, // Export filtering function for custom notification service
+    updateCurrentScreen, // Export function to update current screen info
   };
 
   return (

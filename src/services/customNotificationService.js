@@ -1,6 +1,7 @@
 class CustomNotificationService {
   constructor() {
     this.showNotification = null;
+    this.shouldFilterNotification = null; // Navigation filtering function
     this.recentNotifications = new Map(); // messageId -> timestamp
     this.duplicateThreshold = 3000; // 3 saniye içinde aynı mesaj duplicate sayılır
     this.notificationCounter = 0; // Debug için
@@ -10,6 +11,12 @@ class CustomNotificationService {
   setShowNotification(showNotificationFn) {
     this.showNotification = showNotificationFn;
     console.log("✅ CustomNotificationService: showNotification function set");
+  }
+
+  // Set the filtering function from context
+  setFilterFunction(filterFn) {
+    this.shouldFilterNotification = filterFn;
+    console.log("✅ CustomNotificationService: filter function set");
   }
 
   // ✅ Enhanced duplicate notification kontrolü
@@ -111,6 +118,21 @@ class CustomNotificationService {
         `❌ CustomNotificationService: showNotification not set (${source})`
       );
       return;
+    }
+
+    // ✅ Check navigation filtering first
+    const notificationData = {
+      title,
+      message,
+      profileImage,
+      isOnline,
+      data,
+      duration
+    };
+    
+    if (this.shouldFilterNotification && this.shouldFilterNotification(notificationData)) {
+      console.log(`🚫 NOTIFICATION BLOCKED (${source}): Filtered by navigation state`);
+      return; // Filtered by navigation state
     }
 
     // ✅ Enhanced duplicate kontrolü with source tracking

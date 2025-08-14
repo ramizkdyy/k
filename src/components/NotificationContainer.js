@@ -7,13 +7,16 @@ import notificationService from "../services/notificationService";
 import customNotificationService from "../services/customNotificationService";
 
 const NotificationContainer = () => {
-  const { notifications, hideNotification, showNotification } =
+  const { notifications, hideNotification, showNotification, shouldFilterNotification } =
     useNotification();
 
   // Set up custom notification service
   useEffect(() => {
     customNotificationService.setShowNotification(showNotification);
-  }, [showNotification]);
+    if (shouldFilterNotification) {
+      customNotificationService.setFilterFunction(shouldFilterNotification);
+    }
+  }, [showNotification, shouldFilterNotification]);
 
   const handleNotificationPress = (data) => {
     // Handle navigation based on notification data
