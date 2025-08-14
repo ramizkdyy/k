@@ -39,7 +39,46 @@ const AnimatedNotification = ({
   const autoHideTimerRef = useRef(null);
   const isExitingRef = useRef(false);
 
-  const { title, message, profileImage, isOnline, data = {} } = notification;
+  const { title, message, profileImage, isOnline, data = {}, isUpdating } = notification;
+
+  // Content update animation values
+  const contentOpacity = useSharedValue(1);
+  const contentScale = useSharedValue(1);
+
+  // Handle content updates with smooth transition
+  useEffect(() => {
+    if (isUpdating) {
+      console.log("🔄 AnimatedNotification: Content updating, starting transition and restarting timer");
+      
+      // Clear existing timer when content updates
+      if (autoHideTimerRef.current) {
+        clearTimeout(autoHideTimerRef.current);
+        autoHideTimerRef.current = null;
+      }
+      
+      // Fade out and scale down slightly
+      contentOpacity.value = withTiming(0.7, { duration: 150 });
+      contentScale.value = withTiming(0.98, { duration: 150 });
+      
+      // Then fade back in and scale back up
+      setTimeout(() => {
+        contentOpacity.value = withTiming(1, { duration: 200 });
+        contentScale.value = withTiming(1, { duration: 200 });
+      }, 150);
+
+      // Restart the auto-hide timer with full duration after content update
+      setTimeout(() => {
+        if (!isExitingRef.current && !isDragging.value) {
+          console.log("⏰ AnimatedNotification: Restarting auto-hide timer after content update");
+          autoHideTimerRef.current = setTimeout(() => {
+            if (!isExitingRef.current && !isDragging.value) {
+              exitAnimation();
+            }
+          }, duration);
+        }
+      }, 350); // Wait for content transition to complete before starting timer
+    }
+  }, [isUpdating, title, message, profileImage, duration]);
 
   // Enhanced exit animation function
   const exitAnimation = (callback) => {
@@ -154,14 +193,14 @@ const AnimatedNotification = ({
       // Only vertical movement (up/down scrolling)
       let translationY = event.translationY;
       
-      // Add resistance for excessive movements
+      // Add resistance for excessive movements - more restrictive for downward movement
       const maxUpwardMovement = -150;
-      const maxDownwardMovement = 150;
+      const maxDownwardMovement = 60; // Reduced from 150 to 60 for more restrictive downward movement
       
       if (translationY < maxUpwardMovement) {
         translationY = maxUpwardMovement + (translationY - maxUpwardMovement) * 0.2;
       } else if (translationY > maxDownwardMovement) {
-        translationY = maxDownwardMovement + (translationY - maxDownwardMovement) * 0.2;
+        translationY = maxDownwardMovement + (translationY - maxDownwardMovement) * 0.1; // More resistance (0.1 instead of 0.2)
       }
       
       gestureTranslateY.value = translationY;
@@ -200,6 +239,14 @@ const AnimatedNotification = ({
         { scale: scale.value }
       ],
       opacity: opacity.value,
+    };
+  });
+
+  // Content update animation styles
+  const contentAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: contentOpacity.value,
+      transform: [{ scale: contentScale.value }],
     };
   });
 
@@ -265,59 +312,64 @@ const AnimatedNotification = ({
           }}
           activeOpacity={0.8}
         >
-          {/* Avatar/Icon */}
-          <View style={{ marginRight: 12 }}>
-            <View
-              style={{ width: 45, height: 45 }}
-              className="justify-center items-center rounded-full border border-gray-900"
-            >
-              {profileImage && profileImage !== "default_profile_image_url" ? (
-                <Image
-                  source={{ uri: profileImage }}
-                  className="w-full h-full rounded-full"
-                  resizeMode="cover"
-                  onError={(error) => {
-                    console.log("❌ Profile image load error:", error);
-                  }}
-                />
-              ) : (
-                <Text
-                  style={{ fontSize: 20 }}
-                  className="text-gray-900 font-bold"
-                >
-                  {title?.charAt(0)?.toUpperCase() || "P"}
-                </Text>
-              )}
-
-              {isOnline && (
-                <View
-                  style={{ width: 16, height: 16, bottom: -2, right: -2 }}
-                  className="absolute flex justify-center items-center rounded-full bg-white"
-                >
-                  <View
-                    style={{ width: 10, height: 10 }}
-                    className="flex justify-center items-center rounded-full bg-green-500"
+          {/* Animated Content Container */}
+          <Animated.View 
+            style={[{ flexDirection: 'row', alignItems: 'center', flex: 1 }, contentAnimatedStyle]}
+          >
+            {/* Avatar/Icon */}
+            <View style={{ marginRight: 12 }}>
+              <View
+                style={{ width: 45, height: 45 }}
+                className="justify-center items-center rounded-full border border-gray-900"
+              >
+                {profileImage && profileImage !== "default_profile_image_url" ? (
+                  <Image
+                    source={{ uri: profileImage }}
+                    className="w-full h-full rounded-full"
+                    resizeMode="cover"
+                    onError={(error) => {
+                      console.log("❌ Profile image load error:", error);
+                    }}
                   />
-                </View>
-              )}
+                ) : (
+                  <Text
+                    style={{ fontSize: 20 }}
+                    className="text-gray-900 font-bold"
+                  >
+                    {title?.charAt(0)?.toUpperCase() || "P"}
+                  </Text>
+                )}
+
+                {isOnline && (
+                  <View
+                    style={{ width: 16, height: 16, bottom: -2, right: -2 }}
+                    className="absolute flex justify-center items-center rounded-full bg-white"
+                  >
+                    <View
+                      style={{ width: 10, height: 10 }}
+                      className="flex justify-center items-center rounded-full bg-green-500"
+                    />
+                  </View>
+                )}
+              </View>
             </View>
-          </View>
 
-          {/* Content */}
-          <View className="flex-1">
-            {/* Sender Name */}
-            <Text
-              className="font-semibold text-gray-900 text-base"
-              numberOfLines={1}
-            >
-              {title}
-            </Text>
+            {/* Content */}
+            <View className="flex-1">
+              {/* Sender Name */}
+              <Text
+                className="font-semibold text-gray-900 text-base"
+                numberOfLines={1}
+              >
+                {title}
+              </Text>
 
-            {/* Message Content */}
-            <Text className="text-gray-700 text-base" numberOfLines={2}>
-              {message}
-            </Text>
-          </View>
+              {/* Message Content */}
+              <Text className="text-gray-700 text-base" numberOfLines={2}>
+                {message}
+              </Text>
+            </View>
+          </Animated.View>
 
           {/* Close Button */}
           <TouchableOpacity

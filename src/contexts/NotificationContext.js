@@ -15,48 +15,68 @@ export const NotificationProvider = ({ children }) => {
 
   const showNotification = useCallback(
     (notification) => {
-      // Create unique key to prevent duplicates
-      const uniqueKey = `${notification.title}-${notification.message}-${
-        notification.data?.chatId || ""
-      }`;
-
-      // Check if similar notification already exists (within last 2 seconds)
       const now = Date.now();
-      const isDuplicate = notifications.some((existing) => {
-        const existingKey = `${existing.title}-${existing.message}-${
-          existing.data?.chatId || ""
-        }`;
-        return existingKey === uniqueKey && now - existing.timestamp < 2000;
-      });
 
-      if (isDuplicate) {
-        console.log("Duplicate notification prevented:", uniqueKey);
-        return null;
+      // Check if there's already a visible notification
+      if (notifications.length > 0) {
+        console.log("🔄 Updating existing notification content");
+        
+        // Update the existing notification with new content
+        const existingNotification = notifications[0]; // Take the first (most recent) notification
+        const updatedNotification = {
+          ...existingNotification,
+          title: notification.title,
+          message: notification.message,
+          profileImage: notification.profileImage,
+          isOnline: notification.isOnline,
+          data: notification.data,
+          duration: notification.duration || 4000,
+          timestamp: now,
+          isUpdating: true, // Flag to trigger content update animation
+        };
+
+        setNotifications([updatedNotification]);
+
+        console.log("📱 NotificationProvider: Updated existing notification:", {
+          id: existingNotification.id,
+          newTitle: notification.title,
+          newMessage: notification.message,
+          timestamp: new Date(now).toISOString(),
+        });
+
+        // Reset the updating flag after a brief delay
+        setTimeout(() => {
+          setNotifications((prev) => 
+            prev.map((notif) => ({ ...notif, isUpdating: false }))
+          );
+        }, 100);
+
+        return existingNotification.id;
+      } else {
+        // No existing notification, create new one
+        const id = Date.now().toString();
+        const newNotification = {
+          id,
+          ...notification,
+          timestamp: now,
+          isUpdating: false,
+        };
+
+        console.log("📱 NotificationProvider: Adding new notification to state:", {
+          id,
+          title: notification.title,
+          duration: notification.duration,
+          timestamp: new Date(now).toISOString(),
+        });
+
+        setNotifications([newNotification]);
+
+        console.log(
+          "⏱️ NotificationProvider: No auto-hide timer set, component will handle its own timing"
+        );
+
+        return id;
       }
-
-      const id = Date.now().toString();
-      const newNotification = {
-        id,
-        ...notification,
-        timestamp: now,
-      };
-
-      console.log("📱 NotificationProvider: Adding notification to state:", {
-        id,
-        title: notification.title,
-        duration: notification.duration,
-        timestamp: new Date(now).toISOString(),
-      });
-
-      setNotifications((prev) => [...prev, newNotification]);
-
-      // ✅ REMOVED: Auto-hide timer - let AnimatedNotification handle its own timing
-      // Timer'ı kaldırdık, sadece AnimatedNotification kendi exit animasyonunu kontrol edecek
-      console.log(
-        "⏱️ NotificationProvider: No auto-hide timer set, component will handle its own timing"
-      );
-
-      return id;
     },
     [notifications]
   );
