@@ -9,7 +9,9 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
+  runOnJS,
 } from "react-native-reanimated";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -28,6 +30,11 @@ const AnimatedNotification = ({
   const opacity = useSharedValue(0);
   const scale = useSharedValue(0.9);
 
+  // Gesture state
+  const gestureTranslateY = useSharedValue(0);
+  const context = useSharedValue({ y: 0 });
+  const isDragging = useSharedValue(false);
+
   // Auto-hide timer ref
   const autoHideTimerRef = useRef(null);
   const isExitingRef = useRef(false);
@@ -45,7 +52,7 @@ const AnimatedNotification = ({
       autoHideTimerRef.current = null;
     }
 
-    // Smooth exit animation - yukarı doğru yavaşça kayma
+    // Default upward exit animation
     translateY.value = withSpring(-250, {
       damping: 25,
       stiffness: 90,
@@ -53,7 +60,7 @@ const AnimatedNotification = ({
     });
 
     opacity.value = withTiming(0, {
-      duration: 800,
+      duration: 600,
     });
 
     scale.value = withSpring(0.85, {
@@ -66,7 +73,7 @@ const AnimatedNotification = ({
     setTimeout(() => {
       callback?.();
       onDismiss?.(notification.id);
-    }, 900);
+    }, 700);
   };
 
   // Enhanced enter animation
@@ -119,12 +126,79 @@ const AnimatedNotification = ({
     };
   }, [index, insets.top, duration]); // duration dependency eklendi
 
-  // No gesture interactions - notification only auto-hides
+  // Helper functions for timer management
+  const clearTimer = () => {
+    if (autoHideTimerRef.current) {
+      clearTimeout(autoHideTimerRef.current);
+      autoHideTimerRef.current = null;
+    }
+  };
+
+  const restartTimer = () => {
+    if (!isExitingRef.current) {
+      autoHideTimerRef.current = setTimeout(() => {
+        if (!isExitingRef.current && !isDragging.value) {
+          exitAnimation();
+        }
+      }, duration * 0.8);
+    }
+  };
+
+  // Gesture handlers for vertical scrolling only
+  const panGesture = Gesture.Pan()
+    .onStart(() => {
+      isDragging.value = true;
+      runOnJS(clearTimer)();
+    })
+    .onUpdate((event) => {
+      // Only vertical movement (up/down scrolling)
+      let translationY = event.translationY;
+      
+      // Add resistance for excessive movements
+      const maxUpwardMovement = -150;
+      const maxDownwardMovement = 150;
+      
+      if (translationY < maxUpwardMovement) {
+        translationY = maxUpwardMovement + (translationY - maxUpwardMovement) * 0.2;
+      } else if (translationY > maxDownwardMovement) {
+        translationY = maxDownwardMovement + (translationY - maxDownwardMovement) * 0.2;
+      }
+      
+      gestureTranslateY.value = translationY;
+    })
+    .onEnd((event) => {
+      isDragging.value = false;
+      
+      const verticalVelocity = event.velocityY;
+      const verticalTranslation = event.translationY;
+      
+      // Check for upward swipe to dismiss
+      const shouldDismissUpward = 
+        verticalTranslation < -80 || 
+        verticalVelocity < -800;
+      
+      if (shouldDismissUpward) {
+        // Upward swipe dismiss
+        runOnJS(exitAnimation)();
+      } else {
+        // Return to original position
+        gestureTranslateY.value = withSpring(0, {
+          damping: 20,
+          stiffness: 150,
+          mass: 1,
+        });
+        
+        runOnJS(restartTimer)();
+      }
+    });
 
   // Animated styles
   const animatedStyle = useAnimatedStyle(() => {
     return {
-      transform: [{ translateY: translateY.value }, { scale: scale.value }],
+      transform: [
+        { translateY: translateY.value + gestureTranslateY.value },
+        { scale: scale.value }
+      ],
       opacity: opacity.value,
     };
   });
@@ -147,21 +221,24 @@ const AnimatedNotification = ({
         animatedStyle,
       ]}
     >
-      <BlurView
-        intensity={80}
-        tint="regular"
-        style={{
-          width: "100%",
-          minHeight: 70,
-          borderRadius: 100,
-          overflow: "hidden",
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.15,
-          shadowRadius: 12,
-          elevation: 8,
-        }}
-      >
+      <GestureDetector gesture={panGesture}>
+        <BlurView
+          intensity={80}
+          tint="regular"
+          style={{
+            width: "100%",
+            minHeight: 70,
+            borderRadius: 100,
+            overflow: "hidden",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.15,
+            shadowRadius: 12,
+            elevation: 8,
+            borderWidth: 0.5,
+            borderColor: "rgba(255,255,255,0.2)",
+          }}
+        >
         <TouchableOpacity
           onPress={() => {
             if (data?.chatId) {
@@ -252,6 +329,7 @@ const AnimatedNotification = ({
           </TouchableOpacity>
         </TouchableOpacity>
       </BlurView>
+      </GestureDetector>
     </Animated.View>
   );
 };
