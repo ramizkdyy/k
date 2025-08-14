@@ -11,6 +11,7 @@ import profileReducer from "./slices/profileSlice";
 import expectationReducer from "./slices/expectationSlice";
 import { apiSlice } from "./api/apiSlice";
 import { chatApiSlice } from "./api/chatApiSlice"; // Chat API slice eklendi
+import searchReducer from "./slices/searchSlice";
 
 // Initialize empty initial state for development
 const initialState = {
@@ -66,12 +67,69 @@ const initialState = {
     error: null,
     expectationFormData: null,
   },
+  search: {
+    searchResults: [],
+    isLoading: false,
+    error: null,
+    currentSearchFilters: {
+      il: "",
+      ilce: [],
+      mahalle: [],
+      latitude: null,
+      longitude: null,
+      maxDistance: null,
+      minKiraFiyati: null,
+      maxKiraFiyati: null,
+      minDepozito: null,
+      maxDepozito: null,
+      paraBirimi: "TRY",
+      minBrutMetreKare: null,
+      maxBrutMetreKare: null,
+      minNetMetreKare: null,
+      maxNetMetreKare: null,
+      odaSayilari: [],
+      minBinaYasi: null,
+      maxBinaYasi: null,
+      minKat: null,
+      maxKat: null,
+      minToplamKat: null,
+      maxToplamKat: null,
+      propertyTypes: [],
+      isitmaTipleri: [],
+      minBanyoSayisi: null,
+      maxBanyoSayisi: null,
+      minYatakOdasiSayisi: null,
+      maxYatakOdasiSayisi: null,
+      petPolicies: [],
+      studentPolicies: [],
+      smokingPolicies: [],
+      maintenanceFeeResponsibilities: [],
+      balkon: null,
+      asansor: null,
+      otopark: null,
+      esyali: null,
+      siteIcerisinde: null,
+      takas: null,
+      minKiralamaSuresi: null,
+      maxKiralamaSuresi: null,
+      rentalPeriods: [],
+      searchKeyword: "",
+      siteAdi: "",
+      statuses: [],
+      sortBy: "CreatedDate",
+      page: 1,
+      pageSize: 20
+    },
+    totalResults: 0,
+    totalPages: 0,
+    hasNextPage: false,
+  },
 };
 
 const persistConfig = {
   key: "root",
   storage: AsyncStorage,
-  whitelist: ["auth", "profiles", "expectations"],
+  whitelist: ["auth", "profiles", "expectations", "search"],
   // Chat verilerini persist etmemek daha iyi - real-time olduğu için
   blacklist: [apiSlice.reducerPath, chatApiSlice.reducerPath],
 };
@@ -82,6 +140,7 @@ const rootReducer = combineReducers({
   offers: offerReducer,
   profiles: profileReducer,
   expectations: expectationReducer,
+  search: searchReducer,
   [apiSlice.reducerPath]: apiSlice.reducer,
   [chatApiSlice.reducerPath]: chatApiSlice.reducer, // Chat API reducer eklendi
 });

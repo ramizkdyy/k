@@ -98,7 +98,6 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from "react-native";
-import PropertiesFilterScreen from "../screens/PropertiesFilterScreen";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -891,11 +890,7 @@ const MainStackNavigator = () => {
         component={ChatDetailScreen}
         options={{ headerShown: false }}
       />
-      <RootStack.Screen
-        name="PropertiesFilter"
-        component={PropertiesFilterScreen}
-        options={{ headerShown: false }}
-      />
+
       <RootStack.Screen
         name="AllNearbyProperties"
         component={AllNearbyPropertiesScreen}

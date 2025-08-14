@@ -28,6 +28,7 @@ export const apiSlice = createApi({
     "Matching",
     "Health",
     "Notification",
+    "SearchFilters",
   ],
   endpoints: (builder) => ({
     // User endpoints
@@ -373,9 +374,8 @@ export const apiSlice = createApi({
       // Pagination için cache merge stratejisi
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         const { landlordUserId, minMatchScore, propertyId } = queryArgs;
-        return `${endpointName}-${landlordUserId}-${minMatchScore}-${
-          propertyId || "all"
-        }`;
+        return `${endpointName}-${landlordUserId}-${minMatchScore}-${propertyId || "all"
+          }`;
       },
       merge: (currentCache, newItems, { arg }) => {
         if (arg.page === 1) {
@@ -418,9 +418,8 @@ export const apiSlice = createApi({
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         const { landlordUserId, minMatchScore, propertyId, includeFallback } =
           queryArgs;
-        return `${endpointName}-${landlordUserId}-${minMatchScore}-${
-          propertyId || "all"
-        }-${includeFallback}`;
+        return `${endpointName}-${landlordUserId}-${minMatchScore}-${propertyId || "all"
+          }-${includeFallback}`;
       },
       merge: (currentCache, newItems, { arg }) => {
         if (arg.page === 1) {
@@ -898,9 +897,8 @@ export const apiSlice = createApi({
       // Pagination için cache merge stratejisi
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         const { LandLordUserId, minSimilarityScore } = queryArgs;
-        return `${endpointName}-${
-          LandLordUserId || "all"
-        }-${minSimilarityScore}`;
+        return `${endpointName}-${LandLordUserId || "all"
+          }-${minSimilarityScore}`;
       },
       merge: (currentCache, newItems, { arg }) => {
         if (arg.page === 1) {
@@ -951,6 +949,25 @@ export const apiSlice = createApi({
       forceRefetch({ currentArg, previousArg }) {
         return currentArg !== previousArg;
       },
+    }),
+
+    // GET /api/PostSearch/search - Filtreleri almak için (eğer gerekirse)
+    getSearchFilters: builder.query({
+      query: (params) => ({
+        url: "/api/PostSearch/search",
+        method: "GET",
+        params,
+      }),
+      providesTags: [{ type: "SearchFilters", id: "LIST" }],
+    }),
+
+    // Hızlı arama için basit endpoint (eğer varsa)
+    quickSearch: builder.query({
+      query: (keyword) => ({
+        url: `/api/PostSearch/quick?keyword=${encodeURIComponent(keyword)}`,
+        method: "GET",
+      }),
+      providesTags: [{ type: "Post", id: "QUICK_SEARCH" }],
     }),
   }),
 });
@@ -1063,4 +1080,8 @@ export const {
 
   // YENİ: TikTok Feed hook'u ekle
   useGetTikTokFeedQuery,
+
+  useSearchPostsMutation,
+  useGetSearchFiltersQuery,
+  useQuickSearchQuery,
 } = apiSlice;

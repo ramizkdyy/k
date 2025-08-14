@@ -33,40 +33,6 @@ import { useFypCacheTracker } from "../hooks/useFypCacheTracker"; // YENİ IMPOR
 
 
 const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
-
-  const { shouldUseCache, resetCache, getCacheInfo } = useFypCacheTracker();
-
-  // Match Score gösterim fonksiyonu
-  const getMatchScoreInfo = (score) => {
-    if (score >= 80)
-      return {
-        level: "excellent",
-        color: "#86efac",
-        text: "Mükemmel",
-        bgColor: "#dcfce7",
-      };
-    if (score >= 60)
-      return {
-        level: "good",
-        color: "#9cf0ba",
-        text: "Çok İyi",
-        bgColor: "#dbeafe",
-      };
-    if (score >= 40)
-      return {
-        level: "medium",
-        color: "#f59e0b",
-        text: "İyi",
-        bgColor: "#fef3c7",
-      };
-    return {
-      level: "weak",
-      color: "#ef4444",
-      text: "Orta",
-      bgColor: "#fee2e2",
-    };
-  };
-
   // Match Score Bar Component
   const MatchScoreBar = ({ matchScore, showBar = false, size = "sm" }) => {
     const progressAnim = useRef(new Animated.Value(0)).current;
@@ -185,11 +151,67 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
       </View>
     );
   };
+
+
+  const { cacheEnabled, calculateCacheStatus, resetCache, getCacheInfo } = useFypCacheTracker();
+
+  // Match Score gösterim fonksiyonu
+  const getMatchScoreInfo = (score) => {
+    if (score >= 80)
+      return {
+        level: "excellent",
+        color: "#86efac",
+        text: "Mükemmel",
+        bgColor: "#dcfce7",
+      };
+    if (score >= 60)
+      return {
+        level: "good",
+        color: "#9cf0ba",
+        text: "Çok İyi",
+        bgColor: "#dbeafe",
+      };
+    if (score >= 40)
+      return {
+        level: "medium",
+        color: "#f59e0b",
+        text: "İyi",
+        bgColor: "#fef3c7",
+      };
+    return {
+      level: "weak",
+      color: "#ef4444",
+      text: "Orta",
+      bgColor: "#fee2e2",
+    };
+  };
+
+
   const currentUser = useSelector(selectCurrentUser);
   const userRole = useSelector(selectUserRole);
   const [userLocation, setUserLocation] = useState(null);
   const [locationLoading, setLocationLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [shouldCache, setShouldCache] = useState(false);
+
+
+  // İlk mount'ta ve belirli aralıklarla cache durumunu kontrol et
+  useEffect(() => {
+    // İlk kontrolü yap
+    const status = calculateCacheStatus();
+    setShouldCache(status);
+
+    // Her 5 saniyede bir cache durumunu kontrol et
+    const interval = setInterval(() => {
+      const newStatus = calculateCacheStatus();
+      setShouldCache(newStatus);
+
+      // Debug için
+      console.log('📊 Cache durumu kontrolü:', getCacheInfo());
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [calculateCacheStatus, getCacheInfo]);
 
   // Get user's current location
   useEffect(() => {
@@ -242,12 +264,12 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
       userId: currentUser?.id,
       latitude: userLocation?.latitude,
       longitude: userLocation?.longitude,
-      isCached: shouldUseCache(), // CACHE TRACKER KULLAN
+      isCached: shouldCache, // CACHE TRACKER KULLAN
     },
     {
       skip: !userLocation || !currentUser?.id,
-      refetchOnMountOrArgChange: true,
-      refetchOnFocus: true,
+      refetchOnMountOrArgChange: false,
+      refetchOnFocus: false,
     }
   );
 
@@ -298,6 +320,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
     try {
       // Cache'i reset et çünkü kullanıcı manuel refresh yapıyor
       resetCache();
+      setShouldCache(false); // Cache state'ini hemen güncelle
 
       const result = await refetch();
       console.log("Refetch Result:", result);
@@ -554,8 +577,11 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
             userRole: "KIRACI"
           });
         } else {
-          // Kiracı ev sahibinin ilanına gidiyor
-          navigation.navigate("PostDetail", { postId: item.propertyId });
+          // ✅ Kiracı da ev sahibi profiline gitsin
+          navigation.navigate("UserProfile", {
+            userId: item.landlordId || item.userId, // landlordId varsa onu kullan, yoksa userId
+            userRole: "EVSAHIBI"
+          });
         }
       }}
     >
@@ -585,7 +611,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
           </Text>
           <View className="flex flex-row items-center gap-1">
             <Text className="text-gray-500" style={{ fontSize: 12 }}>
-              {userRole === "EVSAHIBI" ? "Profili görüntüle" : "İlanı görüntüle"}
+              Profili Görüntüle
             </Text>
             <FontAwesomeIcon size={12} color="#dee0ea" icon={faChevronRight} />
           </View>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -37,6 +37,10 @@ import {
 import { faSearch } from "@fortawesome/pro-solid-svg-icons";
 import { BlurView } from "expo-blur";
 import { faEdit, faTrash } from "@fortawesome/pro-light-svg-icons";
+import PropertiesFilterModal from "../modals/PropertiesFilterModal";
+import { useSearchPostsMutation } from '../redux/api/searchApiSlice';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Animated } from "react-native";
 
 // Logger utility
 const Logger = {
@@ -58,6 +62,10 @@ const PostsScreen = ({ navigation }) => {
   const currentUser = useSelector(selectCurrentUser);
   const filters = useSelector(selectPostFilters);
   const userPosts = useSelector(selectAllUserPosts);
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+
+  const [searchPosts] = useSearchPostsMutation();
+
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -65,6 +73,43 @@ const PostsScreen = ({ navigation }) => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [allPostsData, setAllPostsData] = useState([]); // Tüm yüklenen postları tutacak
   const PAGE_SIZE = 10;
+
+  const [hasActiveFilters, setHasActiveFilters] = useState(false);
+  const [activeFilterData, setActiveFilterData] = useState(null);
+  const [filterMetadata, setFilterMetadata] = useState(null);
+
+  // YENİ: Animation için ekle
+  const insets = useSafeAreaInsets();
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  // Animation constants
+  const HEADER_HEIGHT = insets.top + 30; // iOS standart navigation bar height
+  const SEARCH_BAR_HEIGHT = 80; // Search bar'ın yüksekliği
+
+  // Animation interpolations
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [0, SEARCH_BAR_HEIGHT - 30, SEARCH_BAR_HEIGHT],
+    outputRange: [0, 0, 1],
+    extrapolate: 'clamp'
+  });
+
+  const headerContentOpacity = scrollY.interpolate({
+    inputRange: [0, SEARCH_BAR_HEIGHT - 20, SEARCH_BAR_HEIGHT],
+    outputRange: [0, 0, 1],
+    extrapolate: 'clamp'
+  });
+
+  const searchBarOpacity = scrollY.interpolate({
+    inputRange: [0, SEARCH_BAR_HEIGHT / 2],
+    outputRange: [1, 0],
+    extrapolate: 'clamp'
+  });
+
+  // Scroll handler
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    { useNativeDriver: false }
+  );
 
   // Log component mount
   useEffect(() => {
@@ -195,14 +240,74 @@ const PostsScreen = ({ navigation }) => {
       setIsLoadingMore(false);
     }
   }, [paginatedPostsResponse, userRole, currentPage]);
+
+
   const handleFilterPress = () => {
-    navigation.navigate('PropertiesFilter', {
-      currentFilters: filters,
-      userRole: userRole,
-    });
+    Logger.event("filter_button_pressed");
+    setIsFilterModalVisible(true);
   };
 
-  // Refresh when screen is focused
+  // 4. Modal handlers ekleyin
+  const handleFilterModalClose = () => {
+    Logger.event("filter_modal_closed");
+    setIsFilterModalVisible(false);
+  };
+
+  const handleFilterModalApply = (appliedFilters, searchResult) => {
+    // Mevcut kodların üstüne BU SATIRLARI EKLE:
+    console.log('=== FILTER MODAL APPLY DEBUG ===');
+    console.log('Applied filters:', appliedFilters);
+    console.log('Search result:', searchResult);
+
+    Logger.event("filter_modal_applied", {
+      filtersCount: Object.keys(appliedFilters).length,
+      resultsCount: searchResult?.posts?.length || 0
+    });
+
+    dispatch(setPostFilters(appliedFilters));
+
+    const hasFilters = Object.values(appliedFilters).some(
+      value => value !== null && value !== "" &&
+        (Array.isArray(value) ? value.length > 0 : true)
+    );
+    setHasActiveFilters(hasFilters);
+    setActiveFilterData(hasFilters ? appliedFilters : null);
+
+    setCurrentPage(1);
+
+    if (searchResult) {
+      let postsData = [];
+
+      if (searchResult.posts && Array.isArray(searchResult.posts)) {
+        postsData = searchResult.posts;
+      }
+
+      const validPosts = postsData.filter(post => {
+        return post && post.postId &&
+          (typeof post.postId === 'number' || typeof post.postId === 'string');
+      });
+
+      setAllPostsData(validPosts);
+
+      // YENİ EKLENEN: Metadata'yı kaydet
+      if (searchResult.metadata) {
+        setFilterMetadata(searchResult.metadata);
+        setHasNextPage(searchResult.metadata.hasNextPage || false);
+      } else {
+        setFilterMetadata(null);
+        setHasNextPage(false);
+      }
+
+    } else {
+      setAllPostsData([]);
+      setFilterMetadata(null); // YENİ EKLENEN
+      setHasNextPage(false);
+    }
+
+    setIsFilterModalVisible(false);
+  };
+
+  // 7. useFocusEffect'i güncelle
   useFocusEffect(
     useCallback(() => {
       Logger.info(COMPONENT_NAME, "Screen focused", { userRole });
@@ -210,31 +315,64 @@ const PostsScreen = ({ navigation }) => {
       // Reset pagination when screen is focused
       setCurrentPage(1);
       setHasNextPage(true);
-      setAllPostsData([]); // Önceki veriyi temizle
 
-      if (userRole === "EVSAHIBI") {
-        refetchLandlordListings();
-      } else {
-        refetchAllPosts();
+      // Filtre yoksa veriyi temizle ve yeniden yükle
+      if (!hasActiveFilters) {
+        setAllPostsData([]);
+        setFilterMetadata(null); // YENİ: Metadata'yı temizle
+
+        if (userRole === "EVSAHIBI") {
+          refetchLandlordListings();
+        } else {
+          refetchAllPosts();
+        }
       }
-    }, [userRole, refetchLandlordListings, refetchAllPosts])
+    }, [userRole, hasActiveFilters, refetchLandlordListings, refetchAllPosts])
   );
 
-  // Handle pull-to-refresh
   const onRefresh = async () => {
-    Logger.event("refresh_posts_list", { userRole });
+    Logger.event("refresh_posts_list", { userRole, hasActiveFilters });
 
     setRefreshing(true);
     setCurrentPage(1);
     setHasNextPage(true);
-    setAllPostsData([]); // Veriyi temizle
+    setAllPostsData([]);
 
     try {
       if (userRole === "EVSAHIBI") {
         await refetchLandlordListings();
-      } else {
-        await refetchAllPosts();
+      } else if (userRole === "KIRACI") {
+        if (hasActiveFilters && activeFilterData) {
+          // FİLTRE VARSA: Aynı filtreyi tekrar uygula
+          try {
+            const searchResult = await searchPosts(activeFilterData).unwrap();
+
+            if (searchResult && searchResult.posts) {
+              const validPosts = searchResult.posts.filter(post =>
+                post && post.postId
+              );
+              setAllPostsData(validPosts);
+
+              if (searchResult.metadata) {
+                setFilterMetadata(searchResult.metadata);
+                setHasNextPage(searchResult.metadata.hasNextPage || false);
+              }
+            }
+          } catch (filterError) {
+            console.error('Filter refresh error:', filterError);
+            // Hata olursa normal listeye dön
+            setHasActiveFilters(false);
+            setActiveFilterData(null);
+            setFilterMetadata(null);
+            dispatch(clearPostFilters());
+            await refetchAllPosts();
+          }
+        } else {
+          // FİLTRE YOKSA: Normal liste yenile
+          await refetchAllPosts();
+        }
       }
+
       Logger.info(COMPONENT_NAME, "Refresh completed");
     } catch (error) {
       Logger.error(COMPONENT_NAME, "Refresh failed", error);
@@ -243,8 +381,14 @@ const PostsScreen = ({ navigation }) => {
     }
   };
 
-  // Load more posts function
+  // 5. loadMorePosts fonksiyonunu güncelle
   const loadMorePosts = useCallback(() => {
+    // Filtre aktifse daha fazla yükleme yapma
+    if (hasActiveFilters) {
+      Logger.info(COMPONENT_NAME, "Skipping load more - filters are active");
+      return;
+    }
+
     if (
       userRole !== "KIRACI" ||
       !hasNextPage ||
@@ -258,7 +402,8 @@ const PostsScreen = ({ navigation }) => {
 
     setIsLoadingMore(true);
     setCurrentPage((prevPage) => prevPage + 1);
-  }, [userRole, hasNextPage, isLoadingMore, isFetchingAllPosts, currentPage]);
+  }, [userRole, hasNextPage, isLoadingMore, isFetchingAllPosts, currentPage, hasActiveFilters]);
+
 
   // Apply filters
   const applyFilters = () => {
@@ -284,13 +429,15 @@ const PostsScreen = ({ navigation }) => {
     setIsFilterVisible(false);
   };
 
-  // Reset filters function
   const resetFilters = () => {
     Logger.event("reset_filters");
 
     setCurrentPage(1);
     setHasNextPage(true);
     setAllPostsData([]);
+    setHasActiveFilters(false);
+    setActiveFilterData(null);
+    setFilterMetadata(null); // YENİ: Filter metadata'sını temizle
 
     const emptyFilters = {
       location: "",
@@ -307,8 +454,12 @@ const PostsScreen = ({ navigation }) => {
     setLocalFilters(emptyFilters);
     dispatch(clearPostFilters());
     setIsFilterVisible(false);
-  };
 
+    // Filtreleri temizledikten sonra veriyi yeniden yükle
+    if (userRole === "KIRACI") {
+      refetchAllPosts();
+    }
+  };
   // Handle search
   useEffect(() => {
     if (searchQuery) {
@@ -393,120 +544,201 @@ const PostsScreen = ({ navigation }) => {
     navigation.navigate("CreatePost");
   };
 
+
+  // 2. getFilteredPosts fonksiyonunu şu şekilde değiştirin:
   const getFilteredPosts = () => {
+    console.log('=== GET FILTERED POSTS DEBUG ===');
+    console.log('User role:', userRole);
+    console.log('Has active filters:', hasActiveFilters);
+    console.log('All posts data length:', allPostsData?.length || 0);
+    console.log('Search query:', searchQuery);
+
     let filteredPosts = [];
 
     // Get the appropriate posts based on user role
     if (userRole === "EVSAHIBI") {
       filteredPosts = landlordListingsData?.result || [];
+      console.log('Using landlord listings:', filteredPosts.length);
     } else {
       // For tenants, use accumulated posts data
       filteredPosts = allPostsData || [];
+      console.log('Using all posts data:', filteredPosts.length);
     }
 
-    // DUPLICATE POST KONTROLÜ EKLENDİ
+    // İlk 2 post'u log'la
+    console.log('Raw filtered posts sample:', filteredPosts.slice(0, 2));
+
+    // ✅ NULL kontrolü - daha esnek hale getir
+    const validPosts = filteredPosts.filter(post => {
+      const isValid = post &&
+        post.postId &&
+        (typeof post.postId === 'number' || typeof post.postId === 'string');
+
+      if (!isValid && post) {
+        console.log('Filtering out invalid post:', { postId: post.postId, type: typeof post.postId });
+      }
+
+      return isValid;
+    });
+
+    console.log(`Valid posts after null check: ${validPosts.length}`);
+
+    if (hasActiveFilters) {
+      console.log('Processing with active filters');
+
+      // Duplicate kontrolü
+      const uniquePosts = [];
+      const seenPostIds = new Set();
+
+      validPosts.forEach((post) => {
+        if (post && post.postId && !seenPostIds.has(post.postId)) {
+          seenPostIds.add(post.postId);
+          uniquePosts.push(post);
+        }
+      });
+
+      console.log(`Unique posts: ${uniquePosts.length}`);
+
+      // Search query kontrolü
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const searchFiltered = uniquePosts.filter(
+          (post) =>
+            (post.ilanBasligi &&
+              post.ilanBasligi.toLowerCase().includes(query)) ||
+            (post.il && post.il.toLowerCase().includes(query)) ||
+            (post.ilce && post.ilce.toLowerCase().includes(query))
+        );
+
+        console.log(`After search filter: ${searchFiltered.length}`);
+        return searchFiltered;
+      }
+
+      console.log(`Final result (with filters): ${uniquePosts.length}`);
+      return uniquePosts;
+    }
+
+    // Normal flow (no active filters)
+    console.log('Processing without active filters');
+
     const uniquePosts = [];
     const seenPostIds = new Set();
 
-    filteredPosts.forEach((post) => {
+    validPosts.forEach((post) => {
       if (post && post.postId && !seenPostIds.has(post.postId)) {
         seenPostIds.add(post.postId);
         uniquePosts.push(post);
       }
     });
 
-    filteredPosts = uniquePosts;
+    let finalPosts = uniquePosts;
 
     // Search query filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filteredPosts = filteredPosts.filter(
+      finalPosts = finalPosts.filter(
         (post) =>
           (post.ilanBasligi &&
             post.ilanBasligi.toLowerCase().includes(query)) ||
           (post.il && post.il.toLowerCase().includes(query)) ||
           (post.ilce && post.ilce.toLowerCase().includes(query))
       );
+
+      console.log(`After search filter: ${finalPosts.length}`);
     }
 
-    // Location filter
-    if (filters.location) {
-      const location = filters.location.toLowerCase();
-      filteredPosts = filteredPosts.filter(
-        (post) =>
-          (post.il && post.il.toLowerCase().includes(location)) ||
-          (post.ilce && post.ilce.toLowerCase().includes(location))
-      );
-    }
-
-    // Price range filter
-    if (filters.priceMin || filters.priceMax) {
-      filteredPosts = filteredPosts.filter((post) => {
-        const price = post.kiraFiyati || 0;
-        const minPrice = filters.priceMin || 0;
-        const maxPrice = filters.priceMax || Infinity;
-        return price >= minPrice && price <= maxPrice;
-      });
-    }
-
-    // Room count filter
-    if (filters.rooms) {
-      filteredPosts = filteredPosts.filter((post) => {
-        if (filters.rooms === "5+") {
-          return (post.odaSayisi || 0) >= 5;
-        }
-        return String(post.odaSayisi) === filters.rooms;
-      });
-    }
-
-    // Property type filter
-    if (filters.propertyType) {
-      filteredPosts = filteredPosts.filter(
-        (post) =>
-          post.propertyType &&
-          post.propertyType.toLowerCase() === filters.propertyType.toLowerCase()
-      );
-    }
-
-    // Features filter
-    if (filters.features && Object.keys(filters.features).length > 0) {
-      filteredPosts = filteredPosts.filter((post) => {
-        if (filters.features.furnished && !post.esyali) return false;
-        if (filters.features.parking && !post.otopark) return false;
-        if (filters.features.elevator && !post.asansor) return false;
-        if (filters.features.balcony && !post.balkon) return false;
-        return true;
-      });
-    }
-
-    // Status filter (for landlords)
-    if (userRole === "EVSAHIBI" && filters.status !== null) {
-      filteredPosts = filteredPosts.filter(
-        (post) => post.status === filters.status
-      );
-    }
-
-    // Simple sorting
-    if (filters.sortBy) {
-      filteredPosts = [...filteredPosts].sort((a, b) => {
-        switch (filters.sortBy) {
-          case "newest":
-            return new Date(b.createdDate || 0) - new Date(a.createdDate || 0);
-          case "priceLow":
-            return (a.kiraFiyati || 0) - (b.kiraFiyati || 0);
-          case "priceHigh":
-            return (b.kiraFiyati || 0) - (a.kiraFiyati || 0);
-          default:
-            return 0;
-        }
-      });
-    }
-
-    return filteredPosts;
+    console.log(`Final result (no filters): ${finalPosts.length}`);
+    return finalPosts;
   };
 
-  // Render post item - Optimized for performance
-  // renderPostItem fonksiyonu - TAM HALİ (Title kısmı düzeltildi)
+  const renderAnimatedHeader = () => (
+    <Animated.View
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: HEADER_HEIGHT, // +30 kaldırıldı
+        zIndex: 999,
+        opacity: headerOpacity,
+      }}
+    >
+      {/* BlurView yerine şeffaf background - daha güvenilir */}
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: 'rgba(255, 255, 255, 0.85)', // Şeffaf beyaz
+          backdropFilter: 'blur(10px)', // CSS blur (web için)
+        }}
+      >
+        {/* Status bar alanı */}
+        <View
+          style={{
+            height: insets.top,
+            backgroundColor: 'transparent'
+          }}
+        />
+
+        {/* Header content alanı */}
+        <Animated.View
+          style={{
+            flex: 1, // height: 50 yerine flex
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 16,
+            backgroundColor: 'transparent',
+            opacity: headerContentOpacity,
+          }}
+        >
+          {/* Sol taraf - Title ve ilan sayısı */}
+          <View className="flex-col">
+            <Text style={{ fontSize: 18, fontWeight: '600', color: '#111827' }}>
+              {userRole === "EVSAHIBI" ? "Mülklerim" : "İlanlar"}
+            </Text>
+            {/* İlan sayısı bilgisi */}
+            {userRole === "KIRACI" && (
+              <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                {hasActiveFilters && filterMetadata ? (
+                  `${filterMetadata.totalCount || 0} ilanın ${allPostsData.length} tanesi`
+                ) : (
+                  paginatedPostsResponse?.pagination && (
+                    `${paginatedPostsResponse.pagination.totalCount} ilanın ${allPostsData.length} tanesi`
+                  )
+                )}
+              </Text>
+            )}
+          </View>
+
+          {/* Sağ taraf - Filtre butonu */}
+          <TouchableOpacity
+            style={{
+              backgroundColor: Object.values(filters).some((val) => val !== null) ? '#111827' : 'white',
+              borderRadius: 20,
+              width: 40,
+              height: 40,
+              justifyContent: 'center',
+              alignItems: 'center',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 3,
+            }}
+            onPress={handleFilterPress}
+          >
+            <FontAwesomeIcon
+              icon={faSliders}
+              size={16}
+              color={Object.values(filters).some((val) => val !== null) ? "white" : "#111827"}
+            />
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
+    </Animated.View>
+  );
+
+
 
   const renderPostItem = useCallback(
     ({ item, index }) => {
@@ -763,18 +995,39 @@ const PostsScreen = ({ navigation }) => {
     );
   };
 
-  // Header with title and filter toggle
+
+  // 6. renderHeader fonksiyonunu güncelle - PAGINATION INFO DÜZELTME
   const renderHeader = () => (
-    <View className="flex-row justify-between items-center mt-4 mb-4">
+    <Animated.View
+      className="flex-row justify-between items-center mt-4 mb-4"
+      style={{ opacity: searchBarOpacity, paddingTop: 30 }} // Bu da kaybolacak
+
+    >
       <View className="flex-col">
-        <Text style={{ fontSize: 14 }} className="font-medium text-gray-500">
+        <Text style={{ fontSize: 20 }} className="font-medium text-gray-900">
           {userRole === "EVSAHIBI" ? "Mülklerim" : "İlanlar"}
         </Text>
-        {/* Pagination info for tenants */}
-        {userRole === "KIRACI" && paginatedPostsResponse?.pagination && (
-          <Text style={{ fontSize: 12 }} className="text-gray-400 mt-1">
-            {paginatedPostsResponse.pagination.totalCount} ilanın{" "}
-            {allPostsData.length} tanesi gösteriliyor
+        {/* Pagination info for tenants - GÜNCELLENDİ */}
+        {userRole === "KIRACI" && (
+          <Text style={{ fontSize: 14 }} className="text-gray-700 mt-1">
+            {hasActiveFilters && filterMetadata ? (
+              // Filtre aktifken: Filtre sonucu bilgilerini göster
+              <>
+                {filterMetadata.totalCount || 0} ilanın{" "}
+                {allPostsData.length} tanesi gösteriliyor
+                {/* {filterMetadata.appliedFilters && (
+                  <Text className="text-blue-600"> (Filtrelenmiş)</Text>
+                )} */}
+              </>
+            ) : (
+              // Normal durum: Orijinal pagination bilgilerini göster
+              paginatedPostsResponse?.pagination && (
+                <>
+                  {paginatedPostsResponse.pagination.totalCount} ilanın{" "}
+                  {allPostsData.length} tanesi gösteriliyor
+                </>
+              )
+            )}
           </Text>
         )}
       </View>
@@ -794,7 +1047,7 @@ const PostsScreen = ({ navigation }) => {
           style={{ boxShadow: "0px 0px 12px #00000014" }}
           className={`p-3 rounded-full ${isFilterVisible ||
             Object.values(filters).some((val) => val !== null)
-            ? "bg-gray-700"
+            ? "bg-gray-900"
             : "bg-white"
             }`}
           onPress={handleFilterPress}
@@ -805,13 +1058,13 @@ const PostsScreen = ({ navigation }) => {
             color={
               isFilterVisible ||
                 Object.values(filters).some((val) => val !== null)
-                ? "lightgray"
-                : "#000"
+                ? "white"
+                : "#111827"
             }
           />
         </TouchableOpacity>
       </View>
-    </View>
+    </Animated.View >
   );
 
   // Applied filters display
@@ -862,10 +1115,10 @@ const PostsScreen = ({ navigation }) => {
         )}
 
         <TouchableOpacity
-          className="bg-gray-200 rounded-full px-3 py-1 mb-1 flex-row items-center"
+          className="bg-gray-900 rounded-full px-4 py-2 mb-1 flex-row items-center"
           onPress={resetFilters}
         >
-          <Text className="text-gray-700 text-sm">Tümünü Temizle</Text>
+          <Text className="text-white text-s">Tümünü Temizle</Text>
         </TouchableOpacity>
       </View>
     );
@@ -893,39 +1146,15 @@ const PostsScreen = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <View className="flex-1 bg-white">
       {/* Status Bar Configuration */}
       <StatusBar
         barStyle="dark-content"
         backgroundColor="#F9FAFB"
         translucent={false}
       />
-
+      {renderAnimatedHeader()}
       <View className="flex-1 p-4">
-        {/* Search bar */}
-        <View className="">
-          <View
-            style={{ boxShadow: "0px 0px 12px #00000014" }}
-            className="bg-white rounded-3xl gap-2 px-4 flex-row items-center"
-          >
-            <FontAwesomeIcon icon={faSearch} size={20} color="#000" />
-            <TextInput
-              className="w-full placeholder:text-gray-500 placeholder:text-[14px] py-4 text-normal"
-              style={{
-                textAlignVertical: "center",
-                includeFontPadding: false,
-              }}
-              placeholder={
-                userRole === "KIRACI"
-                  ? "Konuma göre ev ara..."
-                  : "İlanlarınızda arayın..."
-              }
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
-        </View>
-
         {renderHeader()}
         {renderAppliedFilters()}
 
@@ -948,6 +1177,39 @@ const PostsScreen = ({ navigation }) => {
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
             }
+            ListHeaderComponent={() => (
+              <View>
+                {/* Animated Search bar - Kaybolacak */}
+                <Animated.View
+                  className=""
+                  style={{ opacity: searchBarOpacity }}
+                >
+                  <View
+                    style={{ boxShadow: "0px 0px 12px #00000014" }}
+                    className="bg-white rounded-3xl gap-2 px-4 flex-row items-center my-8"
+                  >
+                    <FontAwesomeIcon icon={faSearch} size={20} color="#000" />
+                    <TextInput
+                      className="w-full placeholder:text-gray-500 placeholder:text-[14px] py-4 text-normal"
+                      style={{
+                        textAlignVertical: "center",
+                        includeFontPadding: false,
+                      }}
+                      placeholder={
+                        userRole === "KIRACI"
+                          ? "Konuma göre ev ara..."
+                          : "İlanlarınızda arayın..."
+                      }
+                      value={searchQuery}
+                      onChangeText={setSearchQuery}
+                    />
+                  </View>
+                </Animated.View>
+
+                {/* {renderHeader()}
+                {renderAppliedFilters()} */}
+              </View>
+            )}
             onEndReached={loadMorePosts}
             onEndReachedThreshold={0.5}
             // Performance optimizations - daha muhafazakar ayarlar
@@ -963,11 +1225,19 @@ const PostsScreen = ({ navigation }) => {
             // Improve stability
             extraData={`${searchQuery}_${JSON.stringify(filters)}_${allPostsData.length
               }`}
+            onScroll={handleScroll} // YENİ EKLENEN
+            scrollEventThrottle={16} // YENİ EKLENEN
           />
         )}
       </View>
 
-    </SafeAreaView>
+      <PropertiesFilterModal
+        visible={isFilterModalVisible}
+        onClose={handleFilterModalClose}
+        onApply={handleFilterModalApply}
+      />
+
+    </View>
   );
 };
 
