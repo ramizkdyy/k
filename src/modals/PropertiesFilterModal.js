@@ -14,6 +14,9 @@ import {
     Alert,
     Modal,
     TouchableWithoutFeedback,
+    KeyboardAvoidingView,
+    Platform,
+    Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector, useDispatch } from 'react-redux';
@@ -45,7 +48,6 @@ import {
     getCities,
     getDistrictsAndNeighbourhoodsByCityCode,
 } from 'turkey-neighbourhoods';
-import { BlurView } from "expo-blur";
 
 // Redux imports
 import {
@@ -198,7 +200,8 @@ const PropertiesFilterModal = ({
     const userRole = useSelector(selectUserRole);
     const [searchPosts, { isLoading: isSearching }] = useSearchPostsMutation();
 
-    // Modal boyutları - ExploreDetailModal'daki gibi
+    // Modal boyutları
+    const BUTTON_HEIGHT = 80; // Approximate button area height
     const SNAP_POINTS = {
         MEDIUM: SCREEN_HEIGHT * 0.35,  // %65 ekran (orta boyut)
         LARGE: SCREEN_HEIGHT * 0.1,   // %90 ekran (büyük boyut)
@@ -208,6 +211,8 @@ const PropertiesFilterModal = ({
     // Animated values
     const translateY = useSharedValue(SCREEN_HEIGHT);
     const backdropOpacity = useSharedValue(0);
+    const keyboardHeight = useSharedValue(0);
+    const buttonsTranslateY = useSharedValue(SCREEN_HEIGHT); // Buttons için ayrı animasyon
 
     // State
     const [currentSnapPoint, setCurrentSnapPoint] = useState(SNAP_POINTS.MEDIUM);
@@ -270,6 +275,45 @@ const PropertiesFilterModal = ({
         statuses: searchFilters.statuses || [],
     });
 
+    // Keyboard listeners - CommentsBottomSheet'teki gibi
+    useEffect(() => {
+        const showListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+            (e) => {
+                keyboardHeight.value = withSpring(e.endCoordinates.height, {
+                    damping: 80,
+                    stiffness: 300,
+                });
+
+                // Buttons animasyonu - keyboard açılınca yukarı çık
+                buttonsTranslateY.value = withSpring(-e.endCoordinates.height, {
+                    damping: 80,
+                    stiffness: 300,
+                });
+            }
+        );
+
+        const hideListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+            () => {
+                keyboardHeight.value = withSpring(0, {
+                    damping: 80,
+                    stiffness: 300,
+                });
+
+                buttonsTranslateY.value = withSpring(0, {
+                    damping: 80,
+                    stiffness: 300,
+                });
+            }
+        );
+
+        return () => {
+            showListener?.remove();
+            hideListener?.remove();
+        };
+    }, []);
+
     // Load cities on mount
     useEffect(() => {
         try {
@@ -312,7 +356,7 @@ const PropertiesFilterModal = ({
         }
     }, [filters.il, filters.ilce, cityCodeMap]);
 
-    // Snap to position - ExploreDetailModal'daki aynı mantık
+    // snapTo fonksiyonu - buttonsTranslateY animasyonu eklendi
     const snapTo = useCallback((position) => {
         console.log(`Modal snap to position: ${position}`);
 
@@ -322,6 +366,13 @@ const PropertiesFilterModal = ({
                 damping: 80,
                 stiffness: 400,
             });
+
+            // ✅ Buttons da aynı anda aşağı insin
+            buttonsTranslateY.value = withSpring(SCREEN_HEIGHT, {
+                damping: 80,
+                stiffness: 400,
+            });
+
             backdropOpacity.value = withTiming(0, { duration: 300 });
 
             // Animasyon bittikten sonra modal'ı kapat
@@ -409,7 +460,21 @@ const PropertiesFilterModal = ({
                 runOnJS(snapTo)(currentSnapPoint);
             }
         })
-        .shouldCancelWhenOutside(false);
+        .shouldCancelWhenOutside(false)
+        .onTouchesDown((event) => {
+            const { y } = event.changedTouches[0];
+
+            // Button alanının yaklaşık pozisyonu (en alt 100px)
+            const buttonAreaY = SCREEN_HEIGHT - 120;
+
+            // Eğer touch button alanındaysa gesture'ı iptal et
+            if (y > buttonAreaY) {
+                console.log('🚫 Touch button alanında, gesture iptal ediliyor');
+                return false; // Gesture'ı iptal et
+            }
+
+            return true; // Normal gesture davranışı
+        });
 
     // Modal açılış/kapanış
     useEffect(() => {
@@ -418,10 +483,21 @@ const PropertiesFilterModal = ({
                 damping: 80,
                 stiffness: 400,
             });
+
+            // Buttons animasyonu - modaldan biraz sonra
+            buttonsTranslateY.value = withSpring(0, {
+                damping: 80,
+                stiffness: 400,
+            });
+
             backdropOpacity.value = withTiming(0.5, { duration: 300 });
             setCurrentSnapPoint(SNAP_POINTS.MEDIUM);
         } else if (visible === false && translateY.value !== SCREEN_HEIGHT) {
             translateY.value = withSpring(SCREEN_HEIGHT, {
+                damping: 80,
+                stiffness: 400,
+            });
+            buttonsTranslateY.value = withSpring(SCREEN_HEIGHT, {
                 damping: 80,
                 stiffness: 400,
             });
@@ -445,7 +521,14 @@ const PropertiesFilterModal = ({
     }));
 
     const modalStyle = useAnimatedStyle(() => ({
-        transform: [{ translateY: translateY.value }],
+        transform: [{ translateY: translateY.value - keyboardHeight.value }],
+    }));
+
+    // Buttons için ayrı animated style
+    const buttonsStyle = useAnimatedStyle(() => ({
+        transform: [{
+            translateY: buttonsTranslateY.value
+        }],
     }));
 
     // Filter update function
@@ -510,8 +593,8 @@ const PropertiesFilterModal = ({
             const searchPayload = {
                 // Konum - küçük harfle başlamalı
                 il: filters.il || null,
-                ilce: ilceArray.length > 0 ? ilceArray : null,
-                mahalle: mahalleArray.length > 0 ? mahalleArray : null,
+                ilceler: ilceArray.length > 0 ? ilceArray : null,  // ⚠️ ilce -> ilceler
+                mahalleler: mahalleArray.length > 0 ? mahalleArray : null,  // ⚠️ mahalle -> mahalleler
                 latitude: null,
                 longitude: null,
                 maxDistance: null,
@@ -764,9 +847,7 @@ const PropertiesFilterModal = ({
                         showsVerticalScrollIndicator={false}
                         bounces={false}
                         contentContainerStyle={{
-                            paddingBottom: currentSnapPoint === SNAP_POINTS.MEDIUM
-                                ? 140 + insets.bottom  // Küçük modalde fazla boşluk (bottom buttons için)
-                                : 140 + insets.bottom   // Büyük modalde normal boşluk
+                            paddingBottom: 140 + insets.bottom // Bottom buttons için sabit alan
                         }}
                     >
                         {/* Konum Filtresi */}
@@ -800,8 +881,7 @@ const PropertiesFilterModal = ({
                                 }}
                                 options={districtOptions}
                                 placeholder="İlçe seçiniz"
-                                disabled={!filters.il || districtOptions.length === 0}                           // İlçe için
-
+                                disabled={!filters.il || districtOptions.length === 0}
                                 multiSelect={true}
                                 searchable={true}
                             />
@@ -812,8 +892,7 @@ const PropertiesFilterModal = ({
                                 setValue={(value) => updateFilter('mahalle', value)}
                                 options={neighborhoodOptions}
                                 placeholder="Mahalle seçiniz"
-                                disabled={!filters.il || filters.ilce.length === 0 || neighborhoodOptions.length === 0}  // Mahalle için
-
+                                disabled={!filters.il || filters.ilce.length === 0 || neighborhoodOptions.length === 0}
                                 multiSelect={true}
                                 searchable={true}
                             />
@@ -1128,30 +1207,34 @@ const PropertiesFilterModal = ({
                             )}
                         </View>
                     </ScrollView>
+                </ReAnimated.View>
+            </GestureHandlerRootView>
 
-                    {/* Bottom Action Buttons - Safe Area Üzerinde */}
-                    <BlurView
-                        intensity={70}
-                        tint="light"
-                        style={{
-                            position: "absolute",
-                            bottom: insets.bottom + 60, // Safe area'dan 20px yukarı
-                            paddingVertical: 12,
-                            borderRadius: 16,
-                            shadowColor: "#000",
-                            shadowOffset: {
-                                width: 0,
-                                height: -2,
-                            },
-                            shadowOpacity: 0.1,
-                            shadowRadius: 8,
-                            elevation: 10,
-                            width: width,
-                        }}
+            {/* Bottom Buttons - MODAL DIŞINDA, ABSOLUTE POSİTİON */}
+            {visible && (
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        zIndex: 1000
+                    }}
+                    keyboardVerticalOffset={0}
+                >
+                    <ReAnimated.View
+                        style={[
+                            styles.buttonsContainer,
+                            buttonsStyle,
+                            {
+                                paddingBottom: insets.bottom,
+                            }
+                        ]}
                     >
-                        <View className="flex-row gap-3 px-8">
+                        <View className="flex-row gap-3">
                             <TouchableOpacity
-                                className="flex-1 bg-white py-4 rounded-full backdrop-blur-sm"
+                                className="flex-1 bg-white py-3.5 rounded-full"
                                 onPress={handleResetFilters}
                                 style={{
                                     shadowColor: "#000",
@@ -1170,7 +1253,7 @@ const PropertiesFilterModal = ({
                             </TouchableOpacity>
 
                             <TouchableOpacity
-                                className="flex-1 bg-gray-900 py-4 rounded-full backdrop-blur-sm"
+                                className="flex-1 bg-gray-900 py-3.5 rounded-full"
                                 onPress={handleApplyFilters}
                                 disabled={isSearching}
                                 style={{
@@ -1189,9 +1272,9 @@ const PropertiesFilterModal = ({
                                 </Text>
                             </TouchableOpacity>
                         </View>
-                    </BlurView>
-                </ReAnimated.View>
-            </GestureHandlerRootView>
+                    </ReAnimated.View>
+                </KeyboardAvoidingView>
+            )}
         </Modal>
     );
 };
@@ -1222,6 +1305,26 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 16,
         borderTopRightRadius: 16,
         overflow: 'hidden',
+    },
+    // Buttons container - modal dışında, absolute position
+    buttonsContainer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#ffffff',
+        paddingTop: 12,
+        paddingHorizontal: 16,
+        borderTopWidth: 1,
+        borderTopColor: '#f0f0f0',
+        elevation: 25, // Modal'dan daha yüksek z-index
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        zIndex: 1000,
+        minHeight: 80,
+        pointerEvents: 'auto',
     },
 });
 

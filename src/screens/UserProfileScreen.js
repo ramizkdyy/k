@@ -98,6 +98,8 @@ const UserProfileScreen = ({ navigation, route }) => {
     const [activeTab, setActiveTab] = useState('general');
     const [isFavorite, setIsFavorite] = useState(false);
     const [showRatingModal, setShowRatingModal] = useState(false);
+    const [hasUserRated, setHasUserRated] = useState(false);
+
 
     const currentUserProfile = useSelector(selectCurrentUser);
     const profileActionLoading = useSelector(selectProfileActionLoading);
@@ -147,6 +149,14 @@ const UserProfileScreen = ({ navigation, route }) => {
     });
 
     const handleRateProfile = async (ratingData) => {
+
+        if (hasUserRated) {
+            Alert.alert(
+                "Değerlendirme Yapıldı",
+                "Bu kullanıcıyı zaten değerlendirdiniz."
+            );
+            return;
+        }
         try {
             console.log("🎯 Rating başlatılıyor:", {
                 senderUserId: currentUserProfile?.id,
@@ -182,6 +192,8 @@ const UserProfileScreen = ({ navigation, route }) => {
             // İşlemler başarılı olduysa modal'ı kapat ve profili yenile
             if (ratingResult.isSuccess) {
                 setShowRatingModal(false);
+                setHasUserRated(true); // YENİ: State'i güncelle
+
                 Alert.alert(
                     "Başarılı",
                     ratingData.message?.trim()
@@ -248,6 +260,19 @@ const UserProfileScreen = ({ navigation, route }) => {
     }, [myProfile, userId, userRole]);
 
 
+    // Mevcut useEffect'lerin yanına ekle:
+    useEffect(() => {
+        if (userProfile?.ratedByUserIds && currentUserProfile?.id) {
+            const hasRated = userProfile.ratedByUserIds.includes(currentUserProfile.id.toString());
+            setHasUserRated(hasRated);
+
+            console.log("🔍 Rating kontrol ediliyor:", {
+                ratedByUserIds: userProfile.ratedByUserIds,
+                currentUserId: currentUserProfile.id,
+                hasRated: hasRated
+            });
+        }
+    }, [userProfile?.ratedByUserIds, currentUserProfile?.id]);
 
 
     console.log("API Response:", { profileData, profileError, profileLoading });
@@ -622,13 +647,25 @@ const UserProfileScreen = ({ navigation, route }) => {
 
                             {/* YENİ: Değerlendir Butonu */}
                             <TouchableOpacity
-                                onPress={() => setShowRatingModal(true)}
+                                onPress={() => {
+                                    if (hasUserRated) {
+                                        Alert.alert(
+                                            "Değerlendirme Yapıldı",
+                                            "Bu kullanıcıyı zaten değerlendirdiniz."
+                                        );
+                                        return;
+                                    }
+                                    setShowRatingModal(true);
+                                }}
                                 disabled={profileActionLoading}
-                                className="bg-yellow-500 px-6 py-3 rounded-xl flex-row items-center"
+                                className={`px-6 py-3 rounded-xl flex-row items-center ${hasUserRated ? "bg-gray-300" : "bg-yellow-500"
+                                    }`}
                             >
-
-                                <FontAwesomeIcon icon={faStar} size={16} color="white" />
-
+                                <FontAwesomeIcon
+                                    icon={faStar}
+                                    size={16}
+                                    color={hasUserRated ? "#9ca3af" : "white"}
+                                />
                             </TouchableOpacity>
                         </View>
                     )}

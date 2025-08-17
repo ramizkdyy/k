@@ -11,8 +11,8 @@ const initialState = {
     currentSearchFilters: {
         // Konump
         il: "",
-        ilce: [],
-        mahalle: [],
+        ilceler: [],
+        mahalleler: [],
         latitude: null,
         longitude: null,
         maxDistance: null,
@@ -148,10 +148,10 @@ const searchSlice = createSlice({
 
         // Quick filter actions
         setLocationFilter: (state, action) => {
-            const { il, ilce, mahalle } = action.payload;
+            const { il, ilceler, mahalleler } = action.payload;
             state.currentSearchFilters.il = il || "";
-            state.currentSearchFilters.ilce = ilce || [];
-            state.currentSearchFilters.mahalle = mahalle || [];
+            state.currentSearchFilters.ilceler = ilceler || [];
+            state.currentSearchFilters.mahalleler = mahalleler || [];
         },
 
         setPriceFilter: (state, action) => {
@@ -300,8 +300,8 @@ export const selectHasActiveFilters = (state) => {
     const filters = state.search.currentSearchFilters;
     return (
         filters.il ||
-        filters.ilce.length > 0 ||
-        filters.mahalle.length > 0 ||
+        filters.ilceler.length > 0 ||
+        filters.mahalleler.length > 0 ||
         filters.minKiraFiyati ||
         filters.maxKiraFiyati ||
         filters.odaSayilari.length > 0 ||
@@ -315,8 +315,8 @@ export const selectFilterCount = (state) => {
     let count = 0;
 
     if (filters.il) count++;
-    if (filters.ilce.length > 0) count++;
-    if (filters.mahalle.length > 0) count++;
+    if (filters.ilceler.length > 0) count++;
+    if (filters.mahalleler.length > 0) count++;
     if (filters.minKiraFiyati || filters.maxKiraFiyati) count++;
     if (filters.odaSayilari.length > 0) count++;
     if (filters.propertyTypes.length > 0) count++;

@@ -11,6 +11,8 @@ import {
   SafeAreaView,
   StatusBar,
   ScrollView,
+  Animated,
+  Dimensions,
 } from "react-native";
 import { Image } from "expo-image";
 import { useSelector, useDispatch } from "react-redux";
@@ -40,7 +42,6 @@ import { faEdit, faTrash } from "@fortawesome/pro-light-svg-icons";
 import PropertiesFilterModal from "../modals/PropertiesFilterModal";
 import { useSearchPostsMutation } from '../redux/api/searchApiSlice';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Animated } from "react-native";
 
 // Logger utility
 const Logger = {
@@ -55,6 +56,8 @@ const Logger = {
   },
 };
 
+const { width: screenWidth } = Dimensions.get('window');
+
 const PostsScreen = ({ navigation }) => {
   const COMPONENT_NAME = "PostsScreen";
   const dispatch = useDispatch();
@@ -66,62 +69,188 @@ const PostsScreen = ({ navigation }) => {
 
   const [searchPosts] = useSearchPostsMutation();
 
-
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [allPostsData, setAllPostsData] = useState([]); // Tüm yüklenen postları tutacak
+  const [allPostsData, setAllPostsData] = useState([]);
   const PAGE_SIZE = 10;
+  const [filterCurrentPage, setFilterCurrentPage] = useState(1);
+  const [isLoadingMoreFiltered, setIsLoadingMoreFiltered] = useState(false);
 
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
   const [activeFilterData, setActiveFilterData] = useState(null);
   const [filterMetadata, setFilterMetadata] = useState(null);
+  const [sortDirection, setSortDirection] = useState(0); // 0: asc, 1: desc
+  const [sortBy, setSortBy] = useState(null); // 'date' yerine null
 
-  // YENİ: Animation için ekle
+  // ===== ANIMATION SETUP =====
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  // Animation constants
-  const HEADER_HEIGHT = insets.top + 30; // iOS standart navigation bar height
-  const SEARCH_BAR_HEIGHT = 80; // Search bar'ın yüksekliği
+  // Header height calculations
+  const SCROLL_DISTANCE = 50; // Başlığın kaybolma mesafesi
 
-  // Animation interpolations
-  const headerOpacity = scrollY.interpolate({
-    inputRange: [0, SEARCH_BAR_HEIGHT - 30, SEARCH_BAR_HEIGHT],
-    outputRange: [0, 0, 1],
-    extrapolate: 'clamp'
-  });
 
-  const headerContentOpacity = scrollY.interpolate({
-    inputRange: [0, SEARCH_BAR_HEIGHT - 20, SEARCH_BAR_HEIGHT],
-    outputRange: [0, 0, 1],
-    extrapolate: 'clamp'
-  });
+  const sortPosts = useCallback((posts, sortType = sortBy, direction = sortDirection) => {
+    if (!posts || posts.length === 0) return posts;
 
-  const searchBarOpacity = scrollY.interpolate({
-    inputRange: [0, SEARCH_BAR_HEIGHT / 2],
-    outputRange: [1, 0],
-    extrapolate: 'clamp'
-  });
+    if (!sortType) return posts;
 
-  // Scroll handler
-  const handleScroll = Animated.event(
-    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-    { useNativeDriver: false }
-  );
 
-  // Log component mount
-  useEffect(() => {
-    Logger.info(COMPONENT_NAME, "Component mounted", {
-      userRole,
-      userId: currentUser?.id,
+    return [...posts].sort((a, b) => {
+      let valueA, valueB;
+
+      switch (sortType) {
+        case 'distance':
+          valueA = a.distance ? parseFloat(a.distance.replace(/[^\d.]/g, '')) : 999999;
+          valueB = b.distance ? parseFloat(b.distance.replace(/[^\d.]/g, '')) : 999999;
+          break;
+
+        case 'price':
+          valueA = a.kiraFiyati || 0;
+          valueB = b.kiraFiyati || 0;
+          break;
+
+        case 'date':
+          valueA = new Date(a.olusturmaTarihi || a.createdAt || 0);
+          valueB = new Date(b.olusturmaTarihi || b.createdAt || 0);
+          break;
+
+        case 'views':
+          valueA = a.goruntulemeSayisi || a.viewCount || 0;
+          valueB = b.goruntulemeSayisi || b.viewCount || 0;
+          break;
+
+        default:
+          return 0;
+      }
+
+      if (direction === 0) { // Ascending
+        return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
+      } else { // Descending
+        return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
+      }
     });
+  }, [sortBy, sortDirection]);
 
-    return () => {
-      Logger.info(COMPONENT_NAME, "Component unmounted");
-    };
-  }, []);
+
+
+  const renderSortOptions = () => {
+    const sortOptions = [
+      { key: 'distance', label: "Uzaklık" },
+      { key: 'price', label: "Fiyat" },
+      { key: 'date', label: "Tarih" },
+      { key: 'views', label: "Görüntüleme" },
+    ];
+
+    // Check if any sort option is active (not default)
+    const hasActiveSortFilter = sortBy !== 'date' || sortDirection !== 0;
+
+    return (
+      <ScrollView
+        horizontal={true}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{
+          alignItems: "center",
+          paddingHorizontal: 0,
+        }}
+        style={{ width: "100%" }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {/* Reset button */}
+          {sortBy(
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={{
+                marginRight: 12,
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 16,
+                backgroundColor: '#ef4444',
+                flexDirection: 'row',
+                alignItems: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.1,
+                shadowRadius: 2,
+                elevation: 2,
+              }}
+              onPress={resetSortOptions}
+            >
+              <MaterialIcons name="close" size={20} color="white" />
+            </TouchableOpacity>
+          )}
+
+          {/* Sort option buttons */}
+          {[
+            { key: 'distance', label: "Uzaklık" },
+            { key: 'price', label: "Fiyat" },
+            { key: 'date', label: "Tarih" },
+            { key: 'views', label: "Görüntüleme" },
+          ].map((option) => (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              key={option.key}
+              style={{
+                marginRight: 12,
+                paddingHorizontal: 14,
+                paddingVertical: 6,
+                borderRadius: 18,
+                backgroundColor: sortBy === option.key ? '#111827' : 'rgba(255, 255, 255, 0.9)',
+                borderWidth: 1,
+                borderColor: sortBy === option.key ? '#111827' : 'rgba(209, 213, 219, 0.8)',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.1,
+                shadowRadius: 2,
+                elevation: 2,
+              }}
+              onPress={() => handleSortChange(option.key)}
+            >
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: sortBy === option.key ? '600' : '500',
+                  color: sortBy === option.key ? 'white' : '#374151',
+                }}
+              >
+                {option.label}
+                {sortBy === option.key && (
+                  <Text style={{ marginLeft: 4 }}>
+                    {sortDirection === 0 ? " ↑" : " ↓"}
+                  </Text>
+                )}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+    );
+  };
+
+  // Başlık bölümü opacity
+  const titleOpacity = scrollY.interpolate({
+    inputRange: [0, SCROLL_DISTANCE],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+
+  // Başlık scale (küçülerek kaybolur)
+  const titleScale = scrollY.interpolate({
+    inputRange: [0, SCROLL_DISTANCE],
+    outputRange: [1, 0.8],
+    extrapolate: 'clamp',
+  });
+
+  // Search bar yukarı kayma
+  const searchBarTranslateY = scrollY.interpolate({
+    inputRange: [0, SCROLL_DISTANCE],
+    outputRange: [0, -50], // Başlık alanına doğru kayar
+    extrapolate: 'clamp',
+  });
+
+  // ===== EXISTING CODE CONTINUES =====
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterVisible, setIsFilterVisible] = useState(false);
@@ -148,18 +277,7 @@ const PostsScreen = ({ navigation }) => {
     skip: userRole !== "EVSAHIBI" || !currentUser?.id,
   });
 
-  // Log API errors
-  useEffect(() => {
-    if (landlordListingsError) {
-      Logger.error(
-        COMPONENT_NAME,
-        "Failed to fetch landlord listings",
-        landlordListingsError
-      );
-    }
-  }, [landlordListingsError]);
-
-  // Paginated posts query - sadece tenant için
+  // Paginated posts query
   const {
     data: paginatedPostsResponse,
     isLoading: isLoadingAllPosts,
@@ -176,24 +294,46 @@ const PostsScreen = ({ navigation }) => {
     }
   );
 
-  // Log API errors
+  const [deletePost, { isLoading: isDeleting, error: deleteError }] =
+    useDeletePostMutation();
+
+  // Log component mount
+  useEffect(() => {
+    Logger.info(COMPONENT_NAME, "Component mounted", {
+      userRole,
+      userId: currentUser?.id,
+    });
+
+    return () => {
+      Logger.info(COMPONENT_NAME, "Component unmounted");
+    };
+  }, []);
+
+  // [REST OF YOUR useEffect HOOKS - UNCHANGED]
+  // ...
+
+  useEffect(() => {
+    if (landlordListingsError) {
+      Logger.error(
+        COMPONENT_NAME,
+        "Failed to fetch landlord listings",
+        landlordListingsError
+      );
+    }
+  }, [landlordListingsError]);
+
   useEffect(() => {
     if (allPostsError) {
       Logger.error(COMPONENT_NAME, "Failed to fetch all posts", allPostsError);
     }
   }, [allPostsError]);
 
-  const [deletePost, { isLoading: isDeleting, error: deleteError }] =
-    useDeletePostMutation();
-
-  // Log delete errors
   useEffect(() => {
     if (deleteError) {
       Logger.error(COMPONENT_NAME, "Failed to delete post", deleteError);
     }
   }, [deleteError]);
 
-  // Log data loads
   useEffect(() => {
     if (userRole === "EVSAHIBI" && landlordListingsData) {
       Logger.info(COMPONENT_NAME, "Landlord listings loaded", {
@@ -212,19 +352,15 @@ const PostsScreen = ({ navigation }) => {
         newDataLength: paginatedPostsResponse?.data?.length || 0,
       });
 
-      // Pagination state güncelle
       setHasNextPage(paginatedPostsResponse?.pagination?.hasNextPage || false);
 
-      // Eğer ilk sayfa ise, veriyi direkt set et
       if (currentPage === 1) {
         setAllPostsData(paginatedPostsResponse?.data || []);
       } else {
-        // Sonraki sayfalar için - DUPLICATE KONTROLÜ EKLENDİ
         setAllPostsData((prevData) => {
           const newData = paginatedPostsResponse?.data || [];
           const existingPostIds = new Set(prevData.map((item) => item.postId));
 
-          // Sadece daha önce eklenmemiş postları ekle
           const uniqueNewData = newData.filter(
             (item) => item && item.postId && !existingPostIds.has(item.postId)
           );
@@ -242,19 +378,26 @@ const PostsScreen = ({ navigation }) => {
   }, [paginatedPostsResponse, userRole, currentPage]);
 
 
+
+
+  useEffect(() => {
+    if (searchQuery) {
+      Logger.event("search_posts", { query: searchQuery });
+    }
+  }, [searchQuery]);
+
+  // [ALL YOUR HANDLER FUNCTIONS - UNCHANGED]
   const handleFilterPress = () => {
     Logger.event("filter_button_pressed");
     setIsFilterModalVisible(true);
   };
 
-  // 4. Modal handlers ekleyin
   const handleFilterModalClose = () => {
     Logger.event("filter_modal_closed");
     setIsFilterModalVisible(false);
   };
 
   const handleFilterModalApply = (appliedFilters, searchResult) => {
-    // Mevcut kodların üstüne BU SATIRLARI EKLE:
     console.log('=== FILTER MODAL APPLY DEBUG ===');
     console.log('Applied filters:', appliedFilters);
     console.log('Search result:', searchResult);
@@ -274,6 +417,7 @@ const PostsScreen = ({ navigation }) => {
     setActiveFilterData(hasFilters ? appliedFilters : null);
 
     setCurrentPage(1);
+    setFilterCurrentPage(1); // YENİ EKLENEN
 
     if (searchResult) {
       let postsData = [];
@@ -289,7 +433,6 @@ const PostsScreen = ({ navigation }) => {
 
       setAllPostsData(validPosts);
 
-      // YENİ EKLENEN: Metadata'yı kaydet
       if (searchResult.metadata) {
         setFilterMetadata(searchResult.metadata);
         setHasNextPage(searchResult.metadata.hasNextPage || false);
@@ -300,26 +443,101 @@ const PostsScreen = ({ navigation }) => {
 
     } else {
       setAllPostsData([]);
-      setFilterMetadata(null); // YENİ EKLENEN
+      setFilterMetadata(null);
       setHasNextPage(false);
     }
 
     setIsFilterModalVisible(false);
   };
 
-  // 7. useFocusEffect'i güncelle
+
+
+
+  const loadMoreFilteredPosts = useCallback(async () => {
+    if (
+      !hasActiveFilters ||
+      !hasNextPage ||
+      isLoadingMoreFiltered ||
+      !activeFilterData ||
+      !filterMetadata
+    ) {
+      return;
+    }
+
+    Logger.event("load_more_filtered_posts", {
+      currentPage: filterCurrentPage + 1,
+      totalPages: filterMetadata.totalPages
+    });
+
+    setIsLoadingMoreFiltered(true);
+
+    try {
+      // Filtreli arama için pagination parametresi ekle
+      const filtersWithPagination = {
+        ...activeFilterData,
+        page: filterCurrentPage + 1,
+        pageSize: PAGE_SIZE
+      };
+
+      console.log('Loading more filtered posts with:', filtersWithPagination);
+
+      const searchResult = await searchPosts(filtersWithPagination).unwrap();
+
+      if (searchResult && searchResult.posts && Array.isArray(searchResult.posts)) {
+        const validNewPosts = searchResult.posts.filter(post =>
+          post && post.postId &&
+          (typeof post.postId === 'number' || typeof post.postId === 'string')
+        );
+
+        console.log(`Adding ${validNewPosts.length} more filtered posts`);
+
+        // Yeni postları mevcut listeye ekle
+        setAllPostsData(prevData => {
+          const existingPostIds = new Set(prevData.map(item => item.postId));
+          const uniqueNewPosts = validNewPosts.filter(
+            post => !existingPostIds.has(post.postId)
+          );
+          return [...prevData, ...uniqueNewPosts];
+        });
+
+        // Pagination metadata'sını güncelle
+        if (searchResult.metadata) {
+          setFilterMetadata(searchResult.metadata);
+          setHasNextPage(searchResult.metadata.hasNextPage || false);
+        }
+
+        // Sayfa numarasını artır
+        setFilterCurrentPage(prev => prev + 1);
+
+        Logger.info(COMPONENT_NAME, "More filtered posts loaded successfully");
+      }
+    } catch (error) {
+      Logger.error(COMPONENT_NAME, "Load more filtered posts failed", error);
+      console.error('Load more filtered posts error:', error);
+    } finally {
+      setIsLoadingMoreFiltered(false);
+    }
+  }, [
+    hasActiveFilters,
+    hasNextPage,
+    isLoadingMoreFiltered,
+    activeFilterData,
+    filterMetadata,
+    filterCurrentPage,
+    searchPosts
+  ]);
+
+
   useFocusEffect(
     useCallback(() => {
       Logger.info(COMPONENT_NAME, "Screen focused", { userRole });
 
-      // Reset pagination when screen is focused
       setCurrentPage(1);
       setHasNextPage(true);
 
-      // Filtre yoksa veriyi temizle ve yeniden yükle
       if (!hasActiveFilters) {
         setAllPostsData([]);
-        setFilterMetadata(null); // YENİ: Metadata'yı temizle
+        setFilterMetadata(null);
 
         if (userRole === "EVSAHIBI") {
           refetchLandlordListings();
@@ -329,6 +547,31 @@ const PostsScreen = ({ navigation }) => {
       }
     }, [userRole, hasActiveFilters, refetchLandlordListings, refetchAllPosts])
   );
+
+
+  const handleSortChange = useCallback(
+    (newSortBy) => {
+      Logger.event("sort_posts_changed", {
+        oldSort: sortBy,
+        newSort: newSortBy,
+        direction: sortBy === newSortBy ? (sortDirection === 0 ? 1 : 0) : 0
+      });
+
+      if (newSortBy === sortBy) {
+        setSortDirection((prev) => (prev === 0 ? 1 : 0));
+      } else {
+        setSortBy(newSortBy);
+        setSortDirection(0);
+      }
+    },
+    [sortBy, sortDirection]
+  );
+
+  const resetSortOptions = useCallback(() => {
+    Logger.event("reset_sort_options");
+    setSortBy(null); // varsayılan sort değeri
+    setSortDirection(0);
+  }, []);
 
   const onRefresh = async () => {
     Logger.event("refresh_posts_list", { userRole, hasActiveFilters });
@@ -343,7 +586,6 @@ const PostsScreen = ({ navigation }) => {
         await refetchLandlordListings();
       } else if (userRole === "KIRACI") {
         if (hasActiveFilters && activeFilterData) {
-          // FİLTRE VARSA: Aynı filtreyi tekrar uygula
           try {
             const searchResult = await searchPosts(activeFilterData).unwrap();
 
@@ -360,7 +602,6 @@ const PostsScreen = ({ navigation }) => {
             }
           } catch (filterError) {
             console.error('Filter refresh error:', filterError);
-            // Hata olursa normal listeye dön
             setHasActiveFilters(false);
             setActiveFilterData(null);
             setFilterMetadata(null);
@@ -368,7 +609,6 @@ const PostsScreen = ({ navigation }) => {
             await refetchAllPosts();
           }
         } else {
-          // FİLTRE YOKSA: Normal liste yenile
           await refetchAllPosts();
         }
       }
@@ -381,14 +621,14 @@ const PostsScreen = ({ navigation }) => {
     }
   };
 
-  // 5. loadMorePosts fonksiyonunu güncelle
   const loadMorePosts = useCallback(() => {
-    // Filtre aktifse daha fazla yükleme yapma
+    // Eğer filtre aktifse, filtreli pagination kullan
     if (hasActiveFilters) {
-      Logger.info(COMPONENT_NAME, "Skipping load more - filters are active");
+      loadMoreFilteredPosts();
       return;
     }
 
+    // Normal pagination (filtre yokken)
     if (
       userRole !== "KIRACI" ||
       !hasNextPage ||
@@ -402,14 +642,19 @@ const PostsScreen = ({ navigation }) => {
 
     setIsLoadingMore(true);
     setCurrentPage((prevPage) => prevPage + 1);
-  }, [userRole, hasNextPage, isLoadingMore, isFetchingAllPosts, currentPage, hasActiveFilters]);
+  }, [
+    userRole,
+    hasNextPage,
+    isLoadingMore,
+    isFetchingAllPosts,
+    currentPage,
+    hasActiveFilters,
+    loadMoreFilteredPosts
+  ]);
 
-
-  // Apply filters
   const applyFilters = () => {
     Logger.event("apply_filters", localFilters);
 
-    // Reset pagination when applying filters
     setCurrentPage(1);
     setHasNextPage(true);
     setAllPostsData([]);
@@ -433,11 +678,16 @@ const PostsScreen = ({ navigation }) => {
     Logger.event("reset_filters");
 
     setCurrentPage(1);
+    setFilterCurrentPage(1);
     setHasNextPage(true);
     setAllPostsData([]);
     setHasActiveFilters(false);
     setActiveFilterData(null);
-    setFilterMetadata(null); // YENİ: Filter metadata'sını temizle
+    setFilterMetadata(null);
+
+    // Sıralama seçeneklerini de sıfırla
+    setSortBy(null);
+    setSortDirection(0);
 
     const emptyFilters = {
       location: "",
@@ -455,19 +705,11 @@ const PostsScreen = ({ navigation }) => {
     dispatch(clearPostFilters());
     setIsFilterVisible(false);
 
-    // Filtreleri temizledikten sonra veriyi yeniden yükle
     if (userRole === "KIRACI") {
       refetchAllPosts();
     }
   };
-  // Handle search
-  useEffect(() => {
-    if (searchQuery) {
-      Logger.event("search_posts", { query: searchQuery });
-    }
-  }, [searchQuery]);
 
-  // Handle delete post
   const handleDeletePost = (postId) => {
     Logger.event("delete_post_initiated", { postId });
 
@@ -510,7 +752,6 @@ const PostsScreen = ({ navigation }) => {
     );
   };
 
-  // Navigation handlers
   const handlePostNavigation = (postId) => {
     Logger.event("view_post_detail", { postId });
     navigation.navigate("PostDetail", { postId });
@@ -519,14 +760,13 @@ const PostsScreen = ({ navigation }) => {
   const handleEditPostNavigation = (postId) => {
     Logger.event("edit_post", { postId });
 
-    // İlgili post verisini bulun
     const postToEdit = landlordListingsData?.result?.find(
       (post) => post.postId === postId
     );
 
     if (postToEdit) {
       navigation.navigate("EditPost", {
-        propertyData: postToEdit, // ✅ Tüm post verisini gönderin
+        propertyData: postToEdit,
       });
     } else {
       console.error("Post data not found for editing:", postId);
@@ -544,31 +784,26 @@ const PostsScreen = ({ navigation }) => {
     navigation.navigate("CreatePost");
   };
 
-
-  // 2. getFilteredPosts fonksiyonunu şu şekilde değiştirin:
   const getFilteredPosts = () => {
     console.log('=== GET FILTERED POSTS DEBUG ===');
     console.log('User role:', userRole);
     console.log('Has active filters:', hasActiveFilters);
     console.log('All posts data length:', allPostsData?.length || 0);
     console.log('Search query:', searchQuery);
+    console.log('Sort by:', sortBy, 'Sort direction:', sortDirection); // sortOrder değil sortDirection
 
     let filteredPosts = [];
 
-    // Get the appropriate posts based on user role
     if (userRole === "EVSAHIBI") {
       filteredPosts = landlordListingsData?.result || [];
       console.log('Using landlord listings:', filteredPosts.length);
     } else {
-      // For tenants, use accumulated posts data
       filteredPosts = allPostsData || [];
       console.log('Using all posts data:', filteredPosts.length);
     }
 
-    // İlk 2 post'u log'la
     console.log('Raw filtered posts sample:', filteredPosts.slice(0, 2));
 
-    // ✅ NULL kontrolü - daha esnek hale getir
     const validPosts = filteredPosts.filter(post => {
       const isValid = post &&
         post.postId &&
@@ -586,7 +821,6 @@ const PostsScreen = ({ navigation }) => {
     if (hasActiveFilters) {
       console.log('Processing with active filters');
 
-      // Duplicate kontrolü
       const uniquePosts = [];
       const seenPostIds = new Set();
 
@@ -599,10 +833,11 @@ const PostsScreen = ({ navigation }) => {
 
       console.log(`Unique posts: ${uniquePosts.length}`);
 
-      // Search query kontrolü
+      let finalPosts = uniquePosts;
+
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
-        const searchFiltered = uniquePosts.filter(
+        finalPosts = finalPosts.filter(
           (post) =>
             (post.ilanBasligi &&
               post.ilanBasligi.toLowerCase().includes(query)) ||
@@ -610,15 +845,15 @@ const PostsScreen = ({ navigation }) => {
             (post.ilce && post.ilce.toLowerCase().includes(query))
         );
 
-        console.log(`After search filter: ${searchFiltered.length}`);
-        return searchFiltered;
+        console.log(`After search filter: ${finalPosts.length}`);
       }
 
-      console.log(`Final result (with filters): ${uniquePosts.length}`);
-      return uniquePosts;
+      // Apply sorting - sortDirection kullan
+      const sortedPosts = sortPosts(finalPosts, sortBy, sortDirection);
+      console.log(`Final result (with filters and sorting): ${sortedPosts.length}`);
+      return sortedPosts;
     }
 
-    // Normal flow (no active filters)
     console.log('Processing without active filters');
 
     const uniquePosts = [];
@@ -633,7 +868,6 @@ const PostsScreen = ({ navigation }) => {
 
     let finalPosts = uniquePosts;
 
-    // Search query filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       finalPosts = finalPosts.filter(
@@ -647,102 +881,14 @@ const PostsScreen = ({ navigation }) => {
       console.log(`After search filter: ${finalPosts.length}`);
     }
 
-    console.log(`Final result (no filters): ${finalPosts.length}`);
-    return finalPosts;
+    // Apply sorting - sortDirection kullan
+    const sortedPosts = sortPosts(finalPosts, sortBy, sortDirection);
+    console.log(`Final result (no filters, with sorting): ${sortedPosts.length}`);
+    return sortedPosts;
   };
-
-  const renderAnimatedHeader = () => (
-    <Animated.View
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: HEADER_HEIGHT, // +30 kaldırıldı
-        zIndex: 999,
-        opacity: headerOpacity,
-      }}
-    >
-      {/* BlurView yerine şeffaf background - daha güvenilir */}
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: 'rgba(255, 255, 255, 0.85)', // Şeffaf beyaz
-          backdropFilter: 'blur(10px)', // CSS blur (web için)
-        }}
-      >
-        {/* Status bar alanı */}
-        <View
-          style={{
-            height: insets.top,
-            backgroundColor: 'transparent'
-          }}
-        />
-
-        {/* Header content alanı */}
-        <Animated.View
-          style={{
-            flex: 1, // height: 50 yerine flex
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: 16,
-            backgroundColor: 'transparent',
-            opacity: headerContentOpacity,
-          }}
-        >
-          {/* Sol taraf - Title ve ilan sayısı */}
-          <View className="flex-col">
-            <Text style={{ fontSize: 18, fontWeight: '600', color: '#111827' }}>
-              {userRole === "EVSAHIBI" ? "Mülklerim" : "İlanlar"}
-            </Text>
-            {/* İlan sayısı bilgisi */}
-            {userRole === "KIRACI" && (
-              <Text style={{ fontSize: 12, color: '#6B7280' }}>
-                {hasActiveFilters && filterMetadata ? (
-                  `${filterMetadata.totalCount || 0} ilanın ${allPostsData.length} tanesi`
-                ) : (
-                  paginatedPostsResponse?.pagination && (
-                    `${paginatedPostsResponse.pagination.totalCount} ilanın ${allPostsData.length} tanesi`
-                  )
-                )}
-              </Text>
-            )}
-          </View>
-
-          {/* Sağ taraf - Filtre butonu */}
-          <TouchableOpacity
-            style={{
-              backgroundColor: Object.values(filters).some((val) => val !== null) ? '#111827' : 'white',
-              borderRadius: 20,
-              width: 40,
-              height: 40,
-              justifyContent: 'center',
-              alignItems: 'center',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 4,
-              elevation: 3,
-            }}
-            onPress={handleFilterPress}
-          >
-            <FontAwesomeIcon
-              icon={faSliders}
-              size={16}
-              color={Object.values(filters).some((val) => val !== null) ? "white" : "#111827"}
-            />
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
-    </Animated.View>
-  );
-
-
 
   const renderPostItem = useCallback(
     ({ item, index }) => {
-      // Null check for item
       if (!item || !item.postId) {
         return null;
       }
@@ -754,7 +900,6 @@ const PostsScreen = ({ navigation }) => {
           activeOpacity={1}
         >
           <View style={{ borderRadius: 30 }} className="relative">
-            {/* Post image with Expo Image */}
             {item.postImages && item.postImages.length > 0 ? (
               <Image
                 source={{ uri: item.postImages[0].postImageUrl }}
@@ -785,10 +930,9 @@ const PostsScreen = ({ navigation }) => {
               </View>
             )}
 
-            {/* Status badge */}
             <BlurView
-              tint="dark"
-              intensity={50}
+              tint=""
+              intensity={60}
               style={{
                 boxShadow: "0px 0px 12px #00000014",
                 overflow: "hidden",
@@ -806,7 +950,6 @@ const PostsScreen = ({ navigation }) => {
               </View>
             </BlurView>
 
-            {/* Distance badge (if available) */}
             {item.distance && (
               <View className="absolute top-3 left-3">
                 <View className="bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full flex-row items-center">
@@ -818,7 +961,6 @@ const PostsScreen = ({ navigation }) => {
               </View>
             )}
 
-            {/* Landlord action buttons */}
             {userRole === "EVSAHIBI" && item.userId === currentUser?.id && (
               <View className="flex-row absolute gap-2 top-3 right-3">
                 <BlurView
@@ -879,9 +1021,7 @@ const PostsScreen = ({ navigation }) => {
           </View>
 
           <View className="px-2 py-3">
-            {/* Title and Price - DÜZELTİLDİ */}
             <View className="mb-2">
-              {/* Title - Sadeleştirildi */}
               <Text
                 style={{
                   fontSize: 18,
@@ -895,7 +1035,6 @@ const PostsScreen = ({ navigation }) => {
                 {item.ilanBasligi || "İlan başlığı yok"}
               </Text>
 
-              {/* Location */}
               <View className="mt-2 mb-3">
                 <Text style={{ fontSize: 12, color: "#6B7280" }}>
                   {[item.il, item.ilce, item.mahalle]
@@ -904,7 +1043,6 @@ const PostsScreen = ({ navigation }) => {
                 </Text>
               </View>
 
-              {/* Price - Sadeleştirildi */}
               <View className="mb-2">
                 <Text style={{ fontSize: 14, color: "#6B7280" }}>
                   <Text
@@ -925,7 +1063,6 @@ const PostsScreen = ({ navigation }) => {
               </View>
             </View>
 
-            {/* Description */}
             <Text
               numberOfLines={2}
               ellipsizeMode="tail"
@@ -944,9 +1081,11 @@ const PostsScreen = ({ navigation }) => {
     [userRole, currentUser?.id, isDeleting]
   );
 
-  // Render loading more indicator
   const renderLoadingMore = () => {
-    if (!isLoadingMore) return null;
+
+    const isLoading = isLoadingMore || isLoadingMoreFiltered;
+
+    if (!isLoading) return null;
 
     return (
       <View className="py-4 justify-center items-center">
@@ -958,7 +1097,6 @@ const PostsScreen = ({ navigation }) => {
     );
   };
 
-  // Render empty state
   const renderEmptyState = () => {
     Logger.info(COMPONENT_NAME, "No posts found", {
       userRole,
@@ -995,79 +1133,6 @@ const PostsScreen = ({ navigation }) => {
     );
   };
 
-
-  // 6. renderHeader fonksiyonunu güncelle - PAGINATION INFO DÜZELTME
-  const renderHeader = () => (
-    <Animated.View
-      className="flex-row justify-between items-center mt-4 mb-4"
-      style={{ opacity: searchBarOpacity, paddingTop: 30 }} // Bu da kaybolacak
-
-    >
-      <View className="flex-col">
-        <Text style={{ fontSize: 20 }} className="font-medium text-gray-900">
-          {userRole === "EVSAHIBI" ? "Mülklerim" : "İlanlar"}
-        </Text>
-        {/* Pagination info for tenants - GÜNCELLENDİ */}
-        {userRole === "KIRACI" && (
-          <Text style={{ fontSize: 14 }} className="text-gray-700 mt-1">
-            {hasActiveFilters && filterMetadata ? (
-              // Filtre aktifken: Filtre sonucu bilgilerini göster
-              <>
-                {filterMetadata.totalCount || 0} ilanın{" "}
-                {allPostsData.length} tanesi gösteriliyor
-                {/* {filterMetadata.appliedFilters && (
-                  <Text className="text-blue-600"> (Filtrelenmiş)</Text>
-                )} */}
-              </>
-            ) : (
-              // Normal durum: Orijinal pagination bilgilerini göster
-              paginatedPostsResponse?.pagination && (
-                <>
-                  {paginatedPostsResponse.pagination.totalCount} ilanın{" "}
-                  {allPostsData.length} tanesi gösteriliyor
-                </>
-              )
-            )}
-          </Text>
-        )}
-      </View>
-
-      <View className="flex-row">
-        {userRole === "EVSAHIBI" && (
-          <TouchableOpacity
-            style={{ boxShadow: "0px 0px 12px #00000014" }}
-            className="p-3 bg-white flex justify-center items-center rounded-full mr-2"
-            onPress={handleCreatePostNavigation}
-          >
-            <FontAwesomeIcon icon={faPlus} size={18} />
-          </TouchableOpacity>
-        )}
-
-        <TouchableOpacity
-          style={{ boxShadow: "0px 0px 12px #00000014" }}
-          className={`p-3 rounded-full ${isFilterVisible ||
-            Object.values(filters).some((val) => val !== null)
-            ? "bg-gray-900"
-            : "bg-white"
-            }`}
-          onPress={handleFilterPress}
-        >
-          <FontAwesomeIcon
-            icon={faSliders}
-            size={18}
-            color={
-              isFilterVisible ||
-                Object.values(filters).some((val) => val !== null)
-                ? "white"
-                : "#111827"
-            }
-          />
-        </TouchableOpacity>
-      </View>
-    </Animated.View >
-  );
-
-  // Applied filters display
   const renderAppliedFilters = () => {
     const hasFilters = Object.values(filters).some((val) => val !== null);
 
@@ -1130,34 +1195,358 @@ const PostsScreen = ({ navigation }) => {
 
   const keyExtractor = useCallback((item, index) => {
     if (item && item.postId) {
-      return `post_${item.postId}_${index}`; // ← INDEX EKLENDİ
+      return `post_${item.postId}_${index}`;
     }
     return `post_index_${index}`;
   }, []);
 
-  // Get item layout for better performance
-  const getItemLayout = useCallback(
-    (data, index) => ({
-      length: 500, // Approximate item height
-      offset: 500 * index,
-      index,
-    }),
-    []
-  );
 
+  const renderAnimatedHeader = () => {
+    const headerContainerHeight = scrollY.interpolate({
+      inputRange: [0, SCROLL_DISTANCE],
+      outputRange: [
+        insets.top + 50 + 60 + 50 + 16, // Normal: SafeArea + Title + SearchBar + SortOptions + padding
+        insets.top + 60 + 50 + 8        // Scroll: SafeArea + SearchBar + SortOptions + minimal padding (sort options kalır)
+      ],
+      extrapolate: 'clamp',
+    });
+
+    const searchBarWidth = scrollY.interpolate({
+      inputRange: [0, SCROLL_DISTANCE],
+      outputRange: [
+        screenWidth - 32 - 50 - 8,
+        screenWidth - 32 - 50 - 8
+      ],
+      extrapolate: 'clamp',
+    });
+
+    const searchBarTranslateY = scrollY.interpolate({
+      inputRange: [0, SCROLL_DISTANCE],
+      outputRange: [0, -50], // Title'ın yerine geçer
+      extrapolate: 'clamp',
+    });
+
+    // Sort options için sadece hafif opacity değişimi - kaybolmasın
+    const sortOptionsOpacity = scrollY.interpolate({
+      inputRange: [0, SCROLL_DISTANCE],
+      outputRange: [1, 0.8], // 0'a düşmez, sadece hafif sönük olur
+      extrapolate: 'clamp',
+    });
+
+    // Sort options height sabit kalsın
+    const sortOptionsHeight = scrollY.interpolate({
+      inputRange: [0, SCROLL_DISTANCE],
+      outputRange: [50, 42], // Tamamen kaybolmaz, sadece biraz küçülür
+      extrapolate: 'clamp',
+    });
+
+    // Sort options yukarı kayma - çok az
+    const sortOptionsTranslateY = scrollY.interpolate({
+      inputRange: [0, SCROLL_DISTANCE],
+      outputRange: [0, -8], // Çok az yukarı kayar
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <Animated.View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 100,
+          height: headerContainerHeight,
+        }}
+      >
+        {/* BlurView Background */}
+        <BlurView
+          intensity={80}
+          tint="light"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+        />
+
+        {/* Semi-transparent overlay */}
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(255, 255, 255, 0.7)',
+          }}
+        />
+
+        {/* Content Container */}
+        <View style={{
+          paddingTop: insets.top,
+          paddingHorizontal: 16,
+          flex: 1,
+          zIndex: 10,
+        }}>
+
+          {/* Title Section - Kaybolur */}
+          <Animated.View
+            style={{
+              opacity: titleOpacity,
+              transform: [{ scale: titleScale }],
+              height: 50,
+              justifyContent: 'center',
+            }}
+          >
+            <View className="flex-row justify-between items-center">
+              <View className="flex-col flex-1">
+                <Text style={{ fontSize: 20 }} className="font-medium text-gray-900">
+                  {userRole === "EVSAHIBI" ? "Mülklerim" : "İlanlar"}
+                </Text>
+                {userRole === "KIRACI" && (
+                  <Text style={{ fontSize: 14 }} className="text-gray-700 mt-1">
+                    {hasActiveFilters && filterMetadata ? (
+                      <>
+                        {filterMetadata.totalCount || 0} ilanın{" "}
+                        {allPostsData.length} tanesi gösteriliyor
+                      </>
+                    ) : (
+                      paginatedPostsResponse?.pagination && (
+                        <>
+                          {paginatedPostsResponse.pagination.totalCount} ilanın{" "}
+                          {allPostsData.length} tanesi gösteriliyor
+                        </>
+                      )
+                    )}
+                  </Text>
+                )}
+              </View>
+
+              {userRole === "EVSAHIBI" && (
+                <TouchableOpacity
+                  style={{
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 8,
+                    elevation: 5,
+                    marginLeft: 8,
+                  }}
+                  className="p-3 bg-white/90 backdrop-blur flex justify-center items-center rounded-full"
+                  onPress={handleCreatePostNavigation}
+                >
+                  <FontAwesomeIcon icon={faPlus} size={18} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </Animated.View>
+
+          {/* Search Bar - Title'ın yerine geçer */}
+          <Animated.View
+            style={{
+              marginTop: 10,
+              transform: [{ translateY: searchBarTranslateY }],
+              width: searchBarWidth,
+            }}
+          >
+            <BlurView
+              intensity={60}
+              tint="light"
+              style={{
+                borderRadius: 24,
+                overflow: 'hidden',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 12,
+                elevation: 5,
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                  paddingHorizontal: 16,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+                className="border border-gray-100 border-[1px] rounded-full"
+              >
+                <FontAwesomeIcon icon={faSearch} size={20} color="#000" />
+                <TextInput
+                  className="flex-1 placeholder:text-gray-500 placeholder:text-[14px] py-4 text-normal"
+                  style={{
+                    textAlignVertical: "center",
+                    includeFontPadding: false,
+                  }}
+                  placeholder={
+                    userRole === "KIRACI"
+                      ? "Konuma göre ev ara..."
+                      : "İlanlarınızda arayın..."
+                  }
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+              </View>
+            </BlurView>
+          </Animated.View>
+
+          {/* Sort Options - Search bar ile birlikte hareket etsin */}
+          <Animated.View
+            style={{
+              marginTop: 8,
+              height: sortOptionsHeight,
+              transform: [{ translateY: searchBarTranslateY }],
+              overflow: 'hidden',
+            }}
+          >
+            <View style={{ flex: 1, justifyContent: 'center', }}>
+              <ScrollView
+                horizontal={true}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{
+                  alignItems: "center",
+                  paddingHorizontal: 0,
+                }}
+                style={{ width: "100%" }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  {/* Reset button - animated header version */}
+                  {sortBy && (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      style={{
+                        marginRight: 12,
+                        paddingHorizontal: 10,
+                        paddingVertical: 5,
+                        borderRadius: 16,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 2,
+                        elevation: 2,
+                      }}
+                      onPress={resetSortOptions}
+                      className="bg-red-600"
+                    >
+                      <MaterialIcons name="close" size={20} color="white" />
+
+                    </TouchableOpacity>
+                  )}
+
+                  {/* Sort option buttons */}
+                  {[
+                    { key: 'distance', label: "Uzaklık" },
+                    { key: 'price', label: "Fiyat" },
+                    { key: 'date', label: "Tarih" },
+                    { key: 'views', label: "Görüntüleme" },
+                  ].map((option) => (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      key={option.key}
+                      style={{
+                        marginRight: 12,
+                        paddingHorizontal: 14,
+                        paddingVertical: 6,
+                        borderRadius: 18,
+                        backgroundColor: sortBy === option.key ? '#111827' : 'rgba(255, 255, 255, 0.9)',
+                        borderWidth: 1,
+                        borderColor: sortBy === option.key ? '#111827' : 'rgba(209, 213, 219, 0.8)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 2,
+                        elevation: 2,
+                      }}
+                      onPress={() => handleSortChange(option.key)}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontWeight: sortBy === option.key ? '600' : '500',
+                          color: sortBy === option.key ? 'white' : '#374151',
+                        }}
+                      >
+                        {option.label}
+                        {sortBy === option.key && (
+                          <Text style={{ marginLeft: 4 }}>
+                            {sortDirection === 0 ? " ↑" : " ↓"}
+                          </Text>
+                        )}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          </Animated.View>
+        </View>
+
+        {/* Filter Button */}
+        <View
+          style={{
+            position: 'absolute',
+            right: 16,
+            top: insets.top + 12,
+            zIndex: 20,
+          }}
+        >
+          <TouchableOpacity
+            style={{
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 8,
+              elevation: 5,
+            }}
+            className={`p-3 rounded-full  ${isFilterVisible ||
+              Object.values(filters).some((val) => val !== null)
+              ? "bg-gray-900/90"
+              : "bg-white/90"
+              }`}
+            onPress={handleFilterPress}
+          >
+            <FontAwesomeIcon
+              icon={faSliders}
+              size={20}
+              color={
+                isFilterVisible ||
+                  Object.values(filters).some((val) => val !== null)
+                  ? "white"
+                  : "#111827"
+              }
+            />
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+    );
+  };
+
+  // FlatList'te de paddingTop'u dinamik yapalım
+  const getDynamicPaddingTop = () => {
+    // Normal durum: Title + SearchBar + SortOptions + extra padding
+    const normalPadding = insets.top + 50 + 60 + 50 + 32; // +50 for sort options
+    return normalPadding;
+  };
+
+  // Ana return kısmında da güncelleme:
   return (
     <View className="flex-1 bg-white">
-      {/* Status Bar Configuration */}
       <StatusBar
         barStyle="dark-content"
-        backgroundColor="#F9FAFB"
-        translucent={false}
+        backgroundColor="rgba(17, 24, 39, 0.9)"  // Koyu gri
+        translucent={true}
       />
-      {renderAnimatedHeader()}
-      <View className="flex-1 p-4">
-        {renderHeader()}
-        {renderAppliedFilters()}
 
+      {/* Animated Header */}
+      {renderAnimatedHeader()}
+
+      {/* Main Content */}
+      <View className="flex-1">
         {isLoading ? (
           <View className="flex-1 justify-center items-center">
             <ActivityIndicator size="large" color="#4A90E2" />
@@ -1166,67 +1555,46 @@ const PostsScreen = ({ navigation }) => {
             </Text>
           </View>
         ) : (
-          <FlatList
+          <Animated.FlatList
             data={filteredPosts}
             renderItem={renderPostItem}
             keyExtractor={keyExtractor}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }}
+            contentContainerStyle={{
+              flexGrow: 1,
+              paddingBottom: 16,
+              paddingTop: getDynamicPaddingTop(), // DİNAMİK PADDING
+              paddingHorizontal: 16,
+            }}
+            ListHeaderComponent={() => (
+              <View style={{ marginTop: -8 }}>
+                {renderAppliedFilters()}
+              </View>
+            )}
             ListEmptyComponent={renderEmptyState}
             ListFooterComponent={renderLoadingMore}
             refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                progressViewOffset={getDynamicPaddingTop()} // DİNAMİK OFFSET
+              />
             }
-            ListHeaderComponent={() => (
-              <View>
-                {/* Animated Search bar - Kaybolacak */}
-                <Animated.View
-                  className=""
-                  style={{ opacity: searchBarOpacity }}
-                >
-                  <View
-                    style={{ boxShadow: "0px 0px 12px #00000014" }}
-                    className="bg-white rounded-3xl gap-2 px-4 flex-row items-center my-8"
-                  >
-                    <FontAwesomeIcon icon={faSearch} size={20} color="#000" />
-                    <TextInput
-                      className="w-full placeholder:text-gray-500 placeholder:text-[14px] py-4 text-normal"
-                      style={{
-                        textAlignVertical: "center",
-                        includeFontPadding: false,
-                      }}
-                      placeholder={
-                        userRole === "KIRACI"
-                          ? "Konuma göre ev ara..."
-                          : "İlanlarınızda arayın..."
-                      }
-                      value={searchQuery}
-                      onChangeText={setSearchQuery}
-                    />
-                  </View>
-                </Animated.View>
-
-                {/* {renderHeader()}
-                {renderAppliedFilters()} */}
-              </View>
-            )}
             onEndReached={loadMorePosts}
             onEndReachedThreshold={0.5}
-            // Performance optimizations - daha muhafazakar ayarlar
-            removeClippedSubviews={false} // Bu false yapıldı
-            maxToRenderPerBatch={5} // Azaltıldı
-            updateCellsBatchingPeriod={50} // Azaltıldı
-            initialNumToRender={8} // Artırıldı
-            windowSize={5} // Azaltıldı
-            // Memory optimization
+            removeClippedSubviews={false}
+            maxToRenderPerBatch={5}
+            updateCellsBatchingPeriod={50}
+            initialNumToRender={8}
+            windowSize={5}
             disableVirtualization={false}
-            // Prevent text disappearing issues
-            getItemLayout={undefined} // getItemLayout kaldırıldı
-            // Improve stability
-            extraData={`${searchQuery}_${JSON.stringify(filters)}_${allPostsData.length
-              }`}
-            onScroll={handleScroll} // YENİ EKLENEN
-            scrollEventThrottle={16} // YENİ EKLENEN
+            extraData={`${searchQuery}_${JSON.stringify(filters)}_${allPostsData.length}`}
+            // Animation scroll handler
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+              { useNativeDriver: false } // width/height animasyonu için false
+            )}
+            scrollEventThrottle={16}
           />
         )}
       </View>
@@ -1236,7 +1604,6 @@ const PostsScreen = ({ navigation }) => {
         onClose={handleFilterModalClose}
         onApply={handleFilterModalApply}
       />
-
     </View>
   );
 };
