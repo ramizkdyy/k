@@ -435,6 +435,7 @@ const MessagesScreen = ({ navigation }) => {
           {profileImage && profileImage !== "default_profile_image_url" ? (
             <Image
               source={{ uri: profileImage }}
+              style={{ width: 55, height: 55, borderRadius: 100 }}
               className="w-full h-full rounded-full"
               contentFit="cover"
               cachePolicy="memory-disk"
