@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Image,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
@@ -17,6 +16,7 @@ import {
   TouchableWithoutFeedback,
   Dimensions,
 } from "react-native";
+import { Image } from "expo-image";
 import { useDispatch, useSelector } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
 import {
@@ -2184,7 +2184,9 @@ const EditProfileScreen = ({ navigation }) => {
                   <Image
                     source={{ uri: previewProfileImage }}
                     className="w-full h-full"
-                    resizeMode="cover"
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={200}
                   />
                   {/* Profile photo edit button */}
                   <View

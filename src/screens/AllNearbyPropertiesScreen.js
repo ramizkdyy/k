@@ -39,10 +39,107 @@ import {
   faFilter,
   faSliders,
 } from "@fortawesome/pro-regular-svg-icons";
+import { faHouseBlank } from "@fortawesome/pro-regular-svg-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect } from "@react-navigation/native";
 
 const { width } = Dimensions.get("window");
+
+// Optimize edilmiş ErrorPlaceholder komponenti
+const ErrorPlaceholder = memo(({ width, height, borderRadius = 8 }) => (
+  <View
+    style={{
+      width,
+      height,
+      borderRadius,
+      backgroundColor: "#f5f5f5",
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
+    <FontAwesomeIcon
+      icon={faHouseBlank}
+      size={Math.min(width, height) * 0.1}
+      color="#fff"
+    />
+  </View>
+));
+
+// Optimize edilmiş ImageWithFallback komponenti - ShimmerPlaceholder ile
+const ImageWithFallback = memo(
+  ({
+    source,
+    style,
+    contentFit = "cover",
+    className = "",
+    fallbackWidth,
+    fallbackHeight,
+    borderRadius,
+    placeholder,
+    recyclingKey,
+    ...props
+  }) => {
+    const [hasError, setHasError] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Reset error state when source changes
+    useEffect(() => {
+      if (source?.uri) {
+        setHasError(false);
+        setIsLoading(true);
+      }
+    }, [source?.uri]);
+
+    if (hasError || !source?.uri) {
+      return (
+        <ErrorPlaceholder
+          width={fallbackWidth || style?.width || 200}
+          height={fallbackHeight || style?.height || 200}
+          borderRadius={borderRadius || style?.borderRadius || 8}
+        />
+      );
+    }
+
+    return (
+      <View style={{ position: "relative" }}>
+        <Image
+          source={source}
+          style={style}
+          className={className}
+          contentFit={contentFit}
+          onError={() => {
+            setHasError(true);
+            setIsLoading(false);
+          }}
+          onLoad={() => setIsLoading(false)}
+          placeholder={placeholder}
+          cachePolicy="memory-disk"
+          recyclingKey={recyclingKey}
+          transition={0}
+          {...props}
+        />
+        {isLoading && (
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              borderRadius: style?.borderRadius || 8,
+            }}
+          >
+            <ShimmerPlaceholder
+              width={fallbackWidth || style?.width || 200}
+              height={fallbackHeight || style?.height || 200}
+              borderRadius={borderRadius || style?.borderRadius || 8}
+            />
+          </View>
+        )}
+      </View>
+    );
+  }
+);
 
 // Memoized Skeleton Components
 const ShimmerPlaceholder = memo(
@@ -337,7 +434,7 @@ const PropertyDetailsSlider = memo(({ item }) => {
   );
 });
 
-// Memoized Image Slider
+// Memoized Image Slider with Error Handling
 const PropertyImageSlider = memo(
   ({ images, distance, status, postId, onPress }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -357,10 +454,14 @@ const PropertyImageSlider = memo(
 
     if (!images || images.length === 0) {
       return (
-        <View className="w-full h-80 bg-gradient-to-br from-gray-100 to-gray-200 justify-center items-center rounded-3xl">
-          <MaterialIcons name="home" size={32} color="#9CA3AF" />
-          <Text className="text-gray-500 mt-2 font-medium">Resim yok</Text>
-        </View>
+        <TouchableOpacity
+          className="w-full justify-center items-center rounded-3xl"
+          style={{ height: 350 }}
+          onPress={onPress}
+          activeOpacity={1}
+        >
+          <ErrorPlaceholder width={width - 32} height={350} borderRadius={25} />
+        </TouchableOpacity>
       );
     }
 
@@ -387,15 +488,16 @@ const PropertyImageSlider = memo(
               activeOpacity={1}
               onPress={onPress}
             >
-              <Image
+              <ImageWithFallback
                 source={{ uri: item.postImageUrl }}
                 style={{ width: width - 32, height: 350 }}
                 contentFit="cover"
-                transition={0}
+                fallbackWidth={width - 32}
+                fallbackHeight={350}
+                borderRadius={0}
                 placeholder={{
                   uri: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y5ZmFmYiIvPjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Yw7xrbGVuaXlvcjwvdGV4dD48L3N2Zz4=",
                 }}
-                cachePolicy="memory-disk"
                 recyclingKey={`${postId}-${index}`}
               />
             </TouchableOpacity>
@@ -481,12 +583,12 @@ const PropertyItem = memo(
       console.log("PROFILE NAVIGATION DATA:", JSON.stringify(item, null, 2));
       console.log("userId:", item.userId);
 
-      navigation.navigate('UserProfile', {
-        userId: item.userId, // Doğru userId
-        userRole: "EVSAHIBI", // Sabit değer
+      navigation.navigate("UserProfile", {
+        userId: item.userId,
+        userRole: "EVSAHIBI",
         matchScore: item.matchScore,
       });
-    }, [item, navigation]); // item'i dependency array'e eklemeyi unutmayın
+    }, [item, navigation]);
 
     return (
       <View
@@ -527,8 +629,9 @@ const PropertyItem = memo(
               className="text-gray-900 underline"
             >
               {item.kiraFiyati || item.rent
-                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
-                }`
+                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
+                    item.paraBirimi || item.currency || "₺"
+                  }`
                 : "Fiyat belirtilmemiş"}
             </Text>
             <Text className="text-sm text-gray-400 ml-1">/ay</Text>
@@ -551,9 +654,13 @@ const PropertyItem = memo(
                 >
                   <View className="w-12 h-12 rounded-full justify-center items-center mr-3 border-gray-900 border">
                     {!!item.user?.profileImageUrl ? (
-                      <Image
+                      <ImageWithFallback
                         source={{ uri: item.user.profileImageUrl }}
+                        style={{ width: 48, height: 48, borderRadius: 24 }}
                         className="w-full h-full rounded-full"
+                        fallbackWidth={48}
+                        fallbackHeight={48}
+                        borderRadius={24}
                       />
                     ) : (
                       <View>
@@ -686,7 +793,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
     const timer = setTimeout(() => setIsFilterChanging(false), 300);
     return () => clearTimeout(timer);
   }, [sortBy, sortDirection, isMatch, userLocation]);
-  // Tab bar visibility
+
   // Tab Management for hiding bottom tabs
   useFocusEffect(
     React.useCallback(() => {
@@ -727,7 +834,6 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
       };
     }, [navigation, userRole])
   );
-
 
   const getCurrentLocation = async () => {
     try {
@@ -1056,15 +1162,17 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
                   <TouchableOpacity
                     activeOpacity={1}
                     key={option.key}
-                    className={`mr-3 px-4 py-2 rounded-full border ${sortBy === option.key
-                      ? "bg-gray-900"
-                      : "bg-white border-white"
-                      }`}
+                    className={`mr-3 px-4 py-2 rounded-full border ${
+                      sortBy === option.key
+                        ? "bg-gray-900"
+                        : "bg-white border-white"
+                    }`}
                     onPress={() => handleSortChange(option.key)}
                   >
                     <Text
-                      className={`text-sm font-medium ${sortBy === option.key ? "text-white" : "text-gray-700"
-                        }`}
+                      className={`text-sm font-medium ${
+                        sortBy === option.key ? "text-white" : "text-gray-700"
+                      }`}
                     >
                       {option.label}
                       {sortBy === option.key && (

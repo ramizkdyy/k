@@ -17,7 +17,8 @@ import {
   selectUserProfile,
   setUserProfile,
 } from "../redux/slices/profileSlice";
-import { Image, Dimensions } from "react-native";
+import { Dimensions } from "react-native";
+import { Image } from "expo-image";
 import {
   useGetLandlordProfileQuery,
   useGetTenantProfileQuery,
@@ -512,6 +513,9 @@ const LandlordTabNavigator = () => {
                     height: 28,
                     borderRadius: 14,
                   }}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={200}
                 />
                 {focused && (
                   <View
@@ -763,6 +767,9 @@ const TenantTabNavigator = () => {
                     height: 28,
                     borderRadius: 14,
                   }}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={200}
                 />
                 {focused && (
                   <View

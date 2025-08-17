@@ -8,7 +8,6 @@ import {
   Text,
   Pressable,
   TextInput,
-  Image,
   TouchableOpacity,
   Keyboard,
   Dimensions,
@@ -16,6 +15,7 @@ import {
   Alert,
   StatusBar,
 } from "react-native";
+import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import { useLoginMutation } from "../redux/api/apiSlice";
@@ -310,7 +310,9 @@ const LoginScreen = ({ navigation }) => {
                 <Image
                   source={require("../../assets/logo-kirax.png")}
                   style={{ width: width * 1, height: width * 0.5 }}
-                  resizeMode="contain"
+                  contentFit="contain"
+                  cachePolicy="memory-disk"
+                  transition={200}
                 />
               </View>
 

@@ -539,7 +539,7 @@ export const SignalRProvider = ({ children }) => {
       clearInterval(heartbeatIntervalRef.current);
     }
 
-    // Backend'deki HeartbeatTimer 30 saniyede bir çalışıyor, biz 25 saniyede bir gönderelim
+    // ✅ OPTIMIZED: Backend'deki HeartbeatTimer ile uyumlu ama daha verimli aralık
     heartbeatIntervalRef.current = setInterval(async () => {
       if (
         connectionRef.current &&
@@ -552,7 +552,7 @@ export const SignalRProvider = ({ children }) => {
           console.log("⚠️ Heartbeat hatası:", error.message);
         }
       }
-    }, 25000); // 25 saniye
+    }, 60000); // ✅ OPTIMIZED: 25s → 60s (battery ve network optimizasyonu)
   }, []);
 
   // ✅ ENHANCED: SignalR bağlantısını başlat
@@ -769,7 +769,7 @@ export const SignalRProvider = ({ children }) => {
       clearInterval(pingIntervalRef.current);
     }
 
-    // Her 30 saniyede bir ping gönder
+    // ✅ OPTIMIZED: Ping aralığını artırarak network trafiğini azalt
     pingIntervalRef.current = setInterval(async () => {
       if (
         connectionRef.current &&
@@ -782,7 +782,7 @@ export const SignalRProvider = ({ children }) => {
           console.log("⚠️ Ping hatası:", error.message);
         }
       }
-    }, 30000);
+    }, 90000); // ✅ OPTIMIZED: 30s → 90s (network optimizasyonu)
   }, []);
 
   // ✅ ENHANCED: Bağlantıyı durdur - Complete cleanup for user switching

@@ -4,7 +4,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
   TextInput,
   FlatList,
   ActivityIndicator,
@@ -12,6 +11,7 @@ import {
   Dimensions,
   Platform,
 } from "react-native";
+import { Image } from "expo-image";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
   faArrowLeft,
@@ -145,7 +145,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
     { partnerId, page: 1 },
     {
       skip: !partnerId,
-      refetchOnMountOrArgChange: true,
+      refetchOnMountOrArgChange: 120, // ✅ OPTIMIZED: 2 dakika cooldown
       refetchOnFocus: false,
       refetchOnReconnect: false,
     }
@@ -159,7 +159,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
     { partnerId, page: 2 },
     {
       skip: !partnerId,
-      refetchOnMountOrArgChange: true,
+      refetchOnMountOrArgChange: 120, // ✅ OPTIMIZED: 2 dakika cooldown
       refetchOnFocus: false,
       refetchOnReconnect: false,
     }
@@ -1217,7 +1217,9 @@ const ChatDetailScreen = ({ navigation, route }) => {
                   <Image
                     source={{ uri: partner.profileImageUrl }}
                     className="w-full h-full"
-                    resizeMode="cover"
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={200}
                   />
                 ) : (
                   <Text

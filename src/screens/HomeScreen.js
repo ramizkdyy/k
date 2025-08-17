@@ -163,7 +163,7 @@ const HomeScreen = ({ navigation }) => {
     try {
       await Promise.all([
         refetchUnread(),
-        new Promise((resolve) => setTimeout(resolve, 1500)),
+        new Promise((resolve) => setTimeout(resolve, 800)), // ✅ OPTIMIZED: 1500ms → 800ms
       ]);
       console.log("Page refreshed successfully");
     } catch (error) {

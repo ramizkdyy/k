@@ -35,7 +35,7 @@ const ShimmerPlaceholder = ({ width, height, borderRadius = 8, style }) => {
           width,
           height,
           borderRadius,
-          backgroundColor: "#E5E7EB",
+          backgroundColor: "#f5f5f5",
           overflow: "hidden",
         },
         style,

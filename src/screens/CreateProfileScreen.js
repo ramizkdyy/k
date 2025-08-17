@@ -635,7 +635,9 @@ const CreateProfileScreen = (props) => {
                   <Image
                     source={{ uri: previewCoverImage }}
                     className="w-full h-full"
-                    resizeMode="cover"
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={200}
                   />
                   {/* Cover photo edit button */}
                   <View
@@ -666,7 +668,9 @@ const CreateProfileScreen = (props) => {
                     <Image
                       source={{ uri: previewProfileImage }}
                       className="w-full h-full"
-                      resizeMode="cover"
+                      contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={200}
                     />
                   ) : (
                     <View className="w-full h-full bg-gray-100 justify-center items-center">

@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
   Alert,
   Modal,
@@ -16,6 +15,7 @@ import {
   Animated,
   FlatList,
 } from "react-native";
+import { Image } from "expo-image";
 import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
 import {
@@ -409,7 +409,9 @@ const PostDetailScreen = ({ route, navigation }) => {
         <Image
           source={{ uri: item.postImageUrl }}
           style={{ width: "100%", height: "100%" }}
-          resizeMode="cover"
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          transition={200}
         />
       </TouchableOpacity>
     );
@@ -429,7 +431,9 @@ const PostDetailScreen = ({ route, navigation }) => {
         <Image
           source={{ uri: item.postImageUrl }}
           style={{ width: "100%", height: "100%" }}
-          resizeMode="contain"
+          contentFit="contain"
+          cachePolicy="memory-disk"
+          transition={200}
         />
       </View>
     );
@@ -460,7 +464,9 @@ const PostDetailScreen = ({ route, navigation }) => {
                   "https://via.placeholder.com/300x200",
           }}
           className="w-full"
-          resizeMode="cover"
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          transition={200}
         />
       </View>
 
@@ -519,7 +525,9 @@ const PostDetailScreen = ({ route, navigation }) => {
               "https://via.placeholder.com/60x60",
           }}
           className="rounded-full border border-gray-100"
-          resizeMode="cover"
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          transition={200}
         />
         <View className="flex-1 ml-3">
           <Text
@@ -1068,7 +1076,9 @@ const PostDetailScreen = ({ route, navigation }) => {
                           height: "100%",
                           borderRadius: 13,
                         }}
-                        resizeMode="cover"
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                        transition={200}
                       />
                     </TouchableOpacity>
                   ))}
@@ -1187,18 +1197,25 @@ const PostDetailScreen = ({ route, navigation }) => {
                 }
               >
                 <View
-                  style={{ boxShadow: "0px 0px 12px #00000020" }}
-                  className="w-14 h-14 rounded-full bg-gray-100 justify-center items-center mr-3 border-gray-200 border"
+                  style={{
+                    boxShadow: "0px 0px 12px #00000010",
+                    borderWidth: 0.5,
+                  }}
+                  className="w-14 h-14 rounded-full bg-gray-50 justify-center items-center mr-3 border-gray-200 border"
                 >
-                  {post.user?.profilePictureUrl ? (
+                  {post?.user?.profilePictureUrl ? (
                     <Image
-                      source={{ uri: post.user.profilePictureUrl }}
+                      style={{ width: 56, height: 56, borderRadius: 100 }}
+                      source={{ uri: post?.user?.profilePictureUrl }}
                       className="w-full h-full rounded-full"
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                      transition={200}
                     />
                   ) : (
                     <View>
                       <Text className="text-xl font-bold text-gray-900">
-                        {post.user?.name?.charAt(0) || "E"}
+                        {post?.user?.name?.charAt(0) || "E"}
                       </Text>
                     </View>
                   )}

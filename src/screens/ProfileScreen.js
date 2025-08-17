@@ -4,13 +4,13 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
   Alert,
   RefreshControl,
   SafeAreaView,
   Animated,
 } from "react-native";
+import { Image } from "expo-image";
 import { useSelector, useDispatch } from "react-redux";
 import {
   logout,
@@ -238,7 +238,9 @@ const ProfileScreen = ({ navigation }) => {
                 }}
                 source={{ uri: userProfile.profileImageUrl }}
                 className="w-full h-full rounded-full"
-                resizeMode="cover"
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={200}
               />
             ) : (
               <View

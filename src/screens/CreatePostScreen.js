@@ -5,7 +5,6 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  Image,
   Alert,
   ActivityIndicator,
   StyleSheet,
@@ -16,6 +15,7 @@ import {
   Dimensions,
   TouchableWithoutFeedback,
 } from "react-native";
+import { Image } from "expo-image";
 import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser } from "../redux/slices/authSlice";
 import {
@@ -1144,7 +1144,9 @@ const CreatePostScreen = ({ navigation, route }) => {
                     <Image
                       source={{ uri: img.uri }}
                       className="w-24 h-24 rounded-2xl"
-                      resizeMode="cover"
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                      transition={200}
                     />
 
                     {/* Silme butonu */}

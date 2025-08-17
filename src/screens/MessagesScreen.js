@@ -4,7 +4,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
   TextInput,
   SafeAreaView,
   FlatList,
@@ -12,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
+import { Image } from "expo-image";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
   faArrowLeft,
@@ -436,7 +436,9 @@ const MessagesScreen = ({ navigation }) => {
             <Image
               source={{ uri: profileImage }}
               className="w-full h-full rounded-full"
-              resizeMode="cover"
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={200}
               onError={(error) => {
                 console.log("❌ Profile image load error:", error);
               }}
