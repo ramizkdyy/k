@@ -269,15 +269,14 @@ const MatchScoreBar = memo(({ matchScore, showBar = false, size = "sm" }) => {
 
   if (showBar) {
     return (
-      <View style={{ marginTop: currentSize.containerPadding * 2 }}>
+      <View className="flex w-full items-center justify-center mt-2">
         <View className="flex-row items-center">
           <View
             className="bg-gray-100 rounded-full overflow-hidden"
             style={{
               height: currentSize.barHeight,
-              width: currentSize.barWidth,
-              marginRight: 12,
-              maxWidth: width * 0.71,
+              width: "100%",
+              maxWidth: width * 0.6,
             }}
           >
             <Animated.View
@@ -293,29 +292,20 @@ const MatchScoreBar = memo(({ matchScore, showBar = false, size = "sm" }) => {
               }}
             />
           </View>
-          <Text
-            className="font-medium ml-1"
-            style={{
-              color: scoreInfo.color,
-              fontSize: currentSize.textSize,
-            }}
-          >
-            {matchScore}%
-          </Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View className="flex-row items-center">
+    <View className="flex-row items-start">
       <FontAwesomeIcon
         color={scoreInfo.color}
         icon={faHeart}
         size={currentSize.iconSize}
       />
       <Text
-        className="font-medium ml-1"
+        className="font-medium"
         style={{
           color: scoreInfo.color,
           fontSize: currentSize.textSize,
@@ -330,43 +320,46 @@ const MatchScoreBar = memo(({ matchScore, showBar = false, size = "sm" }) => {
 // Memoized Tenant Item
 const TenantItem = memo(
   ({ item, navigation }) => {
+    const userRole = useSelector(selectUserRole);
     const handleTenantPress = useCallback(() => {
       console.log("TENANT ITEM DATA:", JSON.stringify(item, null, 2));
       console.log("item.userId:", item.userId); // UUID'yi logla
 
       navigation.navigate("UserProfile", {
-        userId: item.userId,  // ✅ UUID kullan
-        userRole: "KIRACI"
+        userId: item.userId, // ✅ UUID kullan
+        userRole: "KIRACI",
       });
-    }, [item.userId, navigation]);  // dependency'yi de değiştir
+    }, [item.userId, navigation]); // dependency'yi de değiştir
 
     return (
       <View
         style={{ marginHorizontal: 16 }}
-        className="mb-4 pt-4 border-gray-200"
+        className="mb-2 pt-4 border-gray-200"
       >
         <TouchableOpacity onPress={handleTenantPress} activeOpacity={1}>
           <View
-            className="bg-white p-4"
-            style={{ boxShadow: "0px 0px 12px #00000014", borderRadius: 25 }}
+            className="bg-white p-6 border-gray-200"
+            style={{ borderRadius: 30, borderWidth: 0.5 }}
           >
             {/* Header with Profile Image and Basic Info */}
-            <View className="flex-row items-center mb-4">
+            <View className="flex-col items-center mb-4">
               <Image
                 className="border border-gray-100"
                 style={{
-                  width: 60,
-                  height: 60,
+                  width: 80,
+                  height: 80,
                   boxShadow: "0px 0px 12px #00000020",
-                  borderRadius: 30,
+                  borderRadius: 100,
                 }}
                 source={{
                   uri: item.tenantURL || "https://via.placeholder.com/60x60",
                 }}
                 contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={200}
               />
 
-              <View className="flex-1 ml-4">
+              <View className="flex-1 mt-1">
                 <Text
                   style={{ fontSize: 18, fontWeight: 700 }}
                   className="text-gray-800 mb-1"
@@ -374,28 +367,39 @@ const TenantItem = memo(
                 >
                   {item.tenantName || "Kiracı"}
                 </Text>
-                <View className="flex flex-row items-center gap-1">
-                  <Text className="text-gray-500" style={{ fontSize: 12 }}>
-                    Profili görüntüle
-                  </Text>
-                  <FontAwesomeIcon
-                    size={12}
-                    color="#dee0ea"
-                    icon={faChevronRight}
-                  />
-                </View>
               </View>
+
+              {/* Compatibility Level */}
+              {item.matchScore && (
+                <View className="flex flex-col w-full items-center justify-center">
+                  <MatchScoreBar
+                    matchScore={item.matchScore}
+                    showBar={true}
+                    size="sm"
+                  />
+
+                  {/* Match Reasons */}
+                  {item.matchReasons && item.matchReasons.length > 0 && (
+                    <Text className="text-xs text-gray-500 mt-2">
+                      {item.matchReasons[0]}
+                    </Text>
+                  )}
+                </View>
+              )}
             </View>
 
             {/* Tenant Details Grid */}
-            <View className="space-y-3 gap-1">
+            <View className=" gap-3">
               {/* Budget */}
               {item.details?.budget && (
                 <View className="flex-row justify-between items-center">
                   <View className="flex-row items-center">
                     <Text className="text-gray-600 text-sm ml-2">Bütçe:</Text>
                   </View>
-                  <Text className="text-gray-800 text-sm font-semibold">
+                  <Text
+                    style={{ fontSize: 13 }}
+                    className="text-gray-900 font-semibold"
+                  >
                     {item.details.budget.toLocaleString()} ₺
                   </Text>
                 </View>
@@ -409,7 +413,10 @@ const TenantItem = memo(
                       Aylık Gelir:
                     </Text>
                   </View>
-                  <Text className="text-gray-800 text-sm font-semibold">
+                  <Text
+                    style={{ fontSize: 13 }}
+                    className="text-gray-900 font-semibold"
+                  >
                     {item.details.monthlyIncome.toLocaleString()} ₺
                   </Text>
                 </View>
@@ -424,7 +431,8 @@ const TenantItem = memo(
                     </Text>
                   </View>
                   <Text
-                    className="text-gray-800 text-sm font-medium"
+                    style={{ fontSize: 13 }}
+                    className="text-gray-900 font-semibold"
                     numberOfLines={1}
                   >
                     {item.details.preferredLocation}
@@ -440,56 +448,36 @@ const TenantItem = memo(
                       Min. Oda Sayısı:
                     </Text>
                   </View>
-                  <Text className="text-gray-800 text-sm font-medium">
+                  <Text
+                    style={{ fontSize: 13 }}
+                    className="text-gray-900 font-semibold"
+                  >
                     {item.details.minRooms} oda
                   </Text>
                 </View>
               )}
-
-              {/* Student Status */}
-              {item.details?.isStudent !== undefined && (
-                <View className="flex-row justify-between items-center">
-                  <View className="flex-row items-center">
-                    <Text className="text-gray-600 text-sm ml-2">Öğrenci:</Text>
-                  </View>
-                  <Text className="text-gray-800 text-sm font-medium">
-                    {item.details.isStudent ? "Evet" : "Hayır"}
-                  </Text>
-                </View>
-              )}
-
-              {/* Pet Status */}
-              {item.details?.hasPets !== undefined && (
-                <View className="flex-row justify-between items-center">
-                  <View className="flex-row items-center">
-                    <Text className="text-gray-600 text-sm ml-2">
-                      Evcil Hayvan:
-                    </Text>
-                  </View>
-                  <Text className="text-gray-800 text-sm font-medium">
-                    {item.details.hasPets ? "Var" : "Yok"}
-                  </Text>
-                </View>
-              )}
             </View>
-
-            {/* Compatibility Level */}
-            {item.matchScore && (
-              <View className="mt-4 pt-3 border-t border-gray-100">
-                <MatchScoreBar
-                  matchScore={item.matchScore}
-                  showBar={true}
-                  size="sm"
-                />
-
-                {/* Match Reasons */}
-                {item.matchReasons && item.matchReasons.length > 0 && (
-                  <Text className="text-xs text-gray-500 mt-2">
-                    {item.matchReasons[0]}
-                  </Text>
-                )}
-              </View>
-            )}
+            <TouchableOpacity
+              onPress={() => {
+                if (userRole === "EVSAHIBI") {
+                  // Ev sahibi kiracı profiline gidiyor
+                  navigation.navigate("UserProfile", {
+                    userId: item.userId,
+                    userRole: "KIRACI",
+                  });
+                } else {
+                  // ✅ Kiracı da ev sahibi profiline gitsin
+                  navigation.navigate("UserProfile", {
+                    userId: item.landlordId || item.userId, // landlordId varsa onu kullan, yoksa userId
+                    userRole: "EVSAHIBI",
+                  });
+                }
+              }}
+              activeOpacity={1}
+              className="py-3 mt-4 border border-black rounded-full"
+            >
+              <Text className="text-center font-medium">Göz at</Text>
+            </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </View>
@@ -514,7 +502,7 @@ const LandlordItem = memo(
 
       navigation.navigate("UserProfile", {
         userId: item.userId,
-        userRole: "EVSAHIBI"
+        userRole: "EVSAHIBI",
       });
     }, [item.userId, navigation]);
 
@@ -545,6 +533,8 @@ const LandlordItem = memo(
                     "https://via.placeholder.com/60x60",
                 }}
                 contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={200}
               />
 
               <View className="flex-1 ml-4">
@@ -974,16 +964,16 @@ const AllMatchingUsers = ({ navigation, route }) => {
         ? "Arama sonucu bulunamadı"
         : "Henüz uygun kiracı bulunmuyor"
       : searchQuery.trim()
-        ? "Arama sonucu bulunamadı"
-        : "Henüz uygun ev sahibi bulunmuyor";
+      ? "Arama sonucu bulunamadı"
+      : "Henüz uygun ev sahibi bulunmuyor";
 
     const emptyDescription = isLandlord
       ? searchQuery.trim()
         ? "Farklı anahtar kelimeler deneyin"
         : "Profilinizi güncelleyerek daha fazla eşleşme elde edebilirsiniz"
       : searchQuery.trim()
-        ? "Farklı anahtar kelimeler deneyin"
-        : "Beklenti profilinizi güncelleyerek daha fazla eşleşme elde edebilirsiniz";
+      ? "Farklı anahtar kelimeler deneyin"
+      : "Beklenti profilinizi güncelleyerek daha fazla eşleşme elde edebilirsiniz";
 
     return (
       <View className="flex-1 justify-center items-center p-8">
@@ -1031,8 +1021,9 @@ const AllMatchingUsers = ({ navigation, route }) => {
       if (isLandlord) {
         return `tenant_${item.tenantProfileId || item.id}_${index}`;
       } else {
-        return `landlord_${item.landlordProfileId || item.userId || item.id
-          }_${index}`;
+        return `landlord_${
+          item.landlordProfileId || item.userId || item.id
+        }_${index}`;
       }
     },
     [isLandlord]
@@ -1107,15 +1098,15 @@ const AllMatchingUsers = ({ navigation, route }) => {
   // Dynamic sort options based on user role
   const sortOptions = isLandlord
     ? [
-      { key: "compatibility", label: "Uyumluluk" },
-      { key: "budget", label: "Bütçe" },
-      { key: "date", label: "Tarih" },
-    ]
+        { key: "compatibility", label: "Uyumluluk" },
+        { key: "budget", label: "Bütçe" },
+        { key: "date", label: "Tarih" },
+      ]
     : [
-      { key: "compatibility", label: "Uyumluluk" },
-      { key: "budget", label: "Kira" },
-      { key: "date", label: "Tarih" },
-    ];
+        { key: "compatibility", label: "Uyumluluk" },
+        { key: "budget", label: "Kira" },
+        { key: "date", label: "Tarih" },
+      ];
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -1179,15 +1170,17 @@ const AllMatchingUsers = ({ navigation, route }) => {
                 {sortOptions.map((option) => (
                   <TouchableOpacity
                     key={option.key}
-                    className={`mr-3 px-4 py-2 rounded-full border ${sortBy === option.key
-                      ? "bg-gray-900"
-                      : "bg-white border-white"
-                      }`}
+                    className={`mr-3 px-4 py-2 rounded-full border ${
+                      sortBy === option.key
+                        ? "bg-gray-900"
+                        : "bg-white border-white"
+                    }`}
                     onPress={() => setSortBy(option.key)}
                   >
                     <Text
-                      className={`text-sm font-medium ${sortBy === option.key ? "text-white" : "text-gray-700"
-                        }`}
+                      className={`text-sm font-medium ${
+                        sortBy === option.key ? "text-white" : "text-gray-700"
+                      }`}
                     >
                       {option.label}
                     </Text>

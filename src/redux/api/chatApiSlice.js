@@ -82,11 +82,11 @@ export const chatApiSlice = createApi({
     },
   }),
   tagTypes: ["ChatMessage", "ChatPartner", "UnreadCount", "Notification"],
-  // ✅ Reduced cache times for real-time updates
-  keepUnusedDataFor: 60, // 1 minute cache for unused data
-  refetchOnMountOrArgChange: true,
-  refetchOnFocus: true,
-  refetchOnReconnect: true,
+  // ✅ OPTIMIZED: Cache ve refetch ayarları optimize edildi
+  keepUnusedDataFor: 300, // ✅ OPTIMIZED: 60s → 300s (5 dakika cache)
+  refetchOnMountOrArgChange: 30, // ✅ OPTIMIZED: 30 saniye cooldown
+  refetchOnFocus: false, // ✅ OPTIMIZED: Focus'ta otomatik refetch'i kapat
+  refetchOnReconnect: true, // Bağlantı koptuğunda refetch gerekli
   endpoints: (builder) => ({
     // ✅ ENHANCED: Chat geçmişini getir - Backend'in yeni pagination format'ına uyumlu
     getChatHistory: builder.query({
@@ -98,7 +98,7 @@ export const chatApiSlice = createApi({
         { type: "ChatMessage", id: `${partnerId}-page-${page}` },
         { type: "ChatMessage", id: partnerId },
       ],
-      keepUnusedDataFor: 300, // 5 minutes cache
+      keepUnusedDataFor: 600, // ✅ OPTIMIZED: 5 dakika → 10 dakika cache
       // ✅ ENHANCED: Backend'in yeni response format'ını handle et
       transformResponse: (response, meta, arg) => {
         console.log(`🔍 Chat History Response (Page ${arg.page}):`, response);

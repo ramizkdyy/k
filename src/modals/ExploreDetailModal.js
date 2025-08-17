@@ -16,13 +16,13 @@ import {
   ScrollView,
   StyleSheet,
   Animated,
-  Image,
   Modal,
   Platform,
   StatusBar,
   Linking,
   Alert,
 } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "../redux/slices/authSlice";
@@ -944,7 +944,9 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
                             }}
                             source={{ uri: post.user.profilePictureUrl }}
                             className="w-full h-full rounded-full"
-                            resizeMode="cover"
+                            contentFit="cover"
+                            cachePolicy="memory-disk"
+                            transition={200}
                           />
                         ) : (
                           <View

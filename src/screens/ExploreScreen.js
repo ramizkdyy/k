@@ -5,11 +5,11 @@ import {
   Dimensions,
   StatusBar,
   Platform,
-  Image,
   TouchableOpacity,
   ScrollView,
   RefreshControl,
 } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
@@ -163,7 +163,7 @@ const FastImage = memo(
           <Image
             source={{ uri: validUri }}
             style={[style, { opacity: loaded && !error ? 1 : 0.3 }]}
-            resizeMode={resizeMode}
+            contentFit={resizeMode}
             blurRadius={blurRadius}
             fadeDuration={fadeDuration}
             onLoad={() => setLoaded(true)}
@@ -348,7 +348,9 @@ const ListingCard = memo(
                       width: "100%",
                       height: "100%",
                     }}
-                    resizeMode="cover"
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={200}
                     blurRadius={25}
                   />
 
@@ -359,7 +361,9 @@ const ListingCard = memo(
                       width: "100%",
                       height: "100%",
                     }}
-                    resizeMode="contain"
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
+                    transition={200}
                     fadeDuration={100} // Faster fade
                   />
 

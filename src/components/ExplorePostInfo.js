@@ -1,5 +1,6 @@
 import React, { memo, useRef, useEffect } from "react";
-import { View, Text, Animated, Image, TouchableOpacity } from "react-native";
+import { View, Text, Animated, TouchableOpacity } from "react-native";
+import { Image } from "expo-image";
 import { useSelector } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
 import { selectCurrentUser } from "../redux/slices/authSlice";

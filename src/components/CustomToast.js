@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, TouchableOpacity, Dimensions, Image } from "react-native";
+import { View, Text, TouchableOpacity, Dimensions } from "react-native";
+import { Image } from "expo-image";
 import { BlurView } from "expo-blur";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import { faXmark } from "@fortawesome/pro-regular-svg-icons";
@@ -53,7 +54,9 @@ const CustomToast = ({ text1, text2, hide, onPress, props }) => {
                 <Image
                   source={{ uri: profileImage }}
                   className="w-full h-full rounded-full"
-                  resizeMode="cover"
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={200}
                   onError={(error) => {
                     console.log("❌ Profile image load error:", error);
                   }}

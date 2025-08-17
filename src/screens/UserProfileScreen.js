@@ -4,13 +4,13 @@ import {
     Text,
     ScrollView,
     TouchableOpacity,
-    Image,
     Alert,
     ActivityIndicator,
     SafeAreaView,
     Dimensions,
     Animated
 } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
@@ -577,7 +577,9 @@ const UserProfileScreen = ({ navigation, route }) => {
                             <Image
                                 source={{ uri: userProfile.profileImageUrl }}
                                 className="w-full h-full"
-                                resizeMode="cover"
+                                contentFit="cover"
+                                cachePolicy="memory-disk"
+                                transition={200}
                             />
                         ) : (
                             <Text style={{ fontSize: 40 }} className="text-gray-900 font-bold">
@@ -1509,7 +1511,9 @@ const UserProfileScreen = ({ navigation, route }) => {
                                                         <Image
                                                             source={{ uri: message.senderProfile.profileImageUrl }}
                                                             style={{ width: '100%', height: '100%' }}
-                                                            resizeMode="cover"
+                                                            contentFit="cover"
+                                cachePolicy="memory-disk"
+                                transition={200}
                                                         />
                                                     ) : (
                                                         <Text className="text-gray-600 font-semibold text-sm">

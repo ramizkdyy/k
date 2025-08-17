@@ -607,7 +607,9 @@ const PropertyItem = memo(
                         }}
                         source={{ uri: item?.landlordProfileURL }}
                         className="w-full h-full rounded-full"
-                        resizeMode="cover"
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                        transition={200}
                       />
                     ) : (
                       <View

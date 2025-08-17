@@ -4,6 +4,11 @@ const BASE_URL = "https://kiraxapiyeni.justkey.online/";
 
 export const apiSlice = createApi({
   reducerPath: "api",
+  // ✅ OPTIMIZED: Cache optimizasyonu
+  keepUnusedDataFor: 300, // ✅ OPTIMIZED: 5 dakika cache
+  refetchOnMountOrArgChange: 60, // ✅ OPTIMIZED: 1 dakika cooldown
+  refetchOnFocus: false, // ✅ OPTIMIZED: Focus'ta otomatik refetch'i kapat
+  refetchOnReconnect: true, // Network bağlantısı düzeldiğinde refetch
   baseQuery: fetchBaseQuery({
     baseUrl: BASE_URL,
     prepareHeaders: (headers, { getState }) => {

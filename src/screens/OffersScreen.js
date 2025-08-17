@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Image,
   RefreshControl,
   ActivityIndicator,
   Alert,
@@ -15,6 +14,7 @@ import {
   StatusBar,
 
 } from "react-native";
+import { Image } from "expo-image";
 import { useSelector } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
@@ -545,7 +545,9 @@ const OffersScreen = () => {
                       height: 280,
                       borderRadius: 24,
                     }}
-                    resizeMode="cover"
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={200}
                     onError={(e) =>
                       console.log("Image load error:", e.nativeEvent.error)
                     }
