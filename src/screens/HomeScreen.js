@@ -68,6 +68,23 @@ const HomeScreen = ({ navigation }) => {
     extrapolate: 'clamp',
   });
 
+  // ÖNEMLİ: Arama barının genişlik animasyonu
+  const searchBarWidth = scrollY.interpolate({
+    inputRange: [0, SCROLL_DISTANCE],
+    outputRange: [
+      screenWidth - 32, // Başta neredeyse tam genişlik (sadece padding)
+      screenWidth - 32 - 50 - 8 // Scroll sonunda mesaj butonu için yer bırak
+    ],
+    extrapolate: 'clamp',
+  });
+
+  // Arama barının sağdan margin/padding animasyonu
+  const searchBarMarginRight = scrollY.interpolate({
+    inputRange: [0, SCROLL_DISTANCE],
+    outputRange: [0, 58], // Mesaj butonu için yer (50 + 8 margin)
+    extrapolate: 'clamp',
+  });
+
   const headerContainerHeight = scrollY.interpolate({
     inputRange: [0, SCROLL_DISTANCE],
     outputRange: [
@@ -177,15 +194,6 @@ const HomeScreen = ({ navigation }) => {
 
   // Animated Header Component
   const renderAnimatedHeader = () => {
-    const searchBarWidth = scrollY.interpolate({
-      inputRange: [0, SCROLL_DISTANCE],
-      outputRange: [
-        screenWidth - 32 - 50 - 8, // Filter butonu için yer bırak
-        screenWidth - 32 - 50 - 8
-      ],
-      extrapolate: 'clamp',
-    });
-
     return (
       <Animated.View
         style={{
@@ -248,17 +256,16 @@ const HomeScreen = ({ navigation }) => {
                   kiraX
                 </Text>
               </View>
-
-
             </View>
           </Animated.View>
 
-          {/* Search Bar - Title'ın yerine geçer */}
+          {/* Search Bar - Title'ın yerine geçer ve genişlik animasyonu */}
           <Animated.View
             style={{
               marginTop: 10,
               transform: [{ translateY: searchBarTranslateY }],
-              width: searchBarWidth,
+              width: searchBarWidth, // Animasyonlu genişlik
+              marginRight: searchBarMarginRight, // Sağdan margin animasyonu
             }}
           >
             <BlurView
@@ -408,7 +415,7 @@ const HomeScreen = ({ navigation }) => {
         </View>
       </Animated.ScrollView>
 
-      <SafeAreaView style={{ flex: 0, backgroundColor: "transparent" }} />
+      {/* <SafeAreaView style={{ flex: 0, backgroundColor: "transparent" }} /> */}
     </View>
   );
 };
