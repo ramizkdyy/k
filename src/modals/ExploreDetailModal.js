@@ -353,7 +353,7 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
         iconSize: 12,
         textSize: 12,
         containerPadding: 2,
-        barWidth: width * 0.6,
+        barWidth: width * 0.5,
       },
     };
 
@@ -383,7 +383,6 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
               style={{
                 height: currentSize.barHeight,
                 width: currentSize.barWidth,
-                marginRight: 12,
               }}
             >
               <Animated.View
@@ -399,6 +398,16 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
                 }}
               />
             </View>
+          </View>
+          <View className="flex flex-row justify-between items-center">
+            <Text
+              className="text-xs mt-1"
+              style={{
+                color: scoreInfo.color,
+              }}
+            >
+              {scoreInfo.text} Uyumluluk
+            </Text>
             <Text
               className="font-medium ml-1"
               style={{
@@ -409,14 +418,6 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
               %{Math.round(matchScore * 100)}
             </Text>
           </View>
-          <Text
-            className="text-xs mt-1"
-            style={{
-              color: scoreInfo.color,
-            }}
-          >
-            {scoreInfo.text} Uyumluluk
-          </Text>
         </View>
       );
     }
@@ -987,13 +988,7 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
                 {userRole === "KIRACI" &&
                   processedMatchScore &&
                   processedMatchScore > 0 && (
-                    <View>
-                      <Text
-                        style={{ fontSize: 16 }}
-                        className="font-semibold text-gray-900 mb-2"
-                      >
-                        Uyumluluk
-                      </Text>
+                    <View className="flex flex-col justify-center items-center mb-4">
                       <MatchScoreBar
                         matchScore={processedMatchScore}
                         showBar={true}

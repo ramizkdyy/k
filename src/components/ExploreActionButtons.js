@@ -282,13 +282,6 @@ const ExploreActionButtons = memo(
           value: `${details.floor}. Kat`,
           label: "Kat",
         });
-
-      if (details.dues)
-        basicDetails.push({
-          icon: faMoneyBills,
-          value: `${details.dues}₺ Aidat`,
-          label: "Aidat",
-        });
     }
 
     // Meta post için tüm detaylar (animasyon yok, hep görünür)

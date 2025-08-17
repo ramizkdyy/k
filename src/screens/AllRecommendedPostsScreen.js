@@ -496,7 +496,7 @@ const PropertyItem = memo(
 
     const handleProfilePress = useCallback(() => {
       // API'den gelen veride landlord ID'si yok, bu yüzden navigation disable
-      console.log("Landlord profile tıklandı:", item.landlordName);
+      console.log("Landlord profile tıklandı:", item);
     }, [item.landlordName, navigation]);
 
     // Dummy image array oluştur (API'den firstPostİmageURL boş geliyor)
@@ -563,7 +563,7 @@ const PropertyItem = memo(
           {item.matchScore && (
             <View className="mt-2 mb-1">
               <View className="flex-row items-center">
-                <FontAwesomeIcon color="#86efac" icon={faHeart} size={14} />
+                <FontAwesomeIcon color="#000" icon={faHeart} size={14} />
                 <Text className="text-sm font-medium text-gray-700 ml-2">
                   %{Math.round(item.matchScore)} Uyum -{" "}
                   {item.compatibilityLevel} Eşleşme
@@ -594,12 +594,37 @@ const PropertyItem = memo(
                   className="flex-row items-center"
                   onPress={handleProfilePress}
                 >
-                  <View className="w-12 h-12 rounded-full justify-center items-center mr-3 border-gray-900 border">
-                    <View>
-                      <Text className="text-xl font-bold text-gray-900">
-                        {item.landlordName?.charAt(0) || "E"}
-                      </Text>
-                    </View>
+                  <View
+                    style={{ boxShadow: "0px 0px 12px #00000008" }}
+                    className="w-14 h-14 rounded-full bg-white justify-center items-center mr-2 border-gray-200 border"
+                  >
+                    {item?.landlordProfileURL !==
+                    "default_profile_image_url" ? (
+                      <Image
+                        style={{
+                          borderRadius: 100,
+                          boxShadow: "0px 0px 12px #00000014",
+                        }}
+                        source={{ uri: item?.landlordProfileURL }}
+                        className="w-full h-full rounded-full"
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View
+                        style={{
+                          borderRadius: 100,
+                          boxShadow: "0px 0px 12px #00000014",
+                        }}
+                        className="w-full h-full rounded-full bg-gray-100 justify-center items-center"
+                      >
+                        <Text
+                          style={{ fontSize: 20 }}
+                          className="text-gray-900 font-bold"
+                        >
+                          {item?.landlordName?.charAt(0) || "P"}
+                        </Text>
+                      </View>
+                    )}
                   </View>
 
                   <View className="flex-col gap-1">
@@ -618,12 +643,6 @@ const PropertyItem = memo(
                     </View>
                   </View>
                 </TouchableOpacity>
-                <Text
-                  className="mb-2 pl-1 text-gray-500"
-                  style={{ fontSize: 12, fontWeight: 500 }}
-                >
-                  {item.landlordPhone ? "Telefon mevcut" : "Yeni ilan"}
-                </Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -712,7 +731,6 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
       refetchOnMountOrArgChange: true,
     }
   );
-
 
   // Update properties when new data arrives
   useEffect(() => {

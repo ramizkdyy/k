@@ -25,7 +25,7 @@ import {
   updatePostImageStatus,
 } from "../redux/slices/postSlice";
 import { useCreatePostMutation } from "../redux/api/apiSlice";
-import * as ImagePicker from "expo-image-picker";
+import {launchImageLibrary, launchCamera, MediaType, ImagePickerResponse} from 'react-native-image-picker';
 import { MaterialIcons } from "@expo/vector-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
@@ -35,6 +35,7 @@ import {
   faXmark,
   faLocationDot,
 } from "@fortawesome/pro-solid-svg-icons";
+
 import LocationPicker from "../components/LocationPicker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
@@ -43,19 +44,18 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
-} from 'react-native-reanimated';
+} from "react-native-reanimated";
 
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   getCities,
   getDistrictsAndNeighbourhoodsByCityCode,
   isCityCode,
   getCityCodes,
-  getNeighbourhoodsByCityCodeAndDistrict
-} from 'turkey-neighbourhoods';
+  getNeighbourhoodsByCityCodeAndDistrict,
+} from "turkey-neighbourhoods";
 
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 // Enum mapping functions
 const mapRentalPeriodToEnum = (value) => {
   const mapping = {
@@ -179,8 +179,8 @@ const CreatePostHeader = ({
               ? "Güncelleniyor..."
               : "Oluşturuluyor..."
             : propertyData
-              ? "Güncelle"
-              : "Oluştur"}
+            ? "Güncelle"
+            : "Oluştur"}
         </Text>
       </TouchableOpacity>
     </View>
@@ -278,7 +278,7 @@ const CustomDropdown = ({
   options,
   placeholder,
   required = false,
-  disabled = false
+  disabled = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -290,7 +290,8 @@ const CustomDropdown = ({
     const minHeight = SCREEN_HEIGHT * 0.25; // Minimum %25
     const maxHeight = SCREEN_HEIGHT * 0.6; // Maximum %60
 
-    const calculatedHeight = headerHeight + (options.length * itemHeight) + bottomPadding;
+    const calculatedHeight =
+      headerHeight + options.length * itemHeight + bottomPadding;
 
     // Az seçenek varsa (3 veya daha az) küçük modal
     if (options.length <= 3) {
@@ -412,10 +413,7 @@ const CustomDropdown = ({
                   >
                     {label}
                   </Text>
-                  <TouchableOpacity
-                    onPress={handleClose}
-                    className="px-2 py-2"
-                  >
+                  <TouchableOpacity onPress={handleClose} className="px-2 py-2">
                     <Text
                       style={{
                         fontSize: 15,
@@ -433,8 +431,9 @@ const CustomDropdown = ({
               <ScrollView
                 className="flex-1"
                 style={{
-                  backgroundColor: 'white',
-                  maxHeight: options.length <= 3 ? undefined : SCREEN_HEIGHT * 0.5
+                  backgroundColor: "white",
+                  maxHeight:
+                    options.length <= 3 ? undefined : SCREEN_HEIGHT * 0.5,
                 }}
                 showsVerticalScrollIndicator={options.length > 5}
                 bounces={options.length > 3}
@@ -443,30 +442,39 @@ const CustomDropdown = ({
                 keyboardShouldPersistTaps="handled"
                 contentContainerStyle={{
                   paddingBottom: options.length <= 3 ? 5 : 15,
-                  justifyContent: options.length <= 3 ? 'flex-start' : 'flex-start',
-                  flexGrow: 0
+                  justifyContent:
+                    options.length <= 3 ? "flex-start" : "flex-start",
+                  flexGrow: 0,
                 }}
               >
                 {options.map((option, index) => (
                   <TouchableOpacity
                     key={index}
-                    className={`py-4 px-7 flex-row items-center justify-between ${index !== options.length - 1 ? "border-b border-gray-50" : ""
-                      } ${value === option ? "bg-gray-100" : "bg-white"}`}
+                    className={`py-4 px-7 flex-row items-center justify-between ${
+                      index !== options.length - 1
+                        ? "border-b border-gray-50"
+                        : ""
+                    } ${value === option ? "bg-gray-100" : "bg-white"}`}
                     onPress={() => handleOptionSelect(option)}
                     activeOpacity={0.7}
                   >
                     <Text
-                      className={`text-lg flex-1 mr-3 ${value === option
-                        ? "text-gray-900 font-medium"
-                        : "text-gray-600"
-                        }`}
+                      className={`text-lg flex-1 mr-3 ${
+                        value === option
+                          ? "text-gray-900 font-medium"
+                          : "text-gray-600"
+                      }`}
                       numberOfLines={2}
                       ellipsizeMode="tail"
                     >
                       {option}
                     </Text>
                     {value === option && (
-                      <FontAwesomeIcon icon={faCheck} size={16} color="#16a34a" />
+                      <FontAwesomeIcon
+                        icon={faCheck}
+                        size={16}
+                        color="#16a34a"
+                      />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -550,13 +558,10 @@ const CreatePostScreen = ({ navigation, route }) => {
   const [uploadStatus, setUploadStatus] = useState("idle");
   const [showLocationPicker, setShowLocationPicker] = useState(false);
 
-
   const [allCities, setAllCities] = useState([]);
   const [districtOptions, setDistrictOptions] = useState([]);
   const [cityCodeMap, setCityCodeMap] = useState({});
   const [neighbourhoodOptions, setNeighbourhoodOptions] = useState([]);
-
-
 
   useEffect(() => {
     loadAllTurkeyCities();
@@ -593,22 +598,30 @@ const CreatePostScreen = ({ navigation, route }) => {
       }
 
       // Seçilen şehir ve ilçenin mahallelerini al
-      const neighbourhoods = getNeighbourhoodsByCityCodeAndDistrict(cityCode, selectedDistrict);
+      const neighbourhoods = getNeighbourhoodsByCityCodeAndDistrict(
+        cityCode,
+        selectedDistrict
+      );
 
       if (neighbourhoods && Array.isArray(neighbourhoods)) {
-        const sortedNeighbourhoods = neighbourhoods.sort((a, b) => a.localeCompare(b, 'tr'));
+        const sortedNeighbourhoods = neighbourhoods.sort((a, b) =>
+          a.localeCompare(b, "tr")
+        );
         setNeighbourhoodOptions(sortedNeighbourhoods);
-        console.log(`${selectedCity} ${selectedDistrict} için ${sortedNeighbourhoods.length} mahalle yüklendi`);
+        console.log(
+          `${selectedCity} ${selectedDistrict} için ${sortedNeighbourhoods.length} mahalle yüklendi`
+        );
       } else {
         setNeighbourhoodOptions([]);
-        console.log(`${selectedCity} ${selectedDistrict} için mahalle bulunamadı`);
+        console.log(
+          `${selectedCity} ${selectedDistrict} için mahalle bulunamadı`
+        );
       }
     } catch (error) {
-      console.error('Mahalleler yüklenirken hata:', error);
+      console.error("Mahalleler yüklenirken hata:", error);
       setNeighbourhoodOptions([]);
     }
   };
-
 
   // Tüm Türkiye şehirlerini yükle
   const loadAllTurkeyCities = () => {
@@ -616,22 +629,24 @@ const CreatePostScreen = ({ navigation, route }) => {
       const cities = getCities(); // [{code: "01", name: "Adana"}, ...]
 
       if (cities && Array.isArray(cities)) {
-        const cityNames = cities.map(city => city.name).sort((a, b) => a.localeCompare(b, 'tr'));
+        const cityNames = cities
+          .map((city) => city.name)
+          .sort((a, b) => a.localeCompare(b, "tr"));
         setAllCities(cityNames);
 
         // Şehir adı -> kod mapping oluştur
         const codeMap = {};
-        cities.forEach(city => {
+        cities.forEach((city) => {
           codeMap[city.name] = city.code;
         });
         setCityCodeMap(codeMap);
 
         console.log(`CreatePost: Toplam ${cityNames.length} şehir yüklendi`);
       } else {
-        throw new Error('Cities array not found');
+        throw new Error("Cities array not found");
       }
     } catch (error) {
-      console.error('CreatePost şehirler yüklenirken hata:', error);
+      console.error("CreatePost şehirler yüklenirken hata:", error);
       // Hata durumunda fallback liste kullan
       loadFallbackCities();
     }
@@ -640,20 +655,87 @@ const CreatePostScreen = ({ navigation, route }) => {
   // Fallback şehir listesi
   const loadFallbackCities = () => {
     const fallbackCities = [
-      "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Aksaray", "Amasya",
-      "Ankara", "Antalya", "Ardahan", "Artvin", "Aydın", "Balıkesir",
-      "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis",
-      "Bolu", "Burdur", "Bursa", "Çanakkale", "Çankırı", "Çorum",
-      "Denizli", "Diyarbakır", "Düzce", "Edirne", "Elazığ", "Erzincan",
-      "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane",
-      "Hakkâri", "Hatay", "Iğdır", "Isparta", "İstanbul", "İzmir",
-      "Kahramanmaraş", "Karabük", "Karaman", "Kars", "Kastamonu",
-      "Kayseri", "Kırıkkale", "Kırklareli", "Kırşehir", "Kilis",
-      "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin",
-      "Mersin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu",
-      "Osmaniye", "Rize", "Sakarya", "Samsun", "Siirt", "Sinop",
-      "Sivas", "Şanlıurfa", "Şırnak", "Tekirdağ", "Tokat", "Trabzon",
-      "Tunceli", "Uşak", "Van", "Yalova", "Yozgat", "Zonguldak"
+      "Adana",
+      "Adıyaman",
+      "Afyonkarahisar",
+      "Ağrı",
+      "Aksaray",
+      "Amasya",
+      "Ankara",
+      "Antalya",
+      "Ardahan",
+      "Artvin",
+      "Aydın",
+      "Balıkesir",
+      "Bartın",
+      "Batman",
+      "Bayburt",
+      "Bilecik",
+      "Bingöl",
+      "Bitlis",
+      "Bolu",
+      "Burdur",
+      "Bursa",
+      "Çanakkale",
+      "Çankırı",
+      "Çorum",
+      "Denizli",
+      "Diyarbakır",
+      "Düzce",
+      "Edirne",
+      "Elazığ",
+      "Erzincan",
+      "Erzurum",
+      "Eskişehir",
+      "Gaziantep",
+      "Giresun",
+      "Gümüşhane",
+      "Hakkâri",
+      "Hatay",
+      "Iğdır",
+      "Isparta",
+      "İstanbul",
+      "İzmir",
+      "Kahramanmaraş",
+      "Karabük",
+      "Karaman",
+      "Kars",
+      "Kastamonu",
+      "Kayseri",
+      "Kırıkkale",
+      "Kırklareli",
+      "Kırşehir",
+      "Kilis",
+      "Kocaeli",
+      "Konya",
+      "Kütahya",
+      "Malatya",
+      "Manisa",
+      "Mardin",
+      "Mersin",
+      "Muğla",
+      "Muş",
+      "Nevşehir",
+      "Niğde",
+      "Ordu",
+      "Osmaniye",
+      "Rize",
+      "Sakarya",
+      "Samsun",
+      "Siirt",
+      "Sinop",
+      "Sivas",
+      "Şanlıurfa",
+      "Şırnak",
+      "Tekirdağ",
+      "Tokat",
+      "Trabzon",
+      "Tunceli",
+      "Uşak",
+      "Van",
+      "Yalova",
+      "Yozgat",
+      "Zonguldak",
     ];
     setAllCities(fallbackCities);
   };
@@ -673,31 +755,40 @@ const CreatePostScreen = ({ navigation, route }) => {
       // turkey-neighbourhoods paketinden ilçeleri al
       const districtsData = getDistrictsAndNeighbourhoodsByCityCode(cityCode);
 
-      if (districtsData && typeof districtsData === 'object') {
-        const districtNames = Object.keys(districtsData).sort((a, b) => a.localeCompare(b, 'tr'));
+      if (districtsData && typeof districtsData === "object") {
+        const districtNames = Object.keys(districtsData).sort((a, b) =>
+          a.localeCompare(b, "tr")
+        );
         setDistrictOptions(districtNames);
-        console.log(`CreatePost: ${selectedCity} için ${districtNames.length} ilçe yüklendi`);
+        console.log(
+          `CreatePost: ${selectedCity} için ${districtNames.length} ilçe yüklendi`
+        );
       } else {
         setDistrictOptions([]);
         console.log(`CreatePost: ${selectedCity} için ilçe bulunamadı`);
       }
     } catch (error) {
-      console.error('CreatePost ilçeler yüklenirken hata:', error);
+      console.error("CreatePost ilçeler yüklenirken hata:", error);
       setDistrictOptions([]);
     }
   };
 
-
-  const kitchenTypes = [
-    "Amerikan Mutfak", "Normal", "Diğer"
-  ]
+  const kitchenTypes = ["Amerikan Mutfak", "Normal", "Diğer"];
 
   const flatSizes = [
-    "1+0", "1+1", "2+0",
-    "2+1", "2+2", "3+0"
-    , "3+1", "3+2", "3+3",
-    "4+1", "4+2", "5+2"
-  ]
+    "1+0",
+    "1+1",
+    "2+0",
+    "2+1",
+    "2+2",
+    "3+0",
+    "3+1",
+    "3+2",
+    "3+3",
+    "4+1",
+    "4+2",
+    "5+2",
+  ];
 
   // Property type options
   const propertyTypes = [
@@ -935,30 +1026,7 @@ const CreatePostScreen = ({ navigation, route }) => {
     }
   }, [propertyData, savedFormData]);
 
-  // Request camera/gallery permissions
-  useEffect(() => {
-    (async () => {
-      if (Platform.OS !== "web") {
-        const { status: cameraStatus } =
-          await ImagePicker.requestCameraPermissionsAsync();
-        if (cameraStatus !== "granted") {
-          Alert.alert(
-            "Kamera İzni Gerekli",
-            "Fotoğraf çekmek için kamera izni vermeniz gerekmektedir."
-          );
-        }
-
-        const { status: galleryStatus } =
-          await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (galleryStatus !== "granted") {
-          Alert.alert(
-            "Galeri İzni Gerekli",
-            "Galeriden fotoğraf seçmek için izin vermeniz gerekmektedir."
-          );
-        }
-      }
-    })();
-  }, []);
+  // Note: react-native-image-picker handles permissions automatically
 
   // Extract location components when location is updated
   useEffect(() => {
@@ -969,61 +1037,75 @@ const CreatePostScreen = ({ navigation, route }) => {
   const pickImage = async (useCamera = false) => {
     try {
       const options = {
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false,
-        aspect: [4, 3],
+        mediaType: 'photo',
         quality: 0.8,
-        allowsMultipleSelection: true,
-        orderedSelection: true,
-        selectionLimit: 10,
+        includeBase64: false,
+        maxWidth: 2000,
+        maxHeight: 2000,
       };
 
-      let result;
       if (useCamera) {
-        result = await ImagePicker.launchCameraAsync({
-          ...options,
-          allowsMultipleSelection: false,
-          allowsEditing: true,
+        launchCamera(options, (response) => {
+          handleImagePickerResponse(response);
         });
       } else {
-        result = await ImagePicker.launchImageLibraryAsync(options);
-      }
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const newImages = result.assets.map((asset, index) => ({
-          uri: asset.uri,
-          id: `${Date.now()}_${index}`,
-          type: asset.type,
-          width: asset.width,
-          height: asset.height,
-          fileSize: asset.fileSize,
-        }));
-
-        const totalImages = images.length + newImages.length;
-        const maxImages = 15;
-
-        if (totalImages > maxImages) {
-          Alert.alert(
-            "Fotoğraf Limiti",
-            `En fazla ${maxImages} fotoğraf ekleyebilirsiniz. ${newImages.length
-            } fotoğraf seçtiniz, ancak sadece ${maxImages - images.length
-            } tanesi eklenecek.`
-          );
-          const allowedImages = newImages.slice(0, maxImages - images.length);
-          setImages([...images, ...allowedImages]);
-        } else {
-          setImages([...images, ...newImages]);
-          Alert.alert(
-            "Başarılı",
-            `${newImages.length} fotoğraf başarıyla eklendi.`
-          );
-        }
+        const galleryOptions = {
+          ...options,
+          selectionLimit: 10, // Allow multiple selection
+        };
+        
+        launchImageLibrary(galleryOptions, (response) => {
+          handleImagePickerResponse(response);
+        });
       }
     } catch (error) {
       Alert.alert(
         "Hata",
         "Fotoğraf seçme sırasında bir hata oluştu: " + error.message
       );
+    }
+  };
+
+  // Handle image picker response
+  const handleImagePickerResponse = (response) => {
+    if (response.didCancel || response.errorMessage) {
+      if (response.errorMessage) {
+        Alert.alert("Hata", response.errorMessage);
+      }
+      return;
+    }
+
+    if (response.assets && response.assets.length > 0) {
+      const newImages = response.assets.map((asset, index) => ({
+        uri: asset.uri,
+        id: `${Date.now()}_${index}`,
+        type: asset.type,
+        width: asset.width,
+        height: asset.height,
+        fileSize: asset.fileSize,
+      }));
+
+      const totalImages = images.length + newImages.length;
+      const maxImages = 15;
+
+      if (totalImages > maxImages) {
+        Alert.alert(
+          "Fotoğraf Limiti",
+          `En fazla ${maxImages} fotoğraf ekleyebilirsiniz. ${
+            newImages.length
+          } fotoğraf seçtiniz, ancak sadece ${
+            maxImages - images.length
+          } tanesi eklenecek.`
+        );
+        const allowedImages = newImages.slice(0, maxImages - images.length);
+        setImages([...images, ...allowedImages]);
+      } else {
+        setImages([...images, ...newImages]);
+        Alert.alert(
+          "Başarılı",
+          `${newImages.length} fotoğraf başarıyla eklendi.`
+        );
+      }
     }
   };
 
@@ -1386,7 +1468,7 @@ const CreatePostScreen = ({ navigation, route }) => {
       Alert.alert(
         "Hata",
         error.data?.message ||
-        "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin."
+          "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin."
       );
     }
   };
@@ -1577,12 +1659,12 @@ const CreatePostScreen = ({ navigation, route }) => {
               <View className="flex-row justify-between">
                 <View className="w-[48%]">
                   {/* <CustomTextInput
-                    label="Mahalle"
-                    value={mahalle}
-                    onChangeText={setMahalle}
-                    placeholder="Caferağa"
-                    required
-                  /> */}
+                      label="Mahalle"
+                      value={mahalle}
+                      onChangeText={setMahalle}
+                      placeholder="Caferağa"
+                      required
+                    /> */}
 
                   <CustomDropdown
                     label="Mahalle"
@@ -1590,9 +1672,11 @@ const CreatePostScreen = ({ navigation, route }) => {
                     setValue={setMahalle}
                     options={neighbourhoodOptions}
                     placeholder={
-                      !il ? "Önce il seçiniz" :
-                        !ilce ? "Önce ilçe seçiniz" :
-                          "Mahalle seçiniz"
+                      !il
+                        ? "Önce il seçiniz"
+                        : !ilce
+                        ? "Önce ilçe seçiniz"
+                        : "Mahalle seçiniz"
                     }
                     required
                     disabled={!il || !ilce || neighbourhoodOptions.length === 0} // İl veya ilçe seçilmemişse disabled
@@ -1853,31 +1937,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   backdrop: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   backdropTouchable: {
     flex: 1,
   },
   modal: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     top: 0,
     bottom: 0,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     elevation: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
 });
 export default CreatePostScreen;

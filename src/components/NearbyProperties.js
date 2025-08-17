@@ -42,7 +42,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
     // Boyut ayarları
     const sizes = {
       xs: {
-        barHeight: 2,
+        barHeight: 4,
         iconSize: 10,
         textSize: 11,
         containerPadding: 1,
@@ -526,7 +526,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
           {/* Fiyat */}
           <Text
             style={{ fontSize: 14, fontWeight: 600 }}
-            className="text-gray-400 mb-2"
+            className="text-gray-400"
             numberOfLines={1}
             ellipsizeMode="tail"
           >
@@ -537,14 +537,16 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
               : "Fiyat belirtilmemiş"}
           </Text>
 
-          {/* Match Score */}
-          {item.matchScore && (
-            <MatchScoreBar
-              matchScore={item.matchScore}
-              showBar={true}
-              size="xs"
-            />
-          )}
+          <View className="mb-1">
+            {/* Match Score */}
+            {item.matchScore && (
+              <MatchScoreBar
+                matchScore={item.matchScore}
+                showBar={true}
+                size="xs"
+              />
+            )}
+          </View>
         </View>
 
         {/* Oda ve banyo bilgileri */}

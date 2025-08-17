@@ -4,7 +4,10 @@ import { useSelector } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
 import { selectCurrentUser } from "../redux/slices/authSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faLocationDot } from "@fortawesome/pro-solid-svg-icons";
+import {
+  faChevronRight,
+  faLocationDot,
+} from "@fortawesome/pro-solid-svg-icons";
 import { faHeart } from "@fortawesome/pro-solid-svg-icons";
 
 const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
@@ -22,27 +25,27 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
       return {
         level: "excellent",
         color: "#10b981",
-        text: "Mükemmel",
+        text: "",
         bgColor: "#dcfce7",
       };
     if (percentage >= 60)
       return {
         level: "good",
         color: "#3b82f6",
-        text: "Çok İyi",
+        text: "",
         bgColor: "#dbeafe",
       };
     if (percentage >= 40)
       return {
         level: "medium",
         color: "#f59e0b",
-        text: "İyi",
+        text: "",
         bgColor: "#fef3c7",
       };
     return {
       level: "weak",
       color: "#ef4444",
-      text: "Orta",
+      text: "",
       bgColor: "#fee2e2",
     };
   };
@@ -57,11 +60,11 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
     // Boyut ayarları
     const sizes = {
       xs: {
-        barHeight: 3,
+        barHeight: 5,
         iconSize: 10,
         textSize: 10,
         containerPadding: 1,
-        barWidth: 80,
+        barWidth: 120,
       },
       sm: {
         barHeight: 4,
@@ -140,7 +143,7 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
                 textShadowRadius: 3,
               }}
             >
-              %{Math.round(matchScore * 100)} {scoreInfo.text}
+              {scoreInfo.text}
             </Text>
           </View>
         </View>
@@ -192,6 +195,7 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
           matchScore = rawMatchScore > 1 ? rawMatchScore / 100 : rawMatchScore; // 0-1 aralığına getir
         }
       }
+      console.log(post);
 
       return {
         title:
@@ -208,6 +212,7 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
         landlordUserRole: "EVSAHIBI", // Ev sahibi rolünü ekle
         matchScore: matchScore, // İşlenmiş match score
         postId: post.postId,
+        postDescription: post.postDescription || null,
         type: "normal",
       };
     } else if (listing.postType === "MetaPost" && listing.metaPost) {
@@ -330,34 +335,9 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
       }}
     >
       <View className="px-3 py-3">
-        {/* İlan Başlığı - Sadece normal postlarda tıklanabilir */}
-        {listingData.type === "normal" ? (
-          <TouchableOpacity
-            onPress={handlePostDetailPress}
-            activeOpacity={0.7}
-            className=""
-          >
-            <Text
-              style={{ fontSize: 18 }}
-              className="text-white font-bold"
-              numberOfLines={2}
-            >
-              {listingData.title}
-            </Text>
-          </TouchableOpacity>
-        ) : (
-          <Text
-            className="text-white font-bold"
-            style={{ fontSize: 18 }}
-            numberOfLines={2}
-          >
-            {listingData.title}
-          </Text>
-        )}
-
         {/* Fiyat */}
         {listingData.price && (
-          <View className="mt-1 mb-2">
+          <View className="mt-1 mb-1  flex">
             <Text
               style={{ fontSize: 18 }}
               className="text-white font-light underline"
@@ -368,62 +348,35 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
           </View>
         )}
 
-        {/* Ev sahibi bilgisi - sadece Normal Post için */}
-        {listingData.type === "normal" && listingData.landlord && (
-          <View className="mt-1">
-            {/* Ev sahibi profil resmi ve ismi - TouchableOpacity ile sarıldı */}
-            <TouchableOpacity
-              className="flex-row items-center mb-2"
-              onPress={handleUserProfilePress}
-              activeOpacity={0.7}
+        {/* İlan Başlığı - Sadece normal postlarda tıklanabilir */}
+        {listingData.type === "normal" ? (
+          <TouchableOpacity onPress={handlePostDetailPress} activeOpacity={0.7}>
+            <Text
+              style={{ fontSize: 18 }}
+              className="text-white font-bold mb-1"
+              numberOfLines={2}
             >
-              {/* Profil Resmi */}
+              {listingData.title}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <Text
+            className="text-white font-bold mb-1"
+            style={{ fontSize: 18 }}
+            numberOfLines={2}
+          >
+            {listingData.title}
+          </Text>
+        )}
 
-              <View
-                style={{ width: 40, height: 40, borderWidth: 0.1 }}
-                className="justify-center items-center rounded-full border-gray-300 mr-2"
-              >
-                {listingData.landlordProfilePicture &&
-                listingData.landlordProfilePicture !==
-                  "default_profile_image_url" ? (
-                  <Image
-                    source={{ uri: listingData.landlordProfilePicture }}
-                    className="w-full h-full rounded-full"
-                    resizeMode="cover"
-                    onError={(error) => {
-                      console.log("❌ Profile image load error:", error);
-                    }}
-                  />
-                ) : (
-                  <Text
-                    style={{ fontSize: 30 }}
-                    className="text-gray-900 font-bold"
-                  >
-                    {listingData.landlord?.charAt(0)?.toUpperCase() || "P"}
-                  </Text>
-                )}
-              </View>
-
-              {/* İsim */}
-              <Text className="text-white font-normal" style={{ fontSize: 14 }}>
-                {listingData.landlord}
-              </Text>
-            </TouchableOpacity>
-
-            {/* Match Score bar - sadece KIRACI için ve score varsa göster */}
-            {userRole === "KIRACI" &&
-            listingData.matchScore &&
-            listingData.matchScore > 0 ? (
-              <MatchScoreBar
-                matchScore={listingData.matchScore}
-                showBar={true}
-                size="xs"
-              />
-            ) : userRole === "KIRACI" ? (
-              <Text className="text-white text-xs" style={subtitleShadowStyle}>
-                Uyumluluk hesaplanıyor...
-              </Text>
-            ) : null}
+        {listingData.location && (
+          <View className=" ">
+            <Text
+              style={{ fontSize: 13 }}
+              className="text-white mb-1 font-light"
+            >
+              {listingData.location}
+            </Text>
           </View>
         )}
       </View>

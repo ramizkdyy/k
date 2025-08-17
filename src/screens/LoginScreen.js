@@ -74,7 +74,7 @@ const LoginScreen = ({ navigation }) => {
       console.log("📱 Starting FCM token registration after login...");
 
       // Wait a bit for auth state to fully propagate to RTK Query
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Initialize notification service and get tokens
       const tokens = await notificationService.initialize();
@@ -88,7 +88,7 @@ const LoginScreen = ({ navigation }) => {
         );
 
         // Wait another bit to ensure RTK Query has the auth token in its state
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 200));
 
         // Register FCM token with backend
         console.log("📝 Registering FCM token with backend...");
@@ -427,7 +427,7 @@ const LoginScreen = ({ navigation }) => {
 
               {/* ✅ Enhanced error display */}
               {errorlogin ? (
-                <View className="w-full bg-red-50 border border-red-200 rounded-lg p-3">
+                <View className="w-full rounded-full">
                   <Text className="text-red-600 text-center font-medium">
                     {errorlogin}
                   </Text>
