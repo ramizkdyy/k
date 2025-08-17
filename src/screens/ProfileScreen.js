@@ -53,7 +53,7 @@ const ProfileScreen = ({ navigation }) => {
 
   // SignalR context for proper cleanup
   const { stopConnection } = useSignalR();
-  
+
   // Notification token hook for manual FCM cleanup
   const { manualUnregister: unregisterFcmToken } = useNotificationToken();
 
@@ -85,8 +85,8 @@ const ProfileScreen = ({ navigation }) => {
     isLoading,
     refetch,
   } = userRole === "EVSAHIBI"
-      ? useGetLandlordProfileQuery(currentUser?.id)
-      : useGetTenantProfileQuery(currentUser?.id);
+    ? useGetLandlordProfileQuery(currentUser?.id)
+    : useGetTenantProfileQuery(currentUser?.id);
 
   useEffect(() => {
     if (profileData && profileData.isSuccess && profileData.result) {
@@ -118,7 +118,10 @@ const ProfileScreen = ({ navigation }) => {
               if (unregisterResult.success) {
                 console.log("✅ FCM token unregistered successfully");
               } else if (!unregisterResult.skipLogging) {
-                console.warn("⚠️ FCM token unregistration failed:", unregisterResult.error);
+                console.warn(
+                  "⚠️ FCM token unregistration failed:",
+                  unregisterResult.error
+                );
               }
             } catch (fcmError) {
               console.warn("⚠️ FCM token unregistration error:", fcmError);
@@ -142,7 +145,6 @@ const ProfileScreen = ({ navigation }) => {
             dispatch(forceLogout());
 
             console.log("✅ Logout process completed successfully");
-
           } catch (error) {
             console.error("❌ Error during logout process:", error);
             // Even if cleanup fails, still logout
@@ -156,8 +158,8 @@ const ProfileScreen = ({ navigation }) => {
 
   // Check if expectations are completed
   const isExpectationCompleted =
-    currentUser?.isTenantExpectationCompleted ||
-    currentUser?.isLandlordExpectationCompleted;
+    userProfile?.isTenantExpectationCompleted ||
+    userProfile?.isLandlordExpectationCompleted;
 
   // Render loading state
   if (isLoading && !userProfile) {

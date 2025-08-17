@@ -22,6 +22,8 @@
         "NSLocationWhenInUseUsageDescription": "Bu uygulama konum bilginizi ilan oluştururken kullanır.",
         "NSLocationUsageDescription": "Bu uygulama konum bilginizi ilan oluştururken kullanır.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Bu uygulama konum bilginizi ilan oluştururken kullanır.",
+        "NSCameraUsageDescription": "Bu uygulama profil fotoğrafı çekmek için kamera erişimi gerektirir.",
+        "NSPhotoLibraryUsageDescription": "Bu uygulama profil fotoğrafı seçmek için fotoğraf galerisine erişim gerektirir.",
         "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {

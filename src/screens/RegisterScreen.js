@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Text,
   View,
@@ -14,10 +14,16 @@ import {
   SafeAreaView,
   Pressable,
   Animated,
-  Modal,
   Keyboard,
   TouchableWithoutFeedback,
 } from "react-native";
+import {
+  BottomSheetModal,
+  BottomSheetView,
+  BottomSheetModalProvider,
+  BottomSheetBackdrop,
+} from "@gorhom/bottom-sheet";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useDispatch } from "react-redux";
 import { useRegisterMutation, useLoginMutation } from "../redux/api/apiSlice";
 import { setCredentials } from "../redux/slices/authSlice";
@@ -45,6 +51,67 @@ import { Picker } from "@react-native-picker/picker";
 const { width } = Dimensions.get("window");
 
 const RegisterScreen = ({ navigation }) => {
+  // Bottom Sheet refs
+  const datePickerModalRef = useRef(null);
+  const genderPickerModalRef = useRef(null);
+
+  // Bottom Sheet snap points
+  const datePickerSnapPoints = ["40%"];
+  const genderPickerSnapPoints = ["35%"];
+
+  // Bottom Sheet callbacks
+  const renderDatePickerBackdrop = useCallback(
+    (props) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.5}
+      />
+    ),
+    []
+  );
+
+  const renderGenderPickerBackdrop = useCallback(
+    (props) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.5}
+      />
+    ),
+    []
+  );
+
+  // Bottom Sheet handlers
+  const handlePresentDatePicker = useCallback(() => {
+    datePickerModalRef.current?.present();
+  }, []);
+
+  const handlePresentGenderPicker = useCallback(() => {
+    genderPickerModalRef.current?.present();
+  }, []);
+
+  const handleDatePickerConfirm = useCallback(() => {
+    const adjustedDate = new Date(
+      dateValue.getTime() + dateValue.getTimezoneOffset() * 60000
+    );
+
+    const day = String(adjustedDate.getDate()).padStart(2, "0");
+    const month = String(adjustedDate.getMonth() + 1).padStart(2, "0");
+    const year = adjustedDate.getFullYear();
+    const formattedDate = `${day}/${month}/${year}`;
+
+    setBirthDate(formattedDate);
+    datePickerModalRef.current?.dismiss();
+  }, [dateValue]);
+
+  const handleGenderPickerConfirm = useCallback(() => {
+    setGender(tempGenderValue);
+    genderPickerModalRef.current?.dismiss();
+  }, [tempGenderValue]);
+
   // State for form inputs
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
@@ -54,17 +121,12 @@ const RegisterScreen = ({ navigation }) => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [gender, setGender] = useState(""); // Optional
-  const [showGenderPicker, setShowGenderPicker] = useState(false);
   const [tempGenderValue, setTempGenderValue] = useState(gender || "");
   // Date picker states
   const [birthDate, setBirthDate] = useState("");
-  const [showCalendar, setShowCalendar] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   const [dateValue, setDateValue] = useState(new Date(2000, 0, 1));
-
-  // Animation for date picker modal
-  const modalBackgroundOpacity = useRef(new Animated.Value(0)).current;
-  const modalSlideAnim = useRef(new Animated.Value(300)).current;
 
   // Step handling
   const [currentStep, setCurrentStep] = useState(0);
@@ -878,22 +940,13 @@ const RegisterScreen = ({ navigation }) => {
                 </Text>
                 <TouchableOpacity
                   className="shadow-custom bg-white flex-row items-center rounded-xl border-[1px] border-gray-900 px-4 py-4 w-full"
-                  onPress={() => {
-                    setShowCalendar(true);
-                    // Start open animation
-                    Animated.parallel([
-                      Animated.timing(modalBackgroundOpacity, {
-                        toValue: 1,
-                        duration: 250,
-                        useNativeDriver: false,
-                      }),
-                      Animated.timing(modalSlideAnim, {
-                        toValue: 0,
-                        duration: 250,
-                        useNativeDriver: true,
-                      }),
-                    ]).start();
-                  }}
+                  onPress={
+                    Platform.OS === "ios"
+                      ? handlePresentDatePicker
+                      : () => {
+                          setShowCalendar(true);
+                        }
+                  }
                 >
                   <FontAwesomeIcon
                     icon={faCalendar}
@@ -1006,21 +1059,8 @@ const RegisterScreen = ({ navigation }) => {
                 <TouchableOpacity
                   className="shadow-custom bg-white flex-row items-center rounded-xl border-[1px] border-gray-900 px-4 py-4 w-full"
                   onPress={() => {
-                    setShowGenderPicker(true);
                     setTempGenderValue(gender);
-                    // Start open animation
-                    Animated.parallel([
-                      Animated.timing(modalBackgroundOpacity, {
-                        toValue: 1,
-                        duration: 250,
-                        useNativeDriver: false,
-                      }),
-                      Animated.timing(modalSlideAnim, {
-                        toValue: 0,
-                        duration: 250,
-                        useNativeDriver: true,
-                      }),
-                    ]).start();
+                    handlePresentGenderPicker();
                   }}
                 >
                   <FontAwesomeIcon
@@ -1181,176 +1221,73 @@ const RegisterScreen = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <TouchableWithoutFeedback onPress={dismissKeyboard}>
-        <View className="flex-1">
-          {/* Header with logo and back button */}
-          <View className="flex-row items-center justify-center relative pt-6 pb-2">
-            {/* Back Button - Always reserve the space but only visible after first step */}
-          </View>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <BottomSheetModalProvider>
+        <SafeAreaView className="flex-1 bg-white">
+          <TouchableWithoutFeedback onPress={dismissKeyboard}>
+            <View className="flex-1">
+              {/* Header with logo and back button */}
+              <View className="flex-row items-center justify-center relative pt-6 pb-2">
+                {/* Back Button - Always reserve the space but only visible after first step */}
+              </View>
 
-          {/* Progress Bar */}
-          {renderProgressIndicators()}
+              {/* Progress Bar */}
+              {renderProgressIndicators()}
 
-          {/* Main content with keyboard avoiding behavior */}
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            className="flex-1 bg-white"
-            keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
-          >
-            {/* Scrollable Content Area */}
-            <View
-              className=" px-4"
-              contentContainerStyle={{ paddingBottom: 120 }}
-            >
-              {/* Current Step Content */}
-              {renderStepContent()}
-            </View>
-
-            {/* Button Area that moves with keyboard */}
-            <View className="bg-white px-5 py-4 border-gray-200">
-              {/* Continue Button */}
-              <TouchableOpacity
-                className="rounded-xl bg-green-300 items-center justify-center py-4 w-full"
-                onPress={handleNextStep}
+              {/* Main content with keyboard avoiding behavior */}
+              <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                className="flex-1 bg-white"
+                keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
               >
-                <Text
-                  style={{
-                    fontSize: 16,
-                  }}
-                  className=" text-white font-semibold"
+                {/* Scrollable Content Area */}
+                <View
+                  className=" px-4"
+                  contentContainerStyle={{ paddingBottom: 120 }}
                 >
-                  {currentStep === totalSteps - 1 ? "Kaydol" : "Devam et"}
-                </Text>
-              </TouchableOpacity>
+                  {/* Current Step Content */}
+                  {renderStepContent()}
+                </View>
 
-              {/* Login Link - Only show on first step */}
-              {currentStep === 0 && (
-                <View className="flex-row justify-center mt-4 items-center">
-                  <Text className="text-base text-gray-600">
-                    Zaten hesabınız var mı?{" "}
-                  </Text>
+                {/* Button Area that moves with keyboard */}
+                <View className="bg-white px-5 py-4 border-gray-200">
+                  {/* Continue Button */}
                   <TouchableOpacity
-                    onPress={() => navigation.navigate("Login")}
+                    className="rounded-xl bg-green-300 items-center justify-center py-4 w-full"
+                    onPress={handleNextStep}
                   >
-                    <Text className="text-lg text-gray-900 font-semibold">
-                      Giriş Yap
+                    <Text
+                      style={{
+                        fontSize: 16,
+                      }}
+                      className=" text-white font-semibold"
+                    >
+                      {currentStep === totalSteps - 1 ? "Kaydol" : "Devam et"}
                     </Text>
                   </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          </KeyboardAvoidingView>
-        </View>
-      </TouchableWithoutFeedback>
 
-      {/* Native Date Picker */}
-      {showCalendar && (
-        <>
-          {Platform.OS === "ios" ? (
-            <Modal visible={showCalendar} transparent animationType="none">
-              <Animated.View
-                className="flex-1 justify-end"
-                style={{
-                  backgroundColor: modalBackgroundOpacity.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.5)"],
-                  }),
-                }}
-              >
-                <Animated.View
-                  className="bg-white rounded-t-3xl"
-                  style={{
-                    transform: [{ translateY: modalSlideAnim }],
-                  }}
-                >
-                  {/* Header with Apple-style done button */}
-                  <View
-                    style={{ borderRadius: 100 }}
-                    className="flex-row justify-between items-center px-6 py-4
-                   bg-white"
-                  >
-                    <Text style={{ fontWeight: 600, fontSize: 18 }}>
-                      Doğum tarihi seç
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => {
-                        // Close animation
-                        Animated.parallel([
-                          Animated.timing(modalBackgroundOpacity, {
-                            toValue: 0,
-                            duration: 250,
-                            useNativeDriver: false,
-                          }),
-                          Animated.timing(modalSlideAnim, {
-                            toValue: 300,
-                            duration: 250,
-                            useNativeDriver: true,
-                          }),
-                        ]).start(() => {
-                          // Seçilen tarihi timezone offset'i ile düzelt
-                          const adjustedDate = new Date(
-                            dateValue.getTime() +
-                              dateValue.getTimezoneOffset() * 60000
-                          );
-
-                          const day = String(adjustedDate.getDate()).padStart(
-                            2,
-                            "0"
-                          );
-                          const month = String(
-                            adjustedDate.getMonth() + 1
-                          ).padStart(2, "0");
-                          const year = adjustedDate.getFullYear();
-                          const formattedDate = `${day}/${month}/${year}`;
-
-                          setBirthDate(formattedDate);
-                          setShowCalendar(false);
-                        });
-                      }}
-                      className="px-2 py-2"
-                    >
-                      <Text
-                        style={{
-                          fontSize: 17,
-                          color: "#007AFF",
-                          fontWeight: "500",
-                        }}
-                      >
-                        Tamam
+                  {/* Login Link - Only show on first step */}
+                  {currentStep === 0 && (
+                    <View className="flex-row justify-center mt-4 items-center">
+                      <Text className="text-base text-gray-600">
+                        Zaten hesabınız var mı?{" "}
                       </Text>
-                    </TouchableOpacity>
-                  </View>
+                      <TouchableOpacity
+                        onPress={() => navigation.navigate("Login")}
+                      >
+                        <Text className="text-lg text-gray-900 font-semibold">
+                          Giriş Yap
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              </KeyboardAvoidingView>
+            </View>
+          </TouchableWithoutFeedback>
 
-                  {/* Date Picker Container */}
-                  <View className="bg-white px-4 py-2">
-                    <DateTimePicker
-                      value={dateValue}
-                      mode="date"
-                      display="spinner"
-                      onChange={(event, selectedDate) => {
-                        if (selectedDate) {
-                          setDateValue(selectedDate);
-                        }
-                      }}
-                      maximumDate={new Date()}
-                      minimumDate={new Date(1900, 0, 1)}
-                      locale="tr-TR"
-                      textColor="#000000"
-                      style={{
-                        backgroundColor: "#FFFFFF",
-                        width: "100%",
-                        height: 216,
-                      }}
-                    />
-                  </View>
-
-                  {/* Safe area for bottom */}
-                  <View style={{ height: 34, backgroundColor: "#FFFFFF" }} />
-                </Animated.View>
-              </Animated.View>
-            </Modal>
-          ) : (
+          {/* Native Date Picker for Android */}
+          {showCalendar && Platform.OS === "android" && (
             <DateTimePicker
               value={dateValue}
               mode="date"
@@ -1361,57 +1298,23 @@ const RegisterScreen = ({ navigation }) => {
               locale="tr-TR"
             />
           )}
-        </>
-      )}
 
-      {/* Gender Picker */}
-
-      {showGenderPicker && Platform.OS === "ios" && (
-        <Modal
-          visible={showGenderPicker}
-          transparent
-          animationType="none"
-          presentationStyle="overFullScreen"
-        >
-          <Animated.View
-            className="flex-1 justify-end"
-            style={{
-              backgroundColor: modalBackgroundOpacity.interpolate({
-                inputRange: [0, 1],
-                outputRange: ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.5)"],
-              }),
-            }}
+          {/* Date Picker Bottom Sheet (iOS) */}
+          <BottomSheetModal
+            ref={datePickerModalRef}
+            snapPoints={datePickerSnapPoints}
+            backdropComponent={renderDatePickerBackdrop}
+            enablePanDownToClose={true}
+            backgroundStyle={{ borderRadius: 24 }}
           >
-            <Animated.View
-              className="rounded-t-3xl bg-white"
-              style={{
-                transform: [{ translateY: modalSlideAnim }],
-              }}
-            >
+            <BottomSheetView style={{ flex: 1 }}>
               {/* Header */}
-              <View className="flex-row justify-between items-center px-6 py-4 bg-white rounded-t-3xl">
+              <View className="flex-row justify-between items-center px-6 py-4 bg-white">
                 <Text style={{ fontWeight: 600, fontSize: 18 }}>
-                  Cinsiyet seç
+                  Doğum tarihi seç
                 </Text>
                 <TouchableOpacity
-                  onPress={() => {
-                    // Close animation
-                    Animated.parallel([
-                      Animated.timing(modalBackgroundOpacity, {
-                        toValue: 0,
-                        duration: 250,
-                        useNativeDriver: false,
-                      }),
-                      Animated.timing(modalSlideAnim, {
-                        toValue: 300,
-                        duration: 250,
-                        useNativeDriver: true,
-                      }),
-                    ]).start(() => {
-                      setGender(tempGenderValue);
-                      setShowGenderPicker(false);
-                    });
-                  }}
+                  onPress={handleDatePickerConfirm}
                   className="px-2 py-2"
                 >
                   <Text
@@ -1426,41 +1329,96 @@ const RegisterScreen = ({ navigation }) => {
                 </TouchableOpacity>
               </View>
 
-              {/* Picker Container - Styling düzeltildi */}
-              <View className="px-4 py-2 bg-white">
-                <Picker
-                  selectedValue={tempGenderValue}
-                  onValueChange={(itemValue) => setTempGenderValue(itemValue)}
+              {/* Date Picker Container */}
+              <View className="bg-white justify-center items-center py-2 flex-1">
+                <DateTimePicker
+                  value={dateValue}
+                  mode="date"
+                  display="spinner"
+                  onChange={(event, selectedDate) => {
+                    if (selectedDate) {
+                      setDateValue(selectedDate);
+                    }
+                  }}
+                  maximumDate={new Date()}
+                  minimumDate={new Date(1900, 0, 1)}
+                  locale="tr-TR"
+                  textColor="#000000"
                   style={{
+                    backgroundColor: "#FFFFFF",
                     width: "100%",
                     height: 216,
-                    backgroundColor: "white", // Arka plan beyaz
                   }}
-                  itemStyle={{
-                    fontSize: 18, // Font boyutu
-                    color: "#000000", // Siyah metin rengi
-                    height: 216, // Item yüksekliği
-                    backgroundColor: "transparent", // Şeffaf arka plan
-                  }}
+                />
+              </View>
+            </BottomSheetView>
+          </BottomSheetModal>
+
+          {/* Gender Picker Bottom Sheet */}
+          <BottomSheetModal
+            ref={genderPickerModalRef}
+            snapPoints={genderPickerSnapPoints}
+            backdropComponent={renderGenderPickerBackdrop}
+            enablePanDownToClose={true}
+            backgroundStyle={{ borderRadius: 24 }}
+          >
+            <BottomSheetView style={{ flex: 1 }}>
+              {/* Header */}
+              <View className="flex-row justify-between items-center px-6 py-4 bg-white">
+                <Text style={{ fontWeight: 600, fontSize: 18 }}>
+                  Cinsiyet seç
+                </Text>
+                <TouchableOpacity
+                  onPress={handleGenderPickerConfirm}
+                  className="px-2 py-2"
                 >
-                  <Picker.Item
-                    label="Seçiniz"
-                    value=""
-                    color="#000000" // Explicit renk
-                  />
-                  <Picker.Item label="Kadın" value="female" color="#000000" />
-                  <Picker.Item label="Erkek" value="male" color="#000000" />
-                  <Picker.Item label="Diğer" value="other" color="#000000" />
-                </Picker>
+                  <Text
+                    style={{
+                      fontSize: 17,
+                      color: "#007AFF",
+                      fontWeight: "500",
+                    }}
+                  >
+                    Tamam
+                  </Text>
+                </TouchableOpacity>
               </View>
 
-              {/* Safe area for bottom */}
-              <View style={{ height: 34, backgroundColor: "#FFFFFF" }} />
-            </Animated.View>
-          </Animated.View>
-        </Modal>
-      )}
-    </SafeAreaView>
+              {/* Gender Options */}
+              <View className="px-4 py-2 pb-10 bg-white flex-1">
+                {[
+                  { label: "Seçiniz", value: "" },
+                  { label: "Kadın", value: "female" },
+                  { label: "Erkek", value: "male" },
+                  { label: "Diğer", value: "other" },
+                ].map((option, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    activeOpacity={1}
+                    className={`py-4 px-7 ${
+                      tempGenderValue === option.value
+                        ? "bg-gray-50 rounded-full"
+                        : ""
+                    }`}
+                    onPress={() => setTempGenderValue(option.value)}
+                  >
+                    <Text
+                      className={`text-lg ${
+                        tempGenderValue === option.value
+                          ? "text-gray-900 font-semibold"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </BottomSheetView>
+          </BottomSheetModal>
+        </SafeAreaView>
+      </BottomSheetModalProvider>
+    </GestureHandlerRootView>
   );
 };
 

@@ -17,6 +17,10 @@ import {
   StyleSheet, // Yeni eklendi
   TouchableWithoutFeedback, // Yeni eklendi
 } from "react-native";
+import {
+  selectUserProfile,
+  setUserProfile,
+} from "../redux/slices/profileSlice";
 import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
 import {
@@ -48,6 +52,7 @@ import {
   isCityCode,
   getCityCodes,
 } from "turkey-neighbourhoods";
+
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const ProfileExpectationHeader = ({
@@ -70,13 +75,13 @@ const ProfileExpectationHeader = ({
       {/* Sağ taraf - Submit/Update butonu */}
       {isExpectationCompleted ? (
         <TouchableOpacity
-          className="bg-blue-400 px-6 py-3 rounded-lg items-center justify-center"
+          className="px-1 items-center justify-center"
           onPress={onUpdate}
           disabled={isLoading}
         >
           <Text
-            style={{ fontSize: 14 }}
-            className="text-gray-900 font-semibold"
+            style={{ fontSize: 16, color: "#6aeba9", borderColor: "#6aeba9" }}
+            className="font-semibold border px-4 py-2 rounded-full"
           >
             {isLoading ? "Güncelleniyor..." : "Güncelle"}
           </Text>
@@ -364,18 +369,20 @@ const CustomDropdown = ({
                 {options.map((option, index) => (
                   <TouchableOpacity
                     key={index}
-                    className={`py-4 px-7 flex-row items-center justify-between ${index !== options.length - 1
-                      ? "border-b border-gray-50"
-                      : ""
-                      } ${value === option ? "bg-gray-100" : "bg-white"}`}
+                    className={`py-4 px-7 flex-row items-center justify-between ${
+                      index !== options.length - 1
+                        ? "border-b border-gray-50"
+                        : ""
+                    } ${value === option ? "bg-gray-100" : "bg-white"}`}
                     onPress={() => handleOptionSelect(option)}
                     activeOpacity={0.7}
                   >
                     <Text
-                      className={`text-lg flex-1 mr-3 ${value === option
-                        ? "text-gray-900 font-medium"
-                        : "text-gray-600"
-                        }`}
+                      className={`text-lg flex-1 mr-3 ${
+                        value === option
+                          ? "text-gray-900 font-medium"
+                          : "text-gray-600"
+                      }`}
                       numberOfLines={2}
                       ellipsizeMode="tail"
                     >
@@ -454,9 +461,9 @@ const CustomDatePicker = ({ label, value, setValue, required = false }) => {
 
   // Date change handler
   const onChange = (event, selectedDate) => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === "android") {
       setIsOpen(false);
-      if (event.type === 'set' && selectedDate) {
+      if (event.type === "set" && selectedDate) {
         setSelectedDate(selectedDate);
         setValue(selectedDate);
       }
@@ -526,14 +533,14 @@ const CustomDatePicker = ({ label, value, setValue, required = false }) => {
             <Animated.View
               style={[
                 {
-                  position: 'absolute',
+                  position: "absolute",
                   top: 0,
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                  backgroundColor: "rgba(0, 0, 0, 0.5)",
                 },
-                backdropStyle
+                backdropStyle,
               ]}
             >
               <TouchableWithoutFeedback onPress={handleBackdropPress}>
@@ -545,22 +552,22 @@ const CustomDatePicker = ({ label, value, setValue, required = false }) => {
             <Animated.View
               style={[
                 {
-                  position: 'absolute',
+                  position: "absolute",
                   left: 0,
                   right: 0,
                   top: 0,
                   bottom: 0,
-                  backgroundColor: '#ffffff',
+                  backgroundColor: "#ffffff",
                   elevation: 20,
-                  shadowColor: '#000',
+                  shadowColor: "#000",
                   shadowOffset: { width: 0, height: -3 },
                   shadowOpacity: 0.3,
                   shadowRadius: 10,
                   borderTopLeftRadius: 16,
                   borderTopRightRadius: 16,
-                  overflow: 'hidden',
+                  overflow: "hidden",
                 },
-                modalStyle
+                modalStyle,
               ]}
             >
               {/* Header with handle - CustomDropdown'daki gibi */}
@@ -570,7 +577,7 @@ const CustomDatePicker = ({ label, value, setValue, required = false }) => {
                   <Text className="text-lg font-semibold text-gray-800">
                     Tarih Seçin
                   </Text>
-                  {Platform.OS === 'ios' && (
+                  {Platform.OS === "ios" && (
                     <TouchableOpacity
                       onPress={handleDonePress}
                       className="px-4 py-2"
@@ -841,10 +848,12 @@ const ProfileExpectationScreen = ({ navigation }) => {
     }, [navigation, userRole])
   );
 
+  const userProfile = useSelector(selectUserProfile);
+
   // Check if expectation is completed based on user role
   const isExpectationCompleted =
-    Boolean(currentUser?.isTenantExpectationCompleted) ||
-    Boolean(currentUser?.isLandlordExpectationCompleted);
+    Boolean(userProfile?.isTenantExpectationCompleted) ||
+    Boolean(userProfile?.isLandlordExpectationCompleted);
 
   console.log("isExpectationCompleted:", isExpectationCompleted);
 
@@ -1079,7 +1088,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
           label="Aidat Sorumluluğu"
           value={
             maintenanceFeeResponsibilityOptions[
-            maintenanceFeeResponsibility - 1
+              maintenanceFeeResponsibility - 1
             ]
           }
           setValue={(value) => {
@@ -1824,8 +1833,8 @@ const ProfileExpectationScreen = ({ navigation }) => {
       Alert.alert(
         "Hata",
         error?.data?.message ||
-        error?.message ||
-        "Beklenti profili oluşturulurken bir hata oluştu"
+          error?.message ||
+          "Beklenti profili oluşturulurken bir hata oluştu"
       );
     }
   };
@@ -1951,7 +1960,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
       Alert.alert(
         "Hata",
         error?.data?.message ||
-        "Beklenti profili güncellenirken bir hata oluştu"
+          "Beklenti profili güncellenirken bir hata oluştu"
       );
     }
   };
