@@ -1211,12 +1211,13 @@ const PostsScreen = ({ navigation }) => {
       extrapolate: 'clamp',
     });
 
-    // ÖNEMLİ: Arama barının genişlik animasyonu
     const searchBarWidth = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
       outputRange: [
-        screenWidth - 32, // Başta neredeyse tam genişlik (sadece padding)
-        screenWidth - 32 - 50 - 8 // Scroll sonunda filter butonu için yer bırak
+        screenWidth - 32, // Başta tam genişlik (sadece padding)
+        userRole === "EVSAHIBI"
+          ? screenWidth - 32 - 50 - 50 - 16  // EVSAHIBI: + ve Filter butonları için yer (50+50+16)
+          : screenWidth - 32 - 50 - 8        // KIRACI: Sadece Filter butonu için yer (50+8)
       ],
       extrapolate: 'clamp',
     });
@@ -1224,7 +1225,12 @@ const PostsScreen = ({ navigation }) => {
     // Arama barının sağdan margin animasyonu
     const searchBarMarginRight = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
-      outputRange: [0, 58], // Filter butonu için yer (50 + 8 margin)
+      outputRange: [
+        0,
+        userRole === "EVSAHIBI"
+          ? 116  // + ve Filter butonları için yer (50 + 50 + 16)
+          : 58   // Sadece Filter butonu için yer (50 + 8)
+      ],
       extrapolate: 'clamp',
     });
 
@@ -1244,7 +1250,7 @@ const PostsScreen = ({ navigation }) => {
     // Sort options height sabit kalsın
     const sortOptionsHeight = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
-      outputRange: [50, 42], // Tamamen kaybolmaz, sadece biraz küçülür
+      outputRange: [50, 42],
       extrapolate: 'clamp',
     });
 
@@ -1332,32 +1338,16 @@ const PostsScreen = ({ navigation }) => {
                 )}
               </View>
 
-              {userRole === "EVSAHIBI" && (
-                <TouchableOpacity
-                  style={{
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 8,
-                    elevation: 5,
-                    marginLeft: 8,
-                  }}
-                  className="p-3 bg-white/90 backdrop-blur flex justify-center items-center rounded-full"
-                  onPress={handleCreatePostNavigation}
-                >
-                  <FontAwesomeIcon icon={faPlus} size={18} />
-                </TouchableOpacity>
-              )}
             </View>
           </Animated.View>
 
-          {/* Search Bar - Title'ın yerine geçer */}
+          {/* Search Bar - Responsive genişlik */}
           <Animated.View
             style={{
               marginTop: 10,
               transform: [{ translateY: searchBarTranslateY }],
-              width: searchBarWidth, // Animasyonlu genişlik
-              marginRight: searchBarMarginRight, // Sağdan margin animasyonu
+              width: searchBarWidth, // User role'e göre animasyonlu genişlik
+              marginRight: searchBarMarginRight, // User role'e göre margin
             }}
           >
             <BlurView
@@ -1401,6 +1391,7 @@ const PostsScreen = ({ navigation }) => {
               </View>
             </BlurView>
           </Animated.View>
+
 
           {/* Sort Options - Search bar ile birlikte hareket etsin */}
           <Animated.View
@@ -1502,8 +1493,27 @@ const PostsScreen = ({ navigation }) => {
             right: 16,
             top: insets.top + 12,
             zIndex: 20,
+            gap: 8,
+            flexDirection: 'row'
           }}
         >
+
+          {userRole === "EVSAHIBI" && (
+            <TouchableOpacity
+              style={{
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 8,
+                elevation: 5,
+                marginLeft: 8,
+              }}
+              className="p-3 bg-white/90 backdrop-blur flex justify-center items-center rounded-full"
+              onPress={handleCreatePostNavigation}
+            >
+              <FontAwesomeIcon icon={faPlus} size={18} />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={{
               shadowColor: '#000',
