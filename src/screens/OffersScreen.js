@@ -12,6 +12,8 @@ import {
   Platform,
   Animated,
   Dimensions,
+  StatusBar,
+
 } from "react-native";
 import { useSelector } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
@@ -26,6 +28,7 @@ import { BlurView } from "expo-blur";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import { faChevronLeft, faEnvelope } from "@fortawesome/pro-regular-svg-icons";
 import { faStar } from "@fortawesome/pro-solid-svg-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
@@ -57,6 +60,9 @@ const OffersScreen = () => {
     outputRange: [50, 0], // Tabs container height animation
     extrapolate: "clamp",
   });
+
+  const insets = useSafeAreaInsets();
+
 
   // Rating Score gösterim fonksiyonu
   const getRatingScoreInfo = (rating) => {
@@ -248,37 +254,62 @@ const OffersScreen = () => {
   if (offersData?.result) {
     if (Array.isArray(offersData.result)) {
       // API'den gelen veri yapısına göre işle
-      offers = offersData.result.map((item) => {
-        // rentalOfferDto ve postDto yapısını kontrol et
-        if (item.rentalOfferDto && item.postDto) {
-          return {
-            // Teklif bilgilerini al
-            ...item.rentalOfferDto,
-            // Post bilgilerini ekle
-            post: {
-              postId: item.postDto.postId,
-              ilanBasligi: item.postDto.ilanBasligi,
-              kiraFiyati: item.postDto.kiraFiyati,
-              ilce: item.postDto.ilce,
-              mahalle: item.postDto.mahalle,
-              postImages: item.postDto.postImages,
-              il: item.postDto.il,
-              paraBirimi: item.postDto.paraBirimi,
-            },
-          };
-        }
-        // Eğer direkt teklif objesi ise
-        else if (item.offerId) {
-          return item;
-        }
-        // Diğer durumlar için fallback
-        else {
-          return item;
+      const processedOffers = offersData.result
+        .map((item) => {
+          // rentalOfferDto ve postDto yapısını kontrol et
+          if (item.rentalOfferDto && item.postDto) {
+            return {
+              // Teklif bilgilerini al
+              ...item.rentalOfferDto,
+              // Post bilgilerini ekle
+              post: {
+                postId: item.postDto.postId,
+                ilanBasligi: item.postDto.ilanBasligi,
+                kiraFiyati: item.postDto.kiraFiyati,
+                ilce: item.postDto.ilce,
+                mahalle: item.postDto.mahalle,
+                postImages: item.postDto.postImages,
+                il: item.postDto.il,
+                paraBirimi: item.postDto.paraBirimi,
+              },
+            };
+          }
+          // Eğer direkt teklif objesi ise
+          else if (item.offerId) {
+            return item;
+          }
+          // Diğer durumlar için fallback
+          else {
+            return item;
+          }
+        })
+        .filter((offer) => {
+          // EKLEME: Sadece aktif teklifleri göster
+          return offer && offer.isActive === true;
+        });
+
+      // EKLEME: Aynı postId için sadece en son teklifi göster
+      const uniqueOffers = new Map();
+
+      processedOffers.forEach((offer) => {
+        const postId = offer.postId || offer.post?.postId;
+        if (postId) {
+          const existingOffer = uniqueOffers.get(postId);
+
+          // Eğer bu post için daha önce teklif yoksa veya mevcut teklif daha yeniyse
+          if (!existingOffer || new Date(offer.offerTime) > new Date(existingOffer.offerTime)) {
+            uniqueOffers.set(postId, offer);
+            console.log(`Updated offer for postId ${postId}: offerId ${offer.offerId}, time: ${offer.offerTime}`);
+          } else {
+            console.log(`Skipped older offer for postId ${postId}: offerId ${offer.offerId}, time: ${offer.offerTime}`);
+          }
         }
       });
 
-      console.log("Processed offers:", offers.length);
+      offers = Array.from(uniqueOffers.values());
+      console.log("Processed offers after deduplication:", offers.length);
       console.log("Sample processed offer:", offers[0] || "No offers");
+
     } else if (isLandlord && offersData.result.rentalPosts) {
       // Landlord için rentalPosts yapısından teklifleri çıkar
       console.log("Extracting offers from rentalPosts...");
@@ -291,9 +322,17 @@ const OffersScreen = () => {
         );
 
         if (post.offers && Array.isArray(post.offers)) {
-          post.offers.forEach((offer, offerIndex) => {
+          // EKLEME: Her post için sadece en son aktif teklifi al
+          const activeOffers = post.offers.filter(offer => offer.isActive === true);
+
+          if (activeOffers.length > 0) {
+            // En son tarihteki teklifi bul
+            const latestOffer = activeOffers.reduce((latest, current) => {
+              return new Date(current.offerTime) > new Date(latest.offerTime) ? current : latest;
+            });
+
             const offerWithPost = {
-              ...offer,
+              ...latestOffer,
               post: {
                 postId: post.postId,
                 ilanBasligi: post.ilanBasligi,
@@ -307,16 +346,26 @@ const OffersScreen = () => {
             };
             allOffers.push(offerWithPost);
             console.log(
-              `  - Offer ${offerIndex}: ID ${offer.offerId}, Amount: ${offer.offerAmount}, Status: ${offer.status}`
+              `  - Latest Active Offer: ID ${latestOffer.offerId}, Amount: ${latestOffer.offerAmount}, Status: ${latestOffer.status}, Time: ${latestOffer.offerTime}`
             );
-          });
+
+            // Diğer teklifleri logla
+            activeOffers.forEach((offer, offerIndex) => {
+              if (offer.offerId !== latestOffer.offerId) {
+                console.log(
+                  `  - Skipped Older Offer ${offerIndex}: ID ${offer.offerId}, Time: ${offer.offerTime}`
+                );
+              }
+            });
+          }
         }
       });
 
       offers = allOffers;
-      console.log("Total offers extracted:", offers.length);
+      console.log("Total latest active offers extracted:", offers.length);
     }
   }
+
 
   console.log("Final offers array:", offers);
 
@@ -940,34 +989,58 @@ const OffersScreen = () => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      {/* UPDATED: Static Header Section (no animation) */}
-      <View className="bg-white border-b border-gray-200 z-10">
-        <View className="flex flex-row items-center px-5 mt-1">
-          {/* <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{ width: "8%" }}
-          >
-            <FontAwesomeIcon icon={faChevronLeft} color="black" size={25} />
-          </TouchableOpacity> */}
+    <View className="flex-1 bg-white">
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent={true}
+      />
 
-          <View className="px-4 items-center" style={{ width: "100%" }}>
-            <View className=" gap-2 px-4 flex-row items-center justify-center">
-              <View className="py-4">
-                <Text className="text-lg font-bold text-gray-800 text-center">
-                  {isTenant ? "Gönderdiğim Teklifler" : "Gelen Teklifler"}
-                </Text>
-                <Text className="text-sm text-gray-500 text-center">
-                  {offers.length} teklif
-                </Text>
+      {/* Animated Blurred Header - Sadece başlık */}
+      <Animated.View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 100,
+          height: insets.top + 70, // Sadece başlık kısmı
+        }}
+      >
+        <BlurView
+          intensity={50}
+          tint="extralight"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+        />
+
+        {/* Sadece başlık - blur içinde */}
+        <View style={{ paddingTop: insets.top, flex: 1 }}>
+          <View className="flex flex-row items-center px-5 mt-1">
+            <View className="px-4 items-center" style={{ width: "100%" }}>
+              <View className="gap-2 px-4 flex-row items-center justify-center">
+                <View className="py-4">
+                  <Text className="text-lg font-bold text-gray-800 text-center">
+                    {isTenant ? "Gönderdiğim Teklifler" : "Gelen Teklifler"}
+                  </Text>
+                  <Text className="text-sm text-gray-500 text-center">
+                    {offers.length} teklif
+                  </Text>
+                </View>
               </View>
             </View>
+            <View style={{ width: "8%" }}></View>
           </View>
-
-          <View style={{ width: "8%" }}>{/* Empty space for alignment */}</View>
         </View>
+      </Animated.View>
 
-        {/* UPDATED: Animated Tabs Container */}
+      {/* Mevcut animasyonlu tablar - header dışında */}
+      <View style={{ marginTop: insets.top + 70 }} className="bg-white border-b border-gray-200">
         <Animated.View
           style={{
             height: tabsContainerHeight,
@@ -984,10 +1057,7 @@ const OffersScreen = () => {
               transform: [{ translateY: tabsTranslateY }],
             }}
           >
-            <View
-              className="flex-row bg-white gap-2 px-8"
-              style={{ width: "100%" }}
-            >
+            <View className="flex-row bg-white gap-2 px-8" style={{ width: "100%" }}>
               {[
                 {
                   key: "pending",
@@ -1007,7 +1077,7 @@ const OffersScreen = () => {
               ].map((tab) => (
                 <TouchableOpacity
                   key={tab.key}
-                  className={`flex-1  rounded-full py-3 ${selectedTab === tab.key ? "bg-black " : ""
+                  className={`flex-1 rounded-full py-3 ${selectedTab === tab.key ? "bg-black" : ""
                     }`}
                   onPress={() => setSelectedTab(tab.key)}
                 >
@@ -1025,19 +1095,20 @@ const OffersScreen = () => {
         </Animated.View>
       </View>
 
-      {/* UPDATED: Animated ScrollView with scroll event handling */}
+      {/* ScrollView - padding yok, tablar zaten kaybolacak */}
       <Animated.ScrollView
         className="flex-1 py-6"
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+          />
         }
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 55 }}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          {
-            useNativeDriver: false, // Using false because we're animating height
-          }
+          { useNativeDriver: false }
         )}
         scrollEventThrottle={16}
       >
@@ -1050,7 +1121,7 @@ const OffersScreen = () => {
           </View>
         )}
       </Animated.ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
