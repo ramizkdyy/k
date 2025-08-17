@@ -64,14 +64,7 @@ export const searchApiSlice = apiSlice.injectEndpoints({
             keepUnusedDataFor: 0,
         }),
 
-        // Hızlı arama için basit endpoint (eğer varsa)
-        quickSearch: builder.query({
-            query: (keyword) => ({
-                url: `/api/PostSearch/quick?keyword=${encodeURIComponent(keyword)}`,
-                method: "GET",
-            }),
-            providesTags: [{ type: "Post", id: "QUICK_SEARCH" }],
-        }),
+
 
         // YENİ: Şehir önerileri
         getCitySuggestions: builder.query({
@@ -141,7 +134,6 @@ export const searchApiSlice = apiSlice.injectEndpoints({
 export const {
     useSearchPostsMutation,
     useGetSearchFiltersQuery,
-    useQuickSearchQuery,
     useGetCitySuggestionsQuery,
     useGetDistrictSuggestionsQuery,
     useGetNeighborhoodSuggestionsQuery,
