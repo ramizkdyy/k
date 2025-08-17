@@ -238,8 +238,10 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
     );
   };
 
-  const { cacheEnabled, calculateCacheStatus, resetCache, getCacheInfo } =
-    useFypCacheTracker();
+
+
+  const { getCacheValueForQuery, recordApiCall, resetCache, getCacheInfo } = useFypCacheTracker();
+
 
   // Match Score gösterim fonksiyonu
   const getMatchScoreInfo = (score) => {
@@ -277,31 +279,8 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   const [userLocation, setUserLocation] = useState(null);
   const [locationLoading, setLocationLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [shouldCache, setShouldCache] = useState(false);
 
-  // ✅ OPTIMIZED: Cache durumu kontrol aralığını optimize et
-  useEffect(() => {
-    // İlk kontrolü yap
-    const status = calculateCacheStatus();
-    setShouldCache(status);
 
-    // ✅ OPTIMIZED: 5s → 30s (performance optimizasyonu)
-    const interval = setInterval(() => {
-      const newStatus = calculateCacheStatus();
-
-      // ✅ OPTIMIZED: Sadece status değiştiyse state update et
-      if (newStatus !== shouldCache) {
-        setShouldCache(newStatus);
-
-        // ✅ OPTIMIZED: Debug log'u sadece development'ta göster
-        if (process.env.NODE_ENV === "development") {
-          console.log("📊 Cache durumu değişti:", getCacheInfo());
-        }
-      }
-    }, 30000); // ✅ OPTIMIZED: 5s → 30s
-
-    return () => clearInterval(interval);
-  }, [calculateCacheStatus, getCacheInfo, shouldCache]);
 
   // Get user's current location
   useEffect(() => {
@@ -353,7 +332,8 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
       userId: currentUser?.id,
       latitude: userLocation?.latitude,
       longitude: userLocation?.longitude,
-      isCached: shouldCache,
+
+      isCached: getCacheValueForQuery(),
     },
     {
       skip: !userLocation || !currentUser?.id,
@@ -407,9 +387,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
 
     setIsRefreshing(true);
     try {
-      // Cache'i reset et çünkü kullanıcı manuel refresh yapıyor
       resetCache();
-      setShouldCache(false); // Cache state'ini hemen güncelle
 
       const result = await refetch();
       console.log("Refetch Result:", result);
@@ -422,6 +400,13 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
       setIsRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    // Sadece fresh data geldiğinde API call'u kaydet
+    if (nearbyData && !getCacheValueForQuery()) {
+      recordApiCall();
+    }
+  }, [nearbyData, recordApiCall]);
 
   const handleFullRefresh = async () => {
     console.log("===== FULL REFRESH STARTED =====");

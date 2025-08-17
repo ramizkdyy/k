@@ -956,24 +956,8 @@ export const apiSlice = createApi({
       },
     }),
 
-    // GET /api/PostSearch/search - Filtreleri almak için (eğer gerekirse)
-    getSearchFilters: builder.query({
-      query: (params) => ({
-        url: "/api/PostSearch/search",
-        method: "GET",
-        params,
-      }),
-      providesTags: [{ type: "SearchFilters", id: "LIST" }],
-    }),
 
-    // Hızlı arama için basit endpoint (eğer varsa)
-    quickSearch: builder.query({
-      query: (keyword) => ({
-        url: `/api/PostSearch/quick?keyword=${encodeURIComponent(keyword)}`,
-        method: "GET",
-      }),
-      providesTags: [{ type: "Post", id: "QUICK_SEARCH" }],
-    }),
+
   }),
 });
 
@@ -1087,6 +1071,4 @@ export const {
   useGetTikTokFeedQuery,
 
   useSearchPostsMutation,
-  useGetSearchFiltersQuery,
-  useQuickSearchQuery,
 } = apiSlice;

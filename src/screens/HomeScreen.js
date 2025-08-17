@@ -193,6 +193,10 @@ const HomeScreen = ({ navigation }) => {
   };
 
   // Animated Header Component
+  // HomeScreen.js - Mesaj ikonuna kırmızı yuvarlak badge
+
+  // HomeScreen.js - Mesaj ikonuna kırmızı yuvarlak badge
+
   const renderAnimatedHeader = () => {
     return (
       <Animated.View
@@ -264,8 +268,8 @@ const HomeScreen = ({ navigation }) => {
             style={{
               marginTop: 10,
               transform: [{ translateY: searchBarTranslateY }],
-              width: searchBarWidth, // Animasyonlu genişlik
-              marginRight: searchBarMarginRight, // Sağdan margin animasyonu
+              width: searchBarWidth,
+              marginRight: searchBarMarginRight,
             }}
           >
             <BlurView
@@ -334,8 +338,39 @@ const HomeScreen = ({ navigation }) => {
             <FontAwesomeIcon
               icon={faMessage}
               size={20}
-              color={isFilterVisible ? "white" : "#111827"}
+              color="#111827"
             />
+
+            {/* Kırmızı Yuvarlak Badge */}
+            {totalUnreadCount > 0 && (
+              <View
+                style={{
+                  position: 'absolute',
+                  top: -2,
+                  right: -2,
+                  backgroundColor: '#ef4444',
+                  borderRadius: 10,
+                  minWidth: 20,
+                  height: 20,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderWidth: 2,
+                  borderColor: 'white',
+                }}
+              >
+                <Text
+                  style={{
+                    color: 'white',
+                    fontSize: totalUnreadCount > 99 ? 10 : 12,
+                    fontWeight: '600',
+                    textAlign: 'center',
+                  }}
+                  numberOfLines={1}
+                >
+                  {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </Animated.View>
