@@ -1211,12 +1211,20 @@ const PostsScreen = ({ navigation }) => {
       extrapolate: 'clamp',
     });
 
+    // ÖNEMLİ: Arama barının genişlik animasyonu
     const searchBarWidth = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
       outputRange: [
-        screenWidth - 32 - 50 - 8,
-        screenWidth - 32 - 50 - 8
+        screenWidth - 32, // Başta neredeyse tam genişlik (sadece padding)
+        screenWidth - 32 - 50 - 8 // Scroll sonunda filter butonu için yer bırak
       ],
+      extrapolate: 'clamp',
+    });
+
+    // Arama barının sağdan margin animasyonu
+    const searchBarMarginRight = scrollY.interpolate({
+      inputRange: [0, SCROLL_DISTANCE],
+      outputRange: [0, 58], // Filter butonu için yer (50 + 8 margin)
       extrapolate: 'clamp',
     });
 
@@ -1348,7 +1356,8 @@ const PostsScreen = ({ navigation }) => {
             style={{
               marginTop: 10,
               transform: [{ translateY: searchBarTranslateY }],
-              width: searchBarWidth,
+              width: searchBarWidth, // Animasyonlu genişlik
+              marginRight: searchBarMarginRight, // Sağdan margin animasyonu
             }}
           >
             <BlurView

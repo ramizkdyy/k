@@ -24,12 +24,13 @@ import {
   faLocationDot,
   faBath,
   faBed,
-  faFingerprint,
+  faFingerprint
 } from "@fortawesome/pro-light-svg-icons";
 import { BlurView } from "expo-blur";
 import { LoadingSkeleton } from "./LoadingSkeleton"; // Import the skeleton component
 import { LinearGradient } from "expo-linear-gradient";
 import { useFypCacheTracker } from "../hooks/useFypCacheTracker"; // YENİ IMPORT
+
 
 const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   // Match Score Bar Component
@@ -42,7 +43,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
     // Boyut ayarları
     const sizes = {
       xs: {
-        barHeight: 4,
+        barHeight: 2,
         iconSize: 10,
         textSize: 11,
         containerPadding: 1,
@@ -151,8 +152,8 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
     );
   };
 
-  const { cacheEnabled, calculateCacheStatus, resetCache, getCacheInfo } =
-    useFypCacheTracker();
+
+  const { cacheEnabled, calculateCacheStatus, resetCache, getCacheInfo } = useFypCacheTracker();
 
   // Match Score gösterim fonksiyonu
   const getMatchScoreInfo = (score) => {
@@ -185,12 +186,14 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
     };
   };
 
+
   const currentUser = useSelector(selectCurrentUser);
   const userRole = useSelector(selectUserRole);
   const [userLocation, setUserLocation] = useState(null);
   const [locationLoading, setLocationLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [shouldCache, setShouldCache] = useState(false);
+
 
   // İlk mount'ta ve belirli aralıklarla cache durumunu kontrol et
   useEffect(() => {
@@ -204,7 +207,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
       setShouldCache(newStatus);
 
       // Debug için
-      console.log("📊 Cache durumu kontrolü:", getCacheInfo());
+      console.log('📊 Cache durumu kontrolü:', getCacheInfo());
     }, 5000);
 
     return () => clearInterval(interval);
@@ -391,7 +394,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
               item.postImages && item.postImages.length > 0
                 ? item.postImages[0].postImageUrl
                 : item.firstPostİmageURL ||
-                  "https://via.placeholder.com/300x200",
+                "https://via.placeholder.com/300x200",
           }}
           className="w-full "
           resizeMode="cover"
@@ -410,8 +413,8 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
                 {item.distanceInKM
                   ? item.distanceInKM.toFixed(1)
                   : item.distance !== undefined
-                  ? item.distance.toFixed(1)
-                  : "0.0"}{" "}
+                    ? item.distance.toFixed(1)
+                    : "0.0"}{" "}
                 km
               </Text>
             </View>
@@ -444,9 +447,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
             className="text-gray-800"
             numberOfLines={2}
           >
-            {item.ilanBasligi ||
-              item.title ||
-              `${item.il} ${item.ilce} ${item.odaSayisi} Kiralık Daire`}
+            {item.ilanBasligi || item.title || `${item.il} ${item.ilce} ${item.odaSayisi} Kiralık Daire`}
           </Text>
         </View>
         <View className="flex justify-between flex-row items-center mt-1">
@@ -457,9 +458,8 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
               className="text-gray-500"
             >
               {item.kiraFiyati || item.rent
-                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-                    item.paraBirimi || item.currency || "₺"
-                  }`
+                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
+                }`
                 : "Fiyat belirtilmemiş"}
             </Text>
             <Text className="text-sm text-gray-400 ml-1">/ay</Text>
@@ -498,7 +498,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
               item.postImages && item.postImages.length > 0
                 ? item.postImages[0].postImageUrl
                 : item.firstPostİmageURL ||
-                  "https://via.placeholder.com/120x120",
+                "https://via.placeholder.com/120x120",
           }}
           className="rounded-2xl border border-gray-100"
           resizeMode="cover"
@@ -515,9 +515,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
             numberOfLines={1}
             ellipsizeMode="tail"
           >
-            {item.ilanBasligi ||
-              item.title ||
-              `${item.il} ${item.ilce} Kiralık Daire`}
+            {item.ilanBasligi || item.title || `${item.il} ${item.ilce} Kiralık Daire`}
           </Text>
         </View>
 
@@ -526,27 +524,24 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
           {/* Fiyat */}
           <Text
             style={{ fontSize: 14, fontWeight: 600 }}
-            className="text-gray-400"
+            className="text-gray-400 mb-2"
             numberOfLines={1}
             ellipsizeMode="tail"
           >
             {item.kiraFiyati || item.rent
-              ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-                  item.paraBirimi || item.currency || "₺"
-                }`
+              ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
+              }`
               : "Fiyat belirtilmemiş"}
           </Text>
 
-          <View className="mb-1">
-            {/* Match Score */}
-            {item.matchScore && (
-              <MatchScoreBar
-                matchScore={item.matchScore}
-                showBar={true}
-                size="xs"
-              />
-            )}
-          </View>
+          {/* Match Score */}
+          {item.matchScore && (
+            <MatchScoreBar
+              matchScore={item.matchScore}
+              showBar={true}
+              size="xs"
+            />
+          )}
         </View>
 
         {/* Oda ve banyo bilgileri */}
@@ -579,42 +574,47 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
           // Ev sahibi kiracı profiline gidiyor
           navigation.navigate("UserProfile", {
             userId: item.userId,
-            userRole: "KIRACI",
+            userRole: "KIRACI"
           });
         } else {
           // ✅ Kiracı da ev sahibi profiline gitsin
           navigation.navigate("UserProfile", {
             userId: item.landlordId || item.userId, // landlordId varsa onu kullan, yoksa userId
-            userRole: "EVSAHIBI",
+            userRole: "EVSAHIBI"
           });
         }
       }}
     >
       {/* Person Image and Basic Info */}
-      <View className="flex-col items-center mb-3">
+      <View className="flex-row items-center mb-3">
         <Image
           style={{ width: 60, height: 60, boxShadow: "0px 0px 12px #00000020" }}
           source={{
-            uri:
-              userRole === "EVSAHIBI"
-                ? item.tenantURL || "https://via.placeholder.com/60x60"
-                : item.landlordProfileURL ||
-                  "https://via.placeholder.com/60x60",
+            uri: userRole === "EVSAHIBI"
+              ? (item.tenantURL || "https://via.placeholder.com/60x60")
+              : (item.landlordProfileURL || "https://via.placeholder.com/60x60")
           }}
           className="rounded-full border border-gray-100"
           resizeMode="cover"
         />
 
-        <View className="flex-1 mt-2">
+        <View className="flex-1 ml-3">
           <Text
             style={{ fontSize: 16, fontWeight: 700 }}
             className="text-gray-800 mb-1"
             numberOfLines={1}
           >
             {userRole === "EVSAHIBI"
-              ? item.tenantName || "Kiracı"
-              : item.landlordName || "Ev Sahibi"}
+              ? (item.tenantName || "Kiracı")
+              : (item.landlordName || "Ev Sahibi")
+            }
           </Text>
+          <View className="flex flex-row items-center gap-1">
+            <Text className="text-gray-500" style={{ fontSize: 12 }}>
+              Profili Görüntüle
+            </Text>
+            <FontAwesomeIcon size={12} color="#dee0ea" icon={faChevronRight} />
+          </View>
         </View>
       </View>
 
@@ -633,13 +633,8 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
 
             {/* Preferred Location */}
             <View className="flex-row justify-between">
-              <Text className="text-gray-600 text-sm">
-                Tercih Edilen Bölge:
-              </Text>
-              <Text
-                className="text-gray-800 text-sm font-medium"
-                numberOfLines={1}
-              >
+              <Text className="text-gray-600 text-sm">Tercih Edilen Bölge:</Text>
+              <Text className="text-gray-800 text-sm font-medium" numberOfLines={1}>
                 {item.details?.preferredLocation || "Belirtilmemiş"}
               </Text>
             </View>
@@ -675,10 +670,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
             {/* Location */}
             <View className="flex-row justify-between">
               <Text className="text-gray-600 text-sm">Konum:</Text>
-              <Text
-                className="text-gray-800 text-sm font-medium"
-                numberOfLines={1}
-              >
+              <Text className="text-gray-800 text-sm font-medium" numberOfLines={1}>
                 {item.location || "Konum bilgisi yok"}
               </Text>
             </View>
@@ -775,7 +767,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   }
 
   return (
-    <View className="mb-6 flex flex-col">
+    <View className="flex flex-col">
       {/* Loading skeleton state */}
       {isLoadingNearby || isRefreshing ? (
         <View>
@@ -789,7 +781,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
           {nearFromYouProperties.length > 0 && (
             <View className="">
               {/* Header */}
-              <View className="flex-row justify-between items-center px-5 mb-6 mt-6 ">
+              <View className="flex-row justify-between items-center px-5 mb-4">
                 <View>
                   <Text
                     style={{ fontSize: 20 }}
@@ -926,9 +918,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
                   className="flex flex-row gap-1 items-center"
                   onPress={() =>
                     handleSeeAll(
-                      userRole === "EVSAHIBI"
-                        ? "similarPosts"
-                        : "recommendedForYou"
+                      userRole === "EVSAHIBI" ? "similarPosts" : "recommendedForYou"
                     )
                   }
                 >
@@ -941,10 +931,12 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
 
               {/* Vertical Properties List */}
               <FlatList
-                style={{ paddingLeft: 16, marginBottom: 60 }}
+                style={{ paddingLeft: 16 }}
                 data={thirdSectionData.slice(0, 4)}
                 renderItem={renderVerticalPropertyCard}
-                keyExtractor={(item, index) => `third_${item.postId}_${index}`}
+                keyExtractor={(item, index) =>
+                  `third_${item.postId}_${index}`
+                }
                 vertical
                 showsHorizontalScrollIndicator={false}
                 showsVerticalScrollIndicator={false}
