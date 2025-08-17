@@ -951,7 +951,7 @@ const PostDetailScreen = ({ route, navigation }) => {
         bounces={false}
         overScrollMode="never"
         // Alt kısımdaki action bar için padding ekle
-        contentContainerStyle={{ paddingBottom: 80 }}
+        contentContainerStyle={{ paddingBottom: 20 }}
       >
         {/* Static Image Carousel */}
         <View
@@ -1021,13 +1021,6 @@ const PostDetailScreen = ({ route, navigation }) => {
           className="bg-white pt-4"
           style={{
             marginTop: marginTop,
-            shadowColor: "#000",
-            shadowOffset: {
-              width: 0,
-              height: -4,
-            },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
             elevation: 8,
           }}
         >
@@ -1691,7 +1684,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                 borderTopWidth: 0.4,
                 borderTopColor: "#dee0ea",
               }}
-              className="mb-5"
+              className=""
             >
               {/* Header */}
               <View className="flex-row justify-center items-center mb-4 px-6">
