@@ -49,7 +49,8 @@ import ChatDetailScreen from "../screens/ChatDetailScreen";
 import AllRecommendedPostsScreen from "../screens/AllRecommendedPostsScreen";
 import UserProfileScreen from "../screens/UserProfileScreen";
 import ExploreScreen from "../screens/ExploreScreen";
-
+import FavoritePropertiesScreen from "../screens/FavoritePropertiesScreen";
+import FavoriteProfilesScreen from "../screens/FavoriteProfilesScreen";
 // Import icons
 import { BlurView } from "expo-blur";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
@@ -668,8 +669,8 @@ const TenantTabNavigator = () => {
                     ? "white"
                     : "#000"
                   : currentRoute === "Explore"
-                  ? "rgba(255, 255, 255, 0.6)"
-                  : "#999999"
+                    ? "rgba(255, 255, 255, 0.6)"
+                    : "#999999"
               }
             />
           ),
@@ -691,8 +692,8 @@ const TenantTabNavigator = () => {
                     ? "white"
                     : "#000"
                   : currentRoute === "Explore"
-                  ? "rgba(255, 255, 255, 0.6)"
-                  : "#999999"
+                    ? "rgba(255, 255, 255, 0.6)"
+                    : "#999999"
               }
             />
           ),
@@ -716,8 +717,8 @@ const TenantTabNavigator = () => {
                     ? "white"
                     : "#000"
                   : currentRoute === "Explore"
-                  ? "rgba(255, 255, 255, 0.6)"
-                  : "#999999"
+                    ? "rgba(255, 255, 255, 0.6)"
+                    : "#999999"
               }
             />
           ),
@@ -741,8 +742,8 @@ const TenantTabNavigator = () => {
                     ? "white"
                     : "#000"
                   : currentRoute === "Explore"
-                  ? "rgba(255, 255, 255, 0.6)"
-                  : "#999999"
+                    ? "rgba(255, 255, 255, 0.6)"
+                    : "#999999"
               }
             />
           ),
@@ -939,6 +940,17 @@ const MainStackNavigator = () => {
         component={UserProfileScreen}
         options={{ headerShown: false }}
       />
+      <RootStack.Screen
+        name="FavoriteProperties"
+        component={FavoritePropertiesScreen}
+        options={{ headerShown: false }}
+      />
+
+      <RootStack.Screen
+        name="FavoriteProfiles"
+        component={FavoriteProfilesScreen}
+        options={{ headerShown: false }}
+      />
       {/* <RootStack.Screen
           name="Explore"
           component={ExploreScreen}
@@ -1059,10 +1071,10 @@ const ProfileLoader = ({ children }) => {
     isLoading,
     error,
   } = userRole === "EVSAHIBI"
-    ? useGetLandlordProfileQuery(currentUser?.id, {
+      ? useGetLandlordProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       })
-    : useGetTenantProfileQuery(currentUser?.id, {
+      : useGetTenantProfileQuery(currentUser?.id, {
         skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
       });
 

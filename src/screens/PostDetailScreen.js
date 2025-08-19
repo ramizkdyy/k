@@ -346,6 +346,18 @@ const PostDetailScreen = ({ route, navigation }) => {
     }
   }, [favoriteProperties, postId]);
 
+
+  useEffect(() => {
+    if (route.params?.openOfferModal && post && !isLoading && userRole === "KIRACI") {
+      // Küçük bir delay ile modal'ı aç (smooth transition için)
+      const timer = setTimeout(() => {
+        setIsOfferModalVisible(true);
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [route.params?.openOfferModal, post, isLoading, userRole]);
+
   // Header opacity based on scroll
   const headerOpacity = scrollY.interpolate({
     inputRange: [300, 410],
@@ -461,7 +473,7 @@ const PostDetailScreen = ({ route, navigation }) => {
               item.postImages && item.postImages.length > 0
                 ? item.postImages[0].postImageUrl
                 : item.firstPostİmageURL ||
-                  "https://via.placeholder.com/300x200",
+                "https://via.placeholder.com/300x200",
           }}
           className="w-full"
           contentFit="cover"
@@ -488,9 +500,8 @@ const PostDetailScreen = ({ route, navigation }) => {
               className="text-gray-500"
             >
               {item.kiraFiyati
-                ? `${item.kiraFiyati.toLocaleString()} ${
-                    item.paraBirimi || "₺"
-                  }`
+                ? `${item.kiraFiyati.toLocaleString()} ${item.paraBirimi || "₺"
+                }`
                 : "Fiyat belirtilmemiş"}
             </Text>
             <Text className="text-sm text-gray-400 ml-1">/ay</Text>
@@ -652,7 +663,7 @@ const PostDetailScreen = ({ route, navigation }) => {
       Alert.alert(
         "Hata",
         error.data?.message ||
-          "Teklif gönderilirken bir hata oluştu. Lütfen tekrar deneyin."
+        "Teklif gönderilirken bir hata oluştu. Lütfen tekrar deneyin."
       );
     }
   };
@@ -1004,11 +1015,10 @@ const PostDetailScreen = ({ route, navigation }) => {
                       {images.map((_, index) => (
                         <TouchableOpacity
                           key={`dot-${index}`}
-                          className={`mx-1 h-2 w-2 rounded-full ${
-                            index === currentImageIndex
+                          className={`mx-1 h-2 w-2 rounded-full ${index === currentImageIndex
                               ? "bg-white"
                               : "bg-gray-400"
-                          }`}
+                            }`}
                           onPress={() => handleThumbnailPress(index)}
                         />
                       ))}
@@ -1280,8 +1290,8 @@ const PostDetailScreen = ({ route, navigation }) => {
                     {post.status === 0
                       ? "Aktif"
                       : post.status === 1
-                      ? "Kiralandı"
-                      : "Kapalı"}
+                        ? "Kiralandı"
+                        : "Kapalı"}
                   </Text>
                 </View>
 
