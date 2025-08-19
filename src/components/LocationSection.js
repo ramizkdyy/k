@@ -192,7 +192,7 @@ const LocationSection = ({ post }) => {
 
     Alert.alert(
       "Harita Uygulaması Seç",
-      "Hangi harita uygulamasını kullanmak istiyorsunuz?",
+      "Hangi harita uygulamasını kullanmak istiyorsun?",
       [
         ...(Platform.OS === "ios"
           ? [
@@ -244,7 +244,10 @@ const LocationSection = ({ post }) => {
 
         {/* Map Container */}
         <TouchableOpacity
-          onPress={showMapOptions}
+          onPress={(e) => {
+            e.stopPropagation();
+            setIsModalVisible(true);
+          }}
           activeOpacity={0.8}
           className="relative"
         >
@@ -299,6 +302,7 @@ const LocationSection = ({ post }) => {
 
           {/* Open Maps Button Overlay */}
           <TouchableOpacity
+            onPress={showMapOptions}
             style={{
               position: "absolute",
               top: 12,
@@ -317,10 +321,6 @@ const LocationSection = ({ post }) => {
               shadowOpacity: 0.1,
               shadowRadius: 4,
               elevation: 3,
-            }}
-            onPress={(e) => {
-              e.stopPropagation();
-              setIsModalVisible(true);
             }}
           >
             <FontAwesomeIcon icon={faExternalLink} size={12} color="#4b5563" />

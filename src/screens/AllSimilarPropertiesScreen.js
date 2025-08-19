@@ -564,7 +564,7 @@ const PropertyItem = memo(
     const handleProfilePress = useCallback(() => {
       navigation.navigate("UserProfile", {
         userId: item.landlordId || item.userId,
-        userRole: "EVSAHIBI"
+        userRole: "EVSAHIBI",
       });
     }, [item.landlordId, item.userId, navigation]);
 
@@ -606,8 +606,9 @@ const PropertyItem = memo(
               className="text-gray-900 underline"
             >
               {item.kiraFiyati || item.rent
-                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${getCurrencyText(item.paraBirimi) || "₺"
-                }`
+                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
+                    getCurrencyText(item.paraBirimi) || "₺"
+                  }`
                 : "Fiyat belirtilmemiş"}
             </Text>
             <Text className="text-sm text-gray-400 ml-1">/ay</Text>
@@ -640,9 +641,10 @@ const PropertyItem = memo(
                   onPress={handleProfilePress}
                 >
                   <View className="w-12 h-12 rounded-full justify-center items-center mr-3 border-gray-900 border">
-                    {!!item.user?.profileImageUrl ? (
+                    {!!item.user?.profilePictureUrl ? (
                       <Image
-                        source={{ uri: item.user.profileImageUrl }}
+                        style={{ width: 48, height: 48, borderRadius: 100 }}
+                        source={{ uri: item.user.profilePictureUrl }}
                         className="w-full h-full rounded-full"
                       />
                     ) : (
@@ -994,18 +996,18 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center p-8">
-          <MaterialIcons name="error" size={64} color="#EF4444" />
-          <Text className="text-xl font-semibold text-gray-700 mt-4 mb-2 text-center">
+          <FontAwesomeIcon size={50} icon={faExclamationCircle} />
+          <Text className="text-xl font-semibold text-gray-900 mt-2 mb-2 text-center">
             Bir hata oluştu
           </Text>
-          <Text className="text-base text-gray-500 text-center mb-6">
+          <Text className="text-base text-gray-500 text-center mb-4">
             Benzer ilanlar yüklenirken bir sorun oluştu.
           </Text>
           <TouchableOpacity
-            className="bg-green-500 px-6 py-3 rounded-lg"
+            className="border border-gray-900 px-6 py-3 rounded-full"
             onPress={onRefresh}
           >
-            <Text className="text-white font-semibold">Tekrar Dene</Text>
+            <Text className="text-gray-900 font-medium">Tekrar Dene</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

@@ -56,12 +56,12 @@ import { BlurView } from "expo-blur";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 // Solid icons (for selected state)
 import {
-  faHouse as faHouseSolid,
+  faHouseBlank as faHouseSolid,
   faBuilding as faBuildingSolid,
   faEnvelope as faEnvelopeSolid,
   faUser as faUserSolid,
   faSearch as faSearchSolid,
-  faFingerprint as faFingerprintSolid,
+  faCameraRetro as faFingerprintSolid,
   faBars,
   faMapMarkerAlt,
   faGavel,
@@ -75,7 +75,7 @@ import {
 } from "@fortawesome/pro-solid-svg-icons";
 // Regular icons (for unselected state)
 import {
-  faHouse as faHouseRegular,
+  faHouseBlank as faHouseRegular,
   faBuilding as faBuildingRegular,
   faEnvelope as faEnvelopeRegular,
   faUser as faUserRegular,
@@ -88,7 +88,7 @@ import {
   faQuestionCircle as faQuestionCircleRegular,
   faMagnifyingGlass as faMagnifyingGlassLight,
   faSignOutAlt as faSignOutAltRegular,
-  faFingerprint as faFingerprintRegular,
+  faCameraRetro as faFingerprintRegular,
 } from "@fortawesome/pro-regular-svg-icons";
 
 import {
@@ -439,7 +439,7 @@ const LandlordTabNavigator = () => {
           tabBarLabel: "",
           tabBarIcon: ({ focused }) => (
             <FontAwesomeIcon
-              icon={focused ? faMagnifyingGlassSolid : faMagnifyingGlassLight}
+              icon={focused ? faHouseSolid : faHouseRegular}
               size={24}
               color={focused ? "#000" : "#999999"}
             />
@@ -471,7 +471,7 @@ const LandlordTabNavigator = () => {
           tabBarLabel: "",
           tabBarIcon: ({ focused }) => (
             <FontAwesomeIcon
-              icon={focused ? faHouseSolid : faHouseRegular}
+              icon={focused ? faMagnifyingGlassSolid : faMagnifyingGlassLight}
               size={24}
               color={focused ? "#000" : "#999999"}
             />
@@ -661,7 +661,7 @@ const TenantTabNavigator = () => {
           tabBarLabel: "",
           tabBarIcon: ({ focused }) => (
             <FontAwesomeIcon
-              icon={focused ? faSearchSolid : faSearchRegular}
+              icon={focused ? faHouseSolid : faHouseRegular}
               size={24}
               color={
                 focused
@@ -709,7 +709,7 @@ const TenantTabNavigator = () => {
           tabBarLabel: "",
           tabBarIcon: ({ focused }) => (
             <FontAwesomeIcon
-              icon={focused ? faHouseSolid : faHouseRegular}
+              icon={focused ? faSearchSolid : faSearchRegular}
               size={24}
               color={
                 focused

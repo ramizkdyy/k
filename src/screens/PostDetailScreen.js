@@ -47,9 +47,9 @@ import {
   faBedBunk,
   faChevronRight,
   faLocationDot,
-  faHeart,
   faUser,
 } from "@fortawesome/pro-light-svg-icons";
+import { faHeart } from "@fortawesome/pro-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import * as Haptics from "expo-haptics";
 import Carousel from "react-native-reanimated-carousel";
@@ -970,7 +970,9 @@ const PostDetailScreen = ({ route, navigation }) => {
         bounces={false}
         overScrollMode="never"
         // Alt kısımdaki action bar için padding ekle
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={{
+          paddingBottom: userRole === "KIRACI" ? 100 : 20,
+        }}
       >
         {/* Static Image Carousel */}
         <View
@@ -1108,7 +1110,7 @@ const PostDetailScreen = ({ route, navigation }) => {
               </Text>
             </View>
 
-            <View className="flex flex-col gap-4 mt-1">
+            <View className="flex flex-col gap-4 mt-2">
               <View className="flex flex-row items-center">
                 <Text style={{ fontSize: 12 }} className="text-gray-500">
                   {[post.il, post.ilce, post.mahalle]
@@ -1122,12 +1124,12 @@ const PostDetailScreen = ({ route, navigation }) => {
             {userRole === "KIRACI" &&
               matchDetails &&
               matchDetails.matchScore && (
-                <View className="mt-3">
-                  <MatchScoreBar
-                    matchScore={Math.round(matchDetails.matchScore)}
-                    showBar={true}
-                    size="md"
-                  />
+                <View className="mt-3 flex flex-row items-center gap-2">
+                  <FontAwesomeIcon icon={faHeart} />
+                  <Text className="font-medium">
+                    {matchDetails.matchScore}% Uyum -{" "}
+                    {matchDetails.compatibilityLevel}
+                  </Text>
                 </View>
               )}
 

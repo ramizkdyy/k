@@ -13,6 +13,7 @@ import {
   ScrollView,
   Animated,
   Dimensions,
+  Modal,
 } from "react-native";
 import { Image } from "expo-image";
 import { useSelector, useDispatch } from "react-redux";
@@ -33,6 +34,7 @@ import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
   faHomeAlt,
+  faHouseBlank,
   faPlus,
   faSliders,
 } from "@fortawesome/pro-regular-svg-icons";
@@ -47,10 +49,10 @@ import {
   faMoneyBills,
   faCoins,
   faBedBunk,
-  faBath,
+  faBath
 } from "@fortawesome/pro-light-svg-icons";
 import PropertiesFilterModal from "../modals/PropertiesFilterModal";
-import { useSearchPostsMutation } from '../redux/api/searchApiSlice';
+import { useSearchPostsMutation } from "../redux/api/searchApiSlice";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Logger utility
@@ -66,7 +68,7 @@ const Logger = {
   },
 };
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get("window");
 
 // Image with Fallback Component (AllNearbyPropertiesScreen'den)
 const ImageWithFallback = React.memo(
@@ -431,6 +433,8 @@ const PostsScreen = ({ navigation }) => {
   const filters = useSelector(selectPostFilters);
   const userPosts = useSelector(selectAllUserPosts);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState(null);
+  const bottomSheetModalRef = useRef(null);
 
   const [searchPosts] = useSearchPostsMutation();
 
@@ -451,6 +455,7 @@ const PostsScreen = ({ navigation }) => {
 
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
+
 
   const SCROLL_DISTANCE = 50;
 
@@ -497,19 +502,20 @@ const PostsScreen = ({ navigation }) => {
   const titleOpacity = scrollY.interpolate({
     inputRange: [0, SCROLL_DISTANCE],
     outputRange: [1, 0],
-    extrapolate: 'clamp',
+    extrapolate: "clamp",
   });
 
   const titleScale = scrollY.interpolate({
     inputRange: [0, SCROLL_DISTANCE],
     outputRange: [1, 0.8],
-    extrapolate: 'clamp',
+    extrapolate: "clamp",
   });
 
   const searchBarTranslateY = scrollY.interpolate({
     inputRange: [0, SCROLL_DISTANCE],
     outputRange: [0, -50],
     extrapolate: 'clamp',
+
   });
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -677,19 +683,21 @@ const PostsScreen = ({ navigation }) => {
   };
 
   const handleFilterModalApply = (appliedFilters, searchResult) => {
-    console.log('=== FILTER MODAL APPLY DEBUG ===');
-    console.log('Applied filters:', appliedFilters);
-    console.log('Search result:', searchResult);
+    console.log("=== FILTER MODAL APPLY DEBUG ===");
+    console.log("Applied filters:", appliedFilters);
+    console.log("Search result:", searchResult);
 
     Logger.event("filter_modal_applied", {
       filtersCount: Object.keys(appliedFilters).length,
-      resultsCount: searchResult?.posts?.length || 0
+      resultsCount: searchResult?.posts?.length || 0,
     });
 
     dispatch(setPostFilters(appliedFilters));
 
     const hasFilters = Object.values(appliedFilters).some(
-      value => value !== null && value !== "" &&
+      (value) =>
+        value !== null &&
+        value !== "" &&
         (Array.isArray(value) ? value.length > 0 : true)
     );
     setHasActiveFilters(hasFilters);
@@ -705,9 +713,12 @@ const PostsScreen = ({ navigation }) => {
         postsData = searchResult.posts;
       }
 
-      const validPosts = postsData.filter(post => {
-        return post && post.postId &&
-          (typeof post.postId === 'number' || typeof post.postId === 'string');
+      const validPosts = postsData.filter((post) => {
+        return (
+          post &&
+          post.postId &&
+          (typeof post.postId === "number" || typeof post.postId === "string")
+        );
       });
 
       setAllPostsData(validPosts);
@@ -719,7 +730,6 @@ const PostsScreen = ({ navigation }) => {
         setFilterMetadata(null);
         setHasNextPage(false);
       }
-
     } else {
       setAllPostsData([]);
       setFilterMetadata(null);
@@ -742,7 +752,7 @@ const PostsScreen = ({ navigation }) => {
 
     Logger.event("load_more_filtered_posts", {
       currentPage: filterCurrentPage + 1,
-      totalPages: filterMetadata.totalPages
+      totalPages: filterMetadata.totalPages,
     });
 
     setIsLoadingMoreFiltered(true);
@@ -751,25 +761,32 @@ const PostsScreen = ({ navigation }) => {
       const filtersWithPagination = {
         ...activeFilterData,
         page: filterCurrentPage + 1,
-        pageSize: PAGE_SIZE
+        pageSize: PAGE_SIZE,
       };
 
-      console.log('Loading more filtered posts with:', filtersWithPagination);
+      console.log("Loading more filtered posts with:", filtersWithPagination);
 
       const searchResult = await searchPosts(filtersWithPagination).unwrap();
 
-      if (searchResult && searchResult.posts && Array.isArray(searchResult.posts)) {
-        const validNewPosts = searchResult.posts.filter(post =>
-          post && post.postId &&
-          (typeof post.postId === 'number' || typeof post.postId === 'string')
+      if (
+        searchResult &&
+        searchResult.posts &&
+        Array.isArray(searchResult.posts)
+      ) {
+        const validNewPosts = searchResult.posts.filter(
+          (post) =>
+            post &&
+            post.postId &&
+            (typeof post.postId === "number" || typeof post.postId === "string")
         );
 
         console.log(`Adding ${validNewPosts.length} more filtered posts`);
 
+
         setAllPostsData(prevData => {
           const existingPostIds = new Set(prevData.map(item => item.postId));
           const uniqueNewPosts = validNewPosts.filter(
-            post => !existingPostIds.has(post.postId)
+            (post) => !existingPostIds.has(post.postId)
           );
           return [...prevData, ...uniqueNewPosts];
         });
@@ -779,13 +796,14 @@ const PostsScreen = ({ navigation }) => {
           setHasNextPage(searchResult.metadata.hasNextPage || false);
         }
 
+
         setFilterCurrentPage(prev => prev + 1);
 
         Logger.info(COMPONENT_NAME, "More filtered posts loaded successfully");
       }
     } catch (error) {
       Logger.error(COMPONENT_NAME, "Load more filtered posts failed", error);
-      console.error('Load more filtered posts error:', error);
+      console.error("Load more filtered posts error:", error);
     } finally {
       setIsLoadingMoreFiltered(false);
     }
@@ -796,7 +814,7 @@ const PostsScreen = ({ navigation }) => {
     activeFilterData,
     filterMetadata,
     filterCurrentPage,
-    searchPosts
+    searchPosts,
   ]);
 
   useFocusEffect(
@@ -824,7 +842,7 @@ const PostsScreen = ({ navigation }) => {
       Logger.event("sort_posts_changed", {
         oldSort: sortBy,
         newSort: newSortBy,
-        direction: sortBy === newSortBy ? (sortDirection === 0 ? 1 : 0) : 0
+        direction: sortBy === newSortBy ? (sortDirection === 0 ? 1 : 0) : 0,
       });
 
       if (newSortBy === sortBy) {
@@ -860,8 +878,8 @@ const PostsScreen = ({ navigation }) => {
             const searchResult = await searchPosts(activeFilterData).unwrap();
 
             if (searchResult && searchResult.posts) {
-              const validPosts = searchResult.posts.filter(post =>
-                post && post.postId
+              const validPosts = searchResult.posts.filter(
+                (post) => post && post.postId
               );
               setAllPostsData(validPosts);
 
@@ -871,7 +889,7 @@ const PostsScreen = ({ navigation }) => {
               }
             }
           } catch (filterError) {
-            console.error('Filter refresh error:', filterError);
+            console.error("Filter refresh error:", filterError);
             setHasActiveFilters(false);
             setActiveFilterData(null);
             setFilterMetadata(null);
@@ -917,7 +935,7 @@ const PostsScreen = ({ navigation }) => {
     isFetchingAllPosts,
     currentPage,
     hasActiveFilters,
-    loadMoreFilteredPosts
+    loadMoreFilteredPosts,
   ]);
 
   const applyFilters = () => {
@@ -1046,12 +1064,35 @@ const PostsScreen = ({ navigation }) => {
     navigation.navigate("Offers", { postId });
   };
 
+  const handlePostOptionsPress = (postId) => {
+    setSelectedPostId(postId);
+    bottomSheetModalRef.current?.present();
+  };
+
+  const handleBottomSheetClose = () => {
+    setSelectedPostId(null);
+  };
+
+  const renderBackdrop = useCallback(
+    (props) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        opacity={0.5}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
+
   const handleCreatePostNavigation = () => {
     Logger.event("create_post_initiated");
     navigation.navigate("CreatePost");
   };
 
   const getFilteredPosts = () => {
+
     console.log('=== GET FILTERED POSTS DEBUG ===');
     console.log('User role:', userRole);
     console.log('Has active filters:', hasActiveFilters);
@@ -1059,25 +1100,30 @@ const PostsScreen = ({ navigation }) => {
     console.log('Search query:', searchQuery);
     console.log('Sort by:', sortBy, 'Sort direction:', sortDirection);
 
+
     let filteredPosts = [];
 
     if (userRole === "EVSAHIBI") {
       filteredPosts = landlordListingsData?.result || [];
-      console.log('Using landlord listings:', filteredPosts.length);
+      console.log("Using landlord listings:", filteredPosts.length);
     } else {
       filteredPosts = allPostsData || [];
-      console.log('Using all posts data:', filteredPosts.length);
+      console.log("Using all posts data:", filteredPosts.length);
     }
 
-    console.log('Raw filtered posts sample:', filteredPosts.slice(0, 2));
+    console.log("Raw filtered posts sample:", filteredPosts.slice(0, 2));
 
-    const validPosts = filteredPosts.filter(post => {
-      const isValid = post &&
+    const validPosts = filteredPosts.filter((post) => {
+      const isValid =
+        post &&
         post.postId &&
-        (typeof post.postId === 'number' || typeof post.postId === 'string');
+        (typeof post.postId === "number" || typeof post.postId === "string");
 
       if (!isValid && post) {
-        console.log('Filtering out invalid post:', { postId: post.postId, type: typeof post.postId });
+        console.log("Filtering out invalid post:", {
+          postId: post.postId,
+          type: typeof post.postId,
+        });
       }
 
       return isValid;
@@ -1086,7 +1132,7 @@ const PostsScreen = ({ navigation }) => {
     console.log(`Valid posts after null check: ${validPosts.length}`);
 
     if (hasActiveFilters) {
-      console.log('Processing with active filters');
+      console.log("Processing with active filters");
 
       const uniquePosts = [];
       const seenPostIds = new Set();
@@ -1116,11 +1162,13 @@ const PostsScreen = ({ navigation }) => {
       }
 
       const sortedPosts = sortPosts(finalPosts, sortBy, sortDirection);
-      console.log(`Final result (with filters and sorting): ${sortedPosts.length}`);
+      console.log(
+        `Final result (with filters and sorting): ${sortedPosts.length}`
+      );
       return sortedPosts;
     }
 
-    console.log('Processing without active filters');
+    console.log("Processing without active filters");
 
     const uniquePosts = [];
     const seenPostIds = new Set();
@@ -1148,7 +1196,9 @@ const PostsScreen = ({ navigation }) => {
     }
 
     const sortedPosts = sortPosts(finalPosts, sortBy, sortDirection);
-    console.log(`Final result (no filters, with sorting): ${sortedPosts.length}`);
+    console.log(
+      `Final result (no filters, with sorting): ${sortedPosts.length}`
+    );
     return sortedPosts;
   };
 
@@ -1164,6 +1214,7 @@ const PostsScreen = ({ navigation }) => {
           style={{ marginHorizontal: 16 }}
           className="overflow-hidden mb-4 pt-6 border-b border-gray-200"
         >
+
           {/* Image slider */}
           <PropertyImageSlider
             images={item.postImages}
@@ -1350,6 +1401,7 @@ const PostsScreen = ({ navigation }) => {
               </Text>
             </View>
 
+
             {/* Alt kısım - Fiyat ve lokasyon */}
             <View>
               {/* Fiyat */}
@@ -1419,6 +1471,7 @@ const PostsScreen = ({ navigation }) => {
     },
     [userRole, currentUser?.id, isDeleting, navigation]
   );
+
 
   // Ana renderPostItem - userRole'e göre seçim yapar
   const renderPostItem = useCallback(
@@ -1514,8 +1567,8 @@ const PostsScreen = ({ navigation }) => {
               {filters.status === 0
                 ? "Aktif"
                 : filters.status === 1
-                  ? "Kiralandı"
-                  : "Kapalı"}
+                ? "Kiralandı"
+                : "Kapalı"}
             </Text>
             <TouchableOpacity
               onPress={() => {
@@ -1554,10 +1607,11 @@ const PostsScreen = ({ navigation }) => {
     const headerContainerHeight = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
       outputRange: [
+
         insets.top + 50 + 60 + 50 + 16,
         insets.top + 60 + 50 + 8
       ],
-      extrapolate: 'clamp',
+      extrapolate: "clamp",
     });
 
     const searchBarWidth = scrollY.interpolate({
@@ -1568,7 +1622,7 @@ const PostsScreen = ({ navigation }) => {
           ? screenWidth - 32 - 50 - 50 - 16
           : screenWidth - 32 - 50 - 8
       ],
-      extrapolate: 'clamp',
+      extrapolate: "clamp",
     });
 
     const searchBarMarginRight = scrollY.interpolate({
@@ -1579,7 +1633,7 @@ const PostsScreen = ({ navigation }) => {
           ? 116
           : 58
       ],
-      extrapolate: 'clamp',
+      extrapolate: "clamp",
     });
 
     const searchBarTranslateY = scrollY.interpolate({
@@ -1597,7 +1651,7 @@ const PostsScreen = ({ navigation }) => {
     const sortOptionsHeight = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
       outputRange: [50, 42],
-      extrapolate: 'clamp',
+      extrapolate: "clamp",
     });
 
     const sortOptionsTranslateY = scrollY.interpolate({
@@ -1609,7 +1663,7 @@ const PostsScreen = ({ navigation }) => {
     return (
       <Animated.View
         style={{
-          position: 'absolute',
+          position: "absolute",
           top: 0,
           left: 0,
           right: 0,
@@ -1621,7 +1675,7 @@ const PostsScreen = ({ navigation }) => {
           intensity={80}
           tint="light"
           style={{
-            position: 'absolute',
+            position: "absolute",
             top: 0,
             left: 0,
             right: 0,
@@ -1631,12 +1685,12 @@ const PostsScreen = ({ navigation }) => {
 
         <View
           style={{
-            position: 'absolute',
+            position: "absolute",
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(255, 255, 255, 0.7)',
+            backgroundColor: "rgba(255, 255, 255, 0.7)",
           }}
         />
 
@@ -1646,18 +1700,20 @@ const PostsScreen = ({ navigation }) => {
           flex: 1,
           zIndex: 10,
         }}>
-
           <Animated.View
             style={{
               opacity: titleOpacity,
               transform: [{ scale: titleScale }],
               height: 50,
-              justifyContent: 'center',
+              justifyContent: "center",
             }}
           >
             <View className="flex-row justify-between items-center">
               <View className="flex-col flex-1">
-                <Text style={{ fontSize: 20 }} className="font-medium text-gray-900">
+                <Text
+                  style={{ fontSize: 20 }}
+                  className="font-medium text-gray-900"
+                >
                   {userRole === "EVSAHIBI" ? "Mülklerim" : "İlanlar"}
                 </Text>
                 {userRole === "KIRACI" && (
@@ -1694,8 +1750,8 @@ const PostsScreen = ({ navigation }) => {
               tint="light"
               style={{
                 borderRadius: 24,
-                overflow: 'hidden',
-                shadowColor: '#000',
+                overflow: "hidden",
+                shadowColor: "#000",
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.1,
                 shadowRadius: 12,
@@ -1704,10 +1760,10 @@ const PostsScreen = ({ navigation }) => {
             >
               <View
                 style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                  backgroundColor: "rgba(255, 255, 255, 0.8)",
                   paddingHorizontal: 16,
-                  flexDirection: 'row',
-                  alignItems: 'center',
+                  flexDirection: "row",
+                  alignItems: "center",
                   gap: 8,
                 }}
                 className="border border-gray-100 border-[1px] rounded-full"
@@ -1731,15 +1787,16 @@ const PostsScreen = ({ navigation }) => {
             </BlurView>
           </Animated.View>
 
+
           <Animated.View
             style={{
-              marginTop: 8,
+              marginTop: 0,
               height: sortOptionsHeight,
               transform: [{ translateY: searchBarTranslateY }],
-              overflow: 'hidden',
+              overflow: "hidden",
             }}
           >
-            <View style={{ flex: 1, justifyContent: 'center', }}>
+            <View style={{ flex: 1, justifyContent: "center" }}>
               <ScrollView
                 horizontal={true}
                 showsHorizontalScrollIndicator={false}
@@ -1754,46 +1811,43 @@ const PostsScreen = ({ navigation }) => {
                     <TouchableOpacity
                       activeOpacity={0.7}
                       style={{
-                        marginRight: 12,
                         paddingHorizontal: 10,
                         paddingVertical: 5,
                         borderRadius: 16,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 1 },
-                        shadowOpacity: 0.1,
-                        shadowRadius: 2,
+                        flexDirection: "row",
+                        alignItems: "center",
                         elevation: 2,
                       }}
                       onPress={resetSortOptions}
-                      className="bg-red-600"
+                      className=""
                     >
                       <MaterialIcons name="close" size={20} color="white" />
                     </TouchableOpacity>
                   )}
 
                   {[
-                    { key: 'distance', label: "Uzaklık" },
-                    { key: 'price', label: "Fiyat" },
-                    { key: 'date', label: "Tarih" },
-                    { key: 'views', label: "Görüntüleme" },
+                    { key: "distance", label: "Uzaklık" },
+                    { key: "price", label: "Fiyat" },
+                    { key: "date", label: "Tarih" },
+                    { key: "views", label: "Görüntüleme" },
                   ].map((option) => (
                     <TouchableOpacity
                       activeOpacity={0.7}
                       key={option.key}
                       style={{
-                        marginRight: 12,
+                        marginRight: 8,
                         paddingHorizontal: 14,
-                        paddingVertical: 6,
+                        paddingVertical: 7,
                         borderRadius: 18,
-                        backgroundColor: sortBy === option.key ? '#111827' : 'rgba(255, 255, 255, 0.9)',
-                        borderWidth: 1,
-                        borderColor: sortBy === option.key ? '#111827' : 'rgba(209, 213, 219, 0.8)',
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 1 },
-                        shadowOpacity: 0.1,
-                        shadowRadius: 2,
+                        backgroundColor:
+                          sortBy === option.key
+                            ? "#111827"
+                            : "rgba(255, 255, 255, 0.9)",
+                        borderWidth: sortBy === option.key ? 1 : 0,
+                        borderColor:
+                          sortBy === option.key
+                            ? "#111827"
+                            : "rgba(209, 213, 219, 0.8)",
                         elevation: 2,
                       }}
                       onPress={() => handleSortChange(option.key)}
@@ -1801,8 +1855,8 @@ const PostsScreen = ({ navigation }) => {
                       <Text
                         style={{
                           fontSize: 13,
-                          fontWeight: sortBy === option.key ? '600' : '500',
-                          color: sortBy === option.key ? 'white' : '#374151',
+                          fontWeight: sortBy === option.key ? "500" : "400",
+                          color: sortBy === option.key ? "white" : "#a5a5a5",
                         }}
                       >
                         {option.label}
@@ -1822,25 +1876,25 @@ const PostsScreen = ({ navigation }) => {
 
         <View
           style={{
-            position: 'absolute',
+            position: "absolute",
             right: 16,
             top: insets.top + 12,
             zIndex: 20,
             gap: 8,
-            flexDirection: 'row'
+            flexDirection: "row",
           }}
         >
           {userRole === "EVSAHIBI" && (
             <TouchableOpacity
               style={{
-                shadowColor: '#000',
+                shadowColor: "#000",
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.1,
                 shadowRadius: 8,
                 elevation: 5,
                 marginLeft: 8,
               }}
-              className="p-3 bg-white/90 backdrop-blur flex justify-center items-center rounded-full"
+              className="w-12 h-12 bg-white/90 backdrop-blur flex justify-center items-center rounded-full"
               onPress={handleCreatePostNavigation}
             >
               <FontAwesomeIcon icon={faPlus} size={18} />
@@ -1848,17 +1902,18 @@ const PostsScreen = ({ navigation }) => {
           )}
           <TouchableOpacity
             style={{
-              shadowColor: '#000',
+              shadowColor: "#000",
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.1,
               shadowRadius: 8,
               elevation: 5,
             }}
-            className={`p-3 rounded-full  ${isFilterVisible ||
+            className={`p-3 rounded-full  ${
+              isFilterVisible ||
               Object.values(filters).some((val) => val !== null)
-              ? "bg-gray-900/90"
-              : "bg-white/90"
-              }`}
+                ? "bg-gray-900/90"
+                : "bg-white/90"
+            }`}
             onPress={handleFilterPress}
           >
             <FontAwesomeIcon
@@ -1866,7 +1921,7 @@ const PostsScreen = ({ navigation }) => {
               size={20}
               color={
                 isFilterVisible ||
-                  Object.values(filters).some((val) => val !== null)
+                Object.values(filters).some((val) => val !== null)
                   ? "white"
                   : "#111827"
               }
@@ -1945,12 +2000,116 @@ const PostsScreen = ({ navigation }) => {
         )}
       </View>
 
-      <PropertiesFilterModal
-        visible={isFilterModalVisible}
-        onClose={handleFilterModalClose}
-        onApply={handleFilterModalApply}
-      />
-    </View>
+      {/* Bottom Sheet Modal - Outside main container */}
+      <BottomSheetModal
+        ref={bottomSheetModalRef}
+        snapPoints={["40%"]}
+        backdropComponent={renderBackdrop}
+        onDismiss={handleBottomSheetClose}
+        enablePanDownToClose={true}
+        backgroundStyle={{
+          backgroundColor: "white",
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+        }}
+        handleIndicatorStyle={{
+          backgroundColor: "#D1D5DB",
+          width: 40,
+          height: 4,
+        }}
+        style={{
+          zIndex: 10001,
+          elevation: 10001,
+        }}
+      >
+        <BottomSheetView
+          style={{
+            flex: 1,
+            paddingHorizontal: 20,
+            paddingTop: 10,
+            paddingBottom: 50,
+          }}
+        >
+          <View className="space-y-4">
+            {/* İlanı Düzenle */}
+            <TouchableOpacity
+              className="flex-row items-center py-3"
+              onPress={() => {
+                bottomSheetModalRef.current?.dismiss();
+                if (selectedPostId) {
+                  handleEditPostNavigation(selectedPostId);
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <View className="bg-blue-50 p-2 rounded-full mr-3">
+                <FontAwesomeIcon icon={faEdit} size={20} color="#000" />
+              </View>
+              <Text
+                style={{ fontSize: 16 }}
+                className="font-normal text-gray-900"
+              >
+                İlanı Düzenle
+              </Text>
+            </TouchableOpacity>
+            {/* Teklifler */}
+            <TouchableOpacity
+              className="flex-row items-center py-3"
+              onPress={() => {
+                bottomSheetModalRef.current?.dismiss();
+                if (selectedPostId) {
+                  handleOffersNavigation(selectedPostId);
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <View className="p-2 rounded-full mr-3">
+                <FontAwesomeIcon icon={faHandshake} size={20} color="#000" />
+              </View>
+              <View className="flex-1">
+                <Text
+                  style={{ fontSize: 16 }}
+                  className="font-normal text-gray-900"
+                >
+                  Teklifler{" "}
+                  {selectedPostId &&
+                    (() => {
+                      const selectedPost = landlordListingsData?.result?.find(
+                        (post) => post.postId === selectedPostId
+                      );
+                      return selectedPost
+                        ? `(${selectedPost.offerCount || 0})`
+                        : "";
+                    })()}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Sil */}
+            <TouchableOpacity
+              className="flex-row items-center py-3"
+              onPress={() => {
+                bottomSheetModalRef.current?.dismiss();
+                if (selectedPostId) {
+                  handleDeletePost(selectedPostId);
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <View className="bg-red-50 p-2 rounded-full mr-3">
+                <FontAwesomeIcon icon={faTrash} size={20} color="#EF4444" />
+              </View>
+              <Text
+                style={{ fontSize: 16 }}
+                className="font-normal text-red-600"
+              >
+                Sil
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </BottomSheetView>
+      </BottomSheetModal>
+    </>
   );
 };
 

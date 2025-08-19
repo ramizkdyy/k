@@ -12,7 +12,6 @@ import {
   Animated,
   Dimensions,
   StatusBar,
-
 } from "react-native";
 import { Image } from "expo-image";
 import { useSelector } from "react-redux";
@@ -62,7 +61,6 @@ const OffersScreen = () => {
   });
 
   const insets = useSafeAreaInsets();
-
 
   // Rating Score gösterim fonksiyonu
   const getRatingScoreInfo = (rating) => {
@@ -225,10 +223,10 @@ const OffersScreen = () => {
     refetch,
     error,
   } = isTenant
-      ? useGetSentOffersQuery(currentUser?.id, {
+    ? useGetSentOffersQuery(currentUser?.id, {
         skip: !currentUser?.id,
       })
-      : useGetReceivedOffersQuery(currentUser?.id, {
+    : useGetReceivedOffersQuery(currentUser?.id, {
         skip: !currentUser?.id,
       });
 
@@ -297,11 +295,18 @@ const OffersScreen = () => {
           const existingOffer = uniqueOffers.get(postId);
 
           // Eğer bu post için daha önce teklif yoksa veya mevcut teklif daha yeniyse
-          if (!existingOffer || new Date(offer.offerTime) > new Date(existingOffer.offerTime)) {
+          if (
+            !existingOffer ||
+            new Date(offer.offerTime) > new Date(existingOffer.offerTime)
+          ) {
             uniqueOffers.set(postId, offer);
-            console.log(`Updated offer for postId ${postId}: offerId ${offer.offerId}, time: ${offer.offerTime}`);
+            console.log(
+              `Updated offer for postId ${postId}: offerId ${offer.offerId}, time: ${offer.offerTime}`
+            );
           } else {
-            console.log(`Skipped older offer for postId ${postId}: offerId ${offer.offerId}, time: ${offer.offerTime}`);
+            console.log(
+              `Skipped older offer for postId ${postId}: offerId ${offer.offerId}, time: ${offer.offerTime}`
+            );
           }
         }
       });
@@ -309,7 +314,6 @@ const OffersScreen = () => {
       offers = Array.from(uniqueOffers.values());
       console.log("Processed offers after deduplication:", offers.length);
       console.log("Sample processed offer:", offers[0] || "No offers");
-
     } else if (isLandlord && offersData.result.rentalPosts) {
       // Landlord için rentalPosts yapısından teklifleri çıkar
       console.log("Extracting offers from rentalPosts...");
@@ -317,18 +321,23 @@ const OffersScreen = () => {
 
       offersData.result.rentalPosts.forEach((post, postIndex) => {
         console.log(
-          `Post ${postIndex}: ${post.ilanBasligi}, has ${post.offers?.length || 0
+          `Post ${postIndex}: ${post.ilanBasligi}, has ${
+            post.offers?.length || 0
           } offers`
         );
 
         if (post.offers && Array.isArray(post.offers)) {
           // EKLEME: Her post için sadece en son aktif teklifi al
-          const activeOffers = post.offers.filter(offer => offer.isActive === true);
+          const activeOffers = post.offers.filter(
+            (offer) => offer.isActive === true
+          );
 
           if (activeOffers.length > 0) {
             // En son tarihteki teklifi bul
             const latestOffer = activeOffers.reduce((latest, current) => {
-              return new Date(current.offerTime) > new Date(latest.offerTime) ? current : latest;
+              return new Date(current.offerTime) > new Date(latest.offerTime)
+                ? current
+                : latest;
             });
 
             const offerWithPost = {
@@ -365,7 +374,6 @@ const OffersScreen = () => {
       console.log("Total latest active offers extracted:", offers.length);
     }
   }
-
 
   console.log("Final offers array:", offers);
 
@@ -435,7 +443,7 @@ const OffersScreen = () => {
               Alert.alert(
                 "Hata",
                 error?.data?.message ||
-                "Teklif kabul edilirken bir hata oluştu."
+                  "Teklif kabul edilirken bir hata oluştu."
               );
             }
           },
@@ -680,8 +688,8 @@ const OffersScreen = () => {
                     {post.paraBirimi === "USD"
                       ? "$"
                       : post.paraBirimi === "EUR"
-                        ? "€"
-                        : "₺"}
+                      ? "€"
+                      : "₺"}
                     {item.offerAmount?.toLocaleString() || "0"}
                   </Text>
                   <Text
@@ -720,8 +728,8 @@ const OffersScreen = () => {
                     {post.paraBirimi === "USD"
                       ? "$"
                       : post.paraBirimi === "EUR"
-                        ? "€"
-                        : "₺"}
+                      ? "€"
+                      : "₺"}
                     {item.offerAmount?.toLocaleString() || "0"}
                   </Text>
                 </View>
@@ -753,10 +761,10 @@ const OffersScreen = () => {
                     >
                       {item.offerTime
                         ? new Date(item.offerTime).toLocaleDateString("tr-TR", {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                        })
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })
                         : ""}
                     </Text>
                   </View>
@@ -784,8 +792,8 @@ const OffersScreen = () => {
                     {post.paraBirimi === "USD"
                       ? "$"
                       : post.paraBirimi === "EUR"
-                        ? "€"
-                        : "₺"}
+                      ? "€"
+                      : "₺"}
                     {item.offerAmount?.toLocaleString() || "0"}
                   </Text>
                 </View>
@@ -801,6 +809,7 @@ const OffersScreen = () => {
                 >
                   {!!item.offeringUser?.profileImageUrl ? (
                     <Image
+                      style={{ width: 40, height: 40, borderRadius: 100 }}
                       source={{ uri: item.offeringUser.profileImageUrl }}
                       className="w-full h-full rounded-full"
                     />
@@ -814,7 +823,8 @@ const OffersScreen = () => {
                 </View>
                 <View>
                   <Text className="text-sm font-medium text-white">
-                    {item.offeringUser.user?.name}
+                    {item.offeringUser.user?.name}{" "}
+                    {item.offeringUser.user?.surname}
                   </Text>{" "}
                   {/* UPDATED: Rating bar with animation */}
                   {ratingScore > 0 ? (
@@ -917,14 +927,16 @@ const OffersScreen = () => {
         {tabs.map((tab) => (
           <TouchableOpacity
             key={tab.key}
-            className={`flex-1  rounded-full py-3 ${selectedTab === tab.key ? "bg-black " : ""
-              }`}
+            className={`flex-1  rounded-full py-3 ${
+              selectedTab === tab.key ? "bg-black " : ""
+            }`}
             onPress={() => setSelectedTab(tab.key)}
           >
             <Text
               style={{ fontSize: 12 }}
-              className={`text-center ${selectedTab === tab.key ? "text-white" : "text-gray-900"
-                }`}
+              className={`text-center ${
+                selectedTab === tab.key ? "text-white" : "text-gray-900"
+              }`}
             >
               {tab.label} ({tab.count})
             </Text>
@@ -971,22 +983,24 @@ const OffersScreen = () => {
   if (error) {
     console.log("API Error:", error);
     return (
-      <View className="flex-1 justify-center items-center bg-gray-50 px-6">
-        <Icon name="error-outline" size={60} color="#F44336" />
-        <Text className="text-gray-700 text-lg font-semibold mt-4">
-          Bir hata oluştu
-        </Text>
-        <Text className="text-gray-500 text-center mt-2">
-          Teklifler yüklenirken bir problem oluştu. Lütfen daha sonra tekrar
-          deneyin.
-        </Text>
-        <TouchableOpacity
-          className="mt-4 bg-green-500 px-6 py-3 rounded-lg"
-          onPress={handleRefresh}
-        >
-          <Text className="text-white font-semibold">Tekrar Dene</Text>
-        </TouchableOpacity>
-      </View>
+      <SafeAreaView className="flex-1 bg-white">
+        <View className="flex-1 justify-center items-center p-8">
+          <FontAwesomeIcon size={50} icon={faExclamationCircle} />
+          <Text className="text-xl font-semibold text-gray-900 mt-2 mb-2 text-center">
+            Bir hata oluştu
+          </Text>
+          <Text className="text-base text-gray-500 text-center mb-4">
+            Teklifler yüklenirken bir problem oluştu. Lütfen daha sonra tekrar
+            deneyin.
+          </Text>
+          <TouchableOpacity
+            className="border border-gray-900 px-6 py-3 rounded-full"
+            onPress={onRefresh}
+          >
+            <Text className="text-gray-900 font-medium">Tekrar Dene</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -1001,7 +1015,7 @@ const OffersScreen = () => {
       {/* Animated Blurred Header - Sadece başlık */}
       <Animated.View
         style={{
-          position: 'absolute',
+          position: "absolute",
           top: 0,
           left: 0,
           right: 0,
@@ -1013,7 +1027,7 @@ const OffersScreen = () => {
           intensity={50}
           tint="extralight"
           style={{
-            position: 'absolute',
+            position: "absolute",
             top: 0,
             left: 0,
             right: 0,
@@ -1042,7 +1056,10 @@ const OffersScreen = () => {
       </Animated.View>
 
       {/* Mevcut animasyonlu tablar - header dışında */}
-      <View style={{ marginTop: insets.top + 70 }} className="bg-white border-b border-gray-200">
+      <View
+        style={{ marginTop: insets.top + 70 }}
+        className="bg-white border-b border-gray-200"
+      >
         <Animated.View
           style={{
             height: tabsContainerHeight,
@@ -1059,7 +1076,10 @@ const OffersScreen = () => {
               transform: [{ translateY: tabsTranslateY }],
             }}
           >
-            <View className="flex-row bg-white gap-2 px-8" style={{ width: "100%" }}>
+            <View
+              className="flex-row bg-white gap-2 px-8"
+              style={{ width: "100%" }}
+            >
               {[
                 {
                   key: "pending",
@@ -1079,14 +1099,16 @@ const OffersScreen = () => {
               ].map((tab) => (
                 <TouchableOpacity
                   key={tab.key}
-                  className={`flex-1 rounded-full py-3 ${selectedTab === tab.key ? "bg-black" : ""
-                    }`}
+                  className={`flex-1 rounded-full py-3 ${
+                    selectedTab === tab.key ? "bg-black" : ""
+                  }`}
                   onPress={() => setSelectedTab(tab.key)}
                 >
                   <Text
                     style={{ fontSize: 12 }}
-                    className={`text-center ${selectedTab === tab.key ? "text-white" : "text-gray-900"
-                      }`}
+                    className={`text-center ${
+                      selectedTab === tab.key ? "text-white" : "text-gray-900"
+                    }`}
                   >
                     {tab.label} ({tab.count})
                   </Text>
@@ -1101,10 +1123,7 @@ const OffersScreen = () => {
       <Animated.ScrollView
         className="flex-1 py-6"
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 55 }}
