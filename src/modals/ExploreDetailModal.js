@@ -156,9 +156,9 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
     return distance;
@@ -270,12 +270,12 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
       [
         ...(Platform.OS === "ios"
           ? [
-              {
-                text: "Apple Maps",
-                onPress: () =>
-                  openSpecificMap("apple", lat, lng, title, description),
-              },
-            ]
+            {
+              text: "Apple Maps",
+              onPress: () =>
+                openSpecificMap("apple", lat, lng, title, description),
+            },
+          ]
           : []),
         {
           text: "Google Maps",
@@ -936,11 +936,13 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
                         className="w-24 h-24 rounded-full bg-white justify-center items-center mb-2 border-white"
                       >
                         {post.user.profilePictureUrl !==
-                        "default_profile_image_url" ? (
+                          "default_profile_image_url" ? (
                           <Image
                             style={{
                               borderRadius: 100,
                               boxShadow: "0px 0px 12px #00000014",
+                              width: 96,
+                              height: 96
                             }}
                             source={{ uri: post.user.profilePictureUrl }}
                             className="w-full h-full rounded-full"
@@ -1155,8 +1157,8 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
                   "Kira",
                   post.kiraFiyati
                     ? `${post.kiraFiyati.toLocaleString()} ${getCurrencyText(
-                        post.paraBirimi
-                      )}`
+                      post.paraBirimi
+                    )}`
                     : "Belirtilmemiş"
                 )}
                 {renderDetailItem(

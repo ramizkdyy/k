@@ -93,8 +93,8 @@ const ProfileExpectationHeader = ({
           disabled={isLoading}
         >
           <Text
-            style={{ fontSize: 16, color: "#6aeba9", borderColor: "#6aeba9" }}
-            className="font-semibold border px-4 py-2 rounded-full"
+            style={{ fontSize: 16 }}
+            className="font-semibold border-2 px-4 py-2 rounded-full"
           >
             {isLoading ? "Oluşturuluyor..." : "Oluştur"}
           </Text>
@@ -369,20 +369,18 @@ const CustomDropdown = ({
                 {options.map((option, index) => (
                   <TouchableOpacity
                     key={index}
-                    className={`py-4 px-7 flex-row items-center justify-between ${
-                      index !== options.length - 1
-                        ? "border-b border-gray-50"
-                        : ""
-                    } ${value === option ? "bg-gray-100" : "bg-white"}`}
+                    className={`py-4 px-7 flex-row items-center justify-between ${index !== options.length - 1
+                      ? "border-b border-gray-50"
+                      : ""
+                      } ${value === option ? "bg-gray-100" : "bg-white"}`}
                     onPress={() => handleOptionSelect(option)}
                     activeOpacity={0.7}
                   >
                     <Text
-                      className={`text-lg flex-1 mr-3 ${
-                        value === option
-                          ? "text-gray-900 font-medium"
-                          : "text-gray-600"
-                      }`}
+                      className={`text-lg flex-1 mr-3 ${value === option
+                        ? "text-gray-900 font-medium"
+                        : "text-gray-600"
+                        }`}
                       numberOfLines={2}
                       ellipsizeMode="tail"
                     >
@@ -1088,7 +1086,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
           label="Aidat Sorumluluğu"
           value={
             maintenanceFeeResponsibilityOptions[
-              maintenanceFeeResponsibility - 1
+            maintenanceFeeResponsibility - 1
             ]
           }
           setValue={(value) => {
@@ -1833,8 +1831,8 @@ const ProfileExpectationScreen = ({ navigation }) => {
       Alert.alert(
         "Hata",
         error?.data?.message ||
-          error?.message ||
-          "Beklenti profili oluşturulurken bir hata oluştu"
+        error?.message ||
+        "Beklenti profili oluşturulurken bir hata oluştu"
       );
     }
   };
@@ -1960,7 +1958,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
       Alert.alert(
         "Hata",
         error?.data?.message ||
-          "Beklenti profili güncellenirken bir hata oluştu"
+        "Beklenti profili güncellenirken bir hata oluştu"
       );
     }
   };

@@ -575,6 +575,10 @@ const UserProfileScreen = ({ navigation, route }) => {
                     >
                         {userProfile?.profileImageUrl && userProfile?.profileImageUrl !== "default_profile_image_url" ? (
                             <Image
+                                style={{
+                                    width: 96,
+                                    height: 96
+                                }}
                                 source={{ uri: userProfile.profileImageUrl }}
                                 className="w-full h-full"
                                 contentFit="cover"
@@ -1510,10 +1514,10 @@ const UserProfileScreen = ({ navigation, route }) => {
                                                     {message.senderProfile?.profileImageUrl ? (
                                                         <Image
                                                             source={{ uri: message.senderProfile.profileImageUrl }}
-                                                            style={{ width: '100%', height: '100%' }}
+                                                            style={{ width: 32, height: 32 }}
                                                             contentFit="cover"
-                                cachePolicy="memory-disk"
-                                transition={200}
+                                                            cachePolicy="memory-disk"
+                                                            transition={200}
                                                         />
                                                     ) : (
                                                         <Text className="text-gray-600 font-semibold text-sm">

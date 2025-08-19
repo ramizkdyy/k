@@ -85,8 +85,8 @@ const ProfileScreen = ({ navigation }) => {
     isLoading,
     refetch,
   } = userRole === "EVSAHIBI"
-    ? useGetLandlordProfileQuery(currentUser?.id)
-    : useGetTenantProfileQuery(currentUser?.id);
+      ? useGetLandlordProfileQuery(currentUser?.id)
+      : useGetTenantProfileQuery(currentUser?.id);
 
   useEffect(() => {
     if (profileData && profileData.isSuccess && profileData.result) {
@@ -235,6 +235,8 @@ const ProfileScreen = ({ navigation }) => {
                 style={{
                   borderRadius: 100,
                   boxShadow: "0px 0px 12px #00000014",
+                  width: 96,
+                  height: 96
                 }}
                 source={{ uri: userProfile.profileImageUrl }}
                 className="w-full h-full rounded-full"
@@ -423,7 +425,7 @@ const ProfileScreen = ({ navigation }) => {
               /> */}
             </TouchableOpacity>
 
-            {userRole === "KIRACI" && (
+            {/* {userRole === "KIRACI" && (
               <TouchableOpacity
                 className="py-4 rounded-lg flex flex-row justify-between items-center"
                 onPress={() => {
@@ -445,7 +447,7 @@ const ProfileScreen = ({ navigation }) => {
                   color="#cfcfcf"
                 />
               </TouchableOpacity>
-            )}
+            )} */}
 
             {userRole === "EVSAHIBI" && (
               <TouchableOpacity
@@ -471,6 +473,62 @@ const ProfileScreen = ({ navigation }) => {
               </TouchableOpacity>
             )}
           </View>
+
+          {/* Favoriler Section - YENİ EKLENDİ */}
+          <Text className="mt-6 mb-4" style={{ fontSize: 20, fontWeight: 600 }}>
+            Favoriler
+          </Text>
+
+          <View className="bg-white rounded-xl">
+            {/* Favori İlanlar Button - Sadece kiracılar için */}
+            {userRole === "KIRACI" && (
+              <TouchableOpacity
+                className="py-4 rounded-lg flex flex-row justify-between items-center"
+                onPress={() => navigation.navigate("FavoriteProperties")}
+              >
+                <View className="flex-row items-center gap-4">
+                  <FontAwesomeIcon icon={faHeart} size={25} color="black" />
+                  <View className="flex-col">
+                    <Text
+                      style={{ fontSize: 16 }}
+                      className="text-gray-900 font-medium"
+                    >
+                      Favori İlanlar
+                    </Text>
+                  </View>
+                </View>
+                <FontAwesomeIcon
+                  icon={faChevronRight}
+                  size={15}
+                  color="#cfcfcf"
+                />
+              </TouchableOpacity>
+            )}
+
+            {/* Favori Profiller Button - Kiracılar için ev sahipleri, ev sahipleri için kiracılar */}
+            <TouchableOpacity
+              className="py-4 rounded-lg flex flex-row justify-between items-center"
+              onPress={() => navigation.navigate("FavoriteProfiles")}
+            >
+              <View className="flex-row items-center gap-4">
+                <FontAwesomeIcon icon={faHeart} size={25} color="black" />
+                <View className="flex-col">
+                  <Text
+                    style={{ fontSize: 16 }}
+                    className="text-gray-900 font-medium"
+                  >
+                    {userRole === "KIRACI" ? "Favori Ev Sahipleri" : "Favori Kiracılar"}
+                  </Text>
+                </View>
+              </View>
+              <FontAwesomeIcon
+                icon={faChevronRight}
+                size={15}
+                color="#cfcfcf"
+              />
+            </TouchableOpacity>
+          </View>
+
 
           {/* Settings and Logout */}
           <View className="bg-white rounded-xl">
