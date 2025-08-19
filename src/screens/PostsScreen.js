@@ -41,15 +41,15 @@ import {
 import { faSearch } from "@fortawesome/pro-solid-svg-icons";
 import { BlurView } from "expo-blur";
 import {
-  BottomSheetModal,
-  BottomSheetView,
-  BottomSheetBackdrop,
-} from "@gorhom/bottom-sheet";
-import {
-  faEdit,
-  faTrash,
-  faEllipsis,
-  faHandshake,
+  faEdit, faTrash, faBed,
+  faShower,
+  faRuler,
+  faBuilding,
+  faCalendar,
+  faMoneyBills,
+  faCoins,
+  faBedBunk,
+  faBath
 } from "@fortawesome/pro-light-svg-icons";
 import PropertiesFilterModal from "../modals/PropertiesFilterModal";
 import { useSearchPostsMutation } from "../redux/api/searchApiSlice";
@@ -69,6 +69,361 @@ const Logger = {
 };
 
 const { width: screenWidth } = Dimensions.get("window");
+
+// Image with Fallback Component (AllNearbyPropertiesScreen'den)
+const ImageWithFallback = React.memo(
+  ({
+    source,
+    style,
+    contentFit = "cover",
+    className = "",
+    fallbackWidth,
+    fallbackHeight,
+    borderRadius,
+    placeholder,
+    recyclingKey,
+    ...props
+  }) => {
+    const [hasError, setHasError] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+      if (source?.uri) {
+        setHasError(false);
+        setIsLoading(true);
+      }
+    }, [source?.uri]);
+
+    if (hasError || !source?.uri) {
+      return (
+        <View
+          style={{
+            width: fallbackWidth || style?.width || 200,
+            height: fallbackHeight || style?.height || 200,
+            borderRadius: borderRadius || style?.borderRadius || 8,
+            backgroundColor: "#f5f5f5",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <FontAwesomeIcon
+            icon={faHomeAlt}
+            size={Math.min(fallbackWidth || style?.width || 200, fallbackHeight || style?.height || 200) * 0.1}
+            color="#cbd5e1"
+          />
+        </View>
+      );
+    }
+
+    return (
+      <View style={{ position: "relative" }}>
+        <Image
+          source={source}
+          style={style}
+          className={className}
+          contentFit={contentFit}
+          onError={() => {
+            setHasError(true);
+            setIsLoading(false);
+          }}
+          onLoad={() => setIsLoading(false)}
+          placeholder={placeholder}
+          cachePolicy="memory-disk"
+          recyclingKey={recyclingKey}
+          transition={0}
+          {...props}
+        />
+      </View>
+    );
+  }
+);
+
+// Property Details Slider Component (AllNearbyPropertiesScreen'den)
+const PropertyDetailsSlider = React.memo(({ item }) => {
+  const propertyDetails = [
+    { id: "rooms", icon: faBed, value: item.odaSayisi || "N/A", label: "Oda" },
+    {
+      id: "bedrooms",
+      icon: faBedBunk,
+      value: item.yatakOdasiSayisi || "N/A",
+      label: "Y.Odası",
+    },
+    {
+      id: "bathrooms",
+      icon: faShower,
+      value: item.banyoSayisi || "N/A",
+      label: "Banyo",
+    },
+    {
+      id: "area",
+      icon: faRuler,
+      value: item.brutMetreKare ? `${item.brutMetreKare} m²` : "N/A",
+      label: "Alan",
+    },
+    {
+      id: "floor",
+      icon: faBuilding,
+      value: item.bulunduguKat || "N/A",
+      label: "Kat",
+    },
+    {
+      id: "age",
+      icon: faCalendar,
+      value: item.binaYasi ? `${item.binaYasi}` : "N/A",
+      label: "Bina yaşı",
+    },
+    {
+      id: "dues",
+      icon: faMoneyBills,
+      value: item.aidat ? `${item.aidat}₺` : "Yok",
+      label: "Aidat",
+    },
+    {
+      id: "deposit",
+      icon: faCoins,
+      value: item.depozito ? `${item.depozito}₺` : "Yok",
+      label: "Depozito",
+    },
+  ];
+
+  return (
+    <View className="mt-3">
+      <ScrollView
+        horizontal={true}
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        decelerationRate="normal"
+        bounces={true}
+      >
+        {propertyDetails.map((detail, index) => (
+          <View
+            key={`${detail.id}-${index}`}
+            className="items-center justify-center rounded-2xl"
+            style={{
+              width: "fit-content",
+              marginRight: 46,
+              marginLeft: 3,
+              height: 85,
+            }}
+          >
+            <FontAwesomeIcon size={30} icon={detail.icon} color="#000" />
+            <Text
+              style={{ fontSize: 16, fontWeight: 600 }}
+              className="text-gray-800 mt-2 text-center"
+              numberOfLines={1}
+            >
+              {detail.value}
+            </Text>
+            <Text
+              style={{ fontSize: 11 }}
+              className="text-gray-500 text-center"
+              numberOfLines={1}
+            >
+              {detail.label}
+            </Text>
+          </View>
+        ))}
+      </ScrollView>
+    </View>
+  );
+});
+
+// Image Slider Component (AllNearbyPropertiesScreen'den)
+const PropertyImageSlider = React.memo(
+  ({ images, distance, status, postId, onPress, userRole, currentUser, item, onEdit, onDelete, onOffers, isDeleting }) => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const scrollViewRef = useRef(null);
+
+    const handleScroll = useCallback((event) => {
+      const slideSize = screenWidth - 32;
+      const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
+      setCurrentIndex(index);
+    }, []);
+
+    const handleDotPress = useCallback((index) => {
+      setCurrentIndex(index);
+      const slideSize = screenWidth - 32;
+      scrollViewRef.current?.scrollTo({ x: slideSize * index, animated: true });
+    }, []);
+
+    if (!images || images.length === 0) {
+      return (
+        <TouchableOpacity
+          className="w-full justify-center items-center rounded-3xl bg-gray-100"
+          style={{ height: 350 }}
+          onPress={onPress}
+          activeOpacity={1}
+        >
+          <FontAwesomeIcon icon={faHomeAlt} size={50} color="#cbd5e1" />
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <View
+        className="relative bg-gray-100"
+        style={{ borderRadius: 25, overflow: "hidden" }}
+      >
+        <ScrollView
+          ref={scrollViewRef}
+          horizontal={true}
+          pagingEnabled={true}
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleScroll}
+          scrollEventThrottle={16}
+          decelerationRate="fast"
+          bounces={true}
+          style={{ width: screenWidth - 32 }}
+        >
+          {images.map((img, index) => (
+            <TouchableOpacity
+              key={`image-${postId}-${index}`}
+              style={{ width: screenWidth - 32 }}
+              activeOpacity={1}
+              onPress={onPress}
+            >
+              <ImageWithFallback
+                source={{ uri: img.postImageUrl }}
+                style={{ width: screenWidth - 32, height: 350 }}
+                contentFit="cover"
+                fallbackWidth={screenWidth - 32}
+                fallbackHeight={350}
+                borderRadius={0}
+                placeholder={{
+                  uri: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y5ZmFmYiIvPjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Yw7xrbGVuaXlvcjwvdGV4dD48L3N2Zz4=",
+                }}
+                recyclingKey={`${postId}-${index}`}
+              />
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* Distance badge */}
+        {distance && (
+          <BlurView
+            style={{ boxShadow: "0px 0px 12px #00000012" }}
+            intensity={50}
+            tint="dark"
+            className="absolute top-3 left-3 rounded-full overflow-hidden"
+          >
+            <View className="px-3 py-1.5 rounded-full flex-row items-center">
+              <MaterialIcons name="location-on" size={12} color="white" />
+              <Text className="text-white text-xs font-semibold ml-1">
+                {distance}
+              </Text>
+            </View>
+          </BlurView>
+        )}
+
+        {/* Status badge - sadece ev sahibi için */}
+        {userRole === "EVSAHIBI" && (
+          <BlurView
+            intensity={50}
+            tint="dark"
+            style={{ overflow: "hidden", borderRadius: 100 }}
+            className="absolute top-3 right-3 px-3 py-1.5 rounded-full"
+          >
+            <Text className="text-white text-xs font-semibold">
+              {status === 0 ? "Aktif" : status === 1 ? "Kiralandı" : "Kapalı"}
+            </Text>
+          </BlurView>
+        )}
+
+        {/* Ev sahibi action buttons */}
+        {userRole === "EVSAHIBI" && item.userId === currentUser?.id && (
+          <View className="flex-row absolute gap-2 bottom-3 right-3">
+            <BlurView
+              style={{ boxShadow: "0px 0px 12px #00000014" }}
+              tint="dark"
+              intensity={50}
+              className="overflow-hidden rounded-full"
+            >
+              <TouchableOpacity
+                className="flex justify-center items-center"
+                onPress={onOffers}
+                activeOpacity={1}
+              >
+                <View className="flex-row items-center justify-center px-3 py-3">
+                  <Text className="text-white font-medium text-center text-sm">
+                    Teklifler ({item.offerCount || 0})
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </BlurView>
+
+            <BlurView
+              style={{ boxShadow: "0px 0px 12px #00000014" }}
+              intensity={50}
+              tint="dark"
+              className="overflow-hidden rounded-full"
+            >
+              <TouchableOpacity
+                className="flex justify-center items-center py-3 px-3"
+                onPress={onEdit}
+                activeOpacity={1}
+              >
+                <View className="flex-row items-center justify-center">
+                  <FontAwesomeIcon color="white" icon={faEdit} />
+                </View>
+              </TouchableOpacity>
+            </BlurView>
+
+            <BlurView
+              style={{ boxShadow: "0px 0px 12px #00000014" }}
+              intensity={50}
+              tint="dark"
+              className="overflow-hidden rounded-full"
+            >
+              <TouchableOpacity
+                className="flex justify-center items-center"
+                onPress={onDelete}
+                disabled={isDeleting}
+                activeOpacity={1}
+              >
+                <View className="flex-row items-center justify-center py-3 px-3">
+                  <FontAwesomeIcon color="#ff0040" icon={faTrash} />
+                </View>
+              </TouchableOpacity>
+            </BlurView>
+          </View>
+        )}
+
+        {/* Pagination dots */}
+        {images && images.length > 1 && (
+          <View className="absolute bottom-3 left-0 right-0 flex-row justify-center">
+            <View
+              style={{
+                borderRadius: 20,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+              }}
+            >
+              <View className="flex-row justify-center">
+                {images.map((_, index) => (
+                  <TouchableOpacity
+                    key={`dot-${index}`}
+                    onPress={() => handleDotPress(index)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      marginHorizontal: 4,
+                      backgroundColor:
+                        index === currentIndex
+                          ? "#FFFFFF"
+                          : "rgba(255, 255, 255, 0.5)",
+                    }}
+                  />
+                ))}
+              </View>
+            </View>
+          </View>
+        )}
+      </View>
+    );
+  }
+);
 
 const PostsScreen = ({ navigation }) => {
   const COMPONENT_NAME = "PostsScreen";
@@ -95,187 +450,73 @@ const PostsScreen = ({ navigation }) => {
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
   const [activeFilterData, setActiveFilterData] = useState(null);
   const [filterMetadata, setFilterMetadata] = useState(null);
-  const [sortDirection, setSortDirection] = useState(0); // 0: asc, 1: desc
-  const [sortBy, setSortBy] = useState(null); // 'date' yerine null
+  const [sortDirection, setSortDirection] = useState(0);
+  const [sortBy, setSortBy] = useState(null);
 
-  // ===== ANIMATION SETUP =====
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  // Header height calculations
-  const SCROLL_DISTANCE = 150; // Başlığın kaybolma mesafesi
 
-  const sortPosts = useCallback(
-    (posts, sortType = sortBy, direction = sortDirection) => {
-      if (!posts || posts.length === 0) return posts;
+  const SCROLL_DISTANCE = 50;
 
-      if (!sortType) return posts;
+  const sortPosts = useCallback((posts, sortType = sortBy, direction = sortDirection) => {
+    if (!posts || posts.length === 0) return posts;
+    if (!sortType) return posts;
 
-      return [...posts].sort((a, b) => {
-        let valueA, valueB;
+    return [...posts].sort((a, b) => {
+      let valueA, valueB;
 
-        switch (sortType) {
-          case "distance":
-            valueA = a.distance
-              ? parseFloat(a.distance.replace(/[^\d.]/g, ""))
-              : 999999;
-            valueB = b.distance
-              ? parseFloat(b.distance.replace(/[^\d.]/g, ""))
-              : 999999;
-            break;
+      switch (sortType) {
+        case 'distance':
+          valueA = a.distance ? parseFloat(a.distance.replace(/[^\d.]/g, '')) : 999999;
+          valueB = b.distance ? parseFloat(b.distance.replace(/[^\d.]/g, '')) : 999999;
+          break;
 
-          case "price":
-            valueA = a.kiraFiyati || 0;
-            valueB = b.kiraFiyati || 0;
-            break;
+        case 'price':
+          valueA = a.kiraFiyati || 0;
+          valueB = b.kiraFiyati || 0;
+          break;
 
-          case "date":
-            valueA = new Date(a.olusturmaTarihi || a.createdAt || 0);
-            valueB = new Date(b.olusturmaTarihi || b.createdAt || 0);
-            break;
+        case 'date':
+          valueA = new Date(a.olusturmaTarihi || a.createdAt || 0);
+          valueB = new Date(b.olusturmaTarihi || b.createdAt || 0);
+          break;
 
-          case "views":
-            valueA = a.goruntulemeSayisi || a.viewCount || 0;
-            valueB = b.goruntulemeSayisi || b.viewCount || 0;
-            break;
+        case 'views':
+          valueA = a.goruntulemeSayisi || a.viewCount || 0;
+          valueB = b.goruntulemeSayisi || b.viewCount || 0;
+          break;
 
-          default:
-            return 0;
-        }
+        default:
+          return 0;
+      }
 
-        if (direction === 0) {
-          // Ascending
-          return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
-        } else {
-          // Descending
-          return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
-        }
-      });
-    },
-    [sortBy, sortDirection]
-  );
+      if (direction === 0) {
+        return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
+      } else {
+        return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
+      }
+    });
+  }, [sortBy, sortDirection]);
 
-  const renderSortOptions = () => {
-    const sortOptions = [
-      { key: "distance", label: "Uzaklık" },
-      { key: "price", label: "Fiyat" },
-      { key: "date", label: "Tarih" },
-      { key: "views", label: "Görüntüleme" },
-    ];
-
-    // Check if any sort option is active (not default)
-    const hasActiveSortFilter = sortBy !== "date" || sortDirection !== 0;
-
-    return (
-      <ScrollView
-        horizontal={true}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{
-          alignItems: "center",
-          paddingHorizontal: 0,
-        }}
-        style={{ width: "100%" }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          {/* Reset button */}
-          {sortBy(
-            <TouchableOpacity
-              activeOpacity={0.7}
-              style={{
-                marginRight: 12,
-                paddingHorizontal: 10,
-                paddingVertical: 4,
-                borderRadius: 16,
-                backgroundColor: "#ef4444",
-                flexDirection: "row",
-                alignItems: "center",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.1,
-                shadowRadius: 2,
-                elevation: 2,
-              }}
-              onPress={resetSortOptions}
-            >
-              <MaterialIcons name="close" size={20} color="white" />
-            </TouchableOpacity>
-          )}
-
-          {/* Sort option buttons */}
-          {[
-            { key: "distance", label: "Uzaklık" },
-            { key: "price", label: "Fiyat" },
-            { key: "date", label: "Tarih" },
-            { key: "views", label: "Görüntüleme" },
-          ].map((option) => (
-            <TouchableOpacity
-              activeOpacity={0.7}
-              key={option.key}
-              style={{
-                marginRight: 12,
-                paddingHorizontal: 14,
-                paddingVertical: 6,
-                borderRadius: 18,
-                backgroundColor:
-                  sortBy === option.key
-                    ? "#111827"
-                    : "rgba(255, 255, 255, 0.9)",
-                borderWidth: 1,
-                borderColor:
-                  sortBy === option.key
-                    ? "#111827"
-                    : "rgba(209, 213, 219, 0.8)",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.1,
-                shadowRadius: 2,
-                elevation: 2,
-              }}
-              onPress={() => handleSortChange(option.key)}
-            >
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: sortBy === option.key ? "600" : "500",
-                  color: sortBy === option.key ? "white" : "#374151",
-                }}
-              >
-                {option.label}
-                {sortBy === option.key && (
-                  <Text style={{ marginLeft: 4 }}>
-                    {sortDirection === 0 ? " ↑" : " ↓"}
-                  </Text>
-                )}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-    );
-  };
-
-  // Başlık bölümü opacity
   const titleOpacity = scrollY.interpolate({
     inputRange: [0, SCROLL_DISTANCE],
     outputRange: [1, 0],
     extrapolate: "clamp",
   });
 
-  // Başlık scale (küçülerek kaybolur)
   const titleScale = scrollY.interpolate({
     inputRange: [0, SCROLL_DISTANCE],
     outputRange: [1, 0.8],
     extrapolate: "clamp",
   });
 
-  // Search bar yukarı kayma
   const searchBarTranslateY = scrollY.interpolate({
     inputRange: [0, SCROLL_DISTANCE],
-    outputRange: [0, -50], // Başlık alanına doğru kayar
-    extrapolate: "clamp",
-  });
+    outputRange: [0, -50],
+    extrapolate: 'clamp',
 
-  // ===== EXISTING CODE CONTINUES =====
+  });
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterVisible, setIsFilterVisible] = useState(false);
@@ -292,7 +533,6 @@ const PostsScreen = ({ navigation }) => {
     sortBy: filters.sortBy || null,
   });
 
-  // API calls based on user role
   const {
     data: landlordListingsData,
     isLoading: isLoadingLandlordListings,
@@ -302,7 +542,6 @@ const PostsScreen = ({ navigation }) => {
     skip: userRole !== "EVSAHIBI" || !currentUser?.id,
   });
 
-  // Paginated posts query
   const {
     data: paginatedPostsResponse,
     isLoading: isLoadingAllPosts,
@@ -322,7 +561,35 @@ const PostsScreen = ({ navigation }) => {
   const [deletePost, { isLoading: isDeleting, error: deleteError }] =
     useDeletePostMutation();
 
-  // Log component mount
+  // Helper function for relative time
+  const getRelativeTime = useCallback((postTime) => {
+    if (!postTime) return "Tarih belirtilmemiş";
+
+    const now = new Date();
+    const postDate = new Date(postTime);
+    if (isNaN(postDate.getTime())) return "Geçersiz tarih";
+
+    const diffMs = now.getTime() - postDate.getTime();
+    const diffSeconds = Math.floor(diffMs / 1000);
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    const diffWeeks = Math.floor(diffDays / 7);
+    const diffMonths = Math.floor(diffDays / 30);
+    const diffYears = Math.floor(diffDays / 365);
+
+    if (diffYears > 0) return `${diffYears} yıl önce`;
+    if (diffMonths > 0) return `${diffMonths} ay önce`;
+    if (diffWeeks > 0) return `${diffWeeks} hafta önce`;
+    if (diffDays > 0) return `${diffDays} gün önce`;
+    if (diffHours > 0) return `${diffHours} saat önce`;
+    if (diffMinutes > 0) return `${diffMinutes} dakika önce`;
+    return "Az önce";
+  }, []);
+
+  // [TÜM MEVCUT EFFECT VE HANDLER FONKSİYONLARI AYNEN KALACAK]
+  // ... (Tüm useEffect, handler fonksiyonları vs. aynen paste.txt'deki gibi kalıyor)
+
   useEffect(() => {
     Logger.info(COMPONENT_NAME, "Component mounted", {
       userRole,
@@ -333,9 +600,6 @@ const PostsScreen = ({ navigation }) => {
       Logger.info(COMPONENT_NAME, "Component unmounted");
     };
   }, []);
-
-  // [REST OF YOUR useEffect HOOKS - UNCHANGED]
-  // ...
 
   useEffect(() => {
     if (landlordListingsError) {
@@ -408,7 +672,6 @@ const PostsScreen = ({ navigation }) => {
     }
   }, [searchQuery]);
 
-  // [ALL YOUR HANDLER FUNCTIONS - UNCHANGED]
   const handleFilterPress = () => {
     Logger.event("filter_button_pressed");
     setIsFilterModalVisible(true);
@@ -441,7 +704,7 @@ const PostsScreen = ({ navigation }) => {
     setActiveFilterData(hasFilters ? appliedFilters : null);
 
     setCurrentPage(1);
-    setFilterCurrentPage(1); // YENİ EKLENEN
+    setFilterCurrentPage(1);
 
     if (searchResult) {
       let postsData = [];
@@ -495,7 +758,6 @@ const PostsScreen = ({ navigation }) => {
     setIsLoadingMoreFiltered(true);
 
     try {
-      // Filtreli arama için pagination parametresi ekle
       const filtersWithPagination = {
         ...activeFilterData,
         page: filterCurrentPage + 1,
@@ -520,23 +782,22 @@ const PostsScreen = ({ navigation }) => {
 
         console.log(`Adding ${validNewPosts.length} more filtered posts`);
 
-        // Yeni postları mevcut listeye ekle
-        setAllPostsData((prevData) => {
-          const existingPostIds = new Set(prevData.map((item) => item.postId));
+
+        setAllPostsData(prevData => {
+          const existingPostIds = new Set(prevData.map(item => item.postId));
           const uniqueNewPosts = validNewPosts.filter(
             (post) => !existingPostIds.has(post.postId)
           );
           return [...prevData, ...uniqueNewPosts];
         });
 
-        // Pagination metadata'sını güncelle
         if (searchResult.metadata) {
           setFilterMetadata(searchResult.metadata);
           setHasNextPage(searchResult.metadata.hasNextPage || false);
         }
 
-        // Sayfa numarasını artır
-        setFilterCurrentPage((prev) => prev + 1);
+
+        setFilterCurrentPage(prev => prev + 1);
 
         Logger.info(COMPONENT_NAME, "More filtered posts loaded successfully");
       }
@@ -596,7 +857,7 @@ const PostsScreen = ({ navigation }) => {
 
   const resetSortOptions = useCallback(() => {
     Logger.event("reset_sort_options");
-    setSortBy(null); // varsayılan sort değeri
+    setSortBy(null);
     setSortDirection(0);
   }, []);
 
@@ -649,13 +910,11 @@ const PostsScreen = ({ navigation }) => {
   };
 
   const loadMorePosts = useCallback(() => {
-    // Eğer filtre aktifse, filtreli pagination kullan
     if (hasActiveFilters) {
       loadMoreFilteredPosts();
       return;
     }
 
-    // Normal pagination (filtre yokken)
     if (
       userRole !== "KIRACI" ||
       !hasNextPage ||
@@ -712,7 +971,6 @@ const PostsScreen = ({ navigation }) => {
     setActiveFilterData(null);
     setFilterMetadata(null);
 
-    // Sıralama seçeneklerini de sıfırla
     setSortBy(null);
     setSortDirection(0);
 
@@ -834,12 +1092,14 @@ const PostsScreen = ({ navigation }) => {
   };
 
   const getFilteredPosts = () => {
-    console.log("=== GET FILTERED POSTS DEBUG ===");
-    console.log("User role:", userRole);
-    console.log("Has active filters:", hasActiveFilters);
-    console.log("All posts data length:", allPostsData?.length || 0);
-    console.log("Search query:", searchQuery);
-    console.log("Sort by:", sortBy, "Sort direction:", sortDirection); // sortOrder değil sortDirection
+
+    console.log('=== GET FILTERED POSTS DEBUG ===');
+    console.log('User role:', userRole);
+    console.log('Has active filters:', hasActiveFilters);
+    console.log('All posts data length:', allPostsData?.length || 0);
+    console.log('Search query:', searchQuery);
+    console.log('Sort by:', sortBy, 'Sort direction:', sortDirection);
+
 
     let filteredPosts = [];
 
@@ -901,7 +1161,6 @@ const PostsScreen = ({ navigation }) => {
         console.log(`After search filter: ${finalPosts.length}`);
       }
 
-      // Apply sorting - sortDirection kullan
       const sortedPosts = sortPosts(finalPosts, sortBy, sortDirection);
       console.log(
         `Final result (with filters and sorting): ${sortedPosts.length}`
@@ -936,7 +1195,6 @@ const PostsScreen = ({ navigation }) => {
       console.log(`After search filter: ${finalPosts.length}`);
     }
 
-    // Apply sorting - sortDirection kullan
     const sortedPosts = sortPosts(finalPosts, sortBy, sortDirection);
     console.log(
       `Final result (no filters, with sorting): ${sortedPosts.length}`
@@ -944,7 +1202,147 @@ const PostsScreen = ({ navigation }) => {
     return sortedPosts;
   };
 
-  const renderPostItem = useCallback(
+  // YENİ TASARIM - KİRACI İÇİN (AllNearbyPropertiesScreen tarzı)
+  const renderTenantPostItem = useCallback(
+    ({ item, index }) => {
+      if (!item || !item.postId) {
+        return null;
+      }
+
+      return (
+        <View
+          style={{ marginHorizontal: 16 }}
+          className="overflow-hidden mb-4 pt-6 border-b border-gray-200"
+        >
+
+          {/* Image slider */}
+          <PropertyImageSlider
+            images={item.postImages}
+            distance={item.distance}
+            status={item.status}
+            postId={item.postId}
+            onPress={() => handlePostNavigation(item.postId)}
+            userRole={userRole}
+            currentUser={currentUser}
+            item={item}
+            onEdit={() => handleEditPostNavigation(item.postId)}
+            onDelete={() => handleDeletePost(item.postId)}
+            onOffers={() => handleOffersNavigation(item.postId)}
+            isDeleting={isDeleting}
+          />
+
+          <View className="mt-4 px-1">
+            {/* Title and Price */}
+            <View className="items-start mb-1">
+              <Text
+                style={{ fontSize: 18, fontWeight: 700 }}
+                className="text-gray-800 mb-"
+                numberOfLines={2}
+              >
+                {item.ilanBasligi || "İlan başlığı yok"}
+              </Text>
+            </View>
+            <View className="flex-row items-center mb-2">
+              <Text style={{ fontSize: 12 }} className=" text-gray-500">
+                {item.ilce && item.il
+                  ? `${item.ilce}, ${item.il}`
+                  : item.il || "Konum belirtilmemiş"}
+              </Text>
+            </View>
+
+            <View className="flex-row items-center">
+              <Text
+                style={{ fontSize: 18, fontWeight: 500 }}
+                className="text-gray-900 underline"
+              >
+                {item.kiraFiyati || item.rent
+                  ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
+                  }`
+                  : "Fiyat belirtilmemiş"}
+              </Text>
+              <Text className="text-sm text-gray-400 ml-1">/ay</Text>
+            </View>
+
+            {/* Property details slider */}
+            <PropertyDetailsSlider item={item} />
+          </View>
+
+          <View className="flex flex-col">
+            <View className="mb-5 pl-1 mt-3">
+              <TouchableOpacity
+                className="flex-row items-center"
+                onPress={() => {
+                  navigation.navigate("UserProfile", {
+                    userId: item.userId,
+                    userRole: "EVSAHIBI",
+                    matchScore: item.matchScore,
+                  });
+                }}
+              >
+                <View className="flex-1 flex-row justify-between items-center w-full">
+                  <TouchableOpacity
+                    className="flex-row items-center"
+                    onPress={() => {
+                      navigation.navigate("UserProfile", {
+                        userId: item.userId,
+                        userRole: "EVSAHIBI",
+                        matchScore: item.matchScore,
+                      });
+                    }}
+                  >
+                    <View className="w-12 h-12 rounded-full justify-center items-center mr-3 border-gray-900 border">
+                      {item.user?.profileImageUrl ? (
+                        <ImageWithFallback
+                          source={{ uri: item.user.profileImageUrl }}
+                          style={{ width: 48, height: 48, borderRadius: 24 }}
+                          className="w-full h-full rounded-full"
+                          fallbackWidth={48}
+                          fallbackHeight={48}
+                          borderRadius={24}
+                        />
+                      ) : (
+                        <View>
+                          <Text className="text-xl font-bold text-gray-900">
+                            {item.user?.name?.charAt(0) || "E"}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    <View className="flex-col gap-1">
+                      <Text
+                        style={{ fontSize: 14 }}
+                        className="font-semibold text-gray-800"
+                      >
+                        {item.user?.name} {item.user?.surname}
+                      </Text>
+                      <View className="flex flex-row items-center gap-1">
+                        <Text style={{ fontSize: 12 }} className="text-gray-500">
+                          {item.matchScore
+                            ? `Skor: ${item.matchScore.toFixed(1)}`
+                            : "Rating"}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                  <Text
+                    className="mb-2 pl-1 text-gray-500"
+                    style={{ fontSize: 12, fontWeight: 500 }}
+                  >
+                    {getRelativeTime(item.postTime || item.olusturmaTarihi)}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      );
+    },
+    [userRole, currentUser?.id, isDeleting, navigation, getRelativeTime]
+  );
+
+  // YENİ TASARIM - EV SAHİBİ İÇİN (NearbyProperties renderVerticalPropertyCard tarzı)
+  const renderLandlordPostItem = useCallback(
     ({ item, index }) => {
       if (!item || !item.postId) {
         return null;
@@ -952,161 +1350,139 @@ const PostsScreen = ({ navigation }) => {
 
       return (
         <TouchableOpacity
-          className="bg-white overflow-hidden mb-4"
-          onPress={() => handlePostNavigation(item.postId)}
           activeOpacity={1}
+          className="overflow-hidden w-full flex flex-row items-center gap-4 py-2  border-b border-gray-100"
+          onPress={() => handlePostNavigation(item.postId)}
         >
-          <View style={{ borderRadius: 30 }} className="relative">
-            {item.postImages && item.postImages.length > 0 ? (
-              <Image
-                source={{ uri: item.postImages[0].postImageUrl }}
-                style={{
-                  width: "100%",
-                  height: 350,
-                  borderRadius: 30,
-                }}
-                contentFit="cover"
-                transition={200}
-                placeholder={{
-                  uri: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y5ZmFmYiIvPjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Yw7xrbGVuaXlvcjwvdGV4dD48L3N2Zz4=",
-                }}
-                cachePolicy="memory-disk"
-                onError={() =>
-                  Logger.error(COMPONENT_NAME, "Image load failed", {
-                    postId: item.postId,
-                    imageUrl: item.postImages[0]?.postImageUrl,
-                  })
-                }
-              />
-            ) : (
-              <View
-                style={{
-                  height: 350,
-                  borderRadius: 30,
-                  backgroundColor: "#f5f5f5",
-                }}
-                className="w-full  justify-center items-center"
-              >
-                <FontAwesomeIcon size={50} color="#fff" icon={faHouseBlank} />
-              </View>
-            )}
-
-            <BlurView
-              intensity={50}
-              tint="dark"
+          {/* Sol taraf - Resim */}
+          <View className="relative">
+            <ImageWithFallback
               style={{
+                width: 120,
+                height: 120,
+                borderRadius: 20,
                 boxShadow: "0px 0px 12px #00000014",
-                overflow: "hidden",
               }}
-              className="absolute top-3 left-3 rounded-full"
-            >
-              <View className="px-3 py-1.5 rounded-full">
-                <Text className="text-white text-sm font-semibold">
-                  {item.status === 0
-                    ? "Aktif"
-                    : item.status === 1
-                    ? "Kiralandı"
-                    : "Kapalı"}
+              source={{
+                uri:
+                  item.postImages && item.postImages.length > 0
+                    ? item.postImages[0].postImageUrl
+                    : null,
+              }}
+              className="rounded-2xl border border-gray-100"
+              contentFit="cover"
+              fallbackWidth={80}
+              fallbackHeight={80}
+              borderRadius={20}
+            />
+            {/* Status badge for landlord */}
+            <View className="absolute -top-2 -right-2">
+              <View className={`px-2 py-1 rounded-full ${item.status === 0 ? "bg-green-500" :
+                item.status === 1 ? "bg-blue-500" : "bg-gray-500"
+                }`}>
+                <Text className="text-white text-[10px] font-semibold">
+                  {item.status === 0 ? "Aktif" : item.status === 1 ? "Kiralandı" : "Kapalı"}
                 </Text>
               </View>
-            </BlurView>
-
-            {item.distance && (
-              <View className="absolute top-3 left-3">
-                <View className="bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full flex-row items-center">
-                  <MaterialIcons name="location-on" size={12} color="white" />
-                  <Text className="text-white text-xs font-medium ml-1">
-                    {item.distance}
-                  </Text>
-                </View>
-              </View>
-            )}
-
-            {userRole === "EVSAHIBI" && item.userId === currentUser?.id && (
-              <View className="flex-row absolute gap-2 top-3 right-3">
-                <BlurView
-                  style={{ boxShadow: "0px 0px 12px #00000014" }}
-                  intensity={50}
-                  tint="dark"
-                  className="overflow-hidden rounded-full"
-                >
-                  <TouchableOpacity
-                    className="flex justify-center items-center py-3 px-3"
-                    onPress={() => handlePostOptionsPress(item.postId)}
-                    activeOpacity={1}
-                  >
-                    <View className="flex-row items-center justify-center">
-                      <FontAwesomeIcon
-                        color="white"
-                        size={20}
-                        icon={faEllipsis}
-                      />
-                    </View>
-                  </TouchableOpacity>
-                </BlurView>
-              </View>
-            )}
+            </View>
           </View>
 
-          <View className="px-2 py-3">
-            <View className="mb-2">
+          {/* Sağ taraf - Bilgiler */}
+          <View className="flex-1 flex flex-col pr-4">
+            {/* Üst kısım - Başlık */}
+            <View>
               <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: "bold",
-                  color: "#111827",
-                  lineHeight: 24,
-                }}
-                numberOfLines={2}
+                style={{ fontSize: 16, fontWeight: 600 }}
+                className="text-gray-800 mb-2"
+                numberOfLines={1}
                 ellipsizeMode="tail"
               >
-                {item.ilanBasligi || "İlan başlığı yok"}
+                {item.ilanBasligi || `${item.il} ${item.ilce} Kiralık Daire`}
+              </Text>
+            </View>
+
+
+            {/* Alt kısım - Fiyat ve lokasyon */}
+            <View>
+              {/* Fiyat */}
+              <Text
+                style={{ fontSize: 14, fontWeight: 600 }}
+                className="text-gray-400 mb-2"
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {item.kiraFiyati || item.rent
+                  ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
+                  }/ay`
+                  : "Fiyat belirtilmemiş"}
               </Text>
 
-              <View className="mt-1 mb-2">
-                <Text style={{ fontSize: 12, color: "#6B7280" }}>
-                  {[item.il, item.ilce, item.mahalle]
-                    .filter(Boolean)
-                    .join(", ") || "Konum belirtilmemiş"}
+              {/* Lokasyon */}
+              <Text style={{ fontSize: 13 }} className="text-gray-500 mb-2">
+                {item.ilce && item.il
+                  ? `${item.ilce}, ${item.il}`
+                  : item.il || "Konum belirtilmemiş"}
+              </Text>
+            </View>
+
+            {/* Oda ve banyo bilgileri */}
+            <View className="flex flex-row gap-4 items-center">
+              <View className="flex flex-row gap-2 items-center">
+                <FontAwesomeIcon color="#6B7280" icon={faBath} size={15} />
+                <Text style={{ fontSize: 15 }} className="text-gray-500">
+                  {item.banyoSayisi || "N/A"} Banyo
                 </Text>
               </View>
-
-              <View className="mb-1">
-                <Text style={{ fontSize: 14, color: "#6B7280" }}>
-                  <Text
-                    style={{
-                      fontSize: 18,
-                      fontWeight: "600",
-                      color: "#111827",
-                      textDecorationLine: "underline",
-                    }}
-                  >
-                    {item.kiraFiyati
-                      ? item.kiraFiyati.toLocaleString("tr-TR")
-                      : "0"}{" "}
-                    {item.paraBirimi || "₺"}
-                  </Text>
-                  {" /ay"}
+              <View className="flex flex-row gap-2 items-center">
+                <FontAwesomeIcon color="#6B7280" icon={faBed} size={15} />
+                <Text style={{ fontSize: 15 }} className="text-gray-500">
+                  {item.odaSayisi || "N/A"} Oda
                 </Text>
               </View>
             </View>
 
-            <Text
-              numberOfLines={2}
-              ellipsizeMode="tail"
-              style={{
-                fontSize: 14,
-                color: "#6B7280",
-                lineHeight: 20,
-              }}
-            >
-              {item.postDescription || "Açıklama yok"}
-            </Text>
+            {/* Action buttons for landlord */}
+            <View className="flex flex-row gap-2 mt-3">
+              <TouchableOpacity
+                className="bg-white border-2 border-gray-900 py-2 px-3 rounded-full"
+                onPress={() => handleOffersNavigation(item.postId)}
+              >
+                <Text className="text-gray-900 text-s px-2 text-center font-medium">
+                  Teklifler ({item.offerCount || 0})
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                className=" py-2 px-3 rounded-lg"
+                onPress={() => handleEditPostNavigation(item.postId)}
+              >
+                <FontAwesomeIcon icon={faEdit} size={20} color="#111827" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                className=" py-2  rounded-lg"
+                onPress={() => handleDeletePost(item.postId)}
+                disabled={isDeleting}
+              >
+                <FontAwesomeIcon icon={faTrash} size={20} color="#ef4444" />
+              </TouchableOpacity>
+            </View>
           </View>
         </TouchableOpacity>
       );
     },
-    [userRole, currentUser?.id, isDeleting]
+    [userRole, currentUser?.id, isDeleting, navigation]
+  );
+
+
+  // Ana renderPostItem - userRole'e göre seçim yapar
+  const renderPostItem = useCallback(
+    ({ item, index }) => {
+      if (userRole === "KIRACI") {
+        return renderTenantPostItem({ item, index });
+      } else {
+        return renderLandlordPostItem({ item, index });
+      }
+    },
+    [userRole, renderTenantPostItem, renderLandlordPostItem]
   );
 
   const renderLoadingMore = () => {
@@ -1231,8 +1607,9 @@ const PostsScreen = ({ navigation }) => {
     const headerContainerHeight = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
       outputRange: [
-        insets.top + 50 + 60 + 50 + 16, // Normal: SafeArea + Title + SearchBar + SortOptions + padding
-        insets.top + 60 + 50 + 8, // Scroll: SafeArea + SearchBar + SortOptions + minimal padding (sort options kalır)
+
+        insets.top + 50 + 60 + 50 + 16,
+        insets.top + 60 + 50 + 8
       ],
       extrapolate: "clamp",
     });
@@ -1240,51 +1617,47 @@ const PostsScreen = ({ navigation }) => {
     const searchBarWidth = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
       outputRange: [
-        screenWidth - 32, // Başta tam genişlik (sadece padding)
+        screenWidth - 32,
         userRole === "EVSAHIBI"
-          ? screenWidth - 32 - 50 - 50 - 16 // EVSAHIBI: + ve Filter butonları için yer (50+50+16)
-          : screenWidth - 32 - 50 - 8, // KIRACI: Sadece Filter butonu için yer (50+8)
+          ? screenWidth - 32 - 50 - 50 - 16
+          : screenWidth - 32 - 50 - 8
       ],
       extrapolate: "clamp",
     });
 
-    // Arama barının sağdan margin animasyonu
     const searchBarMarginRight = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
       outputRange: [
         0,
         userRole === "EVSAHIBI"
-          ? 116 // + ve Filter butonları için yer (50 + 50 + 16)
-          : 58, // Sadece Filter butonu için yer (50 + 8)
+          ? 116
+          : 58
       ],
       extrapolate: "clamp",
     });
 
     const searchBarTranslateY = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
-      outputRange: [0, -50], // Title'ın yerine geçer
-      extrapolate: "clamp",
+      outputRange: [0, -50],
+      extrapolate: 'clamp',
     });
 
-    // Sort options için sadece hafif opacity değişimi - kaybolmasın
     const sortOptionsOpacity = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
-      outputRange: [1, 0.8], // 0'a düşmez, sadece hafif sönük olur
-      extrapolate: "clamp",
+      outputRange: [1, 0.8],
+      extrapolate: 'clamp',
     });
 
-    // Sort options height sabit kalsın
     const sortOptionsHeight = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
       outputRange: [50, 42],
       extrapolate: "clamp",
     });
 
-    // Sort options yukarı kayma - çok az
     const sortOptionsTranslateY = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
-      outputRange: [0, -8], // Çok az yukarı kayar
-      extrapolate: "clamp",
+      outputRange: [0, -8],
+      extrapolate: 'clamp',
     });
 
     return (
@@ -1298,7 +1671,6 @@ const PostsScreen = ({ navigation }) => {
           height: headerContainerHeight,
         }}
       >
-        {/* BlurView Background */}
         <BlurView
           intensity={80}
           tint="light"
@@ -1311,7 +1683,6 @@ const PostsScreen = ({ navigation }) => {
           }}
         />
 
-        {/* Semi-transparent overlay */}
         <View
           style={{
             position: "absolute",
@@ -1323,16 +1694,12 @@ const PostsScreen = ({ navigation }) => {
           }}
         />
 
-        {/* Content Container */}
-        <View
-          style={{
-            paddingTop: insets.top,
-            paddingHorizontal: 16,
-            flex: 1,
-            zIndex: 10,
-          }}
-        >
-          {/* Title Section - Kaybolur */}
+        <View style={{
+          paddingTop: insets.top,
+          paddingHorizontal: 16,
+          flex: 1,
+          zIndex: 10,
+        }}>
           <Animated.View
             style={{
               opacity: titleOpacity,
@@ -1370,13 +1737,12 @@ const PostsScreen = ({ navigation }) => {
             </View>
           </Animated.View>
 
-          {/* Search Bar - Responsive genişlik */}
           <Animated.View
             style={{
               marginTop: 10,
               transform: [{ translateY: searchBarTranslateY }],
-              width: searchBarWidth, // User role'e göre animasyonlu genişlik
-              marginRight: searchBarMarginRight, // User role'e göre margin
+              width: searchBarWidth,
+              marginRight: searchBarMarginRight,
             }}
           >
             <BlurView
@@ -1421,7 +1787,7 @@ const PostsScreen = ({ navigation }) => {
             </BlurView>
           </Animated.View>
 
-          {/* Sort Options - Search bar ile birlikte hareket etsin */}
+
           <Animated.View
             style={{
               marginTop: 0,
@@ -1440,11 +1806,7 @@ const PostsScreen = ({ navigation }) => {
                 }}
                 style={{ width: "100%" }}
               >
-                <View
-                  className="mt-3"
-                  style={{ flexDirection: "row", alignItems: "center" }}
-                >
-                  {/* Reset button - animated header version */}
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   {sortBy && (
                     <TouchableOpacity
                       activeOpacity={0.7}
@@ -1459,11 +1821,10 @@ const PostsScreen = ({ navigation }) => {
                       onPress={resetSortOptions}
                       className=""
                     >
-                      <MaterialIcons name="close" size={20} color="black" />
+                      <MaterialIcons name="close" size={20} color="white" />
                     </TouchableOpacity>
                   )}
 
-                  {/* Sort option buttons */}
                   {[
                     { key: "distance", label: "Uzaklık" },
                     { key: "price", label: "Fiyat" },
@@ -1513,7 +1874,6 @@ const PostsScreen = ({ navigation }) => {
           </Animated.View>
         </View>
 
-        {/* Filter Button */}
         <View
           style={{
             position: "absolute",
@@ -1572,85 +1932,72 @@ const PostsScreen = ({ navigation }) => {
     );
   };
 
-  // FlatList'te de paddingTop'u dinamik yapalım
   const getDynamicPaddingTop = () => {
-    // Normal durum: Title + SearchBar + SortOptions + extra padding
-    const normalPadding = insets.top + 50 + 60 + 50 + 32; // +50 for sort options
+    const normalPadding = insets.top + 50 + 60 + 50 + 32;
     return normalPadding;
   };
 
-  // Ana return kısmında da güncelleme:
+  // Main return
   return (
-    <>
-      <View className="flex-1 bg-white">
-        <StatusBar
-          barStyle="dark-content"
-          backgroundColor="rgba(17, 24, 39, 0.9)" // Koyu gri
-          translucent={true}
-        />
+    <View className="flex-1 bg-white">
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="rgba(17, 24, 39, 0.9)"
+        translucent={true}
+      />
 
-        {/* Animated Header */}
-        {renderAnimatedHeader()}
+      {renderAnimatedHeader()}
 
-        {/* Main Content */}
-        <View className="flex-1">
-          {isLoading ? (
-            <View className="flex-1 justify-center items-center">
-              <ActivityIndicator size="large" color="#4A90E2" />
-              <Text className="mt-3 text-base text-gray-500">
-                İlanlar yükleniyor...
-              </Text>
-            </View>
-          ) : (
-            <Animated.FlatList
-              data={filteredPosts}
-              renderItem={renderPostItem}
-              keyExtractor={keyExtractor}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{
-                flexGrow: 1,
-                paddingBottom: 80,
-                paddingTop: getDynamicPaddingTop(), // DİNAMİK PADDING
-                paddingHorizontal: 16,
-              }}
-              ListHeaderComponent={() => (
-                <View style={{ marginTop: -8 }}>{renderAppliedFilters()}</View>
-              )}
-              ListEmptyComponent={renderEmptyState}
-              ListFooterComponent={renderLoadingMore}
-              refreshControl={
-                <RefreshControl
-                  refreshing={refreshing}
-                  onRefresh={onRefresh}
-                  progressViewOffset={getDynamicPaddingTop()} // DİNAMİK OFFSET
-                />
-              }
-              onEndReached={loadMorePosts}
-              onEndReachedThreshold={0.5}
-              removeClippedSubviews={false}
-              maxToRenderPerBatch={5}
-              updateCellsBatchingPeriod={50}
-              initialNumToRender={8}
-              windowSize={5}
-              disableVirtualization={false}
-              extraData={`${searchQuery}_${JSON.stringify(filters)}_${
-                allPostsData.length
-              }`}
-              // Animation scroll handler
-              onScroll={Animated.event(
-                [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-                { useNativeDriver: false } // width/height animasyonu için false
-              )}
-              scrollEventThrottle={16}
-            />
-          )}
-        </View>
-
-        <PropertiesFilterModal
-          visible={isFilterModalVisible}
-          onClose={handleFilterModalClose}
-          onApply={handleFilterModalApply}
-        />
+      <View className="flex-1">
+        {isLoading ? (
+          <View className="flex-1 justify-center items-center">
+            <ActivityIndicator size="large" color="#4A90E2" />
+            <Text className="mt-3 text-base text-gray-500">
+              İlanlar yükleniyor...
+            </Text>
+          </View>
+        ) : (
+          <Animated.FlatList
+            data={filteredPosts}
+            renderItem={renderPostItem}
+            keyExtractor={keyExtractor}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{
+              flexGrow: 1,
+              paddingBottom: 16,
+              paddingTop: getDynamicPaddingTop(),
+              paddingHorizontal: userRole === "KIRACI" ? 0 : 16,
+            }}
+            ListHeaderComponent={() => (
+              <View style={{ marginTop: -8, paddingHorizontal: userRole === "KIRACI" ? 16 : 0 }}>
+                {renderAppliedFilters()}
+              </View>
+            )}
+            ListEmptyComponent={renderEmptyState}
+            ListFooterComponent={renderLoadingMore}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                progressViewOffset={getDynamicPaddingTop()}
+              />
+            }
+            onEndReached={loadMorePosts}
+            onEndReachedThreshold={0.5}
+            removeClippedSubviews={false}
+            maxToRenderPerBatch={5}
+            updateCellsBatchingPeriod={50}
+            initialNumToRender={8}
+            windowSize={5}
+            disableVirtualization={false}
+            extraData={`${searchQuery}_${JSON.stringify(filters)}_${allPostsData.length}`}
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+              { useNativeDriver: false }
+            )}
+            scrollEventThrottle={16}
+          />
+        )}
       </View>
 
       {/* Bottom Sheet Modal - Outside main container */}
