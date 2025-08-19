@@ -47,6 +47,7 @@ import {
   faMapMarked,
   faBed,
   faGraduationCap,
+  faExclamationCircle,
 } from "@fortawesome/pro-regular-svg-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -491,7 +492,7 @@ const TenantItem = memo(
   }
 );
 
-// Memoized Landlord Item
+// ✅ UPDATED: Landlord Item with the same design as Tenant Item
 const LandlordItem = memo(
   ({ item, navigation }) => {
     const handleLandlordPress = useCallback(() => {
@@ -509,22 +510,22 @@ const LandlordItem = memo(
     return (
       <View
         style={{ marginHorizontal: 16 }}
-        className="mb-4 pt-4 border-gray-200"
+        className="mb-2 pt-4 border-gray-200"
       >
         <TouchableOpacity onPress={handleLandlordPress} activeOpacity={1}>
           <View
-            className="bg-white p-4"
-            style={{ boxShadow: "0px 0px 12px #00000014", borderRadius: 25 }}
+            className="bg-white p-6 border-gray-200"
+            style={{ borderRadius: 30, borderWidth: 0.5 }}
           >
-            {/* Header with Profile Image and Basic Info */}
-            <View className="flex-row items-center mb-4">
+            {/* Header with Profile Image and Basic Info - Centered like Tenant */}
+            <View className="flex-col items-center mb-4">
               <Image
                 className="border border-gray-100"
                 style={{
-                  width: 60,
-                  height: 60,
+                  width: 80,
+                  height: 80,
                   boxShadow: "0px 0px 12px #00000020",
-                  borderRadius: 30,
+                  borderRadius: 100,
                 }}
                 source={{
                   uri:
@@ -537,7 +538,7 @@ const LandlordItem = memo(
                 transition={200}
               />
 
-              <View className="flex-1 ml-4">
+              <View className="flex-1 mt-1">
                 <Text
                   style={{ fontSize: 18, fontWeight: 700 }}
                   className="text-gray-800 mb-1"
@@ -545,21 +546,29 @@ const LandlordItem = memo(
                 >
                   {item.landlordName || item.name || "Ev Sahibi"}
                 </Text>
-                <View className="flex flex-row items-center gap-1">
-                  <Text className="text-gray-500" style={{ fontSize: 12 }}>
-                    Profili görüntüle
-                  </Text>
-                  <FontAwesomeIcon
-                    size={12}
-                    color="#dee0ea"
-                    icon={faChevronRight}
-                  />
-                </View>
               </View>
+
+              {/* Compatibility Level */}
+              {item.matchScore && (
+                <View className="flex flex-col w-full items-center justify-center">
+                  <MatchScoreBar
+                    matchScore={item.matchScore}
+                    showBar={true}
+                    size="sm"
+                  />
+
+                  {/* Match Reasons */}
+                  {item.matchReasons && item.matchReasons.length > 0 && (
+                    <Text className="text-xs text-gray-500 mt-2">
+                      {item.matchReasons[0]}
+                    </Text>
+                  )}
+                </View>
+              )}
             </View>
 
-            {/* Landlord Details Grid */}
-            <View className="space-y-3 gap-1">
+            {/* Landlord Details Grid - Same style as Tenant */}
+            <View className="gap-3">
               {/* Property Title */}
               {item.propertyTitle && (
                 <View className="flex-row justify-between items-center">
@@ -567,7 +576,8 @@ const LandlordItem = memo(
                     <Text className="text-gray-600 text-sm ml-2">Mülk:</Text>
                   </View>
                   <Text
-                    className="text-gray-800 text-sm font-semibold"
+                    style={{ fontSize: 13 }}
+                    className="text-gray-900 font-semibold"
                     numberOfLines={1}
                   >
                     {item.propertyTitle}
@@ -581,7 +591,10 @@ const LandlordItem = memo(
                   <View className="flex-row items-center">
                     <Text className="text-gray-600 text-sm ml-2">Kira:</Text>
                   </View>
-                  <Text className="text-gray-800 text-sm font-semibold">
+                  <Text
+                    style={{ fontSize: 13 }}
+                    className="text-gray-900 font-semibold"
+                  >
                     {item.rent.toLocaleString()} {item.currency || "₺"}
                   </Text>
                 </View>
@@ -594,7 +607,8 @@ const LandlordItem = memo(
                     <Text className="text-gray-600 text-sm ml-2">Konum:</Text>
                   </View>
                   <Text
-                    className="text-gray-800 text-sm font-medium"
+                    style={{ fontSize: 13 }}
+                    className="text-gray-900 font-semibold"
                     numberOfLines={1}
                   >
                     {item.location}
@@ -610,7 +624,10 @@ const LandlordItem = memo(
                       Detaylar:
                     </Text>
                   </View>
-                  <Text className="text-gray-800 text-sm font-medium">
+                  <Text
+                    style={{ fontSize: 13 }}
+                    className="text-gray-900 font-semibold"
+                  >
                     {item.propertyDetails.rooms || "N/A"} oda •{" "}
                     {item.propertyDetails.size || "N/A"}m²
                   </Text>
@@ -623,7 +640,10 @@ const LandlordItem = memo(
                   <View className="flex-row items-center">
                     <Text className="text-gray-600 text-sm ml-2">Deneyim:</Text>
                   </View>
-                  <Text className="text-gray-800 text-sm font-medium">
+                  <Text
+                    style={{ fontSize: 13 }}
+                    className="text-gray-900 font-semibold"
+                  >
                     {item.experience} yıl
                   </Text>
                 </View>
@@ -637,30 +657,24 @@ const LandlordItem = memo(
                       Mülk Sayısı:
                     </Text>
                   </View>
-                  <Text className="text-gray-800 text-sm font-medium">
+                  <Text
+                    style={{ fontSize: 13 }}
+                    className="text-gray-900 font-semibold"
+                  >
                     {item.propertyCount} mülk
                   </Text>
                 </View>
               )}
             </View>
 
-            {/* Compatibility Level */}
-            {item.matchScore && (
-              <View className="mt-4 pt-3 border-t border-gray-100">
-                <MatchScoreBar
-                  matchScore={item.matchScore}
-                  showBar={true}
-                  size="sm"
-                />
-
-                {/* Match Reasons */}
-                {item.matchReasons && item.matchReasons.length > 0 && (
-                  <Text className="text-xs text-gray-500 mt-2">
-                    {item.matchReasons[0]}
-                  </Text>
-                )}
-              </View>
-            )}
+            {/* Action Button - Same style as Tenant */}
+            <TouchableOpacity
+              onPress={handleLandlordPress}
+              activeOpacity={1}
+              className="py-3 mt-4 border border-black rounded-full"
+            >
+              <Text className="text-center font-medium">Göz at</Text>
+            </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </View>
@@ -1069,18 +1083,18 @@ const AllMatchingUsers = ({ navigation, route }) => {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center p-8">
-          <MaterialIcons name="error" size={64} color="#EF4444" />
-          <Text className="text-xl font-semibold text-gray-700 mt-4 mb-2 text-center">
+          <FontAwesomeIcon size={50} icon={faExclamationCircle} />
+          <Text className="text-xl font-semibold text-gray-900 mt-2 mb-2 text-center">
             Bir hata oluştu
           </Text>
-          <Text className="text-base text-gray-500 text-center mb-6">
+          <Text className="text-base text-gray-500 text-center mb-4">
             {errorTitle}
           </Text>
           <TouchableOpacity
-            className="bg-green-500 px-6 py-3 rounded-lg"
+            className="border border-gray-900 px-6 py-3 rounded-full"
             onPress={onRefresh}
           >
-            <Text className="text-white font-semibold">Tekrar Dene</Text>
+            <Text className="text-gray-900 font-medium">Tekrar Dene</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -1208,14 +1222,6 @@ const AllMatchingUsers = ({ navigation, route }) => {
           { useNativeDriver: false }
         )}
         scrollEventThrottle={16} // Optimized for performance
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={["#4A90E2"]}
-            tintColor="#4A90E2"
-          />
-        }
         contentContainerStyle={{
           flexGrow: 1,
           paddingBottom: 16,
@@ -1224,7 +1230,6 @@ const AllMatchingUsers = ({ navigation, route }) => {
         removeClippedSubviews={true}
         maxToRenderPerBatch={5} // Reduced from 10
         updateCellsBatchingPeriod={50} // Reduced from 100
-        initialNumToRender={4} // Reduced from 8
         windowSize={5} // Reduced from 10
         // NEW performance optimizations
         legacyImplementation={false}

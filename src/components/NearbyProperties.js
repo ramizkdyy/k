@@ -5,16 +5,7 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  FlatList,
-  ActivityIndicator,
-  Alert,
-  ImageBackground,
-  Animated,
-} from "react-native";
+import { View, Text, TouchableOpacity, FlatList, Animated } from "react-native";
 import { Image } from "expo-image";
 import { useSelector } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
@@ -26,305 +17,241 @@ import {
   faList,
   faRoad,
   faUser,
-  faHeart,
-  faLocationDot,
   faBath,
   faBed,
-  faFingerprint,
 } from "@fortawesome/pro-light-svg-icons";
+import { faHeart, faHouseBlank } from "@fortawesome/pro-regular-svg-icons";
 import { BlurView } from "expo-blur";
-import { LoadingSkeleton, ShimmerPlaceholder } from "./LoadingSkeleton";
-import { LinearGradient } from "expo-linear-gradient";
+import { LoadingSkeleton } from "./LoadingSkeleton";
 import { useFypCacheTracker } from "../hooks/useFypCacheTracker";
-import { faHouseBlank } from "@fortawesome/pro-regular-svg-icons";
 
-const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
-  // ✅ OPTIMIZED: Memoized ErrorPlaceholder komponenti
-  const ErrorPlaceholder = React.memo(
-    ({ width, height, borderRadius = 30 }) => (
-      <View
-        style={{
-          width,
-          height,
-          borderRadius,
-          backgroundColor: "#f5f5f5",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <FontAwesomeIcon icon={faHouseBlank} size={30} color="#fff" />
-      </View>
-    )
-  );
-
-  // ✅ OPTIMIZED: Memoized ImageWithFallback komponenti
-  const ImageWithFallback = React.memo(
-    ({
-      source,
-      style,
-      contentFit = "cover",
-      className = "",
-      fallbackWidth,
-      fallbackHeight,
+// ✅ ULTRA OPTIMIZED: Memoized Static Components
+const ErrorPlaceholder = React.memo(({ width, height, borderRadius = 30 }) => (
+  <View
+    style={{
+      width,
+      height,
       borderRadius,
-      ...props
-    }) => {
-      const [hasError, setHasError] = useState(false);
-      const [isLoading, setIsLoading] = useState(false);
-      const [imageKey, setImageKey] = useState(0);
-      const sourceUri = useMemo(() => source?.uri, [source?.uri]);
+      backgroundColor: "#f5f5f5",
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
+    <FontAwesomeIcon icon={faHouseBlank} size={30} color="#ccc" />
+  </View>
+));
 
-      // ✅ OPTIMIZED: Reset sadece URI değiştiğinde
-      useEffect(() => {
-        if (sourceUri) {
-          setHasError(false);
-          setIsLoading(false);
-          setImageKey((prev) => prev + 1);
-        }
-      }, [sourceUri]);
+const LoadingPlaceholder = React.memo(({ style, borderRadius }) => (
+  <View
+    style={{
+      ...style,
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      borderRadius: borderRadius || 30,
+      backgroundColor: "#f5f5f5",
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
+    <FontAwesomeIcon icon={faHouseBlank} size={20} color="#ccc" />
+  </View>
+));
 
-      const handleError = useCallback(() => {
-        setHasError(true);
+// ✅ ULTRA OPTIMIZED: Memoized ImageWithFallback
+const ImageWithFallback = React.memo(
+  ({
+    source,
+    style,
+    contentFit = "cover",
+    className = "",
+    fallbackWidth,
+    fallbackHeight,
+    borderRadius,
+    ...props
+  }) => {
+    const [hasError, setHasError] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const sourceUri = source?.uri;
+
+    const handleError = useCallback(() => {
+      setHasError(true);
+      setIsLoading(false);
+    }, []);
+
+    const handleLoadStart = useCallback(() => setIsLoading(true), []);
+    const handleLoad = useCallback(() => setIsLoading(false), []);
+
+    // Reset error state when URI changes
+    useEffect(() => {
+      if (sourceUri) {
+        setHasError(false);
         setIsLoading(false);
-      }, []);
-
-      const handleLoadStart = useCallback(() => setIsLoading(true), []);
-      const handleLoad = useCallback(() => setIsLoading(false), []);
-
-      if (hasError || !sourceUri) {
-        return (
-          <ErrorPlaceholder
-            width={fallbackWidth || style?.width || 200}
-            height={fallbackHeight || style?.height || 200}
-            borderRadius={borderRadius || style?.borderRadius || 30}
-          />
-        );
       }
+    }, [sourceUri]);
 
+    if (hasError || !sourceUri) {
       return (
-        <View style={{ position: "relative" }}>
-          <Image
-            key={imageKey}
-            source={source}
+        <ErrorPlaceholder
+          width={fallbackWidth || style?.width || 200}
+          height={fallbackHeight || style?.height || 200}
+          borderRadius={borderRadius || style?.borderRadius || 30}
+        />
+      );
+    }
+
+    return (
+      <View style={{ position: "relative" }}>
+        <Image
+          source={source}
+          style={style}
+          className={className}
+          contentFit={contentFit}
+          onError={handleError}
+          onLoadStart={handleLoadStart}
+          onLoad={handleLoad}
+          cachePolicy="memory-disk"
+          transition={0}
+          recyclingKey={sourceUri}
+          placeholder={{ blurhash: "L6PZfSi_.AyE_3t7t7R**0o#DgR4" }}
+          {...props}
+        />
+        {isLoading && (
+          <LoadingPlaceholder
             style={style}
-            className={className}
-            contentFit={contentFit}
-            onError={handleError}
-            onLoadStart={handleLoadStart}
-            onLoad={handleLoad}
-            cachePolicy="memory-disk"
-            transition={0}
-            recyclingKey={sourceUri}
-            placeholder={{ blurhash: "L6PZfSi_.AyE_3t7t7R**0o#DgR4" }}
-            {...props}
+            borderRadius={style?.borderRadius}
           />
-          {isLoading && (
+        )}
+      </View>
+    );
+  }
+);
+
+// ✅ ULTRA OPTIMIZED: Memoized MatchScoreBar
+const MatchScoreBar = React.memo(
+  ({ matchScore, showBar = false, size = "sm" }) => {
+    const progressAnim = useRef(new Animated.Value(0)).current;
+    const lastMatchScore = useRef(null);
+    const hasAnimated = useRef(false);
+
+    // Static size configurations
+    const sizeConfig = useMemo(() => {
+      const configs = {
+        xs: { barHeight: 3, iconSize: 10, textSize: 11, barWidth: "100%" },
+        sm: { barHeight: 5, iconSize: 12, textSize: 12, barWidth: 180 },
+        md: { barHeight: 4, iconSize: 14, textSize: 14, barWidth: 180 },
+      };
+      return configs[size];
+    }, [size]);
+
+    // Score info calculation
+    const scoreInfo = useMemo(() => {
+      if (matchScore >= 80) return { color: "#86efac", text: "Mükemmel" };
+      if (matchScore >= 60) return { color: "#9cf0ba", text: "Çok İyi" };
+      if (matchScore >= 40) return { color: "#f59e0b", text: "İyi" };
+      return { color: "#ef4444", text: "Orta" };
+    }, [matchScore]);
+
+    // Optimized animation
+    useEffect(() => {
+      if (
+        matchScore !== lastMatchScore.current &&
+        typeof matchScore === "number"
+      ) {
+        const delay = hasAnimated.current ? 200 : 0;
+
+        setTimeout(() => {
+          Animated.timing(progressAnim, {
+            toValue: matchScore,
+            duration: hasAnimated.current ? 800 : 400,
+            useNativeDriver: false,
+          }).start();
+
+          lastMatchScore.current = matchScore;
+          hasAnimated.current = true;
+        }, delay);
+      }
+    }, [matchScore, progressAnim]);
+
+    if (showBar) {
+      return (
+        <View style={{ marginTop: sizeConfig.containerPadding * 2 }}>
+          <View className="flex-row items-center">
             <View
+              className="bg-gray-100 rounded-full overflow-hidden"
               style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                borderRadius: style?.borderRadius || 30,
-                backgroundColor: "#f5f5f5",
-                justifyContent: "center",
-                alignItems: "center",
+                height: sizeConfig.barHeight,
+                width: sizeConfig.barWidth,
+                marginRight: 6,
               }}
             >
-              <FontAwesomeIcon icon={faHouseBlank} size={20} color="#ccc" />
-            </View>
-          )}
-        </View>
-      );
-    }
-  );
-
-  // ✅ OPTIMIZED: Memoized MatchScoreBar komponenti
-  const MatchScoreBar = React.memo(
-    ({ matchScore, showBar = false, size = "sm" }) => {
-      const progressAnim = useRef(new Animated.Value(0)).current;
-      const timeoutRef = useRef(null);
-      const lastMatchScore = useRef(null);
-      const hasAnimated = useRef(false);
-
-      const scoreInfo = useMemo(
-        () => getMatchScoreInfo(matchScore),
-        [matchScore]
-      );
-
-      // ✅ OPTIMIZED: Memoized sizes
-      const sizes = useMemo(
-        () => ({
-          xs: {
-            barHeight: 2,
-            iconSize: 10,
-            textSize: 11,
-            containerPadding: 1,
-            barWidth: "100%",
-          },
-          sm: {
-            barHeight: 5,
-            iconSize: 12,
-            textSize: 12,
-            containerPadding: 2,
-            barWidth: 180,
-          },
-          md: {
-            barHeight: 4,
-            iconSize: 14,
-            textSize: 14,
-            containerPadding: 3,
-            barWidth: 180,
-          },
-        }),
-        []
-      );
-
-      const currentSize = sizes[size];
-
-      // ✅ OPTIMIZED: Sadece gerçek değişikliklerde animate et
-      useEffect(() => {
-        if (
-          matchScore !== lastMatchScore.current &&
-          typeof matchScore === "number"
-        ) {
-          if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-          }
-
-          const delay = hasAnimated.current ? 200 : 0;
-
-          timeoutRef.current = setTimeout(() => {
-            Animated.timing(progressAnim, {
-              toValue: matchScore,
-              duration: hasAnimated.current ? 800 : 400,
-              useNativeDriver: false,
-            }).start();
-
-            lastMatchScore.current = matchScore;
-            hasAnimated.current = true;
-          }, delay);
-        }
-
-        return () => {
-          if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-          }
-        };
-      }, [matchScore, progressAnim]);
-
-      // ✅ OPTIMIZED: Cleanup on unmount
-      useEffect(() => {
-        return () => {
-          progressAnim.stopAnimation();
-          if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-          }
-        };
-      }, [progressAnim]);
-
-      if (showBar) {
-        return (
-          <View style={{ marginTop: currentSize.containerPadding * 2 }}>
-            <View className="flex-row items-center">
-              <View
-                className="bg-gray-100 rounded-full overflow-hidden"
+              <Animated.View
                 style={{
-                  height: currentSize.barHeight,
-                  width: currentSize.barWidth,
-                  marginRight: 6,
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 100],
+                    outputRange: ["0%", "100%"],
+                    extrapolate: "clamp",
+                  }),
+                  backgroundColor: "#000",
+                  height: "100%",
+                  borderRadius: sizeConfig.barHeight / 2,
                 }}
-              >
-                <Animated.View
-                  style={{
-                    width: progressAnim.interpolate({
-                      inputRange: [0, 100],
-                      outputRange: ["0%", "100%"],
-                      extrapolate: "clamp",
-                    }),
-                    backgroundColor: "#000",
-                    height: "100%",
-                    borderRadius: currentSize.barHeight / 2,
-                  }}
-                />
-              </View>
-              <Text
-                className="font-medium ml-1"
-                style={{
-                  color: "#000",
-                  fontSize: currentSize.textSize,
-                }}
-              >
-                {matchScore}%
-              </Text>
+              />
             </View>
+            <Text
+              className="font-medium ml-1"
+              style={{
+                color: "#000",
+                fontSize: sizeConfig.textSize,
+              }}
+            >
+              {matchScore}%
+            </Text>
           </View>
-        );
-      }
-
-      return (
-        <View className="flex-row items-center">
-          <FontAwesomeIcon
-            color={scoreInfo.color}
-            icon={faHeart}
-            size={currentSize.iconSize}
-          />
-          <Text
-            className="font-medium ml-1"
-            style={{
-              color: scoreInfo.color,
-              fontSize: currentSize.textSize,
-            }}
-          >
-            {matchScore}% {scoreInfo.text}
-          </Text>
         </View>
       );
     }
-  );
 
-  const { getCacheValueForQuery, recordApiCall, resetCache, getCacheInfo } =
-    useFypCacheTracker();
+    return (
+      <View className="flex-row items-center">
+        <FontAwesomeIcon
+          color={scoreInfo.color}
+          icon={faHeart}
+          size={sizeConfig.iconSize}
+        />
+        <Text
+          className="font-medium ml-1"
+          style={{
+            color: scoreInfo.color,
+            fontSize: sizeConfig.textSize,
+          }}
+        >
+          {matchScore}% {scoreInfo.text}
+        </Text>
+      </View>
+    );
+  }
+);
 
-  // ✅ OPTIMIZED: Memoized Match Score gösterim fonksiyonu
-  const getMatchScoreInfo = useCallback((score) => {
-    if (score >= 80)
-      return {
-        level: "excellent",
-        color: "#86efac",
-        text: "Mükemmel",
-        bgColor: "#dcfce7",
-      };
-    if (score >= 60)
-      return {
-        level: "good",
-        color: "#9cf0ba",
-        text: "Çok İyi",
-        bgColor: "#dbeafe",
-      };
-    if (score >= 40)
-      return {
-        level: "medium",
-        color: "#f59e0b",
-        text: "İyi",
-        bgColor: "#fef3c7",
-      };
-    return {
-      level: "weak",
-      color: "#ef4444",
-      text: "Orta",
-      bgColor: "#fee2e2",
-    };
-  }, []);
-
+const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
+  // ✅ ULTRA OPTIMIZED: State Management
   const currentUser = useSelector(selectCurrentUser);
   const userRole = useSelector(selectUserRole);
   const [userLocation, setUserLocation] = useState(null);
   const [locationLoading, setLocationLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [dataLoadingStates, setDataLoadingStates] = useState({
+    secondSection: true,
+    hasInitialData: false,
+  });
 
-  // ✅ OPTIMIZED: Memoized location effect
+  // Cache tracker
+  const { getCacheValueForQuery, recordApiCall, resetCache } =
+    useFypCacheTracker();
+
+  // ✅ ULTRA OPTIMIZED: Location Effect
   useEffect(() => {
     let isMounted = true;
 
@@ -334,10 +261,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
 
         if (status !== "granted") {
           if (isMounted) {
-            setUserLocation({
-              latitude: 41.0082,
-              longitude: 28.9784,
-            });
+            setUserLocation({ latitude: 41.0082, longitude: 28.9784 });
             setLocationLoading(false);
           }
           return;
@@ -356,26 +280,20 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
       } catch (error) {
         console.log("Location error:", error);
         if (isMounted) {
-          setUserLocation({
-            latitude: 41.0082,
-            longitude: 28.9784,
-          });
+          setUserLocation({ latitude: 41.0082, longitude: 28.9784 });
         }
       } finally {
-        if (isMounted) {
-          setLocationLoading(false);
-        }
+        if (isMounted) setLocationLoading(false);
       }
     };
 
     getCurrentLocation();
-
     return () => {
       isMounted = false;
     };
   }, []);
 
-  // ✅ OPTIMIZED: API call with better dependencies
+  // ✅ ULTRA OPTIMIZED: API Query
   const {
     data: nearbyData,
     isLoading: isLoadingNearby,
@@ -395,20 +313,32 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
     }
   );
 
-  // ✅ OPTIMIZED: Memoized data sections
+  // ✅ ULTRA OPTIMIZED: Data Processing
   const nearFromYouProperties = useMemo(
     () => nearbyData?.result?.nearFromYou || [],
     [nearbyData?.result?.nearFromYou]
   );
 
   const secondSectionData = useMemo(() => {
+    let data = [];
+
     if (userRole === "EVSAHIBI") {
-      return nearbyData?.result?.bestTenantMatch || [];
+      data = nearbyData?.result?.bestTenantMatch || [];
     } else if (userRole === "KIRACI") {
-      return nearbyData?.result?.bestLandlordMatch || [];
+      data = nearbyData?.result?.bestLandlordMatch || [];
     }
-    return [];
-  }, [nearbyData?.result, userRole]);
+
+    // Update loading state when data arrives
+    if (data.length > 0 && dataLoadingStates.secondSection) {
+      setDataLoadingStates((prev) => ({
+        ...prev,
+        secondSection: false,
+        hasInitialData: true,
+      }));
+    }
+
+    return data;
+  }, [nearbyData?.result, userRole, dataLoadingStates.secondSection]);
 
   const thirdSectionData = useMemo(() => {
     if (userRole === "EVSAHIBI") {
@@ -419,7 +349,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
     return [];
   }, [nearbyData?.result, userRole]);
 
-  // ✅ OPTIMIZED: Memoized refresh handler
+  // ✅ ULTRA OPTIMIZED: Event Handlers
   const handleRefresh = useCallback(async () => {
     if (!userLocation || !currentUser?.id) return;
 
@@ -427,10 +357,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
     try {
       resetCache();
       const result = await refetch();
-      console.log("Refetch Result:", result);
-      if (onRefresh) {
-        onRefresh();
-      }
+      if (onRefresh) onRefresh();
     } catch (error) {
       console.log("Refresh error:", error);
     } finally {
@@ -438,60 +365,8 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
     }
   }, [userLocation, currentUser?.id, resetCache, refetch, onRefresh]);
 
-  // ✅ OPTIMIZED: Effect for parent refresh
-  useEffect(() => {
-    if (refreshing && userLocation && currentUser?.id) {
-      handleRefresh();
-    }
-  }, [refreshing, userLocation, currentUser?.id, handleRefresh]);
-
-  // ✅ OPTIMIZED: Effect for recording API calls
-  useEffect(() => {
-    if (nearbyData && !getCacheValueForQuery()) {
-      recordApiCall();
-    }
-  }, [nearbyData, getCacheValueForQuery, recordApiCall]);
-
-  // ✅ OPTIMIZED: Memoized full refresh handler
-  const handleFullRefresh = useCallback(async () => {
-    console.log("===== FULL REFRESH STARTED =====");
-    setIsRefreshing(true);
-
-    try {
-      resetCache();
-
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      console.log("Location permission status:", status);
-
-      if (status === "granted") {
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-
-        const newLocation = {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        };
-
-        console.log("New location obtained:", newLocation);
-        setUserLocation(newLocation);
-      }
-
-      const result = await refetch();
-      console.log("Full refresh refetch result:", result);
-    } catch (error) {
-      console.log("Full refresh error:", error);
-    } finally {
-      setIsRefreshing(false);
-      console.log("===== FULL REFRESH ENDED =====");
-    }
-  }, [resetCache, refetch]);
-
-  // ✅ OPTIMIZED: Memoized navigation handlers
   const handlePropertyPress = useCallback(
-    (postId) => {
-      navigation.navigate("PostDetail", { postId });
-    },
+    (postId) => navigation.navigate("PostDetail", { postId }),
     [navigation]
   );
 
@@ -512,7 +387,45 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
     [navigation, userRole]
   );
 
-  // ✅ OPTIMIZED: Memoized render functions
+  const handleSeeAll = useCallback(
+    (type) => {
+      const routes = {
+        similarPosts: () => {
+          if (userRole === "EVSAHIBI") {
+            navigation.navigate("AllSimilarProperties", {
+              userLocation,
+              similarPosts: thirdSectionData,
+              searchType: "general",
+              landlordUserId: currentUser?.id,
+            });
+          } else {
+            navigation.navigate("AllRecommendedPosts");
+          }
+        },
+        recommendedForYou: () => navigation.navigate("AllRecommendedPosts"),
+        bestTenants: () =>
+          navigation.navigate("AllMatchingUsers", {
+            initialLocation: userLocation,
+            searchType: type,
+          }),
+        bestLandlords: () =>
+          navigation.navigate("AllMatchingUsers", {
+            initialLocation: userLocation,
+            searchType: type,
+          }),
+        default: () =>
+          navigation.navigate("AllNearbyProperties", {
+            initialLocation: userLocation,
+            searchType: type,
+          }),
+      };
+
+      (routes[type] || routes.default)();
+    },
+    [userRole, navigation, userLocation, thirdSectionData, currentUser?.id]
+  );
+
+  // ✅ ULTRA OPTIMIZED: Render Functions
   const renderPropertyCard = useCallback(
     ({ item }) => (
       <TouchableOpacity
@@ -528,10 +441,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
               boxShadow: "0px 0px 12px #00000024",
             }}
             source={{
-              uri:
-                item.postImages && item.postImages.length > 0
-                  ? item.postImages[0].postImageUrl
-                  : item.firstPostİmageURL,
+              uri: item.postImages?.[0]?.postImageUrl || item.firstPostİmageURL,
             }}
             className="w-full"
             contentFit="cover"
@@ -549,12 +459,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
               <View className="px-2 py-1.5 flex-row items-center gap-1">
                 <FontAwesomeIcon color="white" icon={faRoad} size={14} />
                 <Text className="text-white text-xs font-semibold">
-                  {item.distanceInKM
-                    ? item.distanceInKM.toFixed(1)
-                    : item.distance !== undefined
-                    ? item.distance.toFixed(1)
-                    : "0.0"}{" "}
-                  km
+                  {(item.distanceInKM || item.distance || 0).toFixed(1)} km
                 </Text>
               </View>
             </BlurView>
@@ -577,17 +482,16 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
         </View>
 
         <View className="py-3 px-1">
-          <View className="">
-            <Text
-              style={{ fontSize: 16, fontWeight: 600 }}
-              className="text-gray-800"
-              numberOfLines={2}
-            >
-              {item.ilanBasligi ||
-                item.title ||
-                `${item.il} ${item.ilce} ${item.odaSayisi} Kiralık Daire`}
-            </Text>
-          </View>
+          <Text
+            style={{ fontSize: 16, fontWeight: 600 }}
+            className="text-gray-800"
+            numberOfLines={2}
+          >
+            {item.ilanBasligi ||
+              item.title ||
+              `${item.il} ${item.ilce} ${item.odaSayisi} Kiralık Daire`}
+          </Text>
+
           <View className="flex justify-between flex-row items-center mt-1">
             <View className="flex-row items-center">
               <Text
@@ -626,64 +530,56 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
         className="overflow-hidden w-full flex flex-row items-center gap-4 py-2"
         onPress={() => handlePropertyPress(item.postId)}
       >
-        <View className="relative">
-          <ImageWithFallback
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: 20,
-              boxShadow: "0px 0px 12px #00000014",
-            }}
-            source={{
-              uri:
-                item.postImages && item.postImages.length > 0
-                  ? item.postImages[0].postImageUrl
-                  : item.firstPostİmageURL,
-            }}
-            className="rounded-2xl border border-gray-100"
-            contentFit="cover"
-            fallbackWidth={80}
-            fallbackHeight={80}
-            borderRadius={20}
-          />
-        </View>
+        <ImageWithFallback
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: 20,
+            boxShadow: "0px 0px 12px #00000014",
+          }}
+          source={{
+            uri: item.postImages?.[0]?.postImageUrl || item.firstPostİmageURL,
+          }}
+          className="rounded-2xl border border-gray-100"
+          contentFit="cover"
+          fallbackWidth={80}
+          fallbackHeight={80}
+          borderRadius={20}
+        />
 
         <View className="flex-1 flex flex-col">
-          <View>
-            <Text
-              style={{ fontSize: 16, fontWeight: 600 }}
-              className="text-gray-800 mb-2"
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {item.ilanBasligi ||
-                item.title ||
-                `${item.il} ${item.ilce} Kiralık Daire`}
-            </Text>
-          </View>
+          <Text
+            style={{ fontSize: 16, fontWeight: 600 }}
+            className="text-gray-800 mb-1"
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {item.ilanBasligi ||
+              item.title ||
+              `${item.il} ${item.ilce} Kiralık Daire`}
+          </Text>
 
-          <View>
-            <Text
-              style={{ fontSize: 14, fontWeight: 600 }}
-              className="text-gray-400 mb-2"
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {item.kiraFiyati || item.rent
-                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-                    item.paraBirimi || item.currency || "₺"
-                  }`
-                : "Fiyat belirtilmemiş"}
-            </Text>
+          <Text
+            style={{ fontSize: 14, fontWeight: 600 }}
+            className="text-gray-400"
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {item.kiraFiyati || item.rent
+              ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
+                  item.paraBirimi || item.currency || "₺"
+                }`
+              : "Fiyat belirtilmemiş"}
+          </Text>
 
-            {item.matchScore && (
-              <MatchScoreBar
-                matchScore={item.matchScore}
-                showBar={true}
-                size="xs"
-              />
-            )}
-          </View>
+          {item.matchScore && (
+            <View className="flex flex-row items-center gap-1 py-1">
+              <FontAwesomeIcon icon={faHeart} size={15} />
+              <Text style={{ fontSize: 12, fontWeight: 500 }}>
+                {item.matchScore}% Uyum
+              </Text>
+            </View>
+          )}
 
           <View className="flex flex-row gap-4 items-center">
             <View className="flex flex-row gap-2 items-center">
@@ -706,158 +602,148 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   );
 
   const renderPersonCard = useCallback(
-    ({ item }) => (
-      <TouchableOpacity
-        style={{ borderRadius: 25 }}
-        activeOpacity={1}
-        className="mr-4 mb-3 overflow-hidden w-72 flex flex-col bg-white border border-gray-200 p-4"
-        onPress={() => handlePersonPress(item)}
-      >
-        <View className="flex-col items-center gap-2">
-          <ImageWithFallback
-            style={{
-              width: 60,
-              height: 60,
-              borderRadius: 100,
-              objectFit: "cover",
-              boxShadow: "0px 0px 12px #00000020",
-            }}
-            source={{
-              uri:
-                userRole === "EVSAHIBI"
-                  ? item.tenantURL
-                  : item.landlordProfileURL,
-            }}
-            className="rounded-full border border-gray-100"
-            contentFit="cover"
-            fallbackWidth={60}
-            fallbackHeight={60}
-            borderRadius={100}
-          />
+    ({ item, index }) => {
+      if (!item) return null;
 
-          <View className="flex-1 flex-col items-center ml-3 mb-1">
-            <Text
-              style={{ fontSize: 16, fontWeight: 700 }}
-              className="text-gray-800"
-              numberOfLines={1}
-            >
-              {userRole === "EVSAHIBI"
-                ? item.tenantName || "Kiracı"
-                : item.landlordName || "Ev Sahibi"}
-            </Text>
+      // ✅ ULTRA OPTIMIZED: Secure name extraction
+      const getPersonName = () => {
+        if (userRole === "EVSAHIBI") {
+          return (
+            item.tenantName ||
+            item.tenant_name ||
+            item.name ||
+            item.firstName ||
+            item.displayName ||
+            `Kiracı #${index + 1}`
+          );
+        } else {
+          return (
+            item.landlordName ||
+            item.landlord_name ||
+            item.name ||
+            item.firstName ||
+            item.displayName ||
+            `Ev Sahibi #${index + 1}`
+          );
+        }
+      };
+
+      const getProfileImage = () => {
+        if (userRole === "EVSAHIBI") {
+          return (
+            item.tenantURL ||
+            item.tenant_profile_url ||
+            item.profileImage ||
+            item.avatar
+          );
+        } else {
+          return (
+            item.landlordProfileURL ||
+            item.landlord_profile_url ||
+            item.profileImage ||
+            item.avatar
+          );
+        }
+      };
+
+      return (
+        <TouchableOpacity
+          style={{ borderRadius: 25 }}
+          activeOpacity={1}
+          className="mr-4 mb-3 overflow-hidden w-72 flex flex-col bg-white border border-gray-200 p-4"
+          onPress={() => handlePersonPress(item)}
+        >
+          <View className="flex-col items-center gap-2">
+            <ImageWithFallback
+              style={{
+                width: 60,
+                height: 60,
+                borderRadius: 100,
+                objectFit: "cover",
+                boxShadow: "0px 0px 12px #00000020",
+              }}
+              source={{ uri: getProfileImage() }}
+              className="rounded-full border border-gray-100"
+              contentFit="cover"
+              fallbackWidth={60}
+              fallbackHeight={60}
+              borderRadius={100}
+            />
+
+            <View className="flex-1 flex-col items-center mb-1">
+              <Text
+                style={{ fontSize: 16, fontWeight: 700 }}
+                className="text-gray-800"
+                numberOfLines={1}
+              >
+                {getPersonName()}
+              </Text>
+              <Text
+                style={{ fontSize: 12, fontWeight: 400 }}
+                className="text-gray-500 mt-1"
+              >
+                {userRole === "EVSAHIBI" ? "Kiracı Adayı" : "Ev Sahibi"}
+              </Text>
+            </View>
           </View>
-        </View>
 
-        <View className="px-10 flex justify-center items-center">
-          <View className="">
+          <View className="px-10 flex justify-center items-center">
             <MatchScoreBar
               matchScore={item.matchScore}
               showBar={true}
               size="sm"
             />
 
-            {item.matchReasons && item.matchReasons.length > 0 && (
+            {item.matchReasons?.[0] && (
               <Text style={{ fontSize: 12 }} className="text-gray-500 mt-2">
                 {item.matchReasons[0]}
               </Text>
             )}
           </View>
-        </View>
-        <TouchableOpacity
-          onPress={() => handlePersonPress(item)}
-          activeOpacity={1}
-          className="py-3 mt-4 border border-black rounded-full"
-        >
-          <Text className="text-center font-medium">Göz at</Text>
+
+          <TouchableOpacity
+            onPress={() => handlePersonPress(item)}
+            activeOpacity={1}
+            className="py-3 mt-4 border border-black rounded-full"
+          >
+            <Text className="text-center font-medium">Göz at</Text>
+          </TouchableOpacity>
         </TouchableOpacity>
-      </TouchableOpacity>
-    ),
+      );
+    },
     [handlePersonPress, userRole]
   );
 
-  // ✅ OPTIMIZED: Memoized handleSeeAll
-  const handleSeeAll = useCallback(
-    (type) => {
-      console.log("handleSeeAll called with type:", type);
-
-      if (type === "similarPosts" || type === "recommendedForYou") {
-        if (userRole === "EVSAHIBI") {
-          navigation.navigate("AllSimilarProperties", {
-            userLocation: userLocation,
-            similarPosts: thirdSectionData,
-            searchType: "general",
-            landlordUserId: currentUser?.id,
-          });
-        } else {
-          navigation.navigate("AllRecommendedPosts");
-        }
-      } else if (type === "bestTenants") {
-        navigation.navigate("AllMatchingUsers", {
-          initialLocation: userLocation,
-          searchType: type,
-        });
-      } else if (type === "bestLandlords") {
-        navigation.navigate("AllMatchingUsers", {
-          initialLocation: userLocation,
-          searchType: type,
-        });
-      } else {
-        navigation.navigate("AllNearbyProperties", {
-          initialLocation: userLocation,
-          searchType: type,
-        });
-      }
-    },
-    [userRole, navigation, userLocation, thirdSectionData, currentUser?.id]
-  );
-
-  // ✅ OPTIMIZED: Memoized scroll handlers
-  const handleScrollBeginDrag = useCallback(() => {
-    navigation.getParent()?.setOptions({
-      swipeEnabled: false,
-    });
-  }, [navigation]);
-
-  const handleScrollEndDrag = useCallback(() => {
-    navigation.getParent()?.setOptions({
-      swipeEnabled: true,
-    });
-  }, [navigation]);
-
-  const handleMomentumScrollEnd = useCallback(() => {
-    navigation.getParent()?.setOptions({
-      swipeEnabled: true,
-    });
-  }, [navigation]);
-
-  // ✅ OPTIMIZED: Memoized FlatList props
-  const flatListProps = useMemo(
+  // ✅ ULTRA OPTIMIZED: FlatList Configuration
+  const flatListConfig = useMemo(
     () => ({
       removeClippedSubviews: true,
       maxToRenderPerBatch: 3,
       windowSize: 5,
-      initialNumToRender: 3,
       showsHorizontalScrollIndicator: false,
       showsVerticalScrollIndicator: false,
-      scrollEnabled: true,
-      onScrollBeginDrag: handleScrollBeginDrag,
-      onScrollEndDrag: handleScrollEndDrag,
-      onMomentumScrollEnd: handleMomentumScrollEnd,
+      getItemLayout: null, // Let FlatList calculate
     }),
-    [handleScrollBeginDrag, handleScrollEndDrag, handleMomentumScrollEnd]
+    []
   );
 
-  // ✅ OPTIMIZED: Memoized key extractors
+  // ✅ ULTRA OPTIMIZED: Key Extractors
   const nearPropertyKeyExtractor = useCallback(
     (item, index) => `near_${item.postId}_${index}`,
     []
   );
 
   const personKeyExtractor = useCallback(
-    (item, index) =>
-      userRole === "EVSAHIBI"
-        ? `tenant_${item.tenantProfileId}_${index}`
-        : `landlord_${item.landlordProfileId}_${index}`,
+    (item, index) => {
+      const baseKey = userRole === "EVSAHIBI" ? "tenant" : "landlord";
+      const itemId =
+        item.tenantProfileId ||
+        item.landlordProfileId ||
+        item.userId ||
+        item.id ||
+        index;
+      return `${baseKey}_${itemId}_${index}`;
+    },
     [userRole]
   );
 
@@ -866,7 +752,52 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
     []
   );
 
-  // ✅ OPTIMIZED: Early returns with memoized conditions
+  // ✅ ULTRA OPTIMIZED: Loading Skeletons
+  const SecondSectionLoadingSkeleton = useMemo(
+    () => (
+      <View className="">
+        <View className="flex-row justify-between items-center mb-5 mt-6 px-5">
+          <View className="bg-gray-200 rounded-lg h-6 w-48" />
+          <View className="bg-gray-200 rounded-lg h-4 w-20" />
+        </View>
+        <View style={{ paddingLeft: 16 }}>
+          <View className="flex-row">
+            {Array.from({ length: 3 }, (_, index) => (
+              <View
+                key={index}
+                className="mr-4 w-72 h-48 bg-gray-200 rounded-3xl"
+              />
+            ))}
+          </View>
+        </View>
+      </View>
+    ),
+    []
+  );
+
+  // ✅ ULTRA OPTIMIZED: Effects
+  useEffect(() => {
+    if (refreshing && userLocation && currentUser?.id) {
+      handleRefresh();
+    }
+  }, [refreshing, userLocation, currentUser?.id, handleRefresh]);
+
+  useEffect(() => {
+    if (nearbyData && !getCacheValueForQuery()) {
+      recordApiCall();
+    }
+  }, [nearbyData, getCacheValueForQuery, recordApiCall]);
+
+  // ✅ ULTRA OPTIMIZED: Computed Values
+  const isLoading = isLoadingNearby || isRefreshing;
+  const hasNoData =
+    nearFromYouProperties.length === 0 &&
+    secondSectionData.length === 0 &&
+    thirdSectionData.length === 0;
+  const shouldShowSecondSection =
+    !isLoadingNearby || secondSectionData.length > 0;
+
+  // ✅ ULTRA OPTIMIZED: Early Returns
   if (locationLoading) {
     return (
       <View className="mb-6">
@@ -878,21 +809,13 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   if (error) {
     return (
       <View className="flex flex-col">
-        <View className="">
-          <LoadingSkeleton count={3} />
-        </View>
+        <LoadingSkeleton count={3} />
         <View className="mb-6">
           <LoadingSkeleton count={3} />
         </View>
       </View>
     );
   }
-
-  const isLoading = isLoadingNearby || isRefreshing;
-  const hasNoData =
-    nearFromYouProperties.length === 0 &&
-    secondSectionData.length === 0 &&
-    thirdSectionData.length === 0;
 
   return (
     <View className="flex flex-col">
@@ -903,19 +826,16 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
         </View>
       ) : (
         <>
-          {/* 1. BÖLÜM: Yakınındaki Evler */}
+          {/* 1. SECTION: Nearby Properties */}
           {nearFromYouProperties.length > 0 && (
-            <View className="">
+            <View>
               <View className="flex-row justify-between items-center px-5 mb-4">
-                <View>
-                  <Text
-                    style={{ fontSize: 20 }}
-                    className="font-semibold text-gray-900"
-                  >
-                    Yakınındaki Evler
-                  </Text>
-                </View>
-
+                <Text
+                  style={{ fontSize: 20 }}
+                  className="font-semibold text-gray-900"
+                >
+                  Yakınındaki Evler
+                </Text>
                 <TouchableOpacity
                   className="flex flex-row gap-1 items-center"
                   onPress={() => handleSeeAll("nearby")}
@@ -934,26 +854,25 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
                 keyExtractor={nearPropertyKeyExtractor}
                 horizontal
                 contentContainerStyle={{ paddingRight: 20 }}
-                {...flatListProps}
+                {...flatListConfig}
               />
             </View>
           )}
 
-          {/* 2. BÖLÜM: Kişiler */}
-          {secondSectionData.length > 0 && (
-            <View className="">
+          {/* 2. SECTION: People - Optimized */}
+          {isLoadingNearby && secondSectionData.length === 0 ? (
+            SecondSectionLoadingSkeleton
+          ) : shouldShowSecondSection && secondSectionData.length > 0 ? (
+            <View>
               <View className="flex-row justify-between items-center mb-5 mt-6 px-5">
-                <View>
-                  <Text
-                    style={{ fontSize: 20 }}
-                    className="font-semibold text-gray-900"
-                  >
-                    {userRole === "EVSAHIBI"
-                      ? "Size Uygun Kiracılar"
-                      : "Size Uygun Ev Sahipleri"}
-                  </Text>
-                </View>
-
+                <Text
+                  style={{ fontSize: 20 }}
+                  className="font-semibold text-gray-900"
+                >
+                  {userRole === "EVSAHIBI"
+                    ? "Size Uygun Kiracılar"
+                    : "Size Uygun Ev Sahipleri"}
+                </Text>
                 <TouchableOpacity
                   className="flex flex-row gap-1 items-center"
                   onPress={() =>
@@ -977,26 +896,24 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
                 horizontal
                 className="pt-2"
                 contentContainerStyle={{ paddingRight: 20 }}
-                {...flatListProps}
+                extraData={`${userRole}_${secondSectionData.length}`}
+                {...flatListConfig}
               />
             </View>
-          )}
+          ) : null}
 
-          {/* 3. BÖLÜM: Mülkler */}
+          {/* 3. SECTION: Third Section Properties */}
           {thirdSectionData.length > 0 && (
-            <View className="">
+            <View>
               <View className="flex-row justify-between items-center mb-4 mt-3 px-5">
-                <View>
-                  <Text
-                    style={{ fontSize: 20 }}
-                    className="font-semibold text-gray-900"
-                  >
-                    {userRole === "EVSAHIBI"
-                      ? "Benzer İlanlar"
-                      : "Sizin İçin Önerilen"}
-                  </Text>
-                </View>
-
+                <Text
+                  style={{ fontSize: 20 }}
+                  className="font-semibold text-gray-900"
+                >
+                  {userRole === "EVSAHIBI"
+                    ? "Benzer İlanlar"
+                    : "Sizin İçin Önerilen"}
+                </Text>
                 <TouchableOpacity
                   className="flex flex-row gap-1 items-center"
                   onPress={() =>
@@ -1019,10 +936,10 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
                 data={thirdSectionData.slice(0, 4)}
                 renderItem={renderVerticalPropertyCard}
                 keyExtractor={thirdSectionKeyExtractor}
-                vertical
+                scrollEnabled={false}
                 className="pt-2"
                 contentContainerStyle={{ paddingRight: 20 }}
-                {...flatListProps}
+                {...flatListConfig}
               />
             </View>
           )}

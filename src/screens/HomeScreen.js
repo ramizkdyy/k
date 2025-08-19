@@ -20,7 +20,11 @@ import { selectUserRole, selectCurrentUser } from "../redux/slices/authSlice";
 import { selectUserProfile } from "../redux/slices/profileSlice";
 import NearbyProperties from "../components/NearbyProperties";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faBarsFilter, faSearch, faSliders } from "@fortawesome/pro-solid-svg-icons";
+import {
+  faBarsFilter,
+  faSearch,
+  faSliders,
+} from "@fortawesome/pro-solid-svg-icons";
 import { StatusBar } from "expo-status-bar";
 import {
   faEdit,
@@ -33,7 +37,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get("window");
 
 const HomeScreen = ({ navigation }) => {
   const userRole = useSelector(selectUserRole);
@@ -53,19 +57,19 @@ const HomeScreen = ({ navigation }) => {
   const titleOpacity = scrollY.interpolate({
     inputRange: [0, SCROLL_DISTANCE],
     outputRange: [1, 0],
-    extrapolate: 'clamp',
+    extrapolate: "clamp",
   });
 
   const titleScale = scrollY.interpolate({
     inputRange: [0, SCROLL_DISTANCE],
     outputRange: [1, 0.8],
-    extrapolate: 'clamp',
+    extrapolate: "clamp",
   });
 
   const searchBarTranslateY = scrollY.interpolate({
     inputRange: [0, SCROLL_DISTANCE],
     outputRange: [0, -60], // Title + gap kadar yukarı kayar
-    extrapolate: 'clamp',
+    extrapolate: "clamp",
   });
 
   // ÖNEMLİ: Arama barının genişlik animasyonu
@@ -73,25 +77,25 @@ const HomeScreen = ({ navigation }) => {
     inputRange: [0, SCROLL_DISTANCE],
     outputRange: [
       screenWidth - 32, // Başta neredeyse tam genişlik (sadece padding)
-      screenWidth - 32 - 50 - 8 // Scroll sonunda mesaj butonu için yer bırak
+      screenWidth - 32 - 50 - 8, // Scroll sonunda mesaj butonu için yer bırak
     ],
-    extrapolate: 'clamp',
+    extrapolate: "clamp",
   });
 
   // Arama barının sağdan margin/padding animasyonu
   const searchBarMarginRight = scrollY.interpolate({
     inputRange: [0, SCROLL_DISTANCE],
     outputRange: [0, 58], // Mesaj butonu için yer (50 + 8 margin)
-    extrapolate: 'clamp',
+    extrapolate: "clamp",
   });
 
   const headerContainerHeight = scrollY.interpolate({
     inputRange: [0, SCROLL_DISTANCE],
     outputRange: [
       insets.top + 50 + 60 + 16, // Normal: SafeArea + Title + SearchBar + padding
-      insets.top + 60 + 8        // Scroll: SafeArea + SearchBar + minimal padding
+      insets.top + 60 + 8, // Scroll: SafeArea + SearchBar + minimal padding
     ],
-    extrapolate: 'clamp',
+    extrapolate: "clamp",
   });
 
   // SignalR context'den connection ve status al
@@ -131,7 +135,10 @@ const HomeScreen = ({ navigation }) => {
     };
 
     const handleMessageSent = (confirmationData) => {
-      console.log("✅ Message sent confirmation in HomeScreen:", confirmationData);
+      console.log(
+        "✅ Message sent confirmation in HomeScreen:",
+        confirmationData
+      );
       refetchUnread();
     };
 
@@ -201,7 +208,7 @@ const HomeScreen = ({ navigation }) => {
     return (
       <Animated.View
         style={{
-          position: 'absolute',
+          position: "absolute",
           top: 0,
           left: 0,
           right: 0,
@@ -214,7 +221,7 @@ const HomeScreen = ({ navigation }) => {
           intensity={80}
           tint="light"
           style={{
-            position: 'absolute',
+            position: "absolute",
             top: 0,
             left: 0,
             right: 0,
@@ -225,30 +232,31 @@ const HomeScreen = ({ navigation }) => {
         {/* Semi-transparent overlay */}
         <View
           style={{
-            position: 'absolute',
+            position: "absolute",
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(255, 255, 255, 0.7)',
+            backgroundColor: "rgba(255, 255, 255, 0.7)",
           }}
         />
 
         {/* Content Container */}
-        <View style={{
-          paddingTop: insets.top,
-          paddingHorizontal: 16,
-          flex: 1,
-          zIndex: 10,
-        }}>
-
+        <View
+          style={{
+            paddingTop: insets.top,
+            paddingHorizontal: 16,
+            flex: 1,
+            zIndex: 10,
+          }}
+        >
           {/* Title Section - Kaybolur */}
           <Animated.View
             style={{
               opacity: titleOpacity,
               transform: [{ scale: titleScale }],
               height: 50,
-              justifyContent: 'center',
+              justifyContent: "center",
             }}
           >
             <View className="flex-row justify-between items-center">
@@ -277,8 +285,8 @@ const HomeScreen = ({ navigation }) => {
               tint="light"
               style={{
                 borderRadius: 24,
-                overflow: 'hidden',
-                shadowColor: '#000',
+                overflow: "hidden",
+                shadowColor: "#000",
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.1,
                 shadowRadius: 12,
@@ -287,10 +295,10 @@ const HomeScreen = ({ navigation }) => {
             >
               <View
                 style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                  backgroundColor: "rgba(255, 255, 255, 0.8)",
                   paddingHorizontal: 16,
-                  flexDirection: 'row',
-                  alignItems: 'center',
+                  flexDirection: "row",
+                  alignItems: "center",
                   gap: 8,
                 }}
                 className="border border-gray-100 border-[1px] rounded-full"
@@ -318,7 +326,7 @@ const HomeScreen = ({ navigation }) => {
         {/* Message Button - Sağ üstte sabit */}
         <View
           style={{
-            position: 'absolute',
+            position: "absolute",
             right: 16,
             top: insets.top + 3,
             zIndex: 20,
@@ -326,7 +334,7 @@ const HomeScreen = ({ navigation }) => {
         >
           <TouchableOpacity
             style={{
-              shadowColor: '#000',
+              shadowColor: "#000",
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.1,
               shadowRadius: 8,
@@ -335,39 +343,33 @@ const HomeScreen = ({ navigation }) => {
             className="p-3 rounded-full bg-white"
             onPress={handleMessagesPress}
           >
-            <FontAwesomeIcon
-              icon={faMessage}
-              size={20}
-              color="#111827"
-            />
+            <FontAwesomeIcon icon={faMessage} size={20} color="#111827" />
 
             {/* Kırmızı Yuvarlak Badge */}
             {totalUnreadCount > 0 && (
               <View
                 style={{
-                  position: 'absolute',
+                  position: "absolute",
                   top: -2,
                   right: -2,
-                  backgroundColor: '#ef4444',
+                  backgroundColor: "#ef4444",
                   borderRadius: 10,
                   minWidth: 20,
                   height: 20,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  borderWidth: 2,
-                  borderColor: 'white',
+                  justifyContent: "center",
+                  alignItems: "center",
                 }}
               >
                 <Text
                   style={{
-                    color: 'white',
-                    fontSize: totalUnreadCount > 99 ? 10 : 12,
-                    fontWeight: '600',
-                    textAlign: 'center',
+                    color: "white",
+                    fontSize: 12,
+                    fontWeight: "600",
+                    textAlign: "center",
                   }}
                   numberOfLines={1}
                 >
-                  {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                  {totalUnreadCount > 9 ? "9+" : totalUnreadCount}
                 </Text>
               </View>
             )}

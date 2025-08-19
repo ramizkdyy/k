@@ -13,6 +13,7 @@ import {
   ScrollView,
   Animated,
   Dimensions,
+  Modal,
 } from "react-native";
 import { Image } from "expo-image";
 import { useSelector, useDispatch } from "react-redux";
@@ -33,12 +34,23 @@ import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
   faHomeAlt,
+  faHouseBlank,
   faPlus,
   faSliders,
 } from "@fortawesome/pro-regular-svg-icons";
 import { faSearch } from "@fortawesome/pro-solid-svg-icons";
 import { BlurView } from "expo-blur";
-import { faEdit, faTrash } from "@fortawesome/pro-light-svg-icons";
+import {
+  BottomSheetModal,
+  BottomSheetView,
+  BottomSheetBackdrop,
+} from "@gorhom/bottom-sheet";
+import {
+  faEdit,
+  faTrash,
+  faEllipsis,
+  faHandshake,
+} from "@fortawesome/pro-light-svg-icons";
 import PropertiesFilterModal from "../modals/PropertiesFilterModal";
 import { useSearchPostsMutation } from "../redux/api/searchApiSlice";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -66,6 +78,8 @@ const PostsScreen = ({ navigation }) => {
   const filters = useSelector(selectPostFilters);
   const userPosts = useSelector(selectAllUserPosts);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState(null);
+  const bottomSheetModalRef = useRef(null);
 
   const [searchPosts] = useSearchPostsMutation();
 
@@ -89,7 +103,7 @@ const PostsScreen = ({ navigation }) => {
   const scrollY = useRef(new Animated.Value(0)).current;
 
   // Header height calculations
-  const SCROLL_DISTANCE = 50; // Başlığın kaybolma mesafesi
+  const SCROLL_DISTANCE = 150; // Başlığın kaybolma mesafesi
 
   const sortPosts = useCallback(
     (posts, sortType = sortBy, direction = sortDirection) => {
@@ -792,6 +806,28 @@ const PostsScreen = ({ navigation }) => {
     navigation.navigate("Offers", { postId });
   };
 
+  const handlePostOptionsPress = (postId) => {
+    setSelectedPostId(postId);
+    bottomSheetModalRef.current?.present();
+  };
+
+  const handleBottomSheetClose = () => {
+    setSelectedPostId(null);
+  };
+
+  const renderBackdrop = useCallback(
+    (props) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        opacity={0.5}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
+
   const handleCreatePostNavigation = () => {
     Logger.event("create_post_initiated");
     navigation.navigate("CreatePost");
@@ -944,16 +980,20 @@ const PostsScreen = ({ navigation }) => {
               />
             ) : (
               <View
-                style={{ height: 350, borderRadius: 30 }}
-                className="w-full bg-gray-100 justify-center items-center"
+                style={{
+                  height: 350,
+                  borderRadius: 30,
+                  backgroundColor: "#f5f5f5",
+                }}
+                className="w-full  justify-center items-center"
               >
-                <FontAwesomeIcon size={50} color="#dee0ea" icon={faHomeAlt} />
+                <FontAwesomeIcon size={50} color="#fff" icon={faHouseBlank} />
               </View>
             )}
 
             <BlurView
-              tint=""
-              intensity={60}
+              intensity={50}
+              tint="dark"
               style={{
                 boxShadow: "0px 0px 12px #00000014",
                 overflow: "hidden",
@@ -986,54 +1026,21 @@ const PostsScreen = ({ navigation }) => {
               <View className="flex-row absolute gap-2 top-3 right-3">
                 <BlurView
                   style={{ boxShadow: "0px 0px 12px #00000014" }}
-                  tint="dark"
-                  intensity={50}
-                  className="overflow-hidden rounded-full"
-                >
-                  <TouchableOpacity
-                    className="flex justify-center items-center"
-                    onPress={() => handleOffersNavigation(item.postId)}
-                    activeOpacity={1}
-                  >
-                    <View className="flex-row items-center justify-center px-3 py-3">
-                      <Text className="text-white font-medium text-center text-sm">
-                        Teklifler ({item.offerCount || 0})
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                </BlurView>
-
-                <BlurView
-                  style={{ boxShadow: "0px 0px 12px #00000014" }}
                   intensity={50}
                   tint="dark"
                   className="overflow-hidden rounded-full"
                 >
                   <TouchableOpacity
                     className="flex justify-center items-center py-3 px-3"
-                    onPress={() => handleEditPostNavigation(item.postId)}
+                    onPress={() => handlePostOptionsPress(item.postId)}
                     activeOpacity={1}
                   >
                     <View className="flex-row items-center justify-center">
-                      <FontAwesomeIcon color="white" icon={faEdit} />
-                    </View>
-                  </TouchableOpacity>
-                </BlurView>
-
-                <BlurView
-                  style={{ boxShadow: "0px 0px 12px #00000014" }}
-                  intensity={50}
-                  tint="dark"
-                  className="overflow-hidden rounded-full"
-                >
-                  <TouchableOpacity
-                    className="flex justify-center items-center"
-                    onPress={() => handleDeletePost(item.postId)}
-                    disabled={isDeleting}
-                    activeOpacity={1}
-                  >
-                    <View className="flex-row items-center justify-center py-3 px-3">
-                      <FontAwesomeIcon color="#ff0040" icon={faTrash} />
+                      <FontAwesomeIcon
+                        color="white"
+                        size={20}
+                        icon={faEllipsis}
+                      />
                     </View>
                   </TouchableOpacity>
                 </BlurView>
@@ -1056,7 +1063,7 @@ const PostsScreen = ({ navigation }) => {
                 {item.ilanBasligi || "İlan başlığı yok"}
               </Text>
 
-              <View className="mt-2 mb-3">
+              <View className="mt-1 mb-2">
                 <Text style={{ fontSize: 12, color: "#6B7280" }}>
                   {[item.il, item.ilce, item.mahalle]
                     .filter(Boolean)
@@ -1064,7 +1071,7 @@ const PostsScreen = ({ navigation }) => {
                 </Text>
               </View>
 
-              <View className="mb-2">
+              <View className="mb-1">
                 <Text style={{ fontSize: 14, color: "#6B7280" }}>
                   <Text
                     style={{
@@ -1574,76 +1581,188 @@ const PostsScreen = ({ navigation }) => {
 
   // Ana return kısmında da güncelleme:
   return (
-    <View className="flex-1 bg-white">
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="rgba(17, 24, 39, 0.9)" // Koyu gri
-        translucent={true}
-      />
+    <>
+      <View className="flex-1 bg-white">
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor="rgba(17, 24, 39, 0.9)" // Koyu gri
+          translucent={true}
+        />
 
-      {/* Animated Header */}
-      {renderAnimatedHeader()}
+        {/* Animated Header */}
+        {renderAnimatedHeader()}
 
-      {/* Main Content */}
-      <View className="flex-1">
-        {isLoading ? (
-          <View className="flex-1 justify-center items-center">
-            <ActivityIndicator size="large" color="#4A90E2" />
-            <Text className="mt-3 text-base text-gray-500">
-              İlanlar yükleniyor...
-            </Text>
-          </View>
-        ) : (
-          <Animated.FlatList
-            data={filteredPosts}
-            renderItem={renderPostItem}
-            keyExtractor={keyExtractor}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{
-              flexGrow: 1,
-              paddingBottom: 16,
-              paddingTop: getDynamicPaddingTop(), // DİNAMİK PADDING
-              paddingHorizontal: 16,
-            }}
-            ListHeaderComponent={() => (
-              <View style={{ marginTop: -8 }}>{renderAppliedFilters()}</View>
-            )}
-            ListEmptyComponent={renderEmptyState}
-            ListFooterComponent={renderLoadingMore}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                progressViewOffset={getDynamicPaddingTop()} // DİNAMİK OFFSET
-              />
-            }
-            onEndReached={loadMorePosts}
-            onEndReachedThreshold={0.5}
-            removeClippedSubviews={false}
-            maxToRenderPerBatch={5}
-            updateCellsBatchingPeriod={50}
-            initialNumToRender={8}
-            windowSize={5}
-            disableVirtualization={false}
-            extraData={`${searchQuery}_${JSON.stringify(filters)}_${
-              allPostsData.length
-            }`}
-            // Animation scroll handler
-            onScroll={Animated.event(
-              [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-              { useNativeDriver: false } // width/height animasyonu için false
-            )}
-            scrollEventThrottle={16}
-          />
-        )}
+        {/* Main Content */}
+        <View className="flex-1">
+          {isLoading ? (
+            <View className="flex-1 justify-center items-center">
+              <ActivityIndicator size="large" color="#4A90E2" />
+              <Text className="mt-3 text-base text-gray-500">
+                İlanlar yükleniyor...
+              </Text>
+            </View>
+          ) : (
+            <Animated.FlatList
+              data={filteredPosts}
+              renderItem={renderPostItem}
+              keyExtractor={keyExtractor}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{
+                flexGrow: 1,
+                paddingBottom: 80,
+                paddingTop: getDynamicPaddingTop(), // DİNAMİK PADDING
+                paddingHorizontal: 16,
+              }}
+              ListHeaderComponent={() => (
+                <View style={{ marginTop: -8 }}>{renderAppliedFilters()}</View>
+              )}
+              ListEmptyComponent={renderEmptyState}
+              ListFooterComponent={renderLoadingMore}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  progressViewOffset={getDynamicPaddingTop()} // DİNAMİK OFFSET
+                />
+              }
+              onEndReached={loadMorePosts}
+              onEndReachedThreshold={0.5}
+              removeClippedSubviews={false}
+              maxToRenderPerBatch={5}
+              updateCellsBatchingPeriod={50}
+              initialNumToRender={8}
+              windowSize={5}
+              disableVirtualization={false}
+              extraData={`${searchQuery}_${JSON.stringify(filters)}_${
+                allPostsData.length
+              }`}
+              // Animation scroll handler
+              onScroll={Animated.event(
+                [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                { useNativeDriver: false } // width/height animasyonu için false
+              )}
+              scrollEventThrottle={16}
+            />
+          )}
+        </View>
+
+        <PropertiesFilterModal
+          visible={isFilterModalVisible}
+          onClose={handleFilterModalClose}
+          onApply={handleFilterModalApply}
+        />
       </View>
 
-      <PropertiesFilterModal
-        visible={isFilterModalVisible}
-        onClose={handleFilterModalClose}
-        onApply={handleFilterModalApply}
-      />
-    </View>
+      {/* Bottom Sheet Modal - Outside main container */}
+      <BottomSheetModal
+        ref={bottomSheetModalRef}
+        snapPoints={["40%"]}
+        backdropComponent={renderBackdrop}
+        onDismiss={handleBottomSheetClose}
+        enablePanDownToClose={true}
+        backgroundStyle={{
+          backgroundColor: "white",
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+        }}
+        handleIndicatorStyle={{
+          backgroundColor: "#D1D5DB",
+          width: 40,
+          height: 4,
+        }}
+        style={{
+          zIndex: 10001,
+          elevation: 10001,
+        }}
+      >
+        <BottomSheetView
+          style={{
+            flex: 1,
+            paddingHorizontal: 20,
+            paddingTop: 10,
+            paddingBottom: 50,
+          }}
+        >
+          <View className="space-y-4">
+            {/* İlanı Düzenle */}
+            <TouchableOpacity
+              className="flex-row items-center py-3"
+              onPress={() => {
+                bottomSheetModalRef.current?.dismiss();
+                if (selectedPostId) {
+                  handleEditPostNavigation(selectedPostId);
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <View className="bg-blue-50 p-2 rounded-full mr-3">
+                <FontAwesomeIcon icon={faEdit} size={20} color="#000" />
+              </View>
+              <Text
+                style={{ fontSize: 16 }}
+                className="font-normal text-gray-900"
+              >
+                İlanı Düzenle
+              </Text>
+            </TouchableOpacity>
+            {/* Teklifler */}
+            <TouchableOpacity
+              className="flex-row items-center py-3"
+              onPress={() => {
+                bottomSheetModalRef.current?.dismiss();
+                if (selectedPostId) {
+                  handleOffersNavigation(selectedPostId);
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <View className="p-2 rounded-full mr-3">
+                <FontAwesomeIcon icon={faHandshake} size={20} color="#000" />
+              </View>
+              <View className="flex-1">
+                <Text
+                  style={{ fontSize: 16 }}
+                  className="font-normal text-gray-900"
+                >
+                  Teklifler{" "}
+                  {selectedPostId &&
+                    (() => {
+                      const selectedPost = landlordListingsData?.result?.find(
+                        (post) => post.postId === selectedPostId
+                      );
+                      return selectedPost
+                        ? `(${selectedPost.offerCount || 0})`
+                        : "";
+                    })()}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Sil */}
+            <TouchableOpacity
+              className="flex-row items-center py-3"
+              onPress={() => {
+                bottomSheetModalRef.current?.dismiss();
+                if (selectedPostId) {
+                  handleDeletePost(selectedPostId);
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <View className="bg-red-50 p-2 rounded-full mr-3">
+                <FontAwesomeIcon icon={faTrash} size={20} color="#EF4444" />
+              </View>
+              <Text
+                style={{ fontSize: 16 }}
+                className="font-normal text-red-600"
+              >
+                Sil
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </BottomSheetView>
+      </BottomSheetModal>
+    </>
   );
 };
 

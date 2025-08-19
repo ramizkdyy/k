@@ -933,12 +933,14 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
                     <View className="flex-col items-center">
                       <View
                         style={{ boxShadow: "0px 0px 12px #00000014" }}
-                        className="w-24 h-24 rounded-full bg-white justify-center items-center mb-2 border-white"
+                        className="w-24 h-24 rounded-full bg-white justify-center items-center mb-4 border-white"
                       >
                         {post.user.profilePictureUrl !==
                         "default_profile_image_url" ? (
                           <Image
                             style={{
+                              width: 96,
+                              height: 96,
                               borderRadius: 100,
                               boxShadow: "0px 0px 12px #00000014",
                             }}

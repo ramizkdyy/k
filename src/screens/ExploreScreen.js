@@ -34,6 +34,11 @@ import LinearGradient from "react-native-linear-gradient";
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const ITEM_HEIGHT = SCREEN_HEIGHT - 83;
 
+// 9:16 aspect ratio için boyutlar
+const ASPECT_RATIO = 9 / 16;
+const MAIN_IMAGE_WIDTH = SCREEN_WIDTH; // Ekranın %85'i
+const MAIN_IMAGE_HEIGHT = MAIN_IMAGE_WIDTH / ASPECT_RATIO;
+
 // 🚀 SMART IMAGE PRELOADER - Optimized for performance
 const ImagePreloader = () => {
   const preloadQueue = useRef(new Set()); // Avoid duplicate preloads
@@ -338,9 +343,10 @@ const ListingCard = memo(
                   style={{
                     width: SCREEN_WIDTH,
                     height: ITEM_HEIGHT,
+                    position: "relative",
                   }}
                 >
-                  {/* Blurred Background Image */}
+                  {/* Blurred Background Image - Full Cover */}
                   <FastImage
                     uri={image.postImageUrl || image.url}
                     style={{
@@ -348,25 +354,12 @@ const ListingCard = memo(
                       width: "100%",
                       height: "100%",
                     }}
-                    contentFit="cover"
-                    cachePolicy="memory-disk"
-                    transition={200}
+                    resizeMode="cover"
                     blurRadius={25}
+                    fadeDuration={100}
                   />
 
-                  {/* Main Image (Original) */}
-                  <FastImage
-                    uri={image.postImageUrl || image.url}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                    }}
-                    contentFit="contain"
-                    cachePolicy="memory-disk"
-                    transition={200}
-                    fadeDuration={100} // Faster fade
-                  />
-
+                  {/* Dark overlay for better contrast */}
                   <View
                     style={{
                       position: "absolute",
@@ -374,9 +367,45 @@ const ListingCard = memo(
                       left: 0,
                       width: "100%",
                       height: "100%",
-                      backgroundColor: "rgba(0,0,0,0.2)",
+                      backgroundColor: "rgba(0,0,0,0.3)",
                     }}
                   />
+
+                  {/* Main Image Container - 9:16 Aspect Ratio with Contain */}
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: "50%",
+                      left: "50%",
+                      width: MAIN_IMAGE_WIDTH,
+                      height: MAIN_IMAGE_HEIGHT,
+                      transform: [
+                        { translateX: -MAIN_IMAGE_WIDTH / 2 },
+                        { translateY: -MAIN_IMAGE_HEIGHT / 2 },
+                      ],
+                      borderRadius: 12,
+                      overflow: "hidden",
+                      // Subtle shadow for depth
+                      shadowColor: "#000",
+                      shadowOffset: {
+                        width: 0,
+                        height: 8,
+                      },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 12,
+                      elevation: 16,
+                    }}
+                  >
+                    <FastImage
+                      uri={image.postImageUrl || image.url}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                      }}
+                      resizeMode="contain"
+                      fadeDuration={150}
+                    />
+                  </View>
                 </View>
               ))}
             </ScrollView>
@@ -389,7 +418,7 @@ const ListingCard = memo(
                 alignItems: "center",
               }}
             >
-              <FontAwesomeIcon icon={faHome} size={60} color="#9CA3AF" />
+              <FontAwesome6Icon icon={faHome} size={60} color="#9CA3AF" />
               <Text
                 style={{
                   marginTop: 16,
@@ -403,6 +432,7 @@ const ListingCard = memo(
           )}
         </View>
 
+        {/* Bottom Gradient Overlay */}
         <LinearGradient
           colors={[
             "rgba(0, 0, 0, 0.0)",
@@ -670,7 +700,7 @@ const ExploreScreen = ({ navigation }) => {
     },
   });
 
-  // Viewability ayarları - Daha agresif preloading için
+  // Viewability ayarları - Daha agresiv preloading için
   const handleViewableItemsChanged = useCallback(({ viewableItems }) => {
     if (viewableItems.length > 0) {
       const visibleIndex = viewableItems[0].index;
@@ -766,7 +796,7 @@ const ExploreScreen = ({ navigation }) => {
           pagingEnabled={false}
           snapToInterval={ITEM_HEIGHT}
           snapToAlignment="start"
-          decelerationRate={0.99} // 0.99 = çok hızlı durma (0.9'dan daha hızlı)
+          decelerationRate={"fast"} // 0.99 = çok hızlı durma (0.9'dan daha hızlı)
           disableIntervalMomentum={true} // iOS'ta momentum'u azaltır
           showsVerticalScrollIndicator={false}
           bounces={false}

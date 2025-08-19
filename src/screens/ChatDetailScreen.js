@@ -78,7 +78,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
   const { user } = useSelector((state) => state.auth);
   const currentUserId = user?.id || user?.userId;
   const dispatch = useDispatch();
-  
+
   // Get notification context for screen tracking
   const { updateCurrentScreen } = useNotification();
 
@@ -189,18 +189,21 @@ const ChatDetailScreen = ({ navigation, route }) => {
   // Register current screen for notification filtering
   useEffect(() => {
     if (partnerId) {
-      console.log('📍 ChatDetailScreen: Registering current screen for notification filtering', { 
-        partnerId, 
-        partnerName,
-        timestamp: new Date().toISOString()
-      });
-      
-      updateCurrentScreen('ChatDetailScreen', partnerId);
+      console.log(
+        "📍 ChatDetailScreen: Registering current screen for notification filtering",
+        {
+          partnerId,
+          partnerName,
+          timestamp: new Date().toISOString(),
+        }
+      );
+
+      updateCurrentScreen("ChatDetailScreen", partnerId);
     }
 
     // Cleanup when leaving screen
     return () => {
-      console.log('📍 ChatDetailScreen: Clearing current screen');
+      console.log("📍 ChatDetailScreen: Clearing current screen");
       updateCurrentScreen(null, null);
     };
   }, [partnerId, updateCurrentScreen]);
@@ -822,8 +825,9 @@ const ChatDetailScreen = ({ navigation, route }) => {
   useEffect(() => {
     if (hasLoadedInitialMessages && textInputRef.current) {
       // Check if this navigation came from a notification
-      const fromNotification = route.params?.fromNotification || route.params?.type === "new_message";
-      
+      const fromNotification =
+        route.params?.fromNotification || route.params?.type === "new_message";
+
       if (fromNotification) {
         console.log("🎯 Auto-focusing keyboard from notification");
         // Add a small delay to ensure screen is fully rendered
@@ -1215,6 +1219,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
                 {partner?.profileImageUrl &&
                 partner?.profileImageUrl !== "default_profile_image_url" ? (
                   <Image
+                    style={{ width: 48, height: 48 }}
                     source={{ uri: partner.profileImageUrl }}
                     className="w-full h-full"
                     contentFit="cover"

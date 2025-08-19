@@ -30,7 +30,6 @@ import {
   faBuilding,
   faCoins,
   faBedBunk,
-  faHeart,
 } from "@fortawesome/pro-light-svg-icons";
 import { BlurView } from "expo-blur";
 import { faSearch } from "@fortawesome/pro-solid-svg-icons";
@@ -38,6 +37,7 @@ import {
   faChevronLeft,
   faFilter,
   faSliders,
+  faHeart,
 } from "@fortawesome/pro-regular-svg-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -561,10 +561,10 @@ const PropertyItem = memo(
 
           {/* Match Score Info */}
           {item.matchScore && (
-            <View className="mt-2 mb-1">
-              <View className="flex-row items-center">
+            <View className="mt-2">
+              <View className="flex-row items-center mb-1">
                 <FontAwesomeIcon color="#000" icon={faHeart} size={14} />
-                <Text className="text-sm font-medium text-gray-700 ml-2">
+                <Text className="text-sm font-medium text-gray-900 ml-1">
                   %{Math.round(item.matchScore)} Uyum -{" "}
                   {item.compatibilityLevel} Eşleşme
                 </Text>
@@ -572,7 +572,7 @@ const PropertyItem = memo(
 
               {/* Match Reasons */}
               {item.matchReasons && item.matchReasons.length > 0 && (
-                <Text style={{ fontSize: 11 }} className="text-gray-400 mt-1">
+                <Text style={{ fontSize: 12 }} className="text-gray-500 mt-1">
                   {item.matchReasons[0]}
                 </Text>
               )}
@@ -594,36 +594,18 @@ const PropertyItem = memo(
                   className="flex-row items-center"
                   onPress={handleProfilePress}
                 >
-                  <View
-                    style={{ boxShadow: "0px 0px 12px #00000008" }}
-                    className="w-14 h-14 rounded-full bg-white justify-center items-center mr-2 border-gray-200 border"
-                  >
-                    {item?.landlordProfileURL !==
-                    "default_profile_image_url" ? (
+                  <View className="w-12 h-12 rounded-full justify-center items-center mr-3 border-gray-900 border">
+                    {item?.landlordProfileURL ? (
                       <Image
-                        style={{
-                          borderRadius: 100,
-                          boxShadow: "0px 0px 12px #00000014",
-                        }}
                         source={{ uri: item?.landlordProfileURL }}
+                        style={{ width: 48, height: 48, borderRadius: 24 }}
                         className="w-full h-full rounded-full"
-                        contentFit="cover"
-                        cachePolicy="memory-disk"
-                        transition={200}
+                        borderRadius={24}
                       />
                     ) : (
-                      <View
-                        style={{
-                          borderRadius: 100,
-                          boxShadow: "0px 0px 12px #00000014",
-                        }}
-                        className="w-full h-full rounded-full bg-gray-100 justify-center items-center"
-                      >
-                        <Text
-                          style={{ fontSize: 20 }}
-                          className="text-gray-900 font-bold"
-                        >
-                          {item?.landlordName?.charAt(0) || "P"}
+                      <View>
+                        <Text className="text-xl font-bold text-gray-900">
+                          {item.landlordName?.charAt(0) || "E"}
                         </Text>
                       </View>
                     )}
@@ -638,9 +620,7 @@ const PropertyItem = memo(
                     </Text>
                     <View className="flex flex-row items-center gap-1">
                       <Text style={{ fontSize: 12 }} className="text-gray-500">
-                        {item.matchScore
-                          ? `Uyum Skoru: ${Math.round(item.matchScore)}`
-                          : "Rating"}
+                        Ev Sahibi
                       </Text>
                     </View>
                   </View>
@@ -941,18 +921,18 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center p-8">
-          <MaterialIcons name="error" size={64} color="#EF4444" />
-          <Text className="text-xl font-semibold text-gray-700 mt-4 mb-2 text-center">
+          <FontAwesomeIcon size={50} icon={faExclamationCircle} />
+          <Text className="text-xl font-semibold text-gray-900 mt-2 mb-2 text-center">
             Bir hata oluştu
           </Text>
-          <Text className="text-base text-gray-500 text-center mb-6">
+          <Text className="text-base text-gray-500 text-center mb-4">
             Önerilen ilanlar yüklenirken bir sorun oluştu.
           </Text>
           <TouchableOpacity
-            className="bg-green-500 px-6 py-3 rounded-lg"
+            className="border border-gray-900 px-6 py-3 rounded-full"
             onPress={onRefresh}
           >
-            <Text className="text-white font-semibold">Tekrar Dene</Text>
+            <Text className="text-gray-900 font-medium">Tekrar Dene</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -989,7 +969,7 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
             </View>
           </View>
           <View style={{ width: "8%" }}>
-            <FontAwesomeIcon icon={faHeart} color="#4A90E2" size={20} />
+            <FontAwesomeIcon icon={faHeart} color="#000" size={20} />
           </View>
         </View>
 
