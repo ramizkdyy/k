@@ -41,7 +41,9 @@ import {
 import { faSearch } from "@fortawesome/pro-solid-svg-icons";
 import { BlurView } from "expo-blur";
 import {
-  faEdit, faTrash, faBed,
+  faEdit,
+  faTrash,
+  faBed,
   faShower,
   faRuler,
   faBuilding,
@@ -49,7 +51,7 @@ import {
   faMoneyBills,
   faCoins,
   faBedBunk,
-  faBath
+  faBath,
 } from "@fortawesome/pro-light-svg-icons";
 import PropertiesFilterModal from "../modals/PropertiesFilterModal";
 import { useSearchPostsMutation } from "../redux/api/searchApiSlice";
@@ -108,7 +110,12 @@ const ImageWithFallback = React.memo(
         >
           <FontAwesomeIcon
             icon={faHomeAlt}
-            size={Math.min(fallbackWidth || style?.width || 200, fallbackHeight || style?.height || 200) * 0.1}
+            size={
+              Math.min(
+                fallbackWidth || style?.width || 200,
+                fallbackHeight || style?.height || 200
+              ) * 0.1
+            }
             color="#cbd5e1"
           />
         </View>
@@ -230,7 +237,20 @@ const PropertyDetailsSlider = React.memo(({ item }) => {
 
 // Image Slider Component (AllNearbyPropertiesScreen'den)
 const PropertyImageSlider = React.memo(
-  ({ images, distance, status, postId, onPress, userRole, currentUser, item, onEdit, onDelete, onOffers, isDeleting }) => {
+  ({
+    images,
+    distance,
+    status,
+    postId,
+    onPress,
+    userRole,
+    currentUser,
+    item,
+    onEdit,
+    onDelete,
+    onOffers,
+    isDeleting,
+  }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const scrollViewRef = useRef(null);
 
@@ -433,8 +453,6 @@ const PostsScreen = ({ navigation }) => {
   const filters = useSelector(selectPostFilters);
   const userPosts = useSelector(selectAllUserPosts);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
-  const [selectedPostId, setSelectedPostId] = useState(null);
-  const bottomSheetModalRef = useRef(null);
 
   const [searchPosts] = useSearchPostsMutation();
 
@@ -456,48 +474,54 @@ const PostsScreen = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
 
-
   const SCROLL_DISTANCE = 50;
 
-  const sortPosts = useCallback((posts, sortType = sortBy, direction = sortDirection) => {
-    if (!posts || posts.length === 0) return posts;
-    if (!sortType) return posts;
+  const sortPosts = useCallback(
+    (posts, sortType = sortBy, direction = sortDirection) => {
+      if (!posts || posts.length === 0) return posts;
+      if (!sortType) return posts;
 
-    return [...posts].sort((a, b) => {
-      let valueA, valueB;
+      return [...posts].sort((a, b) => {
+        let valueA, valueB;
 
-      switch (sortType) {
-        case 'distance':
-          valueA = a.distance ? parseFloat(a.distance.replace(/[^\d.]/g, '')) : 999999;
-          valueB = b.distance ? parseFloat(b.distance.replace(/[^\d.]/g, '')) : 999999;
-          break;
+        switch (sortType) {
+          case "distance":
+            valueA = a.distance
+              ? parseFloat(a.distance.replace(/[^\d.]/g, ""))
+              : 999999;
+            valueB = b.distance
+              ? parseFloat(b.distance.replace(/[^\d.]/g, ""))
+              : 999999;
+            break;
 
-        case 'price':
-          valueA = a.kiraFiyati || 0;
-          valueB = b.kiraFiyati || 0;
-          break;
+          case "price":
+            valueA = a.kiraFiyati || 0;
+            valueB = b.kiraFiyati || 0;
+            break;
 
-        case 'date':
-          valueA = new Date(a.olusturmaTarihi || a.createdAt || 0);
-          valueB = new Date(b.olusturmaTarihi || b.createdAt || 0);
-          break;
+          case "date":
+            valueA = new Date(a.olusturmaTarihi || a.createdAt || 0);
+            valueB = new Date(b.olusturmaTarihi || b.createdAt || 0);
+            break;
 
-        case 'views':
-          valueA = a.goruntulemeSayisi || a.viewCount || 0;
-          valueB = b.goruntulemeSayisi || b.viewCount || 0;
-          break;
+          case "views":
+            valueA = a.goruntulemeSayisi || a.viewCount || 0;
+            valueB = b.goruntulemeSayisi || b.viewCount || 0;
+            break;
 
-        default:
-          return 0;
-      }
+          default:
+            return 0;
+        }
 
-      if (direction === 0) {
-        return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
-      } else {
-        return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
-      }
-    });
-  }, [sortBy, sortDirection]);
+        if (direction === 0) {
+          return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
+        } else {
+          return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
+        }
+      });
+    },
+    [sortBy, sortDirection]
+  );
 
   const titleOpacity = scrollY.interpolate({
     inputRange: [0, SCROLL_DISTANCE],
@@ -514,8 +538,7 @@ const PostsScreen = ({ navigation }) => {
   const searchBarTranslateY = scrollY.interpolate({
     inputRange: [0, SCROLL_DISTANCE],
     outputRange: [0, -50],
-    extrapolate: 'clamp',
-
+    extrapolate: "clamp",
   });
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -586,9 +609,6 @@ const PostsScreen = ({ navigation }) => {
     if (diffMinutes > 0) return `${diffMinutes} dakika önce`;
     return "Az önce";
   }, []);
-
-  // [TÜM MEVCUT EFFECT VE HANDLER FONKSİYONLARI AYNEN KALACAK]
-  // ... (Tüm useEffect, handler fonksiyonları vs. aynen paste.txt'deki gibi kalıyor)
 
   useEffect(() => {
     Logger.info(COMPONENT_NAME, "Component mounted", {
@@ -782,9 +802,8 @@ const PostsScreen = ({ navigation }) => {
 
         console.log(`Adding ${validNewPosts.length} more filtered posts`);
 
-
-        setAllPostsData(prevData => {
-          const existingPostIds = new Set(prevData.map(item => item.postId));
+        setAllPostsData((prevData) => {
+          const existingPostIds = new Set(prevData.map((item) => item.postId));
           const uniqueNewPosts = validNewPosts.filter(
             (post) => !existingPostIds.has(post.postId)
           );
@@ -796,8 +815,7 @@ const PostsScreen = ({ navigation }) => {
           setHasNextPage(searchResult.metadata.hasNextPage || false);
         }
 
-
-        setFilterCurrentPage(prev => prev + 1);
+        setFilterCurrentPage((prev) => prev + 1);
 
         Logger.info(COMPONENT_NAME, "More filtered posts loaded successfully");
       }
@@ -1064,42 +1082,18 @@ const PostsScreen = ({ navigation }) => {
     navigation.navigate("Offers", { postId });
   };
 
-  const handlePostOptionsPress = (postId) => {
-    setSelectedPostId(postId);
-    bottomSheetModalRef.current?.present();
-  };
-
-  const handleBottomSheetClose = () => {
-    setSelectedPostId(null);
-  };
-
-  const renderBackdrop = useCallback(
-    (props) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-        opacity={0.5}
-        pressBehavior="close"
-      />
-    ),
-    []
-  );
-
   const handleCreatePostNavigation = () => {
     Logger.event("create_post_initiated");
     navigation.navigate("CreatePost");
   };
 
   const getFilteredPosts = () => {
-
-    console.log('=== GET FILTERED POSTS DEBUG ===');
-    console.log('User role:', userRole);
-    console.log('Has active filters:', hasActiveFilters);
-    console.log('All posts data length:', allPostsData?.length || 0);
-    console.log('Search query:', searchQuery);
-    console.log('Sort by:', sortBy, 'Sort direction:', sortDirection);
-
+    console.log("=== GET FILTERED POSTS DEBUG ===");
+    console.log("User role:", userRole);
+    console.log("Has active filters:", hasActiveFilters);
+    console.log("All posts data length:", allPostsData?.length || 0);
+    console.log("Search query:", searchQuery);
+    console.log("Sort by:", sortBy, "Sort direction:", sortDirection);
 
     let filteredPosts = [];
 
@@ -1214,7 +1208,6 @@ const PostsScreen = ({ navigation }) => {
           style={{ marginHorizontal: 16 }}
           className="overflow-hidden mb-4 pt-6 border-b border-gray-200"
         >
-
           {/* Image slider */}
           <PropertyImageSlider
             images={item.postImages}
@@ -1256,8 +1249,9 @@ const PostsScreen = ({ navigation }) => {
                 className="text-gray-900 underline"
               >
                 {item.kiraFiyati || item.rent
-                  ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
-                  }`
+                  ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
+                      item.paraBirimi || item.currency || "₺"
+                    }`
                   : "Fiyat belirtilmemiş"}
               </Text>
               <Text className="text-sm text-gray-400 ml-1">/ay</Text>
@@ -1317,7 +1311,10 @@ const PostsScreen = ({ navigation }) => {
                         {item.user?.name} {item.user?.surname}
                       </Text>
                       <View className="flex flex-row items-center gap-1">
-                        <Text style={{ fontSize: 12 }} className="text-gray-500">
+                        <Text
+                          style={{ fontSize: 12 }}
+                          className="text-gray-500"
+                        >
                           {item.matchScore
                             ? `Skor: ${item.matchScore.toFixed(1)}`
                             : "Rating"}
@@ -1377,11 +1374,21 @@ const PostsScreen = ({ navigation }) => {
             />
             {/* Status badge for landlord */}
             <View className="absolute -top-2 -right-2">
-              <View className={`px-2 py-1 rounded-full ${item.status === 0 ? "bg-green-500" :
-                item.status === 1 ? "bg-blue-500" : "bg-gray-500"
-                }`}>
+              <View
+                className={`px-2 py-1 rounded-full ${
+                  item.status === 0
+                    ? "bg-green-500"
+                    : item.status === 1
+                    ? "bg-blue-500"
+                    : "bg-gray-500"
+                }`}
+              >
                 <Text className="text-white text-[10px] font-semibold">
-                  {item.status === 0 ? "Aktif" : item.status === 1 ? "Kiralandı" : "Kapalı"}
+                  {item.status === 0
+                    ? "Aktif"
+                    : item.status === 1
+                    ? "Kiralandı"
+                    : "Kapalı"}
                 </Text>
               </View>
             </View>
@@ -1401,7 +1408,6 @@ const PostsScreen = ({ navigation }) => {
               </Text>
             </View>
 
-
             {/* Alt kısım - Fiyat ve lokasyon */}
             <View>
               {/* Fiyat */}
@@ -1412,8 +1418,9 @@ const PostsScreen = ({ navigation }) => {
                 ellipsizeMode="tail"
               >
                 {item.kiraFiyati || item.rent
-                  ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
-                  }/ay`
+                  ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
+                      item.paraBirimi || item.currency || "₺"
+                    }/ay`
                   : "Fiyat belirtilmemiş"}
               </Text>
 
@@ -1471,7 +1478,6 @@ const PostsScreen = ({ navigation }) => {
     },
     [userRole, currentUser?.id, isDeleting, navigation]
   );
-
 
   // Ana renderPostItem - userRole'e göre seçim yapar
   const renderPostItem = useCallback(
@@ -1606,11 +1612,7 @@ const PostsScreen = ({ navigation }) => {
   const renderAnimatedHeader = () => {
     const headerContainerHeight = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
-      outputRange: [
-
-        insets.top + 50 + 60 + 50 + 16,
-        insets.top + 60 + 50 + 8
-      ],
+      outputRange: [insets.top + 50 + 60 + 50 + 16, insets.top + 60 + 50 + 8],
       extrapolate: "clamp",
     });
 
@@ -1620,32 +1622,27 @@ const PostsScreen = ({ navigation }) => {
         screenWidth - 32,
         userRole === "EVSAHIBI"
           ? screenWidth - 32 - 50 - 50 - 16
-          : screenWidth - 32 - 50 - 8
+          : screenWidth - 32 - 50 - 8,
       ],
       extrapolate: "clamp",
     });
 
     const searchBarMarginRight = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
-      outputRange: [
-        0,
-        userRole === "EVSAHIBI"
-          ? 116
-          : 58
-      ],
+      outputRange: [0, userRole === "EVSAHIBI" ? 116 : 58],
       extrapolate: "clamp",
     });
 
     const searchBarTranslateY = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
       outputRange: [0, -50],
-      extrapolate: 'clamp',
+      extrapolate: "clamp",
     });
 
     const sortOptionsOpacity = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
       outputRange: [1, 0.8],
-      extrapolate: 'clamp',
+      extrapolate: "clamp",
     });
 
     const sortOptionsHeight = scrollY.interpolate({
@@ -1657,7 +1654,7 @@ const PostsScreen = ({ navigation }) => {
     const sortOptionsTranslateY = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
       outputRange: [0, -8],
-      extrapolate: 'clamp',
+      extrapolate: "clamp",
     });
 
     return (
@@ -1694,12 +1691,14 @@ const PostsScreen = ({ navigation }) => {
           }}
         />
 
-        <View style={{
-          paddingTop: insets.top,
-          paddingHorizontal: 16,
-          flex: 1,
-          zIndex: 10,
-        }}>
+        <View
+          style={{
+            paddingTop: insets.top,
+            paddingHorizontal: 16,
+            flex: 1,
+            zIndex: 10,
+          }}
+        >
           <Animated.View
             style={{
               opacity: titleOpacity,
@@ -1787,7 +1786,6 @@ const PostsScreen = ({ navigation }) => {
             </BlurView>
           </Animated.View>
 
-
           <Animated.View
             style={{
               marginTop: 0,
@@ -1806,7 +1804,7 @@ const PostsScreen = ({ navigation }) => {
                 }}
                 style={{ width: "100%" }}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
                   {sortBy && (
                     <TouchableOpacity
                       activeOpacity={0.7}
@@ -1969,7 +1967,12 @@ const PostsScreen = ({ navigation }) => {
               paddingHorizontal: userRole === "KIRACI" ? 0 : 16,
             }}
             ListHeaderComponent={() => (
-              <View style={{ marginTop: -8, paddingHorizontal: userRole === "KIRACI" ? 16 : 0 }}>
+              <View
+                style={{
+                  marginTop: -8,
+                  paddingHorizontal: userRole === "KIRACI" ? 16 : 0,
+                }}
+              >
                 {renderAppliedFilters()}
               </View>
             )}
@@ -1990,7 +1993,9 @@ const PostsScreen = ({ navigation }) => {
             initialNumToRender={8}
             windowSize={5}
             disableVirtualization={false}
-            extraData={`${searchQuery}_${JSON.stringify(filters)}_${allPostsData.length}`}
+            extraData={`${searchQuery}_${JSON.stringify(filters)}_${
+              allPostsData.length
+            }`}
             onScroll={Animated.event(
               [{ nativeEvent: { contentOffset: { y: scrollY } } }],
               { useNativeDriver: false }
@@ -2000,116 +2005,12 @@ const PostsScreen = ({ navigation }) => {
         )}
       </View>
 
-      {/* Bottom Sheet Modal - Outside main container */}
-      <BottomSheetModal
-        ref={bottomSheetModalRef}
-        snapPoints={["40%"]}
-        backdropComponent={renderBackdrop}
-        onDismiss={handleBottomSheetClose}
-        enablePanDownToClose={true}
-        backgroundStyle={{
-          backgroundColor: "white",
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: "#D1D5DB",
-          width: 40,
-          height: 4,
-        }}
-        style={{
-          zIndex: 10001,
-          elevation: 10001,
-        }}
-      >
-        <BottomSheetView
-          style={{
-            flex: 1,
-            paddingHorizontal: 20,
-            paddingTop: 10,
-            paddingBottom: 50,
-          }}
-        >
-          <View className="space-y-4">
-            {/* İlanı Düzenle */}
-            <TouchableOpacity
-              className="flex-row items-center py-3"
-              onPress={() => {
-                bottomSheetModalRef.current?.dismiss();
-                if (selectedPostId) {
-                  handleEditPostNavigation(selectedPostId);
-                }
-              }}
-              activeOpacity={0.7}
-            >
-              <View className="bg-blue-50 p-2 rounded-full mr-3">
-                <FontAwesomeIcon icon={faEdit} size={20} color="#000" />
-              </View>
-              <Text
-                style={{ fontSize: 16 }}
-                className="font-normal text-gray-900"
-              >
-                İlanı Düzenle
-              </Text>
-            </TouchableOpacity>
-            {/* Teklifler */}
-            <TouchableOpacity
-              className="flex-row items-center py-3"
-              onPress={() => {
-                bottomSheetModalRef.current?.dismiss();
-                if (selectedPostId) {
-                  handleOffersNavigation(selectedPostId);
-                }
-              }}
-              activeOpacity={0.7}
-            >
-              <View className="p-2 rounded-full mr-3">
-                <FontAwesomeIcon icon={faHandshake} size={20} color="#000" />
-              </View>
-              <View className="flex-1">
-                <Text
-                  style={{ fontSize: 16 }}
-                  className="font-normal text-gray-900"
-                >
-                  Teklifler{" "}
-                  {selectedPostId &&
-                    (() => {
-                      const selectedPost = landlordListingsData?.result?.find(
-                        (post) => post.postId === selectedPostId
-                      );
-                      return selectedPost
-                        ? `(${selectedPost.offerCount || 0})`
-                        : "";
-                    })()}
-                </Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Sil */}
-            <TouchableOpacity
-              className="flex-row items-center py-3"
-              onPress={() => {
-                bottomSheetModalRef.current?.dismiss();
-                if (selectedPostId) {
-                  handleDeletePost(selectedPostId);
-                }
-              }}
-              activeOpacity={0.7}
-            >
-              <View className="bg-red-50 p-2 rounded-full mr-3">
-                <FontAwesomeIcon icon={faTrash} size={20} color="#EF4444" />
-              </View>
-              <Text
-                style={{ fontSize: 16 }}
-                className="font-normal text-red-600"
-              >
-                Sil
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </BottomSheetView>
-      </BottomSheetModal>
-    </>
+      <PropertiesFilterModal
+        visible={isFilterModalVisible}
+        onClose={handleFilterModalClose}
+        onApply={handleFilterModalApply}
+      />
+    </View>
   );
 };
 
