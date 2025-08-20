@@ -16,6 +16,15 @@ const initialState = {
   coverImageUploadStatus: null,
   profileActionLoading: false,
   profileActionError: null,
+  ownProfileData: null, // Complete ProfileVM response
+  matchingScores: {
+    favoritePosts: {},
+    favoriteLandlordProfiles: {},
+    favoriteTenantProfiles: {},
+  },
+  favoritePropertiesOffers: {},
+  ownProfileLoading: false,
+  ownProfileError: null,
 };
 
 const profileSlice = createSlice({
@@ -119,6 +128,71 @@ const profileSlice = createSlice({
     },
     clearProfileActionError: (state) => {
       state.profileActionError = null;
+    },
+    setOwnProfileData: (state, action) => {
+      state.ownProfileData = action.payload;
+
+      // Extract and set relevant profile data
+      if (action.payload?.tenantProfile) {
+        state.currentTenantProfile = action.payload.tenantProfile;
+        state.userProfile = action.payload.tenantProfile;
+
+        // Update favorite properties from tenant profile
+        if (action.payload.tenantProfile.favouriteProperties) {
+          state.favoriteProperties = action.payload.tenantProfile.favouriteProperties;
+        }
+      }
+
+      if (action.payload?.landlordProfile) {
+        state.currentLandlordProfile = action.payload.landlordProfile;
+        state.userProfile = action.payload.landlordProfile;
+      }
+
+      // Set matching scores
+      if (action.payload?.matchingScoreWithFavoritePosts) {
+        state.matchingScores.favoritePosts = action.payload.matchingScoreWithFavoritePosts;
+      }
+      if (action.payload?.matchingScoreWithFavoriteLandLordProfiles) {
+        state.matchingScores.favoriteLandlordProfiles = action.payload.matchingScoreWithFavoriteLandLordProfiles;
+      }
+      if (action.payload?.matchingScoreWithFavoriteTenantProfiles) {
+        state.matchingScores.favoriteTenantProfiles = action.payload.matchingScoreWithFavoriteTenantProfiles;
+      }
+
+      // Set favorite properties offers
+      if (action.payload?.favoritePropertiesOffers) {
+        state.favoritePropertiesOffers = action.payload.favoritePropertiesOffers;
+      }
+
+      state.ownProfileError = null;
+      state.ownProfileLoading = false;
+    },
+    setOwnProfileLoading: (state, action) => {
+      state.ownProfileLoading = action.payload;
+    },
+    setOwnProfileError: (state, action) => {
+      state.ownProfileError = action.payload;
+    },
+    clearOwnProfileData: (state) => {
+      state.ownProfileData = null;
+      state.matchingScores = {
+        favoritePosts: {},
+        favoriteLandlordProfiles: {},
+        favoriteTenantProfiles: {},
+      };
+      state.favoritePropertiesOffers = {};
+      state.ownProfileError = null;
+      state.ownProfileLoading = false;
+    },
+    updateMatchingScores: (state, action) => {
+      const { type, scores } = action.payload;
+      if (type === 'favoritePosts') {
+        state.matchingScores.favoritePosts = { ...state.matchingScores.favoritePosts, ...scores };
+      } else if (type === 'favoriteLandlordProfiles') {
+        state.matchingScores.favoriteLandlordProfiles = { ...state.matchingScores.favoriteLandlordProfiles, ...scores };
+      } else if (type === 'favoriteTenantProfiles') {
+        state.matchingScores.favoriteTenantProfiles = { ...state.matchingScores.favoriteTenantProfiles, ...scores };
+      }
     },
 
   },
@@ -780,6 +854,16 @@ export const selectProfileError = (state) => state.profiles.error;
 export const selectProfileLoading = (state) => state.profiles.isLoading;
 export const selectProfileActionLoading = (state) => state.profiles.profileActionLoading;
 export const selectProfileActionError = (state) => state.profiles.profileActionError;
+// Selector'ları export et:
+export const selectOwnProfileData = (state) => state.profiles.ownProfileData;
+export const selectOwnProfileLoading = (state) => state.profiles.ownProfileLoading;
+export const selectOwnProfileError = (state) => state.profiles.ownProfileError;
+export const selectMatchingScores = (state) => state.profiles.matchingScores;
+export const selectFavoritePropertiesOffers = (state) => state.profiles.favoritePropertiesOffers;
+export const selectMatchingScoreForPost = (state, postId) =>
+  state.profiles.matchingScores.favoritePosts[postId];
+export const selectOffersForProperty = (state, postId) =>
+  state.profiles.favoritePropertiesOffers[postId] || [];
 
 // Enhanced selectors
 export const selectProfileByUserId = (state, userId) => {

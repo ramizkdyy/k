@@ -577,67 +577,37 @@ const LandlordTabNavigator = () => {
   );
 };
 
-// ✅ Sadece 4 tab için Tab Navigator - Tenant
+
+// ✅ Sadece 4 tab için Tab Navigator - Tenant (Düzeltilmiş)
 const TenantTabNavigator = () => {
   const userProfile = useSelector(selectUserProfile);
   const [currentRoute, setCurrentRoute] = useState("Home");
 
-  // Tab bar stilini route'a göre belirle
+  // Tab bar stilini route'a göre belirle - Artık her durumda aynı stil
   const getTabBarStyle = (routeName) => {
-    if (routeName === "Explore") {
-      return {
-        position: "absolute",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        elevation: 0,
-        borderTopWidth: 0,
-        backgroundColor: "transparent",
-        paddingTop: 5,
-        paddingBottom: 5,
-      };
-    } else {
-      return {
-        backgroundColor: "rgba(255, 255, 255, 0.05)",
-        borderTopColor: "rgba(224, 224, 224, 0.2)",
-        paddingTop: 5,
-        paddingBottom: 5,
-        position: "absolute",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        elevation: 8,
-      };
-    }
+    return {
+      backgroundColor: "rgba(255, 255, 255, 0.05)",
+      borderTopColor: "rgba(224, 224, 224, 0.2)",
+      paddingTop: 5,
+      paddingBottom: 5,
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      elevation: 8,
+    };
   };
 
-  // Tab bar background component'ini route'a göre belirle
+  // Tab bar background component'ini route'a göre belirle - Artık her durumda normal background
   const getTabBarBackground = (routeName) => {
-    if (routeName === "Explore") {
-      return () => (
-        <BlurView
-          intensity={15}
-          tint="dark"
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            bottom: 0,
-            right: 0,
-          }}
-        />
-      );
-    } else {
-      return () => <View className="bg-white flex-1"></View>;
-    }
+    return () => <View className="bg-white flex-1"></View>;
   };
 
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: currentRoute === "Explore" ? "white" : "#000",
-        tabBarInactiveTintColor:
-          currentRoute === "Explore" ? "rgba(255, 255, 255, 0.6)" : "#999999",
+        tabBarActiveTintColor: "#000", // Artık her durumda siyah
+        tabBarInactiveTintColor: "#999999", // Artık her durumda gri
         tabBarStyle: getTabBarStyle(currentRoute),
         tabBarBackground: getTabBarBackground(currentRoute),
         headerShown: false,
@@ -663,15 +633,7 @@ const TenantTabNavigator = () => {
             <FontAwesomeIcon
               icon={focused ? faHouseSolid : faHouseRegular}
               size={24}
-              color={
-                focused
-                  ? currentRoute === "Explore"
-                    ? "white"
-                    : "#000"
-                  : currentRoute === "Explore"
-                    ? "rgba(255, 255, 255, 0.6)"
-                    : "#999999"
-              }
+              color={focused ? "#000" : "#999999"} // Sabit renk
             />
           ),
         }}
@@ -686,15 +648,7 @@ const TenantTabNavigator = () => {
             <FontAwesomeIcon
               icon={focused ? faFingerprintSolid : faFingerprintRegular}
               size={22}
-              color={
-                focused
-                  ? currentRoute === "Explore"
-                    ? "white"
-                    : "#000"
-                  : currentRoute === "Explore"
-                    ? "rgba(255, 255, 255, 0.6)"
-                    : "#999999"
-              }
+              color={focused ? "#000" : "#999999"} // Sabit renk
             />
           ),
         }}
@@ -711,15 +665,7 @@ const TenantTabNavigator = () => {
             <FontAwesomeIcon
               icon={focused ? faSearchSolid : faSearchRegular}
               size={24}
-              color={
-                focused
-                  ? currentRoute === "Explore"
-                    ? "white"
-                    : "#000"
-                  : currentRoute === "Explore"
-                    ? "rgba(255, 255, 255, 0.6)"
-                    : "#999999"
-              }
+              color={focused ? "#000" : "#999999"} // Sabit renk
             />
           ),
         }}
@@ -736,15 +682,7 @@ const TenantTabNavigator = () => {
             <FontAwesomeIcon
               icon={focused ? faEnvelopeSolid : faEnvelopeRegular}
               size={24}
-              color={
-                focused
-                  ? currentRoute === "Explore"
-                    ? "white"
-                    : "#000"
-                  : currentRoute === "Explore"
-                    ? "rgba(255, 255, 255, 0.6)"
-                    : "#999999"
-              }
+              color={focused ? "#000" : "#999999"} // Sabit renk
             />
           ),
         }}
@@ -760,69 +698,29 @@ const TenantTabNavigator = () => {
           tabBarIcon: ({ focused }) => {
             return userProfile?.profileImageUrl !==
               "default_profile_image_url" ? (
-              <View style={{ width: 28, height: 28 }}>
-                <Image
-                  source={{ uri: userProfile.profileImageUrl }}
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 14,
-                  }}
-                  contentFit="cover"
-                  cachePolicy="memory-disk"
-                  transition={200}
-                />
-                {focused && (
-                  <View
-                    style={{
-                      position: "absolute",
-                      top: -2,
-                      left: -2,
-                      right: -2,
-                      bottom: -2,
-                      borderRadius: 16,
-                      borderWidth: 2,
-                      borderColor:
-                        currentRoute === "Explore" ? "white" : "#000",
-                    }}
-                  />
-                )}
-              </View>
-            ) : (
               <View
                 style={{
                   width: 28,
                   height: 28,
-                  borderRadius: 100,
-                  backgroundColor: "#f3f4f6",
-                  justifyContent: "center",
-                  alignItems: "center",
+                  borderRadius: 14,
+                  overflow: "hidden",
+                  borderWidth: focused ? 2 : 0,
+                  borderColor: "#000", // Sabit renk
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: 14,
-                    color: "#111827",
-                    fontWeight: "bold",
-                  }}
-                >
-                  {userProfile?.user?.name?.charAt(0) || "P"}
-                </Text>
-                {focused && (
-                  <View
-                    style={{
-                      position: "absolute",
-                      top: -2,
-                      left: -2,
-                      right: -2,
-                      bottom: -2,
-                      borderRadius: 16,
-                      borderWidth: 2,
-                      borderColor:
-                        currentRoute === "Explore" ? "white" : "#000",
-                    }}
-                  />
-                )}
+                <Image
+                  source={{ uri: userProfile.profileImageUrl }}
+                  style={{ width: "100%", height: "100%" }}
+                  cachePolicy="memory-disk"
+                />
+              </View>
+            ) : (
+              <View>
+                <FontAwesomeIcon
+                  icon={focused ? faUserSolid : faUserRegular}
+                  size={24}
+                  color={focused ? "#000" : "#999999"} // Sabit renk
+                />
               </View>
             );
           },

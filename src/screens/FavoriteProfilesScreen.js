@@ -1,4 +1,4 @@
-// FavoriteProfilesScreen.js - Component'ler ile güncellenmiş
+// FavoriteProfilesScreen.js - GetOwnTenantProfile/GetOwnLandlordProfile ile güncellenmiş VE matchingScore düzeltilmiş
 import React, { useState, useRef } from "react";
 import {
     View,
@@ -16,10 +16,9 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { useSelector } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
-import { selectUserProfile } from "../redux/slices/profileSlice";
 import {
-    useGetTenantProfileQuery,
-    useGetLandlordProfileQuery,
+    useGetOwnTenantProfileQuery,
+    useGetOwnLandlordProfileQuery,
     apiSlice,
 } from "../redux/api/apiSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
@@ -42,7 +41,6 @@ const FavoriteProfilesScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
     const currentUser = useSelector(selectCurrentUser);
     const userRole = useSelector(selectUserRole);
-    const userProfile = useSelector(selectUserProfile);
     const [refreshing, setRefreshing] = useState(false);
     const [removingFavorite, setRemovingFavorite] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -94,17 +92,74 @@ const FavoriteProfilesScreen = ({ navigation }) => {
         extrapolate: 'clamp',
     });
 
-    // Profile'ı kullanıcı rolüne göre çek
+    // YENİ: Role göre doğru endpoint'i kullan
     const {
-        data: profileData,
-        isLoading: profileLoading,
-        refetch: refetchProfile,
-    } = userRole === "EVSAHIBI"
-            ? useGetLandlordProfileQuery(currentUser?.id)
-            : useGetTenantProfileQuery(currentUser?.id);
+        data: ownTenantProfileData,
+        isLoading: tenantProfileLoading,
+        refetch: refetchTenantProfile,
+    } = useGetOwnTenantProfileQuery(currentUser?.id, {
+        skip: !currentUser?.id || userRole !== "KIRACI",
+    });
+
+    const {
+        data: ownLandlordProfileData,
+        isLoading: landlordProfileLoading,
+        refetch: refetchLandlordProfile,
+    } = useGetOwnLandlordProfileQuery(currentUser?.id, {
+        skip: !currentUser?.id || userRole !== "EVSAHIBI",
+    });
+
+    // Role göre doğru data'yı seç
+    const profileLoading = userRole === "KIRACI" ? tenantProfileLoading : landlordProfileLoading;
+    const ownProfileData = userRole === "KIRACI" ? ownTenantProfileData : ownLandlordProfileData;
+    const refetchProfile = userRole === "KIRACI" ? refetchTenantProfile : refetchLandlordProfile;
 
     // Favori silme mutation
     const [profileAction] = apiSlice.endpoints.profileAction.useMutation();
+
+    // Response'dan verileri çıkar
+    const tenantProfile = ownProfileData?.result?.tenantProfile;
+    const landlordProfile = ownProfileData?.result?.landlordProfile;
+
+    // Role göre favori profilleri al
+    const favoriteProfiles = userRole === "KIRACI"
+        ? tenantProfile?.favoriteLandlordProfile || []
+        : landlordProfile?.favoriteTenantProfile || [];
+
+    // Matching skorları al
+    const matchingScores = userRole === "KIRACI"
+        ? ownProfileData?.result?.matchingScoreWithFavoriteLandLordProfiles || {}
+        : ownProfileData?.result?.matchingScoreWithFavoriteTenantProfiles || {};
+
+    // Favori profilleri zenginleştir (matching score ekle)
+    const enrichedFavorites = favoriteProfiles.map(profile => ({
+        ...profile,
+        matchingScore: matchingScores[profile.userId] || matchingScores[profile.landlordProfileId] || matchingScores[profile.tenantProfileId] || 0
+    }));
+
+    // 🔍 DEBUG: Matching score verilerini kontrol et
+    console.log("🔍 DEBUG FavoriteProfilesScreen:", {
+        userRole,
+        matchingScores,
+        favoriteProfilesCount: favoriteProfiles.length,
+        enrichedFavoritesCount: enrichedFavorites.length,
+        firstEnrichedProfile: enrichedFavorites[0] || null
+    });
+
+    // Arama filtresi
+    const filteredFavorites = enrichedFavorites.filter(profile => {
+        if (!searchQuery.trim()) return true;
+
+        const searchLower = searchQuery.toLowerCase();
+        const userName = profile.user ?
+            `${profile.user.name} ${profile.user.surname}`.toLowerCase() : '';
+        const email = profile.user?.email?.toLowerCase() || '';
+        const description = profile.profileDescription?.toLowerCase() || '';
+
+        return userName.includes(searchLower) ||
+            email.includes(searchLower) ||
+            description.includes(searchLower);
+    });
 
     const onRefresh = async () => {
         setRefreshing(true);
@@ -126,10 +181,6 @@ const FavoriteProfilesScreen = ({ navigation }) => {
                     onPress: async () => {
                         try {
                             setRemovingFavorite(true);
-
-                            const favoriteProfiles = userRole === "KIRACI"
-                                ? userProfile?.favoriteLandlordProfile || []
-                                : userProfile?.favoriteTenantProfile || [];
 
                             const targetProfile = favoriteProfiles.find(p =>
                                 profileType === "landlord"
@@ -174,6 +225,16 @@ const FavoriteProfilesScreen = ({ navigation }) => {
         const normalPadding = insets.top + 50 + 60 + 32;
         return normalPadding;
     };
+
+    // Profile type text'leri
+    const profileType = userRole === "KIRACI" ? "Ev Sahipleri" : "Kiracılar";
+    const emptyMessage = userRole === "KIRACI"
+        ? "Henüz Favori Ev Sahibi Yok"
+        : "Henüz Favori Kiracı Yok";
+
+    const emptyDescription = userRole === "KIRACI"
+        ? "Beğendiğiniz ev sahiplerini favorilerinize ekleyerek buradan kolayca erişebilirsiniz."
+        : "Beğendiğiniz kiracıları favorilerinize ekleyerek buradan kolayca erişebilirsiniz.";
 
     // Animated Header Component
     const renderAnimatedHeader = () => {
@@ -344,32 +405,6 @@ const FavoriteProfilesScreen = ({ navigation }) => {
         );
     }
 
-    // Kullanıcı rolüne göre favori profilleri belirle
-    const favoriteProfiles = userRole === "KIRACI"
-        ? userProfile?.favoriteLandlordProfile || []
-        : userProfile?.favoriteTenantProfile || [];
-
-    // Arama filtresi
-    const filteredFavorites = favoriteProfiles.filter(profile => {
-        if (!searchQuery.trim()) return true;
-
-        const searchLower = searchQuery.toLowerCase();
-        const userName = profile.user ?
-            `${profile.user.name} ${profile.user.surname}`.toLowerCase() : '';
-        const email = profile.user?.email?.toLowerCase() || '';
-
-        return userName.includes(searchLower) || email.includes(searchLower);
-    });
-
-    const profileType = userRole === "KIRACI" ? "Ev Sahipleri" : "Kiracılar";
-    const emptyMessage = userRole === "KIRACI"
-        ? "Henüz Favori Ev Sahibi Yok"
-        : "Henüz Favori Kiracı Yok";
-
-    const emptyDescription = userRole === "KIRACI"
-        ? "Beğendiğiniz ev sahiplerini favorilerinize ekleyerek buradan kolayca erişebilirsiniz."
-        : "Beğendiğiniz kiracıları favorilerinize ekleyerek buradan kolayca erişebilirsiniz.";
-
     return (
         <View className="flex-1 bg-gray-50">
             <RNStatusBar
@@ -436,7 +471,9 @@ const FavoriteProfilesScreen = ({ navigation }) => {
                     </View>
                 ) : (
                     <View>
-                        {/* ✅ Component'leri kullan - Hook sorunu çözüldü! */}
+
+
+                        {/* ✅ Component'leri kullan - Role göre doğru component'i seç VE matchingScore'u geçir */}
                         {filteredFavorites.map((profile) =>
                             userRole === "KIRACI" ? (
                                 <FavoriteLandlordCard
@@ -446,6 +483,7 @@ const FavoriteProfilesScreen = ({ navigation }) => {
                                     onProfilePress={handleProfilePress}
                                     removingFavorite={removingFavorite}
                                     navigation={navigation}
+                                    matchingScore={profile.matchingScore} // ✅ BU EKLENDİ!
                                 />
                             ) : (
                                 <FavoriteTenantCard
@@ -455,6 +493,7 @@ const FavoriteProfilesScreen = ({ navigation }) => {
                                     onProfilePress={handleProfilePress}
                                     removingFavorite={removingFavorite}
                                     navigation={navigation}
+                                    matchingScore={profile.matchingScore} // ✅ BU EKLENDİ!
                                 />
                             )
                         )}
