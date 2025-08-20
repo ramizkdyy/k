@@ -79,6 +79,7 @@ export const apiSlice = createApi({
       providesTags: ["Post"],
     }),
 
+
     // YENİ: Paginated posts endpoint'i
     getAllPostsPaginated: builder.query({
       query: ({ page = 1, pageSize = 10 } = {}) => ({
@@ -618,6 +619,35 @@ export const apiSlice = createApi({
       query: (id) => `/api/profile/GetTenantProfile/${id}`,
       providesTags: (result, error, id) => [{ type: "Profile", id }],
     }),
+    getOwnTenantProfile: builder.query({
+      query: (id) => {
+        console.log("🔍 GetOwnTenantProfile API çağrısı yapılıyor, ID:", id);
+        return `/api/profile/GetOwnTenantProfile/${id}`;
+      },
+      providesTags: (result, error, id) => {
+        console.log("📊 GetOwnTenantProfile sonucu:", result);
+        console.log("❌ GetOwnTenantProfile hatası:", error);
+        return [
+          { type: "Profile", id: "own-tenant" },
+          "ProfileFavorites"
+        ];
+      },
+    }),
+
+    getOwnLandlordProfile: builder.query({
+      query: (id) => {
+        console.log("🔍 GetOwnLandlordProfile API çağrısı yapılıyor, ID:", id);
+        return `/api/profile/GetOwnLandlordProfile/${id}`;
+      },
+      providesTags: (result, error, id) => {
+        console.log("📊 GetOwnLandlordProfile sonucu:", result);
+        console.log("❌ GetOwnLandlordProfile hatası:", error);
+        return [
+          { type: "Profile", id: "own-landlord" },
+          "ProfileFavorites"
+        ];
+      },
+    }),
     deleteProfile: builder.mutation({
       query: (userId) => ({
         url: `/api/profile/DeleteProfile/${userId}`,
@@ -1062,7 +1092,8 @@ export const {
   useTenantProfileUpdateImageStatusMutation,
   useTenantProfileDeleteImageStatusMutation,
   useTenantProfileSensorImageStatusMutation,
-
+  useGetOwnTenantProfileQuery,
+  useGetOwnLandlordProfileQuery,
   // Profile Callback hooks
   useProfileUploadImageStatusMutation,
   useProfileSensorImageStatusMutation,

@@ -685,9 +685,8 @@ const PropertyItem = memo(
 
     const priceText = useMemo(() => {
       if (item.kiraFiyati || item.rent) {
-        return `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-          item.paraBirimi || item.currency || "₺"
-        }`;
+        return `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
+          }`;
       }
       return "Fiyat belirtilmemiş";
     }, [item.kiraFiyati, item.rent, item.paraBirimi, item.currency]);
@@ -1334,17 +1333,15 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
                   <TouchableOpacity
                     activeOpacity={1}
                     key={option.key}
-                    className={`mr-3 px-4 py-2 rounded-full border ${
-                      sortBy === option.key
+                    className={`mr-3 px-4 py-2 rounded-full border ${sortBy === option.key
                         ? "bg-gray-900"
                         : "bg-white border-white"
-                    }`}
+                      }`}
                     onPress={() => handleSortChange(option.key)}
                   >
                     <Text
-                      className={`text-sm font-medium ${
-                        sortBy === option.key ? "text-white" : "text-gray-700"
-                      }`}
+                      className={`text-sm font-medium ${sortBy === option.key ? "text-white" : "text-gray-700"
+                        }`}
                     >
                       {option.label}
                       {sortBy === option.key && (

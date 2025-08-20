@@ -13,13 +13,13 @@ import { faStar as faStarSolid } from '@fortawesome/pro-solid-svg-icons';
 import { faHeart } from '@fortawesome/pro-regular-svg-icons';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser, selectUserRole } from '../redux/slices/authSlice';
-import { useGetMatchingScoreQuery } from '../redux/api/apiSlice';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-// Match Score gösterim fonksiyonu
+// Match Score gösterim fonksiyonu - API'den gelen değer 0-100 arası
 const getMatchScoreInfo = (score) => {
-    const percentage = score * 100;
+    // Score zaten 0-100 arası geliyor, tekrar *100 yapmaya gerek yok
+    const percentage = score;
     if (percentage >= 80)
         return {
             level: "excellent",
@@ -72,7 +72,7 @@ const MatchScoreBar = ({ matchScore, showBar = true, size = "sm" }) => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         timeoutRef.current = setTimeout(() => {
             Animated.timing(progressAnim, {
-                toValue: matchScore,
+                toValue: matchScore / 100, // 0-1 arası normalize et
                 duration: 800,
                 useNativeDriver: false,
             }).start();
@@ -124,7 +124,7 @@ const MatchScoreBar = ({ matchScore, showBar = true, size = "sm" }) => {
                             fontSize: currentSize.textSize,
                         }}
                     >
-                        %{Math.round(matchScore * 100)}
+                        %{Math.round(matchScore)}
                     </Text>
                 </View>
             </View>
@@ -145,7 +145,7 @@ const MatchScoreBar = ({ matchScore, showBar = true, size = "sm" }) => {
                     fontSize: currentSize.textSize,
                 }}
             >
-                %{Math.round(matchScore * 100)} {scoreInfo.text}
+                %{Math.round(matchScore)} {scoreInfo.text}
             </Text>
         </View>
     );
@@ -156,7 +156,8 @@ const FavoriteLandlordCard = ({
     onRemoveFavorite,
     onProfilePress,
     removingFavorite,
-    navigation
+    navigation,
+    matchingScore = 0
 }) => {
     const currentUser = useSelector(selectCurrentUser);
     const userRole = useSelector(selectUserRole);
@@ -222,14 +223,13 @@ const FavoriteLandlordCard = ({
         );
     };
 
-    // ✅ Direkt landlord objesi içindeki matchScore'u kullan - Ayrı query gereksiz!
-    const matchScore = landlord.matchScore || 0;
+    // Doğru matching score'u al
+    const matchScore = matchingScore || landlord.matchingScore || landlord.matchScore || 0;
 
-    // Debug logging
     console.log("🔍 FavoriteLandlordCard Debug:", {
-        landlordUserId: landlord.userId,
-        landlordObject: landlord,
-        directMatchScore: landlord.matchScore,
+        directMatchScore: matchingScore,
+        landlordMatchScore: landlord.matchingScore,
+        landlordMatchScore2: landlord.matchScore,
         finalMatchScore: matchScore
     });
 
@@ -293,7 +293,7 @@ const FavoriteLandlordCard = ({
                     </View>
 
                     {/* Match Score - sadece KIRACI için */}
-                    {userRole === "KIRACI" && (
+                    {userRole === "KIRACI" && matchScore > 0 && (
                         <View className="mt-3 w-full items-center justify-center">
                             <MatchScoreBar
                                 matchScore={matchScore}

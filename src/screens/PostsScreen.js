@@ -1249,9 +1249,8 @@ const PostsScreen = ({ navigation }) => {
                 className="text-gray-900 underline"
               >
                 {item.kiraFiyati || item.rent
-                  ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-                      item.paraBirimi || item.currency || "₺"
-                    }`
+                  ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
+                  }`
                   : "Fiyat belirtilmemiş"}
               </Text>
               <Text className="text-sm text-gray-400 ml-1">/ay</Text>
@@ -1378,20 +1377,19 @@ const PostsScreen = ({ navigation }) => {
             {/* Status badge for landlord */}
             <View className="absolute -top-2 -right-2">
               <View
-                className={`px-2 py-1 rounded-full ${
-                  item.status === 0
-                    ? "bg-green-500"
-                    : item.status === 1
+                className={`px-2 py-1 rounded-full ${item.status === 0
+                  ? "bg-green-500"
+                  : item.status === 1
                     ? "bg-blue-500"
                     : "bg-gray-500"
-                }`}
+                  }`}
               >
                 <Text className="text-white text-[10px] font-semibold">
                   {item.status === 0
                     ? "Aktif"
                     : item.status === 1
-                    ? "Kiralandı"
-                    : "Kapalı"}
+                      ? "Kiralandı"
+                      : "Kapalı"}
                 </Text>
               </View>
             </View>
@@ -1421,9 +1419,8 @@ const PostsScreen = ({ navigation }) => {
                 ellipsizeMode="tail"
               >
                 {item.kiraFiyati || item.rent
-                  ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-                      item.paraBirimi || item.currency || "₺"
-                    }/ay`
+                  ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
+                  }/ay`
                   : "Fiyat belirtilmemiş"}
               </Text>
 
@@ -1576,8 +1573,8 @@ const PostsScreen = ({ navigation }) => {
               {filters.status === 0
                 ? "Aktif"
                 : filters.status === 1
-                ? "Kiralandı"
-                : "Kapalı"}
+                  ? "Kiralandı"
+                  : "Kapalı"}
             </Text>
             <TouchableOpacity
               onPress={() => {
@@ -1612,27 +1609,27 @@ const PostsScreen = ({ navigation }) => {
     return `post_index_${index}`;
   }, []);
 
+  // renderAnimatedHeader fonksiyonundaki düzeltilmiş kod
+
   const renderAnimatedHeader = () => {
     const headerContainerHeight = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
-      outputRange: [insets.top + 50 + 60 + 50 + 16, insets.top + 60 + 50 + 8],
+      outputRange: [insets.top + 40 + 50 + 40 + 12, insets.top + 50 + 40 + 6],
       extrapolate: "clamp",
     });
+
+    // ✅ DÜZELTİLMİŞ: Responsive button sayısı ve boyutu
+    const filterButtonWidth = 45; // Filter butonu genişliği
+    const createButtonWidth = userRole === "EVSAHIBI" ? 50 : 0; // Create butonu (sadece ev sahibi için)
+    const buttonGap = userRole === "EVSAHIBI" ? 8 : 0; // Butonlar arası gap
+    const totalButtonsWidth = filterButtonWidth + createButtonWidth + buttonGap + 16; // 16 = padding right
 
     const searchBarWidth = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
       outputRange: [
-        screenWidth - 32,
-        userRole === "EVSAHIBI"
-          ? screenWidth - 32 - 50 - 50 - 16
-          : screenWidth - 32 - 50 - 8,
+        screenWidth - 32, // Normal durumda full width (minus padding)
+        screenWidth - 32 - totalButtonsWidth, // Animasyon tamamlandığında butonlar için yer bırak
       ],
-      extrapolate: "clamp",
-    });
-
-    const searchBarMarginRight = scrollY.interpolate({
-      inputRange: [0, SCROLL_DISTANCE],
-      outputRange: [0, userRole === "EVSAHIBI" ? 116 : 58],
       extrapolate: "clamp",
     });
 
@@ -1706,7 +1703,7 @@ const PostsScreen = ({ navigation }) => {
             style={{
               opacity: titleOpacity,
               transform: [{ scale: titleScale }],
-              height: 50,
+              height: 40,
               justifyContent: "center",
             }}
           >
@@ -1739,56 +1736,126 @@ const PostsScreen = ({ navigation }) => {
             </View>
           </Animated.View>
 
-          <Animated.View
+          {/* ✅ DÜZELTİLMİŞ: Search Bar ve Button Container */}
+          <View
             style={{
               marginTop: 10,
-              transform: [{ translateY: searchBarTranslateY }],
-              width: searchBarWidth,
-              marginRight: searchBarMarginRight,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
             }}
           >
-            <BlurView
-              intensity={60}
-              tint="light"
+            {/* Search Bar */}
+            <Animated.View
               style={{
-                borderRadius: 24,
-                overflow: "hidden",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 12,
-                elevation: 5,
+                transform: [{ translateY: searchBarTranslateY }],
+                width: searchBarWidth,
+                flex: 1, // ✅ Responsive için flex kullan
               }}
             >
-              <View
+              <BlurView
+                intensity={60}
+                tint="light"
                 style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.8)",
-                  paddingHorizontal: 16,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 8,
+                  borderRadius: 24,
+                  overflow: "hidden",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 12,
+                  elevation: 5,
                 }}
-                className="border border-gray-100 border-[1px] rounded-full"
               >
-                <FontAwesomeIcon icon={faSearch} size={20} color="#000" />
-                <TextInput
-                  className="flex-1 placeholder:text-gray-500 placeholder:text-[14px] py-4 text-normal"
+                <View
                   style={{
-                    textAlignVertical: "center",
-                    includeFontPadding: false,
+                    backgroundColor: "white",
+                    paddingHorizontal: 16,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
                   }}
-                  placeholder={
-                    userRole === "KIRACI"
-                      ? "Konuma göre ev ara..."
-                      : "İlanlarınızda arayın..."
-                  }
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
-              </View>
-            </BlurView>
-          </Animated.View>
+                  className="border border-gray-100 border-[1px] rounded-full"
+                >
+                  <FontAwesomeIcon icon={faSearch} size={20} color="#000" />
+                  <TextInput
+                    className="flex-1 placeholder:text-gray-500 placeholder:text-[14px] py-4 text-normal"
+                    style={{
+                      textAlignVertical: "center",
+                      includeFontPadding: false,
+                    }}
+                    placeholder={
+                      userRole === "KIRACI"
+                        ? "Konuma göre ev ara..."
+                        : "İlanlarınızda arayın..."
+                    }
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                  />
+                </View>
+              </BlurView>
+            </Animated.View>
 
+            {/* ✅ DÜZELTİLMİŞ: Action Buttons Container */}
+            <Animated.View
+              style={{
+                transform: [{ translateY: searchBarTranslateY }],
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              {/* Create Post Button (sadece ev sahibi için) */}
+              {userRole === "EVSAHIBI" && (
+                <TouchableOpacity
+                  style={{
+                    width: filterButtonWidth,
+                    height: filterButtonWidth,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 8,
+                    elevation: 5,
+                  }}
+                  className="bg-white/90 backdrop-blur flex justify-center items-center rounded-full"
+                  onPress={handleCreatePostNavigation}
+                >
+                  <FontAwesomeIcon icon={faPlus} size={18} />
+                </TouchableOpacity>
+              )}
+
+              {/* Filter Button */}
+              <TouchableOpacity
+                style={{
+                  width: filterButtonWidth,
+                  height: filterButtonWidth,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 8,
+                  elevation: 5,
+                }}
+                className={`rounded-full flex justify-center items-center ${isFilterVisible ||
+                  Object.values(filters).some((val) => val !== null)
+                  ? "bg-gray-900/90"
+                  : "bg-white/90"
+                  }`}
+                onPress={handleFilterPress}
+              >
+                <FontAwesomeIcon
+                  icon={faSliders}
+                  size={18}
+                  color={
+                    isFilterVisible ||
+                      Object.values(filters).some((val) => val !== null)
+                      ? "white"
+                      : "#111827"
+                  }
+                />
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
+
+          {/* Sort Options */}
           <Animated.View
             style={{
               marginTop: 0,
@@ -1820,7 +1887,7 @@ const PostsScreen = ({ navigation }) => {
                         elevation: 2,
                       }}
                       onPress={resetSortOptions}
-                      className=""
+                      className="bg-gray-900"
                     >
                       <MaterialIcons name="close" size={20} color="white" />
                     </TouchableOpacity>
@@ -1873,61 +1940,6 @@ const PostsScreen = ({ navigation }) => {
               </ScrollView>
             </View>
           </Animated.View>
-        </View>
-
-        <View
-          style={{
-            position: "absolute",
-            right: 16,
-            top: insets.top + 12,
-            zIndex: 20,
-            gap: 8,
-            flexDirection: "row",
-          }}
-        >
-          {userRole === "EVSAHIBI" && (
-            <TouchableOpacity
-              style={{
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 8,
-                elevation: 5,
-                marginLeft: 8,
-              }}
-              className="w-12 h-12 bg-white/90 backdrop-blur flex justify-center items-center rounded-full"
-              onPress={handleCreatePostNavigation}
-            >
-              <FontAwesomeIcon icon={faPlus} size={18} />
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            style={{
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 5,
-            }}
-            className={`p-3 rounded-full  ${
-              isFilterVisible ||
-              Object.values(filters).some((val) => val !== null)
-                ? "bg-gray-900/90"
-                : "bg-white/90"
-            }`}
-            onPress={handleFilterPress}
-          >
-            <FontAwesomeIcon
-              icon={faSliders}
-              size={20}
-              color={
-                isFilterVisible ||
-                Object.values(filters).some((val) => val !== null)
-                  ? "white"
-                  : "#111827"
-              }
-            />
-          </TouchableOpacity>
         </View>
       </Animated.View>
     );
@@ -1996,9 +2008,8 @@ const PostsScreen = ({ navigation }) => {
             initialNumToRender={8}
             windowSize={5}
             disableVirtualization={false}
-            extraData={`${searchQuery}_${JSON.stringify(filters)}_${
-              allPostsData.length
-            }`}
+            extraData={`${searchQuery}_${JSON.stringify(filters)}_${allPostsData.length
+              }`}
             onScroll={Animated.event(
               [{ nativeEvent: { contentOffset: { y: scrollY } } }],
               { useNativeDriver: false }

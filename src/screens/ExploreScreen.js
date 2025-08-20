@@ -418,7 +418,7 @@ const ListingCard = memo(
                 alignItems: "center",
               }}
             >
-              <FontAwesome6Icon icon={faHome} size={60} color="#9CA3AF" />
+              <FontAwesomeIcon icon={faHome} size={60} color="#9CA3AF" />
               <Text
                 style={{
                   marginTop: 16,
@@ -788,8 +788,7 @@ const ExploreScreen = ({ navigation }) => {
             />
           )}
           keyExtractor={(item, index) =>
-            `listing-${item.postType}-${
-              item.post?.postId || item.metaPost?.id || index
+            `listing-${item.postType}-${item.post?.postId || item.metaPost?.id || index
             }`
           }
           // 🚀 TikTok TARZINDA INSTANT SNAP - Custom interval ile hızlandırılmış

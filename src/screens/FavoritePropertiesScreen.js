@@ -1,3 +1,4 @@
+// FavoritePropertiesScreen.js - GetOwnTenantProfile ile güncellenmiş
 import React, { useState, useRef } from "react";
 import {
     View,
@@ -6,7 +7,6 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     RefreshControl,
-    SafeAreaView,
     Alert,
     Dimensions,
     TextInput,
@@ -20,12 +20,10 @@ const { width: screenWidth } = Dimensions.get('window');
 
 import { useSelector } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
-import { selectUserProfile } from "../redux/slices/profileSlice";
 import {
-    useGetTenantProfileQuery,
+    useGetOwnTenantProfileQuery,
     useToggleFavoritePropertyMutation,
     useGetPostQuery,
-    useGetSentOffersQuery,
 } from "../redux/api/apiSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
@@ -51,7 +49,7 @@ import { BlurView } from "expo-blur";
 import OfferModal from "../modals/OfferModal";
 
 // Favori İlan Kartı Komponenti - Modern Tasarım
-const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onNavigateToDetail, removingFavorite, userOffers, onOpenOfferModal, navigation }) => {
+const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onNavigateToDetail, removingFavorite, userOffers, onOpenOfferModal, navigation, matchingScore }) => {
     const { data: postData, isLoading, error } = useGetPostQuery({
         postId: favoriteItem.postId,
         userId: currentUser?.id
@@ -60,20 +58,12 @@ const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onN
     const post = postData?.result?.post;
     const images = post?.postImages || [];
 
-    // Bu post için kullanıcının teklifi var mı kontrol et
-    const existingOffer = userOffers.find(offer =>
-        offer.postId === favoriteItem.postId ||
-        offer.post?.postId === favoriteItem.postId
-    );
+    // Bu post için kullanıcının teklifi var mı kontrol et - favoritePropertiesOffers'dan al
+    const existingOffers = favoriteItem.offers || [];
+    const existingOffer = existingOffers.length > 0 ? existingOffers[0] : null;
 
     console.log("Checking existing offer for post:", favoriteItem.postId);
-    console.log("Available user offers:", userOffers.map(o => ({
-        offerId: o.offerId,
-        postId: o.postId || o.post?.postId,
-        status: o.status,
-        amount: o.offerAmount
-    })));
-    console.log("Found existing offer:", existingOffer);
+    console.log("Found existing offers from favoritePropertiesOffers:", existingOffers);
 
     // 🔧 BASIT IMAGE URL ALMA - Sadece ilk geçerli resmi al
     const getFirstValidImage = (images) => {
@@ -157,7 +147,6 @@ const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onN
     };
 
     const offerStatus = getOfferStatus();
-
 
     if (isLoading) {
         return (
@@ -245,34 +234,51 @@ const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onN
                     </View>
                 )}
 
-                <TouchableOpacity
-                    style={{
-                        position: 'absolute',
-                        top: 16,
-                        right: 16
-                    }}
-                    onPress={(e) => {
-                        e.stopPropagation();
-                        onRemoveFavorite(favoriteItem.postId);
-                    }}
-                    disabled={removingFavorite}
-                >
-                    <BlurView
-                        intensity={90}
-                        tint="dark"
-                        style={{
-                            borderRadius: 20,
-                            overflow: 'hidden'
+                {/* Favori ve Matching Score Badge */}
+                <View className="absolute top-4 left-0 right-4 flex-row justify-between items-start">
+                    {/* Matching Score Badge - Sol üst */}
+                    {matchingScore && (
+                        <BlurView
+                            intensity={90}
+                            tint="dark"
+                            style={{
+                                borderRadius: 20,
+                                overflow: 'hidden'
+                            }}
+                        >
+                            <View className="px-3 py-2 flex-row items-center">
+                                <Text className="text-white text-sm font-semibold">
+                                    %{Math.round(matchingScore)} Eşleşme
+                                </Text>
+                            </View>
+                        </BlurView>
+                    )}
+
+                    {/* Favori Tarihi Badge - Sağ üst */}
+                    <TouchableOpacity
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            onRemoveFavorite(favoriteItem.postId);
                         }}
+                        disabled={removingFavorite}
                     >
-                        <View className="px-3 py-2 flex-row items-center">
-                            <FontAwesomeIcon icon={faHeart} size={12} color="#ef4444" />
-                            <Text className="text-white text-sm font-semibold ml-2">
-                                {new Date(favoriteItem.dateAdded).toLocaleDateString('tr-TR')}
-                            </Text>
-                        </View>
-                    </BlurView>
-                </TouchableOpacity>
+                        <BlurView
+                            intensity={90}
+                            tint="dark"
+                            style={{
+                                borderRadius: 20,
+                                overflow: 'hidden'
+                            }}
+                        >
+                            <View className="px-3 py-2 flex-row items-center">
+                                <FontAwesomeIcon icon={faHeart} size={12} color="#ef4444" />
+                                <Text className="text-white text-sm font-semibold ml-2">
+                                    {new Date(favoriteItem.dateAdded).toLocaleDateString('tr-TR')}
+                                </Text>
+                            </View>
+                        </BlurView>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Modern Content */}
@@ -350,15 +356,6 @@ const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onN
                                     <Text className="text-gray-500 text-xs">Yaş</Text>
                                 </View>
                             )}
-
-                            {/* Deposit */}
-                            {/* <View className="items-center justify-center">
-                                <FontAwesomeIcon icon={faDollarSign} size={24} color="#111827" />
-                                <Text className="text-gray-900 mt-2 text-sm font-semibold">
-                                    {formatPrice(post.depozito)} ₺
-                                </Text>
-                                <Text className="text-gray-500 text-xs">Depozito</Text>
-                            </View> */}
                         </View>
                     </View>
                 </View>
@@ -426,18 +423,6 @@ const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onN
                             {offerStatus.statusDetail}
                         </Text>
                     )}
-
-                    {/* {offerStatus.hasOffer && existingOffer.offerTime && (
-                        <Text className="text-xs text-gray-500 mt-1">
-                            {new Date(existingOffer.offerTime).toLocaleDateString('tr-TR', {
-                                day: 'numeric',
-                                month: 'long',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            })} tarihinde gönderildi
-                        </Text>
-                    )} */}
                 </View>
 
                 {/* Action Buttons - Modern style */}
@@ -487,15 +472,8 @@ const FavoritePropertiesScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
     const currentUser = useSelector(selectCurrentUser);
     const userRole = useSelector(selectUserRole);
-    const userProfile = useSelector(selectUserProfile);
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-
-    // OfferModal state
-    const [offerModalVisible, setOfferModalVisible] = useState(false);
-    const [selectedPostId, setSelectedPostId] = useState(null);
-    const [selectedPost, setSelectedPost] = useState(null);
-    const [existingOffer, setExistingOffer] = useState(null);
 
     // ===== ANIMATION SETUP =====
     const scrollY = useRef(new Animated.Value(0)).current;
@@ -516,111 +494,79 @@ const FavoritePropertiesScreen = ({ navigation }) => {
 
     const searchBarTranslateY = scrollY.interpolate({
         inputRange: [0, SCROLL_DISTANCE],
-        outputRange: [0, -60], // Title + gap kadar yukarı kayar
+        outputRange: [0, -60],
         extrapolate: 'clamp',
     });
 
-    // ÖNEMLİ: Arama barının genişlik animasyonu
     const searchBarWidth = scrollY.interpolate({
         inputRange: [0, SCROLL_DISTANCE],
         outputRange: [
-            screenWidth - 32, // Başta neredeyse tam genişlik (sadece padding)
-            screenWidth - 32 - 60 - 8 // Scroll sonunda favori badge için yer bırak
+            screenWidth - 32,
+            screenWidth - 32 - 60 - 8
         ],
         extrapolate: 'clamp',
     });
 
-    // Arama barının sağdan margin/padding animasyonu
     const searchBarMarginRight = scrollY.interpolate({
         inputRange: [0, SCROLL_DISTANCE],
-        outputRange: [0, 88], // Favori badge için yer (80 + 8 margin)
+        outputRange: [0, 88],
         extrapolate: 'clamp',
     });
 
     const headerContainerHeight = scrollY.interpolate({
         inputRange: [0, SCROLL_DISTANCE],
         outputRange: [
-            insets.top + 50 + 60 + 16, // Normal: SafeArea + Title + SearchBar + padding
-            insets.top + 60 + 8        // Scroll: SafeArea + SearchBar + minimal padding
+            insets.top + 50 + 60 + 16,
+            insets.top + 60 + 8
         ],
         extrapolate: 'clamp',
     });
 
-    // Tenant profile'ı çek
+    // YENİ: GetOwnTenantProfile kullan
     const {
-        data: profileData,
+        data: ownProfileData,
         isLoading: profileLoading,
         refetch: refetchProfile,
-    } = useGetTenantProfileQuery(currentUser?.id);
-
-    // Kullanıcının gönderdiği teklifleri çek
-    const {
-        data: sentOffersData,
-        isLoading: offersLoading,
-        refetch: refetchOffers,
-    } = useGetSentOffersQuery(currentUser?.id, {
-        skip: !currentUser?.id,
+    } = useGetOwnTenantProfileQuery(currentUser?.id, {
+        skip: !currentUser?.id || userRole !== "KIRACI",
     });
-    // Kullanıcının tekliflerini işle
-    const userOffers = React.useMemo(() => {
-        if (!sentOffersData?.result) return [];
-
-        console.log("Processing sent offers data:", sentOffersData);
-
-        // API'den gelen veri yapısı: [{ postDto: {...}, rentalOfferDto: {...} }]
-        const processedOffers = sentOffersData.result
-            .map((item) => {
-                if (item.rentalOfferDto && item.postDto) {
-                    return {
-                        // rentalOfferDto'dan teklif bilgilerini al
-                        ...item.rentalOfferDto,
-                        // postDto'dan post bilgilerini al
-                        post: {
-                            postId: item.postDto.postId,
-                            ilanBasligi: item.postDto.ilanBasligi,
-                            kiraFiyati: item.postDto.kiraFiyati,
-                            ilce: item.postDto.ilce,
-                            mahalle: item.postDto.mahalle,
-                            postImages: item.postDto.postImages,
-                            il: item.postDto.il,
-                            paraBirimi: item.postDto.paraBirimi,
-                        },
-                    };
-                }
-                return null;
-            })
-            .filter(Boolean) // null değerleri filtrele
-            .filter((offer) => offer.isActive === true); // Sadece aktif teklifleri al
-
-        console.log("Processed user offers:", processedOffers);
-        return processedOffers;
-    }, [sentOffersData]);
-
 
     // Favori silme mutation
     const [toggleFavoriteProperty, { isLoading: removingFavorite }] =
         useToggleFavoritePropertyMutation();
 
-    // Favori ilanları direkt userProfile'dan al ve arama filtresi uygula
-    const favoriteProperties = userProfile?.favouriteProperties || [];
+    // Response'dan verileri çıkar
+    const tenantProfile = ownProfileData?.result?.tenantProfile;
+    const favoriteProperties = tenantProfile?.favouriteProperties || [];
+    const matchingScores = ownProfileData?.result?.matchingScoreWithFavoritePosts || {};
+    const favoritePropertiesOffers = ownProfileData?.result?.favoritePropertiesOffers || {};
+
+    // Favori ilanları zenginleştir (matching score ve offers ekle)
+    const enrichedFavorites = favoriteProperties.map(favorite => ({
+        ...favorite,
+        matchingScore: matchingScores[favorite.postId],
+        offers: favoritePropertiesOffers[favorite.postId] || []
+    }));
 
     // Arama filtresi
-    const filteredFavorites = favoriteProperties.filter(favorite => {
+    const filteredFavorites = enrichedFavorites.filter(favorite => {
         if (!searchQuery.trim()) return true;
 
-        // Burada favoriye ait post bilgilerini almak için ayrı bir query yapılabilir
-        // Şimdilik basit filtreleme yapıyoruz
         const searchLower = searchQuery.toLowerCase();
         const postId = favorite.postId?.toString().toLowerCase() || '';
         const dateAdded = new Date(favorite.dateAdded).toLocaleDateString('tr-TR');
+        const propertyTitle = favorite.property?.ilanBasligi?.toLowerCase() || '';
+        const location = `${favorite.property?.mahalle} ${favorite.property?.ilce} ${favorite.property?.il}`.toLowerCase();
 
         return postId.includes(searchLower) ||
-            dateAdded.includes(searchLower);
+            dateAdded.includes(searchLower) ||
+            propertyTitle.includes(searchLower) ||
+            location.includes(searchLower);
     });
 
     const onRefresh = async () => {
         setRefreshing(true);
-        await Promise.all([refetchProfile(), refetchOffers()]);
+        await refetchProfile();
         setRefreshing(false);
     };
 
@@ -655,30 +601,6 @@ const FavoritePropertiesScreen = ({ navigation }) => {
 
     const handlePostPress = (postId) => {
         navigation.navigate("PostDetail", { postId });
-    };
-
-    // OfferModal açma
-    // Bu fonksiyonu FavoritePropertiesScreen.js'de ekleyin (handleOfferSuccess fonksiyonundan önce)
-    const handleOpenOfferModal = (postId, post, existingOffer) => {
-        // PostDetail'e git ve modal'ı aç
-        navigation.navigate("PostDetail", {
-            postId: postId,
-            openOfferModal: true
-        });
-    };
-
-    // OfferModal kapatma
-    const handleCloseOfferModal = () => {
-        setOfferModalVisible(false);
-        setSelectedPostId(null);
-        setSelectedPost(null);
-        setExistingOffer(null);
-    };
-
-    // Teklif başarılı gönderildiğinde
-    const handleOfferSuccess = () => {
-        refetchOffers(); // Teklifleri yeniden çek
-        handleCloseOfferModal();
     };
 
     // Dynamic padding helper
@@ -755,7 +677,7 @@ const FavoritePropertiesScreen = ({ navigation }) => {
                         </View>
                     </Animated.View>
 
-                    {/* Search Bar - Title'ın yerine geçer ve genişlik animasyonu */}
+                    {/* Search Bar */}
                     <Animated.View
                         style={{
                             marginTop: 10,
@@ -834,7 +756,6 @@ const FavoritePropertiesScreen = ({ navigation }) => {
                                 flexDirection: 'row',
                                 alignItems: 'center',
                                 gap: 5,
-
                             }}
                         >
                             <FontAwesomeIcon icon={faHeart} size={20} color="#ef4444" />
@@ -844,40 +765,11 @@ const FavoritePropertiesScreen = ({ navigation }) => {
                         </View>
                     </BlurView>
                 </View>
-
-                {/* Back Button - Scroll sırasında sabit pozisyonda */}
-                <Animated.View
-                    style={{
-                        position: 'absolute',
-                        left: 16,
-                        top: insets.top + 10,
-                        zIndex: 20,
-                        opacity: scrollY.interpolate({
-                            inputRange: [0, SCROLL_DISTANCE],
-                            outputRange: [0, 1],
-                            extrapolate: 'clamp',
-                        }),
-                    }}
-                >
-                    {/* <TouchableOpacity
-                        style={{
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.1,
-                            shadowRadius: 8,
-                            elevation: 5,
-                        }}
-                        className="p-3 rounded-full bg-white"
-                        onPress={() => navigation.goBack()}
-                    >
-                        <FontAwesomeIcon icon={faArrowLeft} size={20} color="#1f2937" />
-                    </TouchableOpacity> */}
-                </Animated.View>
             </Animated.View>
         );
     };
 
-    if (profileLoading || offersLoading) {
+    if (profileLoading) {
         return (
             <View className="flex-1 justify-center items-center bg-white">
                 <ActivityIndicator size="large" color="#6b7280" />
@@ -956,19 +848,7 @@ const FavoritePropertiesScreen = ({ navigation }) => {
                     </View>
                 ) : (
                     <View>
-                        {/* {!searchQuery.trim() && (
-                            <TouchableOpacity
-                                className="bg-gray-900 px-6 py-3 rounded-full"
-                                onPress={() => {
-                                    // Tab navigator içindeki Properties ekranına git
-                                    navigation.navigate("MainTabs", {
-                                        screen: "Properties"
-                                    });
-                                }}
-                            >
-                                <Text className="text-white font-semibold">İlan Ara</Text>
-                            </TouchableOpacity>
-                        )} */}
+
 
                         {filteredFavorites.map((favorite) => (
                             <FavoritePropertyCard
@@ -978,24 +858,15 @@ const FavoritePropertiesScreen = ({ navigation }) => {
                                 onRemoveFavorite={handleRemoveFromFavorites}
                                 onNavigateToDetail={handlePostPress}
                                 removingFavorite={removingFavorite}
-                                userOffers={userOffers}
-                                onOpenOfferModal={handleOpenOfferModal}
+                                userOffers={[]} // Artık favoritePropertiesOffers'dan alıyoruz
+                                onOpenOfferModal={() => { }} // Kullanılmıyor artık
                                 navigation={navigation}
+                                matchingScore={favorite.matchingScore}
                             />
                         ))}
                     </View>
                 )}
             </Animated.ScrollView>
-
-            {/* OfferModal */}
-            <OfferModal
-                visible={offerModalVisible}
-                onClose={handleCloseOfferModal}
-                postId={selectedPostId}
-                post={selectedPost}
-                onSuccess={handleOfferSuccess}
-                ex2istingOffer={existingOffer}
-            />
         </View>
     );
 };
