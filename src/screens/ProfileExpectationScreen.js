@@ -854,7 +854,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
   const isExpectationCompleted =
     userRole === "KIRACI"
       ? userProfile.isLandLordExpectationCompleted // Fixed: was isTenantExpectationCompleted
-      : userProfile.isLandlordExpectationCompleted;
+      : userProfile.isTenantExpectationCompleted;
 
   // Populate form data when expectation is completed
   useEffect(() => {

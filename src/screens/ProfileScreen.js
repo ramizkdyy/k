@@ -161,7 +161,7 @@ const ProfileScreen = ({ navigation }) => {
   const isExpectationCompleted =
     userRole === "KIRACI"
       ? userProfile.isLandLordExpectationCompleted // Fixed: was isTenantExpectationCompleted
-      : userProfile.isLandlordExpectationCompleted;
+      : userProfile.isTenantExpectationCompleted;
 
   // Render loading state
   if (isLoading && !userProfile) {
@@ -177,10 +177,7 @@ const ProfileScreen = ({ navigation }) => {
 
   console.log("CurrentUser:", currentUser);
   console.log("userProfile:", userProfile);
-  console.log(
-    "isExpectationCompleted:",
-    userProfile.isTenantExpectationCompleted
-  );
+  console.log("isExpectationCompleted:", isExpectationCompleted);
 
   return (
     <SafeAreaView className="flex-1 bg-white">
