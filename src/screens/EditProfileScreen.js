@@ -48,10 +48,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import {
-
-  faPenToSquare
-} from "@fortawesome/pro-regular-svg-icons";
+import { faPenToSquare } from "@fortawesome/pro-regular-svg-icons";
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 // Image Picker Modal Component
@@ -62,7 +59,7 @@ const ImagePickerModal = ({
   onCamera,
   onRemove,
   hasCurrentImage,
-  imageType // "profile" veya "cover"
+  imageType, // "profile" veya "cover"
 }) => {
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const backdropOpacity = useSharedValue(0);
@@ -73,7 +70,7 @@ const ImagePickerModal = ({
     const bottomPadding = 40;
     const itemCount = hasCurrentImage ? 3 : 2; // Kaldır seçeneği varsa 3, yoksa 2
 
-    return headerHeight + (itemCount * itemHeight) + bottomPadding;
+    return headerHeight + itemCount * itemHeight + bottomPadding;
   };
 
   const SNAP_POINTS = {
@@ -125,11 +122,11 @@ const ImagePickerModal = ({
     onClose(); // Anında state'i güncelle
 
     // Action'ı hemen çalıştır
-    if (action === 'gallery') {
+    if (action === "gallery") {
       onGallery();
-    } else if (action === 'camera') {
+    } else if (action === "camera") {
       onCamera();
-    } else if (action === 'remove') {
+    } else if (action === "remove") {
       onRemove();
     }
   };
@@ -157,7 +154,9 @@ const ImagePickerModal = ({
                 style={{ fontWeight: 600, fontSize: 18 }}
                 className="text-gray-800"
               >
-                {imageType === "profile" ? "Profil Fotoğrafı" : "Kapak Fotoğrafı"}
+                {imageType === "profile"
+                  ? "Profil Fotoğrafı"
+                  : "Kapak Fotoğrafı"}
               </Text>
               <TouchableOpacity onPress={handleClose} className="px-2 py-2">
                 <Text
@@ -178,10 +177,9 @@ const ImagePickerModal = ({
             {/* Galeriden Seç */}
             <TouchableOpacity
               className="py-4 px-7 flex-row items-center"
-              onPress={() => handleOptionSelect('gallery')}
+              onPress={() => handleOptionSelect("gallery")}
               activeOpacity={0.7}
             >
-
               <Text className="text-lg text-gray-700 flex-1">
                 Galeriden Seç
               </Text>
@@ -190,26 +188,20 @@ const ImagePickerModal = ({
             {/* Fotoğraf Çek */}
             <TouchableOpacity
               className="py-4 px-7 flex-row items-center"
-              onPress={() => handleOptionSelect('camera')}
+              onPress={() => handleOptionSelect("camera")}
               activeOpacity={0.7}
             >
-
-              <Text className="text-lg text-gray-700 flex-1">
-                Fotoğraf Çek
-              </Text>
+              <Text className="text-lg text-gray-700 flex-1">Fotoğraf Çek</Text>
             </TouchableOpacity>
 
             {/* Fotoğrafı Kaldır - Sadece mevcut fotoğraf varsa */}
             {hasCurrentImage && (
               <TouchableOpacity
                 className="py-4 px-7 flex-row items-center"
-                onPress={() => handleOptionSelect('remove')}
+                onPress={() => handleOptionSelect("remove")}
                 activeOpacity={0.7}
               >
-
-                <Text className="text-lg flex-1">
-                  Fotoğrafı Kaldır
-                </Text>
+                <Text className="text-lg flex-1">Fotoğrafı Kaldır</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -237,9 +229,7 @@ const EditProfileHeader = ({ navigation, onSave, isLoading }) => (
         onPress={onSave}
         disabled={isLoading}
       >
-        <Text
-          className="font-semibold border-2 px-4 py-2 rounded-full  text-gray-900 text-s"
-        >
+        <Text className="font-semibold border-2 px-4 py-2 rounded-full  text-gray-900 text-s">
           {isLoading ? "Kaydediliyor..." : "Kaydet"}
         </Text>
       </TouchableOpacity>
@@ -274,7 +264,10 @@ const CustomTextInput = ({
     <Text style={{ fontSize: 16 }} className="font-semibold text-gray-900 mb-3">
       {label}
     </Text>
-    <View className="border border-gray-900 rounded-xl px-4 py-4" style={{ height: SCREEN_HEIGHT * 0.2 }}>
+    <View
+      className="border border-gray-900 rounded-xl px-4 py-4"
+      style={{ height: SCREEN_HEIGHT * 0.2 }}
+    >
       <TextInput
         className="text-gray-900 text-base"
         placeholder={placeholder}
@@ -343,7 +336,7 @@ const EditProfileScreen = ({ navigation }) => {
   const [previewProfileImage, setPreviewProfileImage] = useState(null);
   const [isImagePickerVisible, setIsImagePickerVisible] = useState(false);
   const [activeImageType, setActiveImageType] = useState(null);
-  const [description, setDescription] = useState("");
+  const [profileDescription, setProfileDescription] = useState("");
   const [imageRemoved, setImageRemoved] = useState(false);
 
   // API Queries and Mutations
@@ -352,8 +345,8 @@ const EditProfileScreen = ({ navigation }) => {
     isLoading: profileLoading,
     isSuccess: profileSuccess,
   } = userRole === "EVSAHIBI"
-      ? useGetLandlordProfileQuery(currentUser?.id, { skip: !currentUser?.id })
-      : useGetTenantProfileQuery(currentUser?.id, { skip: !currentUser?.id });
+    ? useGetLandlordProfileQuery(currentUser?.id, { skip: !currentUser?.id })
+    : useGetTenantProfileQuery(currentUser?.id, { skip: !currentUser?.id });
 
   const [updateLandlordProfile, { isLoading: updateLandlordLoading }] =
     useUpdateLandlordProfileMutation();
@@ -361,16 +354,8 @@ const EditProfileScreen = ({ navigation }) => {
     useUpdateTenantProfileMutation();
 
   const isLoading = useMemo(() => {
-    return (
-      profileLoading ||
-      updateLandlordLoading ||
-      updateTenantLoading
-    );
-  }, [
-    profileLoading,
-    updateLandlordLoading,
-    updateTenantLoading,
-  ]);
+    return profileLoading || updateLandlordLoading || updateTenantLoading;
+  }, [profileLoading, updateLandlordLoading, updateTenantLoading]);
 
   // Load profile data
   useEffect(() => {
@@ -384,8 +369,8 @@ const EditProfileScreen = ({ navigation }) => {
       }
 
       // Açıklama bilgisini yükle
-      if (profile.description) {
-        setDescription(profile.description);
+      if (profile.profileDescription) {
+        setProfileDescription(profile.profileDescription);
       }
     }
   }, [profileSuccess, profileData, dispatch]);
@@ -397,7 +382,8 @@ const EditProfileScreen = ({ navigation }) => {
 
   const pickImageFromGallery = async () => {
     try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permissionResult.granted) {
         Alert.alert("İzin Gerekli", "Fotoğraflara erişim izni gereklidir.");
         return;
@@ -422,7 +408,8 @@ const EditProfileScreen = ({ navigation }) => {
 
   const takePhoto = async () => {
     try {
-      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      const permissionResult =
+        await ImagePicker.requestCameraPermissionsAsync();
       if (!permissionResult.granted) {
         Alert.alert("İzin Gerekli", "Kamera erişim izni gereklidir.");
         return;
@@ -473,11 +460,12 @@ const EditProfileScreen = ({ navigation }) => {
       }
 
       // Add description
-      formData.append("Description", description || "");
+      formData.append("ProfileDescription", profileDescription || "");
 
-      const response = userRole === "EVSAHIBI"
-        ? await updateLandlordProfile(formData).unwrap()
-        : await updateTenantProfile(formData).unwrap();
+      const response =
+        userRole === "EVSAHIBI"
+          ? await updateLandlordProfile(formData).unwrap()
+          : await updateTenantProfile(formData).unwrap();
 
       console.log("Profil güncelleme yanıtı:", response);
 
@@ -511,7 +499,7 @@ const EditProfileScreen = ({ navigation }) => {
         Alert.alert(
           "Güncelleme Hatası",
           error?.data?.message ||
-          "Profil güncellenirken bir hata oluştu. Lütfen tekrar deneyin."
+            "Profil güncellenirken bir hata oluştu. Lütfen tekrar deneyin."
         );
       }
 
@@ -561,13 +549,14 @@ const EditProfileScreen = ({ navigation }) => {
             >
               <View className="relative">
                 {/* Profil resmi container - her zaman aynı boyut */}
-                <View className="rounded-full bg-white border-4 border-white overflow-hidden"
+                <View
+                  className="rounded-full bg-white border-4 border-white overflow-hidden"
                   style={{
                     width: 120,
                     height: 120,
-                    backgroundColor: previewProfileImage ? 'white' : '#f3f4f6', // Resim yoksa gri arka plan
+                    backgroundColor: previewProfileImage ? "white" : "#f3f4f6", // Resim yoksa gri arka plan
                     borderWidth: 3,
-                    borderColor: '#111827'
+                    borderColor: "#111827",
                   }}
                 >
                   {previewProfileImage ? (
@@ -576,7 +565,7 @@ const EditProfileScreen = ({ navigation }) => {
                       source={{ uri: previewProfileImage }}
                       style={{
                         width: 120,
-                        height: 120
+                        height: 120,
                       }}
                       contentFit="cover"
                       cachePolicy="memory-disk"
@@ -596,11 +585,11 @@ const EditProfileScreen = ({ navigation }) => {
                 <View
                   className="absolute right-[6] bottom-[6] bg-gray-900 w-8 h-8 rounded-full justify-center items-center"
                   style={{
-                    shadowColor: '#000',
+                    shadowColor: "#000",
                     shadowOffset: { width: 0, height: 2 },
                     shadowOpacity: 0.25,
                     shadowRadius: 4,
-                    elevation: 5
+                    elevation: 5,
                   }}
                 >
                   <FontAwesomeIcon
@@ -616,8 +605,8 @@ const EditProfileScreen = ({ navigation }) => {
           <View className="px-5 py-4">
             <CustomTextInput
               label="Hakkımda"
-              value={description}
-              onChangeText={setDescription}
+              value={profileDescription}
+              onChangeText={setProfileDescription}
               placeholder="Kendinizi tanıtın..."
               multiline
               numberOfLines={6}

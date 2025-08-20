@@ -806,6 +806,63 @@ const profileSlice = createSlice({
       }
     );
 
+    // Handle expectation creation and updates to sync with userProfile
+    // Create landlord expectation - update userProfile
+    builder.addMatcher(
+      apiSlice.endpoints.createLandlordExpectation.matchFulfilled,
+      (state, { payload }) => {
+        if (payload && payload.isSuccess && payload.result) {
+          // Update userProfile with the new expectation data
+          if (state.userProfile) {
+            state.userProfile.tenantExpectation = payload.result;
+            state.userProfile.isTenantExpectationCompleted = true;
+          }
+        }
+      }
+    );
+
+    // Create tenant expectation - update userProfile
+    builder.addMatcher(
+      apiSlice.endpoints.createTenantExpectation.matchFulfilled,
+      (state, { payload }) => {
+        if (payload && payload.isSuccess && payload.result) {
+          // Update userProfile with the new expectation data
+          if (state.userProfile) {
+            state.userProfile.landlordExpectation = payload.result;
+            state.userProfile.isLandlordExpectationCompleted = true;
+          }
+        }
+      }
+    );
+
+    // Update landlord expectation - update userProfile
+    builder.addMatcher(
+      apiSlice.endpoints.updateLandlordExpectation.matchFulfilled,
+      (state, { payload }) => {
+        if (payload && payload.isSuccess && payload.result) {
+          // Update userProfile with the updated expectation data
+          if (state.userProfile) {
+            state.userProfile.tenantExpectation = payload.result;
+            state.userProfile.isTenantExpectationCompleted = true;
+          }
+        }
+      }
+    );
+
+    // Update tenant expectation - update userProfile
+    builder.addMatcher(
+      apiSlice.endpoints.updateTenantExpectation.matchFulfilled,
+      (state, { payload }) => {
+        if (payload && payload.isSuccess && payload.result) {
+          // Update userProfile with the updated expectation data
+          if (state.userProfile) {
+            state.userProfile.landlordExpectation = payload.result;
+            state.userProfile.isLandlordExpectationCompleted = true;
+          }
+        }
+      }
+    );
+
   },
 });
 

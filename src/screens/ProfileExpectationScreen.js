@@ -369,18 +369,20 @@ const CustomDropdown = ({
                 {options.map((option, index) => (
                   <TouchableOpacity
                     key={index}
-                    className={`py-4 px-7 flex-row items-center justify-between ${index !== options.length - 1
-                      ? "border-b border-gray-50"
-                      : ""
-                      } ${value === option ? "bg-gray-100" : "bg-white"}`}
+                    className={`py-4 px-7 flex-row items-center justify-between ${
+                      index !== options.length - 1
+                        ? "border-b border-gray-50"
+                        : ""
+                    } ${value === option ? "bg-gray-100" : "bg-white"}`}
                     onPress={() => handleOptionSelect(option)}
                     activeOpacity={0.7}
                   >
                     <Text
-                      className={`text-lg flex-1 mr-3 ${value === option
-                        ? "text-gray-900 font-medium"
-                        : "text-gray-600"
-                        }`}
+                      className={`text-lg flex-1 mr-3 ${
+                        value === option
+                          ? "text-gray-900 font-medium"
+                          : "text-gray-600"
+                      }`}
                       numberOfLines={2}
                       ellipsizeMode="tail"
                     >
@@ -850,8 +852,157 @@ const ProfileExpectationScreen = ({ navigation }) => {
 
   // Check if expectation is completed based on user role
   const isExpectationCompleted =
-    Boolean(userProfile?.isTenantExpectationCompleted) ||
-    Boolean(userProfile?.isLandlordExpectationCompleted);
+    userRole === "KIRACI"
+      ? userProfile.isLandLordExpectationCompleted // Fixed: was isTenantExpectationCompleted
+      : userProfile.isLandlordExpectationCompleted;
+
+  // Populate form data when expectation is completed
+  useEffect(() => {
+    if (userProfile && isExpectationCompleted) {
+      console.log("Populating form data from existing expectations:", {
+        userRole,
+        userProfile,
+        isExpectationCompleted,
+      });
+
+      if (userRole === "EVSAHIBI" && userProfile.tenantExpectation) {
+        // Populate landlord form with tenant expectation data
+        const expectation = userProfile.tenantExpectation;
+
+        // Basic location and financial info
+        setCity(expectation.city || "");
+        // İlçe setlemesini şehir yüklendikten sonra yapmak için ayrı useEffect kullanacağız
+        setRentAmount(expectation.rentAmount?.toString() || "5000");
+        setIsMaintenanceFeeIncluded(
+          expectation.isMaintenanceFeeIncluded || false
+        );
+        setMaintenanceFee(expectation.maintenanceFee?.toString() || "0");
+        setMaintenanceFeeResponsibility(
+          expectation.maintenanceFeeResponsibility || 1
+        );
+        setIsDepositRequired(expectation.isDepositRequired !== false); // default true
+        setDepositAmount(expectation.depositAmount?.toString() || "5000");
+
+        // Rental conditions
+        setMinimumRentalPeriod(expectation.minimumRentalPeriod || 1);
+        setIsShortTermRentalAvailable(
+          expectation.isShortTermRentalAvailable || false
+        );
+        setIsForeignCurrencyAccepted(
+          expectation.isForeignCurrencyAccepted || false
+        );
+        setPreferredCurrency(expectation.preferredCurrency || 1);
+        setIsBankTransferRequired(expectation.isBankTransferRequired || false);
+        setMaximumOccupants(expectation.maximumOccupants?.toString() || "2");
+
+        // Tenant preferences
+        setPetPolicy(expectation.petPolicy || 1);
+        setAcceptedPetTypes(expectation.acceptedPetTypes || "");
+        setStudentPolicy(expectation.studentPolicy || 1);
+        setFamilyOnly(expectation.familyOnly || false);
+        setAcceptChildrenFamily(expectation.acceptChildrenFamily !== false); // default true
+        setPreferGovernmentEmployee(
+          expectation.preferGovernmentEmployee || false
+        );
+        setIsIncomeProofRequired(expectation.isIncomeProofRequired || false);
+        setMinimumMonthlyIncome(
+          expectation.minimumMonthlyIncome?.toString() || "0"
+        );
+        setIsGuarantorRequired(expectation.isGuarantorRequired || false);
+        setSmokingPolicy(expectation.smokingPolicy || 1);
+        setIsReferenceRequired(expectation.isReferenceRequired || false);
+        setIsInsuredJobRequired(expectation.isInsuredJobRequired || false);
+        setBuildingApprovalPolicy(expectation.buildingApprovalPolicy || 1);
+      } else if (userRole === "KIRACI" && userProfile.landlordExpectation) {
+        // Populate tenant form with landlord expectation data
+        const expectation = userProfile.landlordExpectation;
+
+        // Location preferences
+        setCity(expectation.city || "");
+        // İlçe setlemesini şehir yüklendikten sonra yapmak için ayrı useEffect kullanacağız
+        setAlternativeDistricts(expectation.alternativeDistricts || "");
+        setPreferredNeighborhoods(expectation.preferredNeighborhoods || "");
+
+        // Budget and payment
+        setMinRentBudget(expectation.minRentBudget?.toString() || "3000");
+        setMaxRentBudget(expectation.maxRentBudget?.toString() || "8000");
+        setTenantMaintenancePreference(
+          expectation.maintenanceFeePreference || 1
+        );
+        setMaxMaintenanceFee(expectation.maxMaintenanceFee?.toString() || "0");
+        setCanPayDeposit(expectation.canPayDeposit !== false); // default true
+        setMaxDepositAmount(expectation.maxDepositAmount?.toString() || "6000");
+        setPreferredPaymentMethod(expectation.preferredPaymentMethod || 1);
+
+        // Property preferences
+        setMinRoomCount(expectation.minRoomCount?.toString() || "1");
+        setMinSquareMeters(expectation.minSquareMeters?.toString() || "60");
+        setFurnishedPreference(expectation.furnishedPreference || 1);
+        setPreferredHeatingType(expectation.preferredHeatingType || 1);
+        setMaxBuildingAge(expectation.maxBuildingAge?.toString() || "10");
+        setPreferredFloorRange(expectation.preferredFloorRange || "");
+        setRequiresElevator(expectation.requiresElevator || false);
+        setRequiresBalcony(expectation.requiresBalcony || false);
+        setRequiresParking(expectation.requiresParking || false);
+        setRequiresInternet(expectation.requiresInternet !== false); // default true
+        setRequiresGarden(expectation.requiresGarden || false);
+
+        // Rental period
+        setPreferredRentalPeriod(expectation.preferredRentalPeriod || 1);
+        if (expectation.earliestMoveInDate) {
+          setEarliestMoveInDate(new Date(expectation.earliestMoveInDate));
+        }
+        setPreferShortTerm(expectation.preferShortTerm || false);
+
+        // Personal information
+        setOccupantCount(expectation.occupantCount?.toString() || "1");
+        setHasPets(expectation.hasPets || false);
+        setPetTypes(expectation.petTypes || "");
+        setIsStudent(expectation.isStudent || false);
+        setOccupation(expectation.occupation || "");
+        setIsFamily(expectation.isFamily || false);
+        setHasChildren(expectation.hasChildren || false);
+        setChildrenCount(expectation.childrenCount?.toString() || "0");
+        setIsSmoker(expectation.isSmoker || false);
+        setHasInsuredJob(expectation.hasInsuredJob || false);
+        setCanProvideGuarantor(expectation.canProvideGuarantor !== false); // default true
+        setMonthlyIncome(expectation.monthlyIncome?.toString() || "0");
+        setCanProvideReference(expectation.canProvideReference || false);
+
+        // Preferences
+        setNeighborRelationPreference(
+          expectation.neighborRelationPreference || 1
+        );
+        setNoisePreference(expectation.noisePreference || 1);
+        setSecurityPreferences(expectation.securityPreferences || "");
+        setRequiresPublicTransport(
+          expectation.requiresPublicTransport !== false
+        ); // default true
+        setRequiresShoppingAccess(expectation.requiresShoppingAccess !== false); // default true
+        setRequiresSchoolAccess(expectation.requiresSchoolAccess || false);
+        setRequiresHospitalAccess(expectation.requiresHospitalAccess || false);
+        setAdditionalNotes(expectation.additionalNotes || "");
+      }
+    }
+  }, [userProfile, isExpectationCompleted, userRole]);
+
+  // İlçe setlemesini şehir yüklendikten sonra yapmak için ayrı useEffect
+  useEffect(() => {
+    if (
+      userProfile &&
+      isExpectationCompleted &&
+      city &&
+      districtOptions.length > 0
+    ) {
+      if (userRole === "EVSAHIBI" && userProfile.tenantExpectation) {
+        const expectation = userProfile.tenantExpectation;
+        setDistrict(expectation.district || "");
+      } else if (userRole === "KIRACI" && userProfile.landlordExpectation) {
+        const expectation = userProfile.landlordExpectation;
+        setDistrict(expectation.district || "");
+      }
+    }
+  }, [userProfile, isExpectationCompleted, userRole, city, districtOptions]);
 
   console.log("isExpectationCompleted:", isExpectationCompleted);
 
@@ -1086,7 +1237,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
           label="Aidat Sorumluluğu"
           value={
             maintenanceFeeResponsibilityOptions[
-            maintenanceFeeResponsibility - 1
+              maintenanceFeeResponsibility - 1
             ]
           }
           setValue={(value) => {
@@ -1831,8 +1982,8 @@ const ProfileExpectationScreen = ({ navigation }) => {
       Alert.alert(
         "Hata",
         error?.data?.message ||
-        error?.message ||
-        "Beklenti profili oluşturulurken bir hata oluştu"
+          error?.message ||
+          "Beklenti profili oluşturulurken bir hata oluştu"
       );
     }
   };
@@ -1958,7 +2109,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
       Alert.alert(
         "Hata",
         error?.data?.message ||
-        "Beklenti profili güncellenirken bir hata oluştu"
+          "Beklenti profili güncellenirken bir hata oluştu"
       );
     }
   };

@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-const BASE_URL = "https://kiraxapiyeni.justkey.online/";
+const BASE_URL = "https://kiraxapiyeni.justkey.online";
 
 export const apiSlice = createApi({
   reducerPath: "api",
@@ -78,7 +78,6 @@ export const apiSlice = createApi({
       query: () => "/api/post",
       providesTags: ["Post"],
     }),
-
 
     // YENİ: Paginated posts endpoint'i
     getAllPostsPaginated: builder.query({
@@ -380,8 +379,9 @@ export const apiSlice = createApi({
       // Pagination için cache merge stratejisi
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         const { landlordUserId, minMatchScore, propertyId } = queryArgs;
-        return `${endpointName}-${landlordUserId}-${minMatchScore}-${propertyId || "all"
-          }`;
+        return `${endpointName}-${landlordUserId}-${minMatchScore}-${
+          propertyId || "all"
+        }`;
       },
       merge: (currentCache, newItems, { arg }) => {
         if (arg.page === 1) {
@@ -424,8 +424,9 @@ export const apiSlice = createApi({
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         const { landlordUserId, minMatchScore, propertyId, includeFallback } =
           queryArgs;
-        return `${endpointName}-${landlordUserId}-${minMatchScore}-${propertyId || "all"
-          }-${includeFallback}`;
+        return `${endpointName}-${landlordUserId}-${minMatchScore}-${
+          propertyId || "all"
+        }-${includeFallback}`;
       },
       merge: (currentCache, newItems, { arg }) => {
         if (arg.page === 1) {
@@ -627,10 +628,7 @@ export const apiSlice = createApi({
       providesTags: (result, error, id) => {
         console.log("📊 GetOwnTenantProfile sonucu:", result);
         console.log("❌ GetOwnTenantProfile hatası:", error);
-        return [
-          { type: "Profile", id: "own-tenant" },
-          "ProfileFavorites"
-        ];
+        return [{ type: "Profile", id: "own-tenant" }, "ProfileFavorites"];
       },
     }),
 
@@ -642,10 +640,7 @@ export const apiSlice = createApi({
       providesTags: (result, error, id) => {
         console.log("📊 GetOwnLandlordProfile sonucu:", result);
         console.log("❌ GetOwnLandlordProfile hatası:", error);
-        return [
-          { type: "Profile", id: "own-landlord" },
-          "ProfileFavorites"
-        ];
+        return [{ type: "Profile", id: "own-landlord" }, "ProfileFavorites"];
       },
     }),
     deleteProfile: builder.mutation({
@@ -932,8 +927,9 @@ export const apiSlice = createApi({
       // Pagination için cache merge stratejisi
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         const { LandLordUserId, minSimilarityScore } = queryArgs;
-        return `${endpointName}-${LandLordUserId || "all"
-          }-${minSimilarityScore}`;
+        return `${endpointName}-${
+          LandLordUserId || "all"
+        }-${minSimilarityScore}`;
       },
       merge: (currentCache, newItems, { arg }) => {
         if (arg.page === 1) {
@@ -985,9 +981,6 @@ export const apiSlice = createApi({
         return currentArg !== previousArg;
       },
     }),
-
-
-
   }),
 });
 

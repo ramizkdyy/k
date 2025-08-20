@@ -85,13 +85,14 @@ const ProfileScreen = ({ navigation }) => {
     isLoading,
     refetch,
   } = userRole === "EVSAHIBI"
-      ? useGetLandlordProfileQuery(currentUser?.id)
-      : useGetTenantProfileQuery(currentUser?.id);
+    ? useGetLandlordProfileQuery(currentUser?.id)
+    : useGetTenantProfileQuery(currentUser?.id);
 
   useEffect(() => {
     if (profileData && profileData.isSuccess && profileData.result) {
       dispatch(setUserProfile(profileData.result));
     }
+    console.log("seks", profileData);
   }, [profileData, dispatch]);
 
   const onRefresh = async () => {
@@ -158,8 +159,9 @@ const ProfileScreen = ({ navigation }) => {
 
   // Check if expectations are completed
   const isExpectationCompleted =
-    userProfile?.isTenantExpectationCompleted ||
-    userProfile?.isLandlordExpectationCompleted;
+    userRole === "KIRACI"
+      ? userProfile.isLandLordExpectationCompleted // Fixed: was isTenantExpectationCompleted
+      : userProfile.isLandlordExpectationCompleted;
 
   // Render loading state
   if (isLoading && !userProfile) {
@@ -175,7 +177,10 @@ const ProfileScreen = ({ navigation }) => {
 
   console.log("CurrentUser:", currentUser);
   console.log("userProfile:", userProfile);
-  console.log("isExpectationCompleted:", isExpectationCompleted);
+  console.log(
+    "isExpectationCompleted:",
+    userProfile.isTenantExpectationCompleted
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -236,7 +241,7 @@ const ProfileScreen = ({ navigation }) => {
                   borderRadius: 100,
                   boxShadow: "0px 0px 12px #00000014",
                   width: 96,
-                  height: 96
+                  height: 96,
                 }}
                 source={{ uri: userProfile.profileImageUrl }}
                 className="w-full h-full rounded-full"
@@ -517,7 +522,9 @@ const ProfileScreen = ({ navigation }) => {
                     style={{ fontSize: 16 }}
                     className="text-gray-900 font-medium"
                   >
-                    {userRole === "KIRACI" ? "Favori Ev Sahipleri" : "Favori Kiracılar"}
+                    {userRole === "KIRACI"
+                      ? "Favori Ev Sahipleri"
+                      : "Favori Kiracılar"}
                   </Text>
                 </View>
               </View>
@@ -528,7 +535,6 @@ const ProfileScreen = ({ navigation }) => {
               />
             </TouchableOpacity>
           </View>
-
 
           {/* Settings and Logout */}
           <View className="bg-white rounded-xl">

@@ -262,9 +262,9 @@ const OffersScreen = () => {
               ...item.rentalOfferDto,
               // Post bilgilerini ekle
               post: {
-                userName: item.postDto?.user?.name,
-                userId: item.postDto?.user?.id,
-                profilePictureUrl: item.postDto?.user?.profilePictureUrl,
+                userName: item?.postDto?.user?.name,
+                userId: item?.postDto?.user?.id,
+                profilePictureUrl: item?.postDto?.user?.profilePictureUrl,
                 postId: item.postDto.postId,
                 ilanBasligi: item.postDto.ilanBasligi,
                 kiraFiyati: item.postDto.kiraFiyati,
@@ -817,8 +817,8 @@ const OffersScreen = () => {
                   onPress={() => {
                     const targetUserId =
                       userRole === "KIRACI"
-                        ? post.userId
-                        : item.offeringUser?.userId;
+                        ? post?.userId
+                        : item?.offeringUser?.userId;
                     const targetUserRole =
                       userRole === "KIRACI" ? "EVSAHIBI" : "KIRACI";
 
@@ -838,15 +838,15 @@ const OffersScreen = () => {
                       source={{
                         uri:
                           userRole === "KIRACI"
-                            ? post.profilePictureUrl
-                            : item.offeringUser?.profileImageUrl,
+                            ? post?.profilePictureUrl
+                            : item?.offeringUser?.profileImageUrl,
                       }}
                       className="w-full h-full rounded-full"
                     />
                   ) : (
                     <View>
                       <Text className="text-xl font-bold text-gray-900">
-                        {item.offeringUser.user?.name?.charAt(0) ||
+                        {item.offeringUser?.user?.name?.charAt(0) ||
                           post?.userName?.charAt(0) ||
                           "E"}
                       </Text>
