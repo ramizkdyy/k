@@ -109,7 +109,7 @@ const ImageWithFallback = React.memo(
           }}
         >
           <FontAwesomeIcon
-            icon={faHomeAlt}
+            icon={faHouseBlank}
             size={
               Math.min(
                 fallbackWidth || style?.width || 200,
@@ -274,7 +274,7 @@ const PropertyImageSlider = React.memo(
           onPress={onPress}
           activeOpacity={1}
         >
-          <FontAwesomeIcon icon={faHomeAlt} size={50} color="#cbd5e1" />
+          <FontAwesomeIcon icon={faHouseBlank} size={50} color="#cbd5e1" />
         </TouchableOpacity>
       );
     }
@@ -1285,9 +1285,9 @@ const PostsScreen = ({ navigation }) => {
                     }}
                   >
                     <View className="w-12 h-12 rounded-full justify-center items-center mr-3 border-gray-900 border">
-                      {item.user?.profileImageUrl ? (
+                      {item.user?.profilePictureUrl ? (
                         <ImageWithFallback
-                          source={{ uri: item.user.profileImageUrl }}
+                          source={{ uri: item.user.profilePictureUrl }}
                           style={{ width: 48, height: 48, borderRadius: 24 }}
                           className="w-full h-full rounded-full"
                           fallbackWidth={48}
@@ -1296,7 +1296,10 @@ const PostsScreen = ({ navigation }) => {
                         />
                       ) : (
                         <View>
-                          <Text className="text-xl font-bold text-gray-900">
+                          <Text
+                            style={{ fontSize: 20 }}
+                            className=" font-bold text-gray-900"
+                          >
                             {item.user?.name?.charAt(0) || "E"}
                           </Text>
                         </View>
@@ -1518,7 +1521,7 @@ const PostsScreen = ({ navigation }) => {
         style={{ marginBottom: 120 }}
         className="flex-1 justify-center items-center "
       >
-        <FontAwesomeIcon icon={faHomeAlt} size={60} />
+        <FontAwesomeIcon icon={faHouseBlank} size={60} />
         <Text className="text-lg font-semibold text-gray-500 mt-2 mb-1">
           {userRole === "EVSAHIBI"
             ? "Henüz ilan oluşturmadınız"

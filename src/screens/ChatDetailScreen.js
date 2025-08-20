@@ -1207,7 +1207,17 @@ const ChatDetailScreen = ({ navigation, route }) => {
               <FontAwesomeIcon icon={faChevronLeft} size={20} color="#000" />
             </TouchableOpacity>
 
-            <TouchableOpacity className="flex-row items-center flex-1">
+            <TouchableOpacity
+              className="flex-row items-center flex-1"
+              onPress={() => {
+                console.log("🔍 Header pressed - partnerId:", partnerId);
+                console.log("🔍 Partner data:", partner);
+                navigation.navigate("UserProfile", {
+                  userId: partnerId,
+                  userRole: partner?.role || "KIRACI", // Default to KIRACI if role not available
+                });
+              }}
+            >
               <View
                 style={{
                   boxShadow: "0px 0px 12px #00000014",

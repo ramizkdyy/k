@@ -231,6 +231,7 @@ const OffersScreen = () => {
       });
 
   // DÜZELTME: Yeni landlord action mutation'ı kullan
+
   const [landlordOfferAction] = useLandlordOfferActionMutation();
 
   // Log the raw API response for debugging
@@ -261,6 +262,9 @@ const OffersScreen = () => {
               ...item.rentalOfferDto,
               // Post bilgilerini ekle
               post: {
+                userName: item.postDto?.user?.name,
+                userId: item.postDto?.user?.id,
+                profilePictureUrl: item.postDto?.user?.profilePictureUrl,
                 postId: item.postDto.postId,
                 ilanBasligi: item.postDto.ilanBasligi,
                 kiraFiyati: item.postDto.kiraFiyati,
@@ -528,6 +532,8 @@ const OffersScreen = () => {
       ? Math.min(5, Math.max(1, item.offeringUser.ratingCount / 10)) // 1-5 arası bir değer
       : 0;
 
+    console.log("itemitem", item);
+
     return (
       <TouchableOpacity
         key={item.offerId?.toString() || index.toString()}
@@ -699,7 +705,9 @@ const OffersScreen = () => {
                       fontWeight: "500",
                     }}
                   >
-                    Gelen teklif
+                    {userRole === "KIRACI"
+                      ? "Gönderilen teklif"
+                      : "Gelen teklif"}
                   </Text>
                 </BlurView>
               ) : (
@@ -803,66 +811,72 @@ const OffersScreen = () => {
                 className="items-center flex flex-row gap-1 mt-1 absolute"
               >
                 {" "}
-                <View
+                <TouchableOpacity
                   style={{ borderWidth: 1.5 }}
                   className="w-10 h-10 rounded-full justify-center items-center mr-2 border border-white"
+                  onPress={() => {
+                    const targetUserId =
+                      userRole === "KIRACI"
+                        ? post.userId
+                        : item.offeringUser?.userId;
+                    const targetUserRole =
+                      userRole === "KIRACI" ? "EVSAHIBI" : "KIRACI";
+
+                    if (targetUserId) {
+                      navigation.navigate("UserProfile", {
+                        userId: targetUserId,
+                        userRole: targetUserRole,
+                      });
+                    }
+                  }}
+                  activeOpacity={0.7}
                 >
-                  {!!item.offeringUser?.profileImageUrl ? (
+                  {!!item.offeringUser?.profileImageUrl ||
+                  post?.profilePictureUrl ? (
                     <Image
                       style={{ width: 40, height: 40, borderRadius: 100 }}
-                      source={{ uri: item.offeringUser.profileImageUrl }}
+                      source={{
+                        uri:
+                          userRole === "KIRACI"
+                            ? post.profilePictureUrl
+                            : item.offeringUser?.profileImageUrl,
+                      }}
                       className="w-full h-full rounded-full"
                     />
                   ) : (
                     <View>
                       <Text className="text-xl font-bold text-gray-900">
-                        {item.offeringUser.user?.name?.charAt(0) || "E"}
+                        {item.offeringUser.user?.name?.charAt(0) ||
+                          post?.userName?.charAt(0) ||
+                          "E"}
                       </Text>
                     </View>
                   )}
-                </View>
-                <View>
-                  <Text className="text-sm font-medium text-white">
-                    {item.offeringUser.user?.name}{" "}
-                    {item.offeringUser.user?.surname}
-                  </Text>{" "}
-                  {/* UPDATED: Rating bar with animation */}
-                  {ratingScore > 0 ? (
-                    <RatingScoreBar
-                      ratingScore={ratingScore}
-                      showBar={true}
-                      size="xs"
-                    />
-                  ) : (
-                    <Text className="text-xs text-gray-300">
-                      Henüz değerlendirilmedi
+                </TouchableOpacity>
+                {/* Content Section */}
+                <View className="">
+                  {/* Title */}
+                  <Text
+                    style={{ fontSize: 14 }}
+                    className="font-bold text-white"
+                    numberOfLines={2}
+                  >
+                    {post.ilanBasligi || "İlan Başlığı Yok"}
+                  </Text>
+
+                  {/* Location */}
+                  <View className="flex-row items-center">
+                    <Text
+                      className="text-gray-300 flex-1"
+                      style={{ fontSize: 12 }}
+                      numberOfLines={1}
+                    >
+                      {post.il && post.il !== "Türkiye" ? post.il : ""}
+                      {post.ilce ? `, ${post.ilce}` : ""}
+                      {post.mahalle ? `, ${post.mahalle}` : ""}
                     </Text>
-                  )}
+                  </View>
                 </View>
-              </View>
-            </View>
-
-            {/* Content Section */}
-            <View className="py-3">
-              {/* Title */}
-              <Text
-                className="font-bold text-lg text-gray-900 mb-1"
-                numberOfLines={2}
-              >
-                {post.ilanBasligi || "İlan Başlığı Yok"}
-              </Text>
-
-              {/* Location */}
-              <View className="flex-row items-center mb-3">
-                <Text
-                  className="text-gray-500 flex-1"
-                  style={{ fontSize: 12 }}
-                  numberOfLines={1}
-                >
-                  {post.il && post.il !== "Türkiye" ? post.il : ""}
-                  {post.ilce ? `, ${post.ilce}` : ""}
-                  {post.mahalle ? `, ${post.mahalle}` : ""}
-                </Text>
               </View>
             </View>
 
@@ -1126,7 +1140,7 @@ const OffersScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 55 }}
+        contentContainerStyle={{ paddingBottom: 85 }}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: false }

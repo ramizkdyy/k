@@ -31,11 +31,10 @@ import {
   faCalendar,
   faBuilding,
   faUsers,
-  faHeart,
   faPercentage,
 } from "@fortawesome/pro-light-svg-icons";
 import { BlurView } from "expo-blur";
-import { faSearch } from "@fortawesome/pro-solid-svg-icons";
+import { faHeart } from "@fortawesome/pro-regular-svg-icons";
 import {
   faChevronLeft,
   faFilter,
@@ -518,7 +517,7 @@ const LandlordItem = memo(
             style={{ borderRadius: 30, borderWidth: 0.5 }}
           >
             {/* Header with Profile Image and Basic Info - Centered like Tenant */}
-            <View className="flex-col items-center mb-4">
+            <View className="flex-row items-center mb-4 gap-4">
               <Image
                 className="border border-gray-100"
                 style={{
@@ -546,25 +545,25 @@ const LandlordItem = memo(
                 >
                   {item.landlordName || item.name || "Ev Sahibi"}
                 </Text>
+
+                {/* Compatibility Level */}
+                {item.matchScore && (
+                  <View className="flex flex-col">
+                    <View className="flex flex-row gap-1 items-center">
+                      {" "}
+                      <FontAwesomeIcon icon={faHeart} />
+                      <Text style={{ fontWeight: 500 }}>
+                        {item.matchScore}% Uyum
+                      </Text>
+                    </View>
+                    {item.matchReasons && item.matchReasons.length > 0 && (
+                      <Text className="text-xs text-gray-500 mt-1">
+                        {item.matchReasons[0]}.
+                      </Text>
+                    )}
+                  </View>
+                )}
               </View>
-
-              {/* Compatibility Level */}
-              {item.matchScore && (
-                <View className="flex flex-col w-full items-center justify-center">
-                  <MatchScoreBar
-                    matchScore={item.matchScore}
-                    showBar={true}
-                    size="sm"
-                  />
-
-                  {/* Match Reasons */}
-                  {item.matchReasons && item.matchReasons.length > 0 && (
-                    <Text className="text-xs text-gray-500 mt-2">
-                      {item.matchReasons[0]}
-                    </Text>
-                  )}
-                </View>
-              )}
             </View>
 
             {/* Landlord Details Grid - Same style as Tenant */}

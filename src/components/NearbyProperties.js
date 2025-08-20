@@ -717,7 +717,6 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   // ✅ ULTRA OPTIMIZED: FlatList Configuration
   const flatListConfig = useMemo(
     () => ({
-      removeClippedSubviews: true,
       maxToRenderPerBatch: 3,
       windowSize: 5,
       showsHorizontalScrollIndicator: false,
@@ -933,7 +932,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
 
               <FlatList
                 style={{ paddingLeft: 16 }}
-                data={thirdSectionData.slice(0, 4)}
+                data={thirdSectionData.slice(0, 5)}
                 renderItem={renderVerticalPropertyCard}
                 keyExtractor={thirdSectionKeyExtractor}
                 scrollEnabled={false}
