@@ -243,7 +243,8 @@ const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onN
                             tint="dark"
                             style={{
                                 borderRadius: 20,
-                                overflow: 'hidden'
+                                overflow: 'hidden',
+                                marginLeft: 12
                             }}
                         >
                             <View className="px-3 py-2 flex-row items-center">

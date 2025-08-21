@@ -30,6 +30,7 @@ import {
   faBuilding,
   faCoins,
   faBedBunk,
+  faExclamationCircle
 } from "@fortawesome/pro-light-svg-icons";
 import { BlurView } from "expo-blur";
 import { faSearch } from "@fortawesome/pro-solid-svg-icons";
@@ -830,13 +831,12 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
         <Text className="text-base text-gray-500 text-center mb-6">
           {searchQuery
             ? "Arama kriterlerinize uygun öneri bulunamadı."
-            : `Henüz size özel önerilen ilan bulunmuyor. ${
-                getPaginationInfo()?.minMatchScore
-                  ? `(Min. uyum: %${Math.round(
-                      getPaginationInfo().minMatchScore * 100
-                    )})`
-                  : ""
-              }`}
+            : `Henüz size özel önerilen ilan bulunmuyor. ${getPaginationInfo()?.minMatchScore
+              ? `(Min. uyum: %${Math.round(
+                getPaginationInfo().minMatchScore * 100
+              )})`
+              : ""
+            }`}
         </Text>
         {!!searchQuery && (
           <TouchableOpacity
@@ -955,9 +955,8 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
             >
               <TextInput
                 className="w-full px-2 placeholder:text-gray-400 placeholder:text-[14px] py-4 text-normal"
-                placeholder={`Sizin için önerilen ${
-                  allProperties.length > 0 ? `(${allProperties.length})` : ""
-                }`}
+                placeholder={`Sizin için önerilen ${allProperties.length > 0 ? `(${allProperties.length})` : ""
+                  }`}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
@@ -1004,19 +1003,17 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
                   <TouchableOpacity
                     activeOpacity={1}
                     key={option.key}
-                    className={`mr-3 px-4 py-2 rounded-full border ${
-                      minMatchScore === option.key
+                    className={`mr-3 px-4 py-2 rounded-full border ${minMatchScore === option.key
                         ? "bg-gray-900"
                         : "bg-white border-white"
-                    }`}
+                      }`}
                     onPress={() => handleMatchScoreChange(option.key)}
                   >
                     <Text
-                      className={`text-sm font-medium ${
-                        minMatchScore === option.key
+                      className={`text-sm font-medium ${minMatchScore === option.key
                           ? "text-white"
                           : "text-gray-700"
-                      }`}
+                        }`}
                     >
                       {option.label}
                     </Text>

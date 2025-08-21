@@ -21,6 +21,8 @@ import {
   useGetSentOffersQuery,
   useGetReceivedOffersQuery,
   useLandlordOfferActionMutation,
+  useRentOfferMutation, // YENI EKLEME
+
 } from "../redux/api/apiSlice";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { BlurView } from "expo-blur";
@@ -223,16 +225,18 @@ const OffersScreen = () => {
     refetch,
     error,
   } = isTenant
-    ? useGetSentOffersQuery(currentUser?.id, {
+      ? useGetSentOffersQuery(currentUser?.id, {
         skip: !currentUser?.id,
       })
-    : useGetReceivedOffersQuery(currentUser?.id, {
+      : useGetReceivedOffersQuery(currentUser?.id, {
         skip: !currentUser?.id,
       });
 
   // DÜZELTME: Yeni landlord action mutation'ı kullan
 
   const [landlordOfferAction] = useLandlordOfferActionMutation();
+  const [rentOffer] = useRentOfferMutation(); // YENI EKLEME
+
 
   // Log the raw API response for debugging
   useEffect(() => {
@@ -325,8 +329,7 @@ const OffersScreen = () => {
 
       offersData.result.rentalPosts.forEach((post, postIndex) => {
         console.log(
-          `Post ${postIndex}: ${post.ilanBasligi}, has ${
-            post.offers?.length || 0
+          `Post ${postIndex}: ${post.ilanBasligi}, has ${post.offers?.length || 0
           } offers`
         );
 
@@ -408,6 +411,63 @@ const OffersScreen = () => {
     setRefreshing(false);
   };
 
+  // 3. YENI FONKSİYON: Kiraya verme işlemi
+  const handleRentOffer = async (offerId, postTitle) => {
+    Alert.alert(
+      "Kiraya Ver",
+      `Bu evi "${postTitle}" ilanı için kiraya vermek istediğinizden emin misiniz? Bu işlem geri alınamaz.`,
+      [
+        { text: "İptal", style: "cancel" },
+        {
+          text: "Kiraya Ver",
+          style: "default",
+          onPress: async () => {
+            try {
+              console.log("Renting property:", {
+                userId: currentUser?.id,
+                offerId: offerId,
+                actionType: 2, // Rent action
+              });
+
+              const response = await rentOffer({
+                userId: currentUser?.id,
+                offerId: Number(offerId),
+              }).unwrap();
+
+              console.log("Rent response:", response);
+
+              if (response.isSuccess) {
+                Alert.alert(
+                  "Başarılı",
+                  "Ev başarıyla kiraya verildi! İlan artık aktif değil.",
+                  [
+                    {
+                      text: "Tamam",
+                      onPress: async () => {
+                        await refetch();
+                      }
+                    }
+                  ]
+                );
+              } else {
+                Alert.alert(
+                  "Hata",
+                  response.message || "Ev kiraya verilemedi."
+                );
+              }
+            } catch (error) {
+              console.log("Rent offer error:", error);
+              Alert.alert(
+                "Hata",
+                error?.data?.message || "Ev kiraya verilirken bir hata oluştu."
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
+
   // DÜZELTME: Teklif kabul etme fonksiyonu
   const handleAcceptOffer = async (offerId) => {
     Alert.alert(
@@ -447,7 +507,7 @@ const OffersScreen = () => {
               Alert.alert(
                 "Hata",
                 error?.data?.message ||
-                  "Teklif kabul edilirken bir hata oluştu."
+                "Teklif kabul edilirken bir hata oluştu."
               );
             }
           },
@@ -694,8 +754,8 @@ const OffersScreen = () => {
                     {post.paraBirimi === "USD"
                       ? "$"
                       : post.paraBirimi === "EUR"
-                      ? "€"
-                      : "₺"}
+                        ? "€"
+                        : "₺"}
                     {item.offerAmount?.toLocaleString() || "0"}
                   </Text>
                   <Text
@@ -736,8 +796,8 @@ const OffersScreen = () => {
                     {post.paraBirimi === "USD"
                       ? "$"
                       : post.paraBirimi === "EUR"
-                      ? "€"
-                      : "₺"}
+                        ? "€"
+                        : "₺"}
                     {item.offerAmount?.toLocaleString() || "0"}
                   </Text>
                 </View>
@@ -769,10 +829,10 @@ const OffersScreen = () => {
                     >
                       {item.offerTime
                         ? new Date(item.offerTime).toLocaleDateString("tr-TR", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          })
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })
                         : ""}
                     </Text>
                   </View>
@@ -800,8 +860,8 @@ const OffersScreen = () => {
                     {post.paraBirimi === "USD"
                       ? "$"
                       : post.paraBirimi === "EUR"
-                      ? "€"
-                      : "₺"}
+                        ? "€"
+                        : "₺"}
                     {item.offerAmount?.toLocaleString() || "0"}
                   </Text>
                 </View>
@@ -832,7 +892,7 @@ const OffersScreen = () => {
                   activeOpacity={0.7}
                 >
                   {!!item.offeringUser?.profileImageUrl ||
-                  post?.profilePictureUrl ? (
+                    post?.profilePictureUrl ? (
                     <Image
                       style={{ width: 40, height: 40, borderRadius: 100 }}
                       source={{
@@ -881,34 +941,56 @@ const OffersScreen = () => {
             </View>
 
             {/* Action Buttons for Landlords */}
-            {isLandlord && item.status === 0 && (
-              <View className="flex-row gap-3">
-                <TouchableOpacity
-                  className="flex-1 bg-black rounded-2xl justify-center items-center"
-                  style={{ height: 40 }}
-                  onPress={() => handleAcceptOffer(item.offerId)}
-                  activeOpacity={0.8}
-                >
-                  <Text
-                    className="text-white text-center font-semibold"
-                    style={{ fontSize: 16, lineHeight: 20 }}
+            {isLandlord && (
+              <View className="gap-3">
+                {/* Bekleyen teklifler için Kabul Et/Reddet butonları */}
+                {item.status === 0 && (
+                  <View className="flex-row gap-3">
+                    <TouchableOpacity
+                      className="flex-1 bg-black rounded-2xl justify-center items-center"
+                      style={{ height: 40 }}
+                      onPress={() => handleAcceptOffer(item.offerId)}
+                      activeOpacity={0.8}
+                    >
+                      <Text
+                        className="text-white text-center font-semibold"
+                        style={{ fontSize: 16, lineHeight: 20 }}
+                      >
+                        Kabul Et
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      className="flex-1 bg-white border-gray-900 border rounded-2xl justify-center items-center"
+                      style={{ height: 40 }}
+                      onPress={() => handleRejectOffer(item.offerId)}
+                      activeOpacity={0.8}
+                    >
+                      <Text
+                        className="text-gray-900 text-center"
+                        style={{ fontSize: 16, lineHeight: 20 }}
+                      >
+                        Reddet
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {/* YENI: Kabul edilen teklifler için Kiraya Ver butonu */}
+                {item.status === 1 && (
+                  <TouchableOpacity
+                    className="bg-green-600 rounded-2xl justify-center items-center"
+                    style={{ height: 40 }}
+                    onPress={() => handleRentOffer(item.offerId, post.ilanBasligi)}
+                    activeOpacity={0.8}
                   >
-                    Kabul Et
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  className="flex-1 bg-white border-gray-900 border rounded-2xl justify-center items-center"
-                  style={{ height: 40 }}
-                  onPress={() => handleRejectOffer(item.offerId)}
-                  activeOpacity={0.8}
-                >
-                  <Text
-                    className="text-gray-900 text-center"
-                    style={{ fontSize: 16, lineHeight: 20 }}
-                  >
-                    Reddet
-                  </Text>
-                </TouchableOpacity>
+                    <Text
+                      className="text-black text-center font-semibold"
+                      style={{ fontSize: 16, lineHeight: 20 }}
+                    >
+                      Kiraya Ver
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </View>
@@ -941,16 +1023,14 @@ const OffersScreen = () => {
         {tabs.map((tab) => (
           <TouchableOpacity
             key={tab.key}
-            className={`flex-1  rounded-full py-3 ${
-              selectedTab === tab.key ? "bg-black " : ""
-            }`}
+            className={`flex-1  rounded-full py-3 ${selectedTab === tab.key ? "bg-black " : ""
+              }`}
             onPress={() => setSelectedTab(tab.key)}
           >
             <Text
               style={{ fontSize: 12 }}
-              className={`text-center ${
-                selectedTab === tab.key ? "text-white" : "text-gray-900"
-              }`}
+              className={`text-center ${selectedTab === tab.key ? "text-white" : "text-gray-900"
+                }`}
             >
               {tab.label} ({tab.count})
             </Text>
@@ -1113,16 +1193,14 @@ const OffersScreen = () => {
               ].map((tab) => (
                 <TouchableOpacity
                   key={tab.key}
-                  className={`flex-1 rounded-full py-3 ${
-                    selectedTab === tab.key ? "bg-black" : ""
-                  }`}
+                  className={`flex-1 rounded-full py-3 ${selectedTab === tab.key ? "bg-black" : ""
+                    }`}
                   onPress={() => setSelectedTab(tab.key)}
                 >
                   <Text
                     style={{ fontSize: 12 }}
-                    className={`text-center ${
-                      selectedTab === tab.key ? "text-white" : "text-gray-900"
-                    }`}
+                    className={`text-center ${selectedTab === tab.key ? "text-white" : "text-gray-900"
+                      }`}
                   >
                     {tab.label} ({tab.count})
                   </Text>

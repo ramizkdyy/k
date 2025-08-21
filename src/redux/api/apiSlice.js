@@ -177,6 +177,14 @@ export const apiSlice = createApi({
       query: (landlordId) => `/api/post/offers/received/${landlordId}`,
       providesTags: ["Offer"],
     }),
+    getOffersByPostId: builder.query({
+      query: (postId) => `/api/post/GetOffersByPostId/${postId}`,
+      providesTags: (result, error, postId) => [
+        { type: "post", id: postId },
+        { type: "post", id: "LIST" }
+      ],
+    }),
+
 
     // DÜZELTME: Landlord offer action endpoint'i
     landlordOfferAction: builder.mutation({
@@ -209,6 +217,18 @@ export const apiSlice = createApi({
           userId: actionData.userId,
           offerId: actionData.offerId,
           actionType: 1, // Reject action
+        },
+      }),
+      invalidatesTags: ["Offer", "Post"],
+    }),
+    rentOffer: builder.mutation({
+      query: (actionData) => ({
+        url: "/api/post/landlord-action",
+        method: "POST",
+        body: {
+          userId: actionData.userId,
+          offerId: actionData.offerId,
+          actionType: 2, // Rent action - ev kiralanmış olarak işaretler
         },
       }),
       invalidatesTags: ["Offer", "Post"],
@@ -379,9 +399,8 @@ export const apiSlice = createApi({
       // Pagination için cache merge stratejisi
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         const { landlordUserId, minMatchScore, propertyId } = queryArgs;
-        return `${endpointName}-${landlordUserId}-${minMatchScore}-${
-          propertyId || "all"
-        }`;
+        return `${endpointName}-${landlordUserId}-${minMatchScore}-${propertyId || "all"
+          }`;
       },
       merge: (currentCache, newItems, { arg }) => {
         if (arg.page === 1) {
@@ -424,9 +443,8 @@ export const apiSlice = createApi({
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         const { landlordUserId, minMatchScore, propertyId, includeFallback } =
           queryArgs;
-        return `${endpointName}-${landlordUserId}-${minMatchScore}-${
-          propertyId || "all"
-        }-${includeFallback}`;
+        return `${endpointName}-${landlordUserId}-${minMatchScore}-${propertyId || "all"
+          }-${includeFallback}`;
       },
       merge: (currentCache, newItems, { arg }) => {
         if (arg.page === 1) {
@@ -927,9 +945,8 @@ export const apiSlice = createApi({
       // Pagination için cache merge stratejisi
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         const { LandLordUserId, minSimilarityScore } = queryArgs;
-        return `${endpointName}-${
-          LandLordUserId || "all"
-        }-${minSimilarityScore}`;
+        return `${endpointName}-${LandLordUserId || "all"
+          }-${minSimilarityScore}`;
       },
       merge: (currentCache, newItems, { arg }) => {
         if (arg.page === 1) {
@@ -1032,13 +1049,14 @@ export const {
   useGetOfferQuery,
   useGetSentOffersQuery,
   useGetReceivedOffersQuery,
-
+  useGetOffersByPostIdQuery,
   // DÜZELTME: Yeni landlord action hook'u
   useLandlordOfferActionMutation,
 
   // Geriye dönük uyumluluk için eski hook'lar
   useAcceptOfferMutation,
   useRejectOfferMutation,
+  useRentOfferMutation,
 
   // Profile hooks
   useCreateLandlordProfileMutation,

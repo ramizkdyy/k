@@ -98,6 +98,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from "react-native";
+import AllOffersScreen from "../screens/AllOffersScreen";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -808,7 +809,11 @@ const MainStackNavigator = () => {
         component={AllNearbyPropertiesScreen}
         options={{ headerShown: false }}
       />
-
+      <RootStack.Screen
+        name="AllOffers"
+        component={AllOffersScreen}
+        options={{ headerShown: false }}
+      />
       <RootStack.Screen
         name="AllMatchingUsers"
         component={AllMatchingUsers}
