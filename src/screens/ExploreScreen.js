@@ -5,9 +5,9 @@ import {
   Dimensions,
   StatusBar,
   Platform,
-  FlatList,
   RefreshControl,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -18,6 +18,7 @@ import { faHome } from "@fortawesome/pro-regular-svg-icons";
 import { useGetTikTokFeedQuery } from "../redux/api/apiSlice";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useIsFocused } from "@react-navigation/native";
+import PagerView from "react-native-pager-view";
 
 // Components
 import ExplorePostInfo from "../components/ExplorePostInfo";
@@ -25,9 +26,9 @@ import ExploreActionButtons from "../components/ExploreActionButtons";
 import LinearGradient from "react-native-linear-gradient";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-const ITEM_HEIGHT = SCREEN_HEIGHT - 83;
+const ITEM_HEIGHT = SCREEN_HEIGHT;
 
-// Simple Fast Image Component
+// Optimized Fast Image Component
 const FastImage = memo(({ uri, style, resizeMode = "cover", blurRadius }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -61,6 +62,8 @@ const FastImage = memo(({ uri, style, resizeMode = "cover", blurRadius }) => {
         onLoad={() => setLoaded(true)}
         onError={() => setError(true)}
         cachePolicy="memory-disk"
+        priority="high"
+        recyclingKey={uri}
       />
 
       {(!loaded || error) && (
@@ -82,13 +85,13 @@ const FastImage = memo(({ uri, style, resizeMode = "cover", blurRadius }) => {
   );
 });
 
-// Simplified ListingCard
+// Optimized ListingCard with memo for PagerView
 const ListingCard = memo(
-  ({ listing, safeAreaInsets, isActive, onHorizontalScrollChange }) => {
+  ({ listing, safeAreaInsets, isActive, onHorizontalScrollChange, index }) => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const scrollViewRef = useRef(null);
 
-    const getListingData = () => {
+    const getListingData = useCallback(() => {
       if (listing.postType === "NormalPost" && listing.post) {
         const post = listing.post;
         return {
@@ -139,7 +142,7 @@ const ListingCard = memo(
         price: "",
         postId: null,
       };
-    };
+    }, [listing]);
 
     const listingData = getListingData();
 
@@ -169,6 +172,7 @@ const ListingCard = memo(
           position: "relative",
           backgroundColor: "#000",
         }}
+        key={`listing-${listing.postId || listing.id}-${index}`} // Stable key for PagerView
       >
         {/* Main Image Display */}
         {listingData.images.length > 0 ? (
@@ -183,6 +187,7 @@ const ListingCard = memo(
             scrollEventThrottle={16}
             bounces={false}
             directionalLockEnabled={true}
+            decelerationRate="fast"
             style={{
               position: "absolute",
               top: 0,
@@ -191,9 +196,9 @@ const ListingCard = memo(
               height: ITEM_HEIGHT,
             }}
           >
-            {listingData.images.map((image, index) => (
+            {listingData.images.map((image, imageIndex) => (
               <View
-                key={index}
+                key={`${listing.postId || listing.id}-image-${imageIndex}`}
                 style={{
                   width: SCREEN_WIDTH,
                   height: ITEM_HEIGHT,
@@ -238,6 +243,7 @@ const ListingCard = memo(
                     ],
                     borderRadius: 12,
                     overflow: "hidden",
+                    paddingBottom: 32,
                   }}
                 >
                   <FastImage
@@ -283,7 +289,7 @@ const ListingCard = memo(
         />
 
         {/* Image Counter - Show only if multiple images */}
-        {listingData.images.length > 1 && (
+        {/* {listingData.images.length > 1 && (
           <View
             style={{
               position: "absolute",
@@ -305,7 +311,7 @@ const ListingCard = memo(
               {currentImageIndex + 1}/{listingData.images.length}
             </Text>
           </View>
-        )}
+        )} */}
 
         {/* Components */}
         <ExplorePostInfo listing={listing} safeAreaInsets={safeAreaInsets} />
@@ -318,18 +324,90 @@ const ListingCard = memo(
         />
       </View>
     );
+  },
+  (prevProps, nextProps) => {
+    // Aggressive memo comparison for better performance
+    return (
+      prevProps.isActive === nextProps.isActive &&
+      prevProps.listing.postId === nextProps.listing.postId &&
+      prevProps.listing.id === nextProps.listing.id &&
+      prevProps.index === nextProps.index
+    );
   }
 );
 
-// Main ExploreScreen Component
+// Pull-to-refresh wrapper component for PagerView
+const RefreshablePagerView = memo(({ children, onRefresh, refreshing }) => {
+  const [pullRefreshEnabled, setPullRefreshEnabled] = useState(false);
+
+  return (
+    <View style={{ flex: 1 }}>
+      {refreshing && (
+        <View
+          style={{
+            position: "absolute",
+            top: 100,
+            left: 0,
+            right: 0,
+            zIndex: 1000,
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "rgba(0,0,0,0.7)",
+              padding: 12,
+              borderRadius: 25,
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+          >
+            <ActivityIndicator color="#4A90E2" size="small" />
+            <Text style={{ color: "white", marginLeft: 8, fontSize: 14 }}>
+              Yenileniyor...
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Pull-to-refresh detector at top */}
+      <View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 100,
+          zIndex: 999,
+        }}
+        onTouchStart={(e) => {
+          const startY = e.nativeEvent.pageY;
+          if (startY < 150) {
+            // If touch starts near top, enable pull to refresh
+            setPullRefreshEnabled(true);
+          }
+        }}
+        onTouchEnd={() => {
+          if (pullRefreshEnabled) {
+            onRefresh();
+            setPullRefreshEnabled(false);
+          }
+        }}
+      />
+
+      {children}
+    </View>
+  );
+});
+
+// Main ExploreScreen Component with PagerView
 const ExploreScreen = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const currentUser = useSelector(selectCurrentUser);
   const isFocused = useIsFocused();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isHorizontalScrollActive, setIsHorizontalScrollActive] =
-    useState(false);
-  const flatListRef = useRef(null);
+  const [isHorizontalScrollActive, setIsHorizontalScrollActive] = useState(false);
+  const pagerViewRef = useRef(null);
 
   // API call
   const feedParams = {
@@ -371,24 +449,29 @@ const ExploreScreen = ({ navigation }) => {
     if (feedParams.userId) {
       refetchFeed();
       setCurrentIndex(0);
+      // Reset to first page after refresh
       setTimeout(() => {
-        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+        pagerViewRef.current?.setPage(0);
       }, 100);
     }
   }, [feedParams.userId, refetchFeed]);
 
-  // Viewability handler
-  const handleViewableItemsChanged = useCallback(({ viewableItems }) => {
-    if (viewableItems.length > 0) {
-      const visibleIndex = viewableItems[0].index || 0;
-      setCurrentIndex(visibleIndex);
-    }
+  // Handle page selection change - CRITICAL for performance tracking
+  const handlePageSelected = useCallback((event) => {
+    const selectedPageIndex = event.nativeEvent.position;
+    setCurrentIndex(selectedPageIndex);
   }, []);
 
-  const viewabilityConfig = {
-    itemVisiblePercentThreshold: 50,
-    minimumViewTime: 100,
-  };
+  // Handle page scroll state change - for performance optimization
+  const handlePageScrollStateChanged = useCallback((state) => {
+    // State can be: 'idle', 'dragging', 'settling'
+    // We can use this to optimize performance during transitions
+    if (state === 'dragging') {
+      // User is actively scrolling - can pause expensive operations
+    } else if (state === 'idle') {
+      // Scrolling finished - can resume operations
+    }
+  }, []);
 
   // Loading state
   if (feedLoading || !currentUser?.id) {
@@ -402,6 +485,7 @@ const ExploreScreen = ({ navigation }) => {
         <View
           style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
+          <ActivityIndicator size="large" color="#4A90E2" />
           <Text style={{ marginTop: 16, fontSize: 18, color: "white" }}>
             Yükleniyor...
           </Text>
@@ -447,58 +531,43 @@ const ExploreScreen = ({ navigation }) => {
           backgroundColor="transparent"
         />
 
-        <FlatList
-          ref={flatListRef}
-          data={feedData.result.posts}
-          renderItem={({ item, index }) => (
-            <ListingCard
-              listing={item}
-              safeAreaInsets={insets}
-              isActive={index === currentIndex}
-              onHorizontalScrollChange={setIsHorizontalScrollActive}
-            />
-          )}
-          keyExtractor={(item, index) =>
-            `${item.postType}-${
-              item.post?.postId || item.metaPost?.id || index
-            }`
-          }
-          // Scroll Settings - Fast uniform vertical scrolling
-          scrollEnabled={!isHorizontalScrollActive}
-          pagingEnabled={false}
-          snapToInterval={ITEM_HEIGHT}
-          snapToAlignment="start"
-          decelerationRate={0.98}
-          disableIntervalMomentum={true}
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-          scrollEventThrottle={1}
-          // Refresh Control
-          refreshControl={
-            <RefreshControl
-              refreshing={feedLoading}
-              onRefresh={handleRefresh}
-              colors={["#4A90E2"]}
-              tintColor="#4A90E2"
-            />
-          }
-          // Viewability
-          onViewableItemsChanged={handleViewableItemsChanged}
-          viewabilityConfig={viewabilityConfig}
-          // Performance - Conservative settings
-          getItemLayout={(data, index) => ({
-            length: ITEM_HEIGHT,
-            offset: ITEM_HEIGHT * index,
-            index,
-          })}
-          removeClippedSubviews={Platform.OS === "android"}
-          maxToRenderPerBatch={2}
-          windowSize={3}
-          initialNumToRender={1}
-          // Content settings
-          contentInsetAdjustmentBehavior="never"
-          automaticallyAdjustContentInsets={false}
-        />
+        <RefreshablePagerView
+          onRefresh={handleRefresh}
+          refreshing={feedLoading}
+        >
+          <PagerView
+            ref={pagerViewRef}
+            style={{ flex: 1 }}
+            orientation="vertical" // 🚀 CRITICAL: Vertical orientation for Instagram-style
+            initialPage={0}
+            scrollEnabled={!isHorizontalScrollActive} // Disable when horizontal scroll is active
+            onPageSelected={handlePageSelected}
+            onPageScrollStateChanged={handlePageScrollStateChanged}
+            // 🚀 PERFORMANCE: Critical PagerView optimizations
+            overdrag={false} // Prevents overscroll bounce for better performance
+            pageMargin={0} // No gaps between pages
+            offscreenPageLimit={1} // Keep only 1 page in memory on each side (total 3 pages)
+          >
+            {feedData.result.posts.map((item, index) => (
+              <View
+                key={`page-${item.postType}-${item.post?.postId || item.metaPost?.id || index}`}
+                style={{
+                  width: SCREEN_WIDTH,
+                  height: ITEM_HEIGHT,
+                }}
+              >
+                <ListingCard
+                  listing={item}
+                  safeAreaInsets={insets}
+                  isActive={index === currentIndex}
+                  onHorizontalScrollChange={setIsHorizontalScrollActive}
+                  index={index}
+                />
+              </View>
+            ))}
+          </PagerView>
+        </RefreshablePagerView>
+
       </View>
     </GestureHandlerRootView>
   );
