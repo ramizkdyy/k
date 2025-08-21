@@ -10,6 +10,7 @@ import {
   faLocationDot,
 } from "@fortawesome/pro-solid-svg-icons";
 import { faHeart } from "@fortawesome/pro-solid-svg-icons";
+import { SCREEN_WIDTH } from "@gorhom/bottom-sheet";
 
 const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
   const navigation = useNavigation();
@@ -332,7 +333,7 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
       className="absolute left-1 z-10"
       style={{
         right: 60,
-        bottom: safeAreaInsets.bottom,
+        bottom: safeAreaInsets.bottom + SCREEN_WIDTH * 0.2,
       }}
     >
       <View className="px-3 py-3">
