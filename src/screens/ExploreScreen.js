@@ -5,26 +5,19 @@ import {
   Dimensions,
   StatusBar,
   Platform,
-  TouchableOpacity,
-  ScrollView,
+  FlatList,
   RefreshControl,
+  ScrollView,
 } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useSelector, useDispatch } from "react-redux";
-import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
+import { useSelector } from "react-redux";
+import { selectCurrentUser } from "../redux/slices/authSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import { faHome } from "@fortawesome/pro-regular-svg-icons";
 import { useGetTikTokFeedQuery } from "../redux/api/apiSlice";
-
-// Gesture ve Animation imports
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import Animated, {
-  useAnimatedScrollHandler,
-  useSharedValue,
-  runOnJS,
-} from "react-native-reanimated";
-import { useFocusEffect, useIsFocused } from "@react-navigation/native";
+import { useIsFocused } from "@react-navigation/native";
 
 // Components
 import ExplorePostInfo from "../components/ExplorePostInfo";
@@ -34,191 +27,66 @@ import LinearGradient from "react-native-linear-gradient";
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const ITEM_HEIGHT = SCREEN_HEIGHT - 83;
 
-// 9:16 aspect ratio için boyutlar
-const ASPECT_RATIO = 9 / 16;
-const MAIN_IMAGE_WIDTH = SCREEN_WIDTH; // Ekranın %85'i
-const MAIN_IMAGE_HEIGHT = MAIN_IMAGE_WIDTH / ASPECT_RATIO;
+// Simple Fast Image Component
+const FastImage = memo(({ uri, style, resizeMode = "cover", blurRadius }) => {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
 
-// 🚀 SMART IMAGE PRELOADER - Optimized for performance
-const ImagePreloader = () => {
-  const preloadQueue = useRef(new Set()); // Avoid duplicate preloads
-  const isPreloading = useRef(false);
+  const isValidUrl = uri && typeof uri === "string" && uri.startsWith("http");
 
-  // URL validation helper
-  const isValidImageUrl = (url) => {
-    if (!url || typeof url !== "string") return false;
-
-    // Google search URL'lerini ve geçersiz URL'leri filtrele
-    const invalidPatterns = [
-      "google.com/url",
-      "data:text/html",
-      "javascript:",
-      "about:blank",
-    ];
-
-    if (invalidPatterns.some((pattern) => url.includes(pattern))) {
-      return false;
-    }
-
-    // Geçerli görsel uzantıları
-    const validExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"];
-    const hasValidExtension = validExtensions.some((ext) =>
-      url.toLowerCase().includes(ext)
-    );
-
-    // HTTP/HTTPS ile başlayan ve geçerli uzantısı olan URL'ler
+  if (!isValidUrl) {
     return (
-      (url.startsWith("http") || url.startsWith("https")) &&
-      (hasValidExtension || url.includes("image") || url.includes("photo"))
-    );
-  };
-
-  const preloadImages = useCallback((imageUrls, priority = "normal") => {
-    const validUrls = imageUrls.filter(isValidImageUrl);
-
-    // Duplicate URL'leri filtrele
-    const newUrls = validUrls.filter((url) => !preloadQueue.current.has(url));
-
-    if (newUrls.length === 0) {
-      return;
-    }
-
-    // Priority'ye göre batch size ayarla
-    const batchSize = priority === "high" ? 3 : 5;
-    const delay = priority === "high" ? 50 : 200;
-
-    console.log(
-      `🎯 Queuing ${newUrls.length} new images for preload (Priority: ${priority})`
-    );
-
-    // URL'leri queue'ya ekle
-    newUrls.forEach((url) => preloadQueue.current.add(url));
-
-    // Batch processing
-    const processBatch = async (urls, startIndex = 0) => {
-      if (startIndex >= urls.length) return;
-
-      const batch = urls.slice(startIndex, startIndex + batchSize);
-
-      // Batch'i paralel olarak işle
-      const promises = batch.map(
-        (url, batchIndex) =>
-          new Promise((resolve) => {
-            setTimeout(() => {
-              Image.prefetch(url)
-                .then(() => {
-                  console.log(`✅ Preloaded: ${url.substring(0, 30)}...`);
-                  resolve();
-                })
-                .catch((error) => {
-                  console.warn(`❌ Failed: ${url.substring(0, 30)}...`);
-                  resolve(); // Continue even if failed
-                });
-            }, batchIndex * 30); // Small delay between batch items
-          })
-      );
-
-      await Promise.all(promises);
-
-      // Next batch after delay
-      setTimeout(() => {
-        processBatch(urls, startIndex + batchSize);
-      }, delay);
-    };
-
-    if (!isPreloading.current) {
-      isPreloading.current = true;
-      processBatch(newUrls).finally(() => {
-        isPreloading.current = false;
-      });
-    }
-  }, []);
-
-  return { preloadImages };
-};
-
-// 🔥 FAST LOADING IMAGE COMPONENT
-const FastImage = memo(
-  ({ uri, style, resizeMode = "cover", blurRadius, fadeDuration = 0 }) => {
-    const [loaded, setLoaded] = useState(false);
-    const [error, setError] = useState(false);
-
-    // URL validation
-    const isValidUrl = useCallback((url) => {
-      if (!url || typeof url !== "string") return false;
-
-      const invalidPatterns = [
-        "google.com/url",
-        "data:text/html",
-        "javascript:",
-        "about:blank",
-      ];
-
-      return (
-        !invalidPatterns.some((pattern) => url.includes(pattern)) &&
-        (url.startsWith("http") || url.startsWith("https"))
-      );
-    }, []);
-
-    const validUri = isValidUrl(uri) ? uri : null;
-
-    return (
-      <View style={style}>
-        {validUri ? (
-          <Image
-            source={{ uri: validUri }}
-            style={[style, { opacity: loaded && !error ? 1 : 0.3 }]}
-            contentFit={resizeMode}
-            blurRadius={blurRadius}
-            fadeDuration={fadeDuration}
-            onLoad={() => setLoaded(true)}
-            onError={(err) => {
-              console.warn(
-                "Image load error:",
-                validUri.substring(0, 50) + "...",
-                err.nativeEvent.error
-              );
-              setError(true);
-            }}
-            // 🚀 PERFORMANCE OPTIMIZATIONS
-            cache="force-cache" // Aggressive caching
-          />
-        ) : null}
-
-        {/* Loading/Error placeholder */}
-        {(!loaded || error || !validUri) && (
-          <View
-            style={[
-              style,
-              {
-                position: "absolute",
-                backgroundColor: "#dee0ea",
-                justifyContent: "center",
-                alignItems: "center",
-              },
-            ]}
-          >
-            <FontAwesomeIcon icon={faHome} size={80} color="#fff" />
-          </View>
-        )}
+      <View
+        style={[
+          style,
+          {
+            backgroundColor: "#374151",
+            justifyContent: "center",
+            alignItems: "center",
+          },
+        ]}
+      >
+        <FontAwesomeIcon icon={faHome} size={40} color="#9CA3AF" />
       </View>
     );
   }
-);
 
-// Optimize edilmiş ListingCard component
+  return (
+    <View style={style}>
+      <Image
+        source={{ uri }}
+        style={[style, { opacity: loaded && !error ? 1 : 0.5 }]}
+        contentFit={resizeMode}
+        blurRadius={blurRadius}
+        onLoad={() => setLoaded(true)}
+        onError={() => setError(true)}
+        cachePolicy="memory-disk"
+      />
+
+      {(!loaded || error) && (
+        <View
+          style={[
+            style,
+            {
+              position: "absolute",
+              backgroundColor: "#374151",
+              justifyContent: "center",
+              alignItems: "center",
+            },
+          ]}
+        >
+          <FontAwesomeIcon icon={faHome} size={40} color="#9CA3AF" />
+        </View>
+      )}
+    </View>
+  );
+});
+
+// Simplified ListingCard
 const ListingCard = memo(
-  ({
-    listing,
-    safeAreaInsets,
-    isActive,
-    index,
-    totalItems,
-    onImagePreload,
-  }) => {
+  ({ listing, safeAreaInsets, isActive, onHorizontalScrollChange }) => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    const [isHorizontalScrollActive, setIsHorizontalScrollActive] =
-      useState(false);
+    const scrollViewRef = useRef(null);
 
     const getListingData = () => {
       if (listing.postType === "NormalPost" && listing.post) {
@@ -230,24 +98,21 @@ const ListingCard = memo(
           location: `${post.il}, ${post.ilce}`,
           price: post.kiraFiyati ? `${post.kiraFiyati.toLocaleString()} ₺` : "",
           postId: post.postId,
-          type: "normal",
         };
       } else if (listing.postType === "MetaPost" && listing.metaPost) {
         const meta = listing.metaPost;
-
         let images = [];
 
         if (meta.imagesJson) {
           try {
             const parsedImages = JSON.parse(meta.imagesJson);
             if (Array.isArray(parsedImages)) {
-              const validImages = parsedImages.filter(
-                (img) => img && img.url && img.url !== null
-              );
-              images = validImages.map((img) => ({ url: img.url }));
+              images = parsedImages
+                .filter((img) => img && img.url)
+                .map((img) => ({ url: img.url }));
             }
           } catch (error) {
-            console.error("❌ ImagesJson parse hatası:", error.message);
+            console.warn("Image parse error:", error);
           }
         }
 
@@ -264,7 +129,6 @@ const ListingCard = memo(
               ? "Fiyat için tarih seçin"
               : meta.priceInfo || "",
           postId: meta.id,
-          type: "meta",
         };
       }
 
@@ -274,36 +138,28 @@ const ListingCard = memo(
         location: "",
         price: "",
         postId: null,
-        type: "unknown",
       };
     };
 
     const listingData = getListingData();
 
-    // 🚀 PRELOAD UPCOMING IMAGES when this item becomes active
-    useEffect(() => {
-      if (isActive && onImagePreload) {
-        onImagePreload(index);
-      }
-    }, [isActive, index, onImagePreload]);
-
-    // Yatay scroll handler
+    // Handle horizontal scroll for images
     const handleImageScroll = useCallback((event) => {
       const slideSize = SCREEN_WIDTH;
       const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
       setCurrentImageIndex(index);
     }, []);
 
-    // Yatay scroll başlangıç/bitiş kontrolü
+    // Handle horizontal scroll start/end
     const handleScrollBeginDrag = useCallback(() => {
-      setIsHorizontalScrollActive(true);
-    }, []);
+      onHorizontalScrollChange?.(true);
+    }, [onHorizontalScrollChange]);
 
     const handleScrollEndDrag = useCallback(() => {
       setTimeout(() => {
-        setIsHorizontalScrollActive(false);
-      }, 50); // Reduced from 100ms to 50ms
-    }, []);
+        onHorizontalScrollChange?.(false);
+      }, 100);
+    }, [onHorizontalScrollChange]);
 
     return (
       <View
@@ -311,183 +167,171 @@ const ListingCard = memo(
           width: SCREEN_WIDTH,
           height: ITEM_HEIGHT,
           position: "relative",
+          backgroundColor: "#000",
         }}
       >
-        {/* Background Images Container */}
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: "#000", // Changed to black for better loading experience
-          }}
-        >
-          {listingData.images.length > 0 ? (
-            <ScrollView
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              onMomentumScrollEnd={handleImageScroll}
-              onScrollBeginDrag={handleScrollBeginDrag}
-              onScrollEndDrag={handleScrollEndDrag}
-              scrollEventThrottle={8} // Reduced from 16 for faster response
-              directionalLockEnabled={true}
-              bounces={false}
-              decelerationRate={0.95} // Faster deceleration
-              style={{ flex: 1 }}
-              contentContainerStyle={{ alignItems: "start" }}
-              // 🚀 PRELOAD ALL IMAGES IN HORIZONTAL SCROLL
-              removeClippedSubviews={false} // Keep all images in memory
-            >
-              {listingData.images.map((image, imgIndex) => (
-                <View
-                  key={`image-${imgIndex}`}
-                  style={{
-                    width: SCREEN_WIDTH,
-                    height: ITEM_HEIGHT,
-                    position: "relative",
-                  }}
-                >
-                  {/* Blurred Background Image - Full Cover */}
-                  <FastImage
-                    uri={image.postImageUrl || image.url}
-                    style={{
-                      position: "absolute",
-                      width: "100%",
-                      height: "100%",
-                    }}
-                    resizeMode="cover"
-                    blurRadius={25}
-                    fadeDuration={100}
-                  />
-
-                  {/* Dark overlay for better contrast */}
-                  <View
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      height: "100%",
-                      backgroundColor: "rgba(0,0,0,0.3)",
-                    }}
-                  />
-
-                  {/* Main Image Container - 9:16 Aspect Ratio with Contain */}
-                  <View
-                    style={{
-                      position: "absolute",
-                      top: "50%",
-                      left: "50%",
-                      width: MAIN_IMAGE_WIDTH,
-                      height: MAIN_IMAGE_HEIGHT,
-                      transform: [
-                        { translateX: -MAIN_IMAGE_WIDTH / 2 },
-                        { translateY: -MAIN_IMAGE_HEIGHT / 2 },
-                      ],
-                      borderRadius: 12,
-                      overflow: "hidden",
-                      // Subtle shadow for depth
-                      shadowColor: "#000",
-                      shadowOffset: {
-                        width: 0,
-                        height: 8,
-                      },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 12,
-                      elevation: 16,
-                    }}
-                  >
-                    <FastImage
-                      uri={image.postImageUrl || image.url}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                      }}
-                      resizeMode="contain"
-                      fadeDuration={150}
-                    />
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
-          ) : (
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: "#374151",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <FontAwesomeIcon icon={faHome} size={60} color="#9CA3AF" />
-              <Text
+        {/* Main Image Display */}
+        {listingData.images.length > 0 ? (
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={handleImageScroll}
+            onScrollBeginDrag={handleScrollBeginDrag}
+            onScrollEndDrag={handleScrollEndDrag}
+            scrollEventThrottle={16}
+            bounces={false}
+            directionalLockEnabled={true}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: SCREEN_WIDTH,
+              height: ITEM_HEIGHT,
+            }}
+          >
+            {listingData.images.map((image, index) => (
+              <View
+                key={index}
                 style={{
-                  marginTop: 16,
-                  color: "rgba(255,255,255,0.7)",
-                  fontSize: 16,
+                  width: SCREEN_WIDTH,
+                  height: ITEM_HEIGHT,
+                  position: "relative",
                 }}
               >
-                Görsel yok
-              </Text>
-            </View>
-          )}
-        </View>
+                {/* Blurred Background */}
+                <FastImage
+                  uri={image.url}
+                  style={{
+                    position: "absolute",
+                    width: "100%",
+                    height: "100%",
+                  }}
+                  resizeMode="cover"
+                  blurRadius={20}
+                />
 
-        {/* Bottom Gradient Overlay */}
+                {/* Dark overlay */}
+                <View
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                    backgroundColor: "rgba(0,0,0,0.4)",
+                  }}
+                />
+
+                {/* Main Image */}
+                <View
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    width: SCREEN_WIDTH * 0.9,
+                    height: (SCREEN_WIDTH * 0.9) / (9 / 16),
+                    transform: [
+                      { translateX: -(SCREEN_WIDTH * 0.9) / 2 },
+                      { translateY: -((SCREEN_WIDTH * 0.9) / (9 / 16)) / 2 },
+                    ],
+                    borderRadius: 12,
+                    overflow: "hidden",
+                  }}
+                >
+                  <FastImage
+                    uri={image.url}
+                    style={{ width: "100%", height: "100%" }}
+                    resizeMode="contain"
+                  />
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        ) : (
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: "#374151",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <FontAwesomeIcon icon={faHome} size={60} color="#9CA3AF" />
+            <Text
+              style={{
+                marginTop: 16,
+                color: "rgba(255,255,255,0.7)",
+                fontSize: 16,
+              }}
+            >
+              Görsel yok
+            </Text>
+          </View>
+        )}
+
+        {/* Bottom Gradient */}
         <LinearGradient
-          colors={[
-            "rgba(0, 0, 0, 0.0)",
-            "rgba(0, 0, 0, 0.02)",
-            "rgba(0, 0, 0, 0.03)",
-            "rgba(0, 0, 0, 0.04)",
-            "rgba(0, 0, 0, 0.04)",
-            "rgba(0, 0, 0, 0.04)",
-            "rgba(0, 0, 0, 0.03)",
-            "rgba(0, 0, 0, 0.02)",
-            "rgba(0, 0, 0, 0)",
-          ]}
-          start={{ x: 0.5, y: 1 }}
-          end={{ x: 0.5, y: 0 }}
+          colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.6)"]}
           style={{
             position: "absolute",
             bottom: 0,
             width: "100%",
-            height: 170,
+            height: 200,
           }}
         />
 
-        {/* Post Info Component */}
-        <ExplorePostInfo listing={listing} safeAreaInsets={safeAreaInsets} />
+        {/* Image Counter - Show only if multiple images */}
+        {listingData.images.length > 1 && (
+          <View
+            style={{
+              position: "absolute",
+              top: 60,
+              right: 20,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 20,
+            }}
+          >
+            <Text
+              style={{
+                color: "white",
+                fontSize: 14,
+                fontWeight: "600",
+              }}
+            >
+              {currentImageIndex + 1}/{listingData.images.length}
+            </Text>
+          </View>
+        )}
 
-        {/* Action Buttons Component */}
+        {/* Components */}
+        <ExplorePostInfo listing={listing} safeAreaInsets={safeAreaInsets} />
         <ExploreActionButtons
           listing={listing}
           safeAreaInsets={safeAreaInsets}
-          isHorizontalScrollActive={isHorizontalScrollActive}
           currentImageIndex={currentImageIndex}
           totalImages={listingData.images.length}
+          onImageChange={setCurrentImageIndex}
         />
       </View>
     );
   }
 );
 
-// Ana ExploreScreen Component
+// Main ExploreScreen Component
 const ExploreScreen = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const currentUser = useSelector(selectCurrentUser);
-  const userRole = useSelector(selectUserRole);
   const isFocused = useIsFocused();
-
-  const [currentListingIndex, setCurrentListingIndex] = useState(0);
-  const flatListRef = useRef(null);
-  const scrollY = useSharedValue(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isHorizontalScrollActive, setIsHorizontalScrollActive] =
     useState(false);
+  const flatListRef = useRef(null);
 
-  // 🚀 IMAGE PRELOADER HOOK
-  const { preloadImages } = ImagePreloader();
-
-  // TikTok Feed API çağrısı
+  // API call
   const feedParams = {
     userId: currentUser?.id,
     latitude: 41.0082,
@@ -504,117 +348,7 @@ const ExploreScreen = ({ navigation }) => {
     skip: !feedParams.userId,
   });
 
-  // 🔥 OPTIMIZED IMAGE PRELOADING - Smarter queue management
-  const handleImagePreload = useCallback(
-    (currentIndex) => {
-      if (!feedData?.result?.posts) return;
-
-      const posts = feedData.result.posts;
-      const preloadCount = 3; // Reduced from 5 to 3 for better performance
-      const imagesToPreload = [];
-
-      // Current post images (high priority)
-      const currentPost = posts[currentIndex];
-      if (currentPost) {
-        if (
-          currentPost.postType === "NormalPost" &&
-          currentPost.post?.postImages
-        ) {
-          currentPost.post.postImages.forEach((img) => {
-            if (img.postImageUrl && typeof img.postImageUrl === "string") {
-              imagesToPreload.push({ url: img.postImageUrl, priority: "high" });
-            }
-          });
-        } else if (
-          currentPost.postType === "MetaPost" &&
-          currentPost.metaPost
-        ) {
-          const meta = currentPost.metaPost;
-          if (meta.imagesJson) {
-            try {
-              const parsedImages = JSON.parse(meta.imagesJson);
-              if (Array.isArray(parsedImages)) {
-                parsedImages.slice(0, 3).forEach((img) => {
-                  // Limit to first 3 images
-                  if (img?.url && typeof img.url === "string") {
-                    imagesToPreload.push({ url: img.url, priority: "high" });
-                  }
-                });
-              }
-            } catch (error) {
-              console.warn("JSON parse error:", error.message);
-            }
-          }
-          if (meta.firstImageUrl && typeof meta.firstImageUrl === "string") {
-            imagesToPreload.push({ url: meta.firstImageUrl, priority: "high" });
-          }
-        }
-      }
-
-      // Next posts images (normal priority)
-      const nextPostImages = [];
-      for (
-        let i = currentIndex + 1;
-        i <= Math.min(currentIndex + preloadCount, posts.length - 1);
-        i++
-      ) {
-        const post = posts[i];
-        if (post) {
-          if (post.postType === "NormalPost" && post.post?.postImages) {
-            // Only preload first image of upcoming posts
-            const firstImg = post.post.postImages[0];
-            if (
-              firstImg?.postImageUrl &&
-              typeof firstImg.postImageUrl === "string"
-            ) {
-              nextPostImages.push(firstImg.postImageUrl);
-            }
-          } else if (post.postType === "MetaPost" && post.metaPost) {
-            const meta = post.metaPost;
-            if (meta.firstImageUrl && typeof meta.firstImageUrl === "string") {
-              nextPostImages.push(meta.firstImageUrl);
-            } else if (meta.imagesJson) {
-              try {
-                const parsedImages = JSON.parse(meta.imagesJson);
-                if (Array.isArray(parsedImages) && parsedImages[0]?.url) {
-                  nextPostImages.push(parsedImages[0].url);
-                }
-              } catch (error) {
-                console.warn(
-                  "JSON parse error for upcoming post:",
-                  error.message
-                );
-              }
-            }
-          }
-        }
-      }
-
-      // Preload current post images first (high priority)
-      const currentPostUrls = imagesToPreload
-        .filter((item) => item.priority === "high")
-        .map((item) => item.url);
-      if (currentPostUrls.length > 0) {
-        console.log(
-          `🚀 Preloading ${currentPostUrls.length} current post images (High Priority)`
-        );
-        preloadImages(currentPostUrls, "high");
-      }
-
-      // Then preload upcoming post first images (normal priority)
-      if (nextPostImages.length > 0) {
-        console.log(
-          `📋 Preloading ${nextPostImages.length} upcoming post images (Normal Priority)`
-        );
-        setTimeout(() => {
-          preloadImages(nextPostImages, "normal");
-        }, 500); // Delay for current post images to load first
-      }
-    },
-    [feedData?.result?.posts, preloadImages]
-  );
-
-  // Status bar ayarları
+  // Status bar setup
   useEffect(() => {
     StatusBar.setBarStyle("light-content", true);
     if (Platform.OS === "android") {
@@ -623,97 +357,40 @@ const ExploreScreen = ({ navigation }) => {
     }
   }, []);
 
-  // 🚀 SMART INITIAL PRELOAD - Only preload essential images
-  useEffect(() => {
-    if (feedData?.result?.posts && feedData.result.posts.length > 0) {
-      console.log("🎯 Smart initial preload triggered");
-
-      // Only preload first 2 posts on initial load
-      const firstTwoPosts = feedData.result.posts.slice(0, 2);
-      const essentialImages = [];
-
-      firstTwoPosts.forEach((post, index) => {
-        if (post.postType === "NormalPost" && post.post?.postImages?.[0]) {
-          essentialImages.push(post.post.postImages[0].postImageUrl);
-        } else if (
-          post.postType === "MetaPost" &&
-          post.metaPost?.firstImageUrl
-        ) {
-          essentialImages.push(post.metaPost.firstImageUrl);
-        }
-      });
-
-      if (essentialImages.length > 0) {
-        console.log(`🎯 Preloading ${essentialImages.length} essential images`);
-        preloadImages(essentialImages, "high");
-      }
-    }
-  }, [feedData?.result?.posts, preloadImages]);
-
-  // AKILLI TAB REFRESH - Sadece zaten ekrandayken tetiklenir
+  // Tab refresh handler
   useEffect(() => {
     const unsubscribe = navigation?.addListener("tabPress", (e) => {
       if (isFocused) {
-        console.log("🔄 Tab pressed while already on Explore - Refreshing!");
-        handleManualRefresh();
-      } else {
-        console.log(
-          "⏭️ Tab pressed but coming from another screen - No refresh"
-        );
+        handleRefresh();
       }
     });
-
     return unsubscribe;
   }, [navigation, isFocused]);
 
-  // DEBUG - Screen focus durumunu takip et
-  useEffect(() => {
-    console.log(
-      "🎯 ExploreScreen focus changed:",
-      isFocused ? "FOCUSED" : "UNFOCUSED"
-    );
-  }, [isFocused]);
-
-  // MANUEL YENİLEME - Pull to refresh tarzı
-  const handleManualRefresh = useCallback(() => {
-    console.log("🔄 Manual refresh triggered");
-
+  const handleRefresh = useCallback(() => {
     if (feedParams.userId) {
       refetchFeed();
-      setCurrentListingIndex(0);
-
+      setCurrentIndex(0);
       setTimeout(() => {
-        flatListRef.current?.scrollToOffset({
-          offset: 0,
-          animated: true,
-        });
+        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
       }, 100);
     }
   }, [feedParams.userId, refetchFeed]);
 
-  // ⚡ HIZLI DİKEY SCROLL HANDLER
-  const scrollHandler = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      scrollY.value = event.contentOffset.y;
-      const index = Math.round(event.contentOffset.y / ITEM_HEIGHT);
-      runOnJS(setCurrentListingIndex)(index);
-    },
-  });
-
-  // Viewability ayarları - Daha agresiv preloading için
+  // Viewability handler
   const handleViewableItemsChanged = useCallback(({ viewableItems }) => {
     if (viewableItems.length > 0) {
-      const visibleIndex = viewableItems[0].index;
-      setCurrentListingIndex(visibleIndex || 0);
+      const visibleIndex = viewableItems[0].index || 0;
+      setCurrentIndex(visibleIndex);
     }
   }, []);
 
   const viewabilityConfig = {
-    itemVisiblePercentThreshold: 30, // Reduced from 40% for earlier preloading
-    minimumViewTime: 50, // Reduced from 100ms
+    itemVisiblePercentThreshold: 50,
+    minimumViewTime: 100,
   };
 
-  // Loading states
+  // Loading state
   if (feedLoading || !currentUser?.id) {
     return (
       <View style={{ flex: 1, backgroundColor: "black" }}>
@@ -726,13 +403,14 @@ const ExploreScreen = ({ navigation }) => {
           style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
           <Text style={{ marginTop: 16, fontSize: 18, color: "white" }}>
-            TikTok Feed yükleniyor...
+            Yükleniyor...
           </Text>
         </View>
       </View>
     );
   }
 
+  // Empty state
   if (!feedData?.result?.posts || feedData.result.posts.length === 0) {
     return (
       <View style={{ flex: 1, backgroundColor: "black" }}>
@@ -742,12 +420,7 @@ const ExploreScreen = ({ navigation }) => {
           backgroundColor="transparent"
         />
         <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            paddingHorizontal: 24,
-          }}
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
           <FontAwesomeIcon icon={faHome} size={80} color="#374151" />
           <Text
@@ -774,74 +447,55 @@ const ExploreScreen = ({ navigation }) => {
           backgroundColor="transparent"
         />
 
-        <Animated.FlatList
+        <FlatList
           ref={flatListRef}
           data={feedData.result.posts}
           renderItem={({ item, index }) => (
             <ListingCard
               listing={item}
               safeAreaInsets={insets}
-              isActive={index === currentListingIndex}
-              index={index}
-              totalItems={feedData.result.posts.length}
-              onImagePreload={handleImagePreload}
+              isActive={index === currentIndex}
+              onHorizontalScrollChange={setIsHorizontalScrollActive}
             />
           )}
           keyExtractor={(item, index) =>
-            `listing-${item.postType}-${item.post?.postId || item.metaPost?.id || index
+            `${item.postType}-${
+              item.post?.postId || item.metaPost?.id || index
             }`
           }
-          // 🚀 TikTok TARZINDA INSTANT SNAP - Custom interval ile hızlandırılmış
+          // Scroll Settings - Fast uniform vertical scrolling
+          scrollEnabled={!isHorizontalScrollActive}
           pagingEnabled={false}
           snapToInterval={ITEM_HEIGHT}
           snapToAlignment="start"
-          decelerationRate={"fast"} // 0.99 = çok hızlı durma (0.9'dan daha hızlı)
-          disableIntervalMomentum={true} // iOS'ta momentum'u azaltır
+          decelerationRate={0.98}
+          disableIntervalMomentum={true}
           showsVerticalScrollIndicator={false}
           bounces={false}
-          // ⚡ ULTRA HIZLI RESPONSE
-          scrollEventThrottle={1} // 1ms'de bir tetikle (maksimum hız)
-          // 🔒 YATAY SCROLL ÇAKIŞMASI ENGELLEMESİ
-          scrollEnabled={!isHorizontalScrollActive}
-          // 🔄 PULL TO REFRESH
+          scrollEventThrottle={1}
+          // Refresh Control
           refreshControl={
             <RefreshControl
               refreshing={feedLoading}
-              onRefresh={handleManualRefresh}
+              onRefresh={handleRefresh}
               colors={["#4A90E2"]}
               tintColor="#4A90E2"
             />
           }
-          // 📱 PLATFORM-SPESİFİK OPTİMİZASYONLAR
-          {...(Platform.OS === "android" && {
-            persistentScrollbar: false,
-            fadingEdgeLength: 0,
-            nestedScrollEnabled: false,
-            overScrollMode: "never",
-            snapToStart: true, // Android'de daha hızlı snap
-          })}
-          {...(Platform.OS === "ios" && {
-            automaticallyAdjustContentInsets: false,
-            contentInsetAdjustmentBehavior: "never",
-            disableIntervalMomentum: true, // iOS momentum azaltma
-          })}
-          // Scroll Handler
-          onScroll={scrollHandler}
-          // Viewability Ayarları
+          // Viewability
           onViewableItemsChanged={handleViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
-          // 🚀 PERFORMANCE OPTIMIZATIONS FOR FASTER IMAGE LOADING
+          // Performance - Conservative settings
           getItemLayout={(data, index) => ({
             length: ITEM_HEIGHT,
             offset: ITEM_HEIGHT * index,
             index,
           })}
-          removeClippedSubviews={false} // Keep images in memory for faster access
-          maxToRenderPerBatch={2} // Reduced back to 2 for better memory usage
-          windowSize={5} // Reduced from 7 to 5 for better performance
-          initialNumToRender={1} // Back to 1 for faster initial load
-          updateCellsBatchingPeriod={50} // Increased back to 50ms for stability
-          // Content Ayarları
+          removeClippedSubviews={Platform.OS === "android"}
+          maxToRenderPerBatch={2}
+          windowSize={3}
+          initialNumToRender={1}
+          // Content settings
           contentInsetAdjustmentBehavior="never"
           automaticallyAdjustContentInsets={false}
         />

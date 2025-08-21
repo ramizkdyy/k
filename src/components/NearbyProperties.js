@@ -581,7 +581,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
             </View>
           )}
 
-          <View className="flex flex-row gap-4 items-center">
+          <View className="flex flex-row gap-4 items-center mt-1">
             <View className="flex flex-row gap-2 items-center">
               <FontAwesomeIcon color="#6B7280" icon={faBath} />
               <Text style={{ fontSize: 12 }} className="text-gray-500">
@@ -672,33 +672,24 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
 
             <View className="flex-1 flex-col items-center mb-1">
               <Text
+                style={{ fontSize: 12, fontWeight: 400 }}
+                className="text-gray-500 mb-1"
+              >
+                {userRole === "EVSAHIBI" ? "Kiracı Adayı" : "Ev Sahibi"}
+              </Text>
+              <Text
                 style={{ fontSize: 16, fontWeight: 700 }}
                 className="text-gray-800"
                 numberOfLines={1}
               >
                 {getPersonName()}
               </Text>
-              <Text
-                style={{ fontSize: 12, fontWeight: 400 }}
-                className="text-gray-500 mt-1"
-              >
-                {userRole === "EVSAHIBI" ? "Kiracı Adayı" : "Ev Sahibi"}
-              </Text>
             </View>
           </View>
 
-          <View className="px-10 flex justify-center items-center">
-            <MatchScoreBar
-              matchScore={item.matchScore}
-              showBar={true}
-              size="sm"
-            />
-
-            {item.matchReasons?.[0] && (
-              <Text style={{ fontSize: 12 }} className="text-gray-500 mt-2">
-                {item.matchReasons[0]}
-              </Text>
-            )}
+          <View className=" gap-1 flex flex-row justify-center items-center">
+            <FontAwesomeIcon icon={faHeart} />
+            <Text className="font-medium">{item.matchScore}% Uyum</Text>
           </View>
 
           <TouchableOpacity
