@@ -32,7 +32,11 @@ import {
   faHeart,
 } from "@fortawesome/pro-light-svg-icons";
 import { BlurView } from "expo-blur";
-import { faChevronLeft, faSliders } from "@fortawesome/pro-regular-svg-icons";
+import {
+  faChevronLeft,
+  faHouseBlank,
+  faSliders,
+} from "@fortawesome/pro-regular-svg-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
@@ -460,8 +464,11 @@ const PropertyImageSlider = memo(({ images, status, postId, onPress }) => {
 
   if (!images || images.length === 0) {
     return (
-      <View className="w-full h-80 bg-gray-100 justify-center items-center rounded-3xl">
-        <FontAwesomeIcon icon={faHouse} size={50} color="#dee0ea" />
+      <View
+        style={{ height: 350 }}
+        className="w-full bg-gray-100 justify-center items-center rounded-3xl"
+      >
+        <FontAwesomeIcon icon={faHouseBlank} size={50} color="#fff" />
       </View>
     );
   }
@@ -620,13 +627,15 @@ const PropertyItem = memo(
 
         {/* Similarity Score Bar */}
         {item.similarityScore && (
-          <View style={{ top: 32, left: 20 }} className="absolute">
-            <SimilarityScoreBar
-              similarityScore={item.similarityScore}
-              showBar={true}
-              size="sm"
-            />
-          </View>
+          <BlurView
+            tint="dark"
+            style={{ top: 32, left: 20 }}
+            className="absolute overflow-hidden px-4 py-1.5 rounded-full"
+          >
+            <Text style={{ fontSize: 12 }} className="text-white font-medium">
+              {item.similarityScore}% Benzer
+            </Text>
+          </BlurView>
         )}
 
         <View className="flex flex-col">
@@ -1103,14 +1112,6 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
           { useNativeDriver: false }
         )}
         scrollEventThrottle={16} // Optimized for performance
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={["#4A90E2"]}
-            tintColor="#4A90E2"
-          />
-        }
         contentContainerStyle={{
           flexGrow: 1,
           paddingBottom: 16,

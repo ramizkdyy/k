@@ -685,8 +685,9 @@ const PropertyItem = memo(
 
     const priceText = useMemo(() => {
       if (item.kiraFiyati || item.rent) {
-        return `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
-          }`;
+        return `${(item.kiraFiyati || item.rent).toLocaleString()} ${
+          item.paraBirimi || item.currency || "₺"
+        }`;
       }
       return "Fiyat belirtilmemiş";
     }, [item.kiraFiyati, item.rent, item.paraBirimi, item.currency]);
@@ -787,7 +788,7 @@ const PropertyItem = memo(
                     )}
                   </View>
 
-                  <View className="flex-col gap-1">
+                  <View className="flex-col">
                     <Text
                       style={{ fontSize: 14 }}
                       className="font-semibold text-gray-800"
@@ -802,8 +803,8 @@ const PropertyItem = memo(
                   </View>
                 </TouchableOpacity>
                 <Text
-                  className="mb-2 pl-1 text-gray-500"
-                  style={{ fontSize: 12, fontWeight: 500 }}
+                  className=" text-gray-500"
+                  style={{ fontSize: 12, fontWeight: 400, marginBottom: 13 }}
                 >
                   {relativeTime}
                 </Text>
@@ -1333,15 +1334,17 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
                   <TouchableOpacity
                     activeOpacity={1}
                     key={option.key}
-                    className={`mr-3 px-4 py-2 rounded-full border ${sortBy === option.key
+                    className={`mr-3 px-4 py-2 rounded-full border ${
+                      sortBy === option.key
                         ? "bg-gray-900"
                         : "bg-white border-white"
-                      }`}
+                    }`}
                     onPress={() => handleSortChange(option.key)}
                   >
                     <Text
-                      className={`text-sm font-medium ${sortBy === option.key ? "text-white" : "text-gray-700"
-                        }`}
+                      className={`text-sm font-medium ${
+                        sortBy === option.key ? "text-white" : "text-gray-700"
+                      }`}
                     >
                       {option.label}
                       {sortBy === option.key && (

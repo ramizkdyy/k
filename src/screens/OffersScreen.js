@@ -914,7 +914,7 @@ const OffersScreen = () => {
                   )}
                 </TouchableOpacity>
                 {/* Content Section */}
-                <View className="">
+                <View className="w-full">
                   {/* Title */}
                   <Text
                     style={{ fontSize: 14 }}

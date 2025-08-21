@@ -317,375 +317,374 @@ const MatchScoreBar = memo(({ matchScore, showBar = false, size = "sm" }) => {
   );
 });
 
-// Memoized Tenant Item
-const TenantItem = memo(
-  ({ item, navigation }) => {
-    const userRole = useSelector(selectUserRole);
-    const handleTenantPress = useCallback(() => {
-      console.log("TENANT ITEM DATA:", JSON.stringify(item, null, 2));
-      console.log("item.userId:", item.userId); // UUID'yi logla
+// Tenant Item
+const TenantItem = ({ item, navigation }) => {
+  const userRole = useSelector(selectUserRole);
+  const handleTenantPress = () => {
+    console.log("TENANT ITEM DATA:", JSON.stringify(item, null, 2));
+    console.log("item.userId:", item.userId); // UUID'yi logla
 
-      navigation.navigate("UserProfile", {
-        userId: item.userId, // ✅ UUID kullan
-        userRole: "KIRACI",
-      });
-    }, [item.userId, navigation]); // dependency'yi de değiştir
+    navigation.navigate("UserProfile", {
+      userId: item.userId, // ✅ UUID kullan
+      userRole: "KIRACI",
+    });
+  };
 
-    return (
-      <View
-        style={{ marginHorizontal: 16 }}
-        className="mb-2 pt-4 border-gray-200"
-      >
-        <TouchableOpacity onPress={handleTenantPress} activeOpacity={1}>
-          <View
-            className="bg-white p-6 border-gray-200"
-            style={{ borderRadius: 30, borderWidth: 0.5 }}
-          >
-            {/* Header with Profile Image and Basic Info */}
-            <View className="flex-col items-center mb-4">
-              <Image
-                className="border border-gray-100"
-                style={{
-                  width: 80,
-                  height: 80,
-                  boxShadow: "0px 0px 12px #00000020",
-                  borderRadius: 100,
-                }}
-                source={{
-                  uri: item.tenantURL || "https://via.placeholder.com/60x60",
-                }}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-                transition={200}
-              />
-
-              <View className="flex-1 mt-1">
-                <Text
-                  style={{ fontSize: 18, fontWeight: 700 }}
-                  className="text-gray-800 mb-1"
-                  numberOfLines={1}
-                >
-                  {item.tenantName || "Kiracı"}
+  return (
+    <View
+      style={{ marginHorizontal: 16 }}
+      className="mb-2 pt-4 border-gray-200"
+    >
+      <TouchableOpacity onPress={handleTenantPress} activeOpacity={1}>
+        <View
+          className="bg-white p-6 border-gray-200"
+          style={{ borderRadius: 30, borderWidth: 0.5 }}
+        >
+          {/* Header with Profile Image and Basic Info */}
+          <View className="flex mb-4 flex-row items-center gap-4">
+            {" "}
+            <View
+              style={{ width: 80, height: 80 }}
+              className="justify-center items-center rounded-full border border-gray-100"
+            >
+              {item.tenantURL && item.tenantURL !== "default_profile_image_url" ? (
+                <Image
+                  source={{ uri: item.tenantURL }}
+                  style={{ width: 80, height: 80, borderRadius: 100 }}
+                  className="w-full h-full rounded-full"
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={200}
+                  onError={(error) => {
+                    console.log("❌ Tenant profile image load error:", error);
+                  }}
+                />
+              ) : (
+                <Text style={{ fontSize: 32 }} className="text-gray-900 font-bold">
+                  {item?.tenantName?.charAt(0)?.toUpperCase() || "K"}
                 </Text>
-              </View>
-
+              )}
+            </View>
+            <View className="flex flex-col items-start w-full">
+              {" "}
+              <Text
+                numberOfLines={1}
+                style={{ fontSize: 12, fontWeight: 400 }}
+                className="text-gray-900 mb-1"
+              >
+                {"Kiracı Adayı"}
+              </Text>
+              <Text
+                numberOfLines={1}
+                style={{ fontSize: 16, fontWeight: 600, maxWidth: "70%" }}
+                className="text-gray-900 mb-1"
+              >
+                {item?.tenantName || "Kiracı"}
+              </Text>
               {/* Compatibility Level */}
               {item.matchScore && (
-                <View className="flex flex-col w-full items-center justify-center">
-                  <MatchScoreBar
-                    matchScore={item.matchScore}
-                    showBar={true}
-                    size="sm"
-                  />
-
-                  {/* Match Reasons */}
-                  {item.matchReasons && item.matchReasons.length > 0 && (
-                    <Text className="text-xs text-gray-500 mt-2">
-                      {item.matchReasons[0]}
-                    </Text>
-                  )}
-                </View>
-              )}
-            </View>
-
-            {/* Tenant Details Grid */}
-            <View className=" gap-3">
-              {/* Budget */}
-              {item.details?.budget && (
-                <View className="flex-row justify-between items-center">
-                  <View className="flex-row items-center">
-                    <Text className="text-gray-600 text-sm ml-2">Bütçe:</Text>
-                  </View>
+                <View className="flex items-center flex-row gap-1">
+                  <FontAwesomeIcon icon={faHeart} />
                   <Text
-                    style={{ fontSize: 13 }}
-                    className="text-gray-900 font-semibold"
+                    style={{ fontWeight: 500, fontSize: 14 }}
+                    className="text-gray-900"
                   >
-                    {item.details.budget.toLocaleString()} ₺
-                  </Text>
-                </View>
-              )}
-
-              {/* Monthly Income */}
-              {item.details?.monthlyIncome && (
-                <View className="flex-row justify-between items-center">
-                  <View className="flex-row items-center">
-                    <Text className="text-gray-600 text-sm ml-2">
-                      Aylık Gelir:
-                    </Text>
-                  </View>
-                  <Text
-                    style={{ fontSize: 13 }}
-                    className="text-gray-900 font-semibold"
-                  >
-                    {item.details.monthlyIncome.toLocaleString()} ₺
-                  </Text>
-                </View>
-              )}
-
-              {/* Preferred Location */}
-              {item.details?.preferredLocation && (
-                <View className="flex-row justify-between items-center">
-                  <View className="flex-row items-center">
-                    <Text className="text-gray-600 text-sm ml-2">
-                      Tercih Edilen Bölge:
-                    </Text>
-                  </View>
-                  <Text
-                    style={{ fontSize: 13 }}
-                    className="text-gray-900 font-semibold"
-                    numberOfLines={1}
-                  >
-                    {item.details.preferredLocation}
-                  </Text>
-                </View>
-              )}
-
-              {/* Room Preference */}
-              {item.details?.minRooms && (
-                <View className="flex-row justify-between items-center">
-                  <View className="flex-row items-center">
-                    <Text className="text-gray-600 text-sm ml-2">
-                      Min. Oda Sayısı:
-                    </Text>
-                  </View>
-                  <Text
-                    style={{ fontSize: 13 }}
-                    className="text-gray-900 font-semibold"
-                  >
-                    {item.details.minRooms} oda
+                    {item.matchScore}% Uyum
                   </Text>
                 </View>
               )}
             </View>
-            <TouchableOpacity
-              onPress={() => {
-                if (userRole === "EVSAHIBI") {
-                  // Ev sahibi kiracı profiline gidiyor
-                  navigation.navigate("UserProfile", {
-                    userId: item.userId,
-                    userRole: "KIRACI",
-                  });
-                } else {
-                  // ✅ Kiracı da ev sahibi profiline gitsin
-                  navigation.navigate("UserProfile", {
-                    userId: item.landlordId || item.userId, // landlordId varsa onu kullan, yoksa userId
-                    userRole: "EVSAHIBI",
-                  });
-                }
-              }}
-              activeOpacity={1}
-              className="py-3 mt-4 border border-black rounded-full"
-            >
-              <Text className="text-center font-medium">Göz at</Text>
-            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
-      </View>
-    );
-  },
-  (prevProps, nextProps) => {
-    return (
-      prevProps.item.tenantProfileId === nextProps.item.tenantProfileId &&
-      prevProps.item.matchScore === nextProps.item.matchScore
-    );
-  }
-);
 
-// ✅ UPDATED: Landlord Item with the same design as Tenant Item
-const LandlordItem = memo(
-  ({ item, navigation }) => {
-    const handleLandlordPress = useCallback(() => {
-      console.log("LANDLORD ITEM DATA:", JSON.stringify(item, null, 2));
-      console.log("Available keys:", Object.keys(item));
-      console.log("item.userId:", item.userId);
-      console.log("item.landlordProfileId:", item.landlordProfileId);
-
-      navigation.navigate("UserProfile", {
-        userId: item.userId,
-        userRole: "EVSAHIBI",
-      });
-    }, [item.userId, navigation]);
-
-    return (
-      <View
-        style={{ marginHorizontal: 16 }}
-        className="mb-2 pt-4 border-gray-200"
-      >
-        <TouchableOpacity onPress={handleLandlordPress} activeOpacity={1}>
-          <View
-            className="bg-white p-6 border-gray-200"
-            style={{ borderRadius: 30, borderWidth: 0.5 }}
-          >
-            {/* Header with Profile Image and Basic Info - Centered like Tenant */}
-            <View className="flex-row items-center mb-4 gap-4">
-              <Image
-                className="border border-gray-100"
-                style={{
-                  width: 80,
-                  height: 80,
-                  boxShadow: "0px 0px 12px #00000020",
-                  borderRadius: 100,
-                }}
-                source={{
-                  uri:
-                    item.landlordProfileURL ||
-                    item.profilePictureUrl ||
-                    "https://via.placeholder.com/60x60",
-                }}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-                transition={200}
-              />
-
-              <View className="flex-1 mt-1">
+          {/* Tenant Details Grid */}
+          <View className=" gap-3">
+            {/* Budget */}
+            {item.details?.budget && (
+              <View className="flex-row justify-between items-center">
+                <View className="flex-row items-center">
+                  <Text className="text-gray-600 text-sm ml-2">Bütçe:</Text>
+                </View>
                 <Text
-                  style={{ fontSize: 18, fontWeight: 700 }}
-                  className="text-gray-800 mb-1"
+                  style={{ fontSize: 13 }}
+                  className="text-gray-900 font-semibold"
+                >
+                  {item.details.budget.toLocaleString()} ₺
+                </Text>
+              </View>
+            )}
+
+            {/* Monthly Income */}
+            {item.details?.monthlyIncome && (
+              <View className="flex-row justify-between items-center">
+                <View className="flex-row items-center">
+                  <Text className="text-gray-600 text-sm ml-2">
+                    Aylık Gelir:
+                  </Text>
+                </View>
+                <Text
+                  style={{ fontSize: 13 }}
+                  className="text-gray-900 font-semibold"
+                >
+                  {item.details.monthlyIncome.toLocaleString()} ₺
+                </Text>
+              </View>
+            )}
+
+            {/* Preferred Location */}
+            {item.details?.preferredLocation && (
+              <View className="flex-row justify-between items-center">
+                <View className="flex-row items-center">
+                  <Text className="text-gray-600 text-sm ml-2">
+                    Tercih Edilen Bölge:
+                  </Text>
+                </View>
+                <Text
+                  style={{ fontSize: 13 }}
+                  className="text-gray-900 font-semibold"
                   numberOfLines={1}
                 >
-                  {item.landlordName || item.name || "Ev Sahibi"}
+                  {item.details.preferredLocation}
                 </Text>
-
-                {/* Compatibility Level */}
-                {item.matchScore && (
-                  <View className="flex flex-col">
-                    <View className="flex flex-row gap-1 items-center">
-                      {" "}
-                      <FontAwesomeIcon icon={faHeart} />
-                      <Text style={{ fontWeight: 500 }}>
-                        {item.matchScore}% Uyum
-                      </Text>
-                    </View>
-                    {item.matchReasons && item.matchReasons.length > 0 && (
-                      <Text className="text-xs text-gray-500 mt-1">
-                        {item.matchReasons[0]}.
-                      </Text>
-                    )}
-                  </View>
-                )}
               </View>
-            </View>
+            )}
 
-            {/* Landlord Details Grid - Same style as Tenant */}
-            <View className="gap-3">
-              {/* Property Title */}
-              {item.propertyTitle && (
-                <View className="flex-row justify-between items-center">
-                  <View className="flex-row items-center">
-                    <Text className="text-gray-600 text-sm ml-2">Mülk:</Text>
-                  </View>
-                  <Text
-                    style={{ fontSize: 13 }}
-                    className="text-gray-900 font-semibold"
-                    numberOfLines={1}
-                  >
-                    {item.propertyTitle}
+            {/* Room Preference */}
+            {item.details?.minRooms && (
+              <View className="flex-row justify-between items-center">
+                <View className="flex-row items-center">
+                  <Text className="text-gray-600 text-sm ml-2">
+                    Min. Oda Sayısı:
                   </Text>
                 </View>
-              )}
-
-              {/* Rent */}
-              {item.rent && (
-                <View className="flex-row justify-between items-center">
-                  <View className="flex-row items-center">
-                    <Text className="text-gray-600 text-sm ml-2">Kira:</Text>
-                  </View>
-                  <Text
-                    style={{ fontSize: 13 }}
-                    className="text-gray-900 font-semibold"
-                  >
-                    {item.rent.toLocaleString()} {item.currency || "₺"}
-                  </Text>
-                </View>
-              )}
-
-              {/* Location */}
-              {item.location && (
-                <View className="flex-row justify-between items-center">
-                  <View className="flex-row items-center">
-                    <Text className="text-gray-600 text-sm ml-2">Konum:</Text>
-                  </View>
-                  <Text
-                    style={{ fontSize: 13 }}
-                    className="text-gray-900 font-semibold"
-                    numberOfLines={1}
-                  >
-                    {item.location}
-                  </Text>
-                </View>
-              )}
-
-              {/* Property Details */}
-              {item.propertyDetails && (
-                <View className="flex-row justify-between items-center">
-                  <View className="flex-row items-center">
-                    <Text className="text-gray-600 text-sm ml-2">
-                      Detaylar:
-                    </Text>
-                  </View>
-                  <Text
-                    style={{ fontSize: 13 }}
-                    className="text-gray-900 font-semibold"
-                  >
-                    {item.propertyDetails.rooms || "N/A"} oda •{" "}
-                    {item.propertyDetails.size || "N/A"}m²
-                  </Text>
-                </View>
-              )}
-
-              {/* Experience */}
-              {item.experience !== undefined && (
-                <View className="flex-row justify-between items-center">
-                  <View className="flex-row items-center">
-                    <Text className="text-gray-600 text-sm ml-2">Deneyim:</Text>
-                  </View>
-                  <Text
-                    style={{ fontSize: 13 }}
-                    className="text-gray-900 font-semibold"
-                  >
-                    {item.experience} yıl
-                  </Text>
-                </View>
-              )}
-
-              {/* Property Count */}
-              {item.propertyCount !== undefined && (
-                <View className="flex-row justify-between items-center">
-                  <View className="flex-row items-center">
-                    <Text className="text-gray-600 text-sm ml-2">
-                      Mülk Sayısı:
-                    </Text>
-                  </View>
-                  <Text
-                    style={{ fontSize: 13 }}
-                    className="text-gray-900 font-semibold"
-                  >
-                    {item.propertyCount} mülk
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            {/* Action Button - Same style as Tenant */}
-            <TouchableOpacity
-              onPress={handleLandlordPress}
-              activeOpacity={1}
-              className="py-3 mt-4 border border-black rounded-full"
-            >
-              <Text className="text-center font-medium">Göz at</Text>
-            </TouchableOpacity>
+                <Text
+                  style={{ fontSize: 13 }}
+                  className="text-gray-900 font-semibold"
+                >
+                  {item.details.minRooms} oda
+                </Text>
+              </View>
+            )}
           </View>
-        </TouchableOpacity>
-      </View>
-    );
-  },
-  (prevProps, nextProps) => {
-    return (
-      prevProps.item.landlordProfileId === nextProps.item.landlordProfileId &&
-      prevProps.item.matchScore === nextProps.item.matchScore
-    );
-  }
-);
+          <TouchableOpacity
+            onPress={() => {
+              if (userRole === "EVSAHIBI") {
+                // Ev sahibi kiracı profiline gidiyor
+                navigation.navigate("UserProfile", {
+                  userId: item.userId,
+                  userRole: "KIRACI",
+                });
+              } else {
+                // ✅ Kiracı da ev sahibi profiline gitsin
+                navigation.navigate("UserProfile", {
+                  userId: item.landlordId || item.userId, // landlordId varsa onu kullan, yoksa userId
+                  userRole: "EVSAHIBI",
+                });
+              }
+            }}
+            activeOpacity={1}
+            className="py-3 mt-4 border border-black rounded-full"
+          >
+            <Text className="text-center font-medium">Göz at</Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+// Landlord Item
+const LandlordItem = ({ item, navigation }) => {
+  const handleLandlordPress = () => {
+    console.log("LANDLORD ITEM DATA:", JSON.stringify(item, null, 2));
+    console.log("Available keys:", Object.keys(item));
+    console.log("item.userId:", item.userId);
+    console.log("item.landlordProfileId:", item.landlordProfileId);
+
+    navigation.navigate("UserProfile", {
+      userId: item.userId,
+      userRole: "EVSAHIBI",
+    });
+  };
+
+  return (
+    <View
+      style={{ marginHorizontal: 16 }}
+      className="mb-2 pt-4 border-gray-200"
+    >
+      <TouchableOpacity onPress={handleLandlordPress} activeOpacity={1}>
+        <View
+          className="bg-white p-6 border-gray-200"
+          style={{ borderRadius: 30, borderWidth: 0.5 }}
+        >
+          {/* Header with Profile Image and Basic Info */}
+          <View className="flex mb-4 flex-row items-center gap-4">
+            <View
+              style={{ width: 80, height: 80 }}
+              className="justify-center items-center rounded-full border border-gray-100"
+            >
+              {(item.landlordProfileURL || item.profilePictureUrl) && 
+               (item.landlordProfileURL !== "default_profile_image_url" && 
+                item.profilePictureUrl !== "default_profile_image_url") ? (
+                <Image
+                  source={{ 
+                    uri: item.landlordProfileURL || item.profilePictureUrl 
+                  }}
+                  style={{ width: 80, height: 80, borderRadius: 100 }}
+                  className="w-full h-full rounded-full"
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={200}
+                  onError={(error) => {
+                    console.log("❌ Landlord profile image load error:", error);
+                  }}
+                />
+              ) : (
+                <Text style={{ fontSize: 32 }} className="text-gray-900 font-bold">
+                  {(item?.landlordName || item?.name)?.charAt(0)?.toUpperCase() || "E"}
+                </Text>
+              )}
+            </View>
+            <View className="flex flex-col items-start w-full">
+              <Text
+                numberOfLines={1}
+                style={{ fontSize: 12, fontWeight: 400 }}
+                className="text-gray-900 mb-1"
+              >
+                {"Ev Sahibi"}
+              </Text>
+              <Text
+                numberOfLines={1}
+                style={{ fontSize: 16, fontWeight: 600, maxWidth: "70%" }}
+                className="text-gray-900 mb-1"
+              >
+                {item?.landlordName || item?.name || "Ev Sahibi"}
+              </Text>
+              {/* Compatibility Level */}
+              {item.matchScore && (
+                <View className="flex items-center flex-row gap-1">
+                  <FontAwesomeIcon icon={faHeart} />
+                  <Text
+                    style={{ fontWeight: 500, fontSize: 14 }}
+                    className="text-gray-900"
+                  >
+                    {item.matchScore}% Uyum
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Landlord Details Grid - Same style as Tenant */}
+          <View className="gap-3">
+            {/* Property Title */}
+            {item.propertyTitle && (
+              <View className="flex-row justify-between items-center">
+                <View className="flex-row items-center">
+                  <Text className="text-gray-600 text-sm ml-2">Mülk:</Text>
+                </View>
+                <Text
+                  style={{ fontSize: 13 }}
+                  className="text-gray-900 font-semibold"
+                  numberOfLines={1}
+                >
+                  {item.propertyTitle}
+                </Text>
+              </View>
+            )}
+
+            {/* Rent */}
+            {item.rent && (
+              <View className="flex-row justify-between items-center">
+                <View className="flex-row items-center">
+                  <Text className="text-gray-600 text-sm ml-2">Kira:</Text>
+                </View>
+                <Text
+                  style={{ fontSize: 13 }}
+                  className="text-gray-900 font-semibold"
+                >
+                  {item.rent.toLocaleString()} {item.currency || "₺"}
+                </Text>
+              </View>
+            )}
+
+            {/* Location */}
+            {item.location && (
+              <View className="flex-row justify-between items-center">
+                <View className="flex-row items-center">
+                  <Text className="text-gray-600 text-sm ml-2">Konum:</Text>
+                </View>
+                <Text
+                  style={{ fontSize: 13 }}
+                  className="text-gray-900 font-semibold"
+                  numberOfLines={1}
+                >
+                  {item.location}
+                </Text>
+              </View>
+            )}
+
+            {/* Property Details */}
+            {item.propertyDetails && (
+              <View className="flex-row justify-between items-center">
+                <View className="flex-row items-center">
+                  <Text className="text-gray-600 text-sm ml-2">Detaylar:</Text>
+                </View>
+                <Text
+                  style={{ fontSize: 13 }}
+                  className="text-gray-900 font-semibold"
+                >
+                  {item.propertyDetails.rooms || "N/A"} oda •{" "}
+                  {item.propertyDetails.size || "N/A"}m²
+                </Text>
+              </View>
+            )}
+
+            {/* Experience */}
+            {item.experience !== undefined && (
+              <View className="flex-row justify-between items-center">
+                <View className="flex-row items-center">
+                  <Text className="text-gray-600 text-sm ml-2">Deneyim:</Text>
+                </View>
+                <Text
+                  style={{ fontSize: 13 }}
+                  className="text-gray-900 font-semibold"
+                >
+                  {item.experience} yıl
+                </Text>
+              </View>
+            )}
+
+            {/* Property Count */}
+            {item.propertyCount !== undefined && (
+              <View className="flex-row justify-between items-center">
+                <View className="flex-row items-center">
+                  <Text className="text-gray-600 text-sm ml-2">
+                    Mülk Sayısı:
+                  </Text>
+                </View>
+                <Text
+                  style={{ fontSize: 13 }}
+                  className="text-gray-900 font-semibold"
+                >
+                  {item.propertyCount} mülk
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Action Button - Same style as Tenant */}
+          <TouchableOpacity
+            onPress={handleLandlordPress}
+            activeOpacity={1}
+            className="py-3 mt-4 border border-black rounded-full"
+          >
+            <Text className="text-center font-medium">Göz at</Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 const AllMatchingUsers = ({ navigation, route }) => {
   const currentUser = useSelector(selectCurrentUser);
@@ -697,8 +696,6 @@ const AllMatchingUsers = ({ navigation, route }) => {
   const [isMapView, setIsMapView] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [allUsers, setAllUsers] = useState([]);
-  const [hasNextPage, setHasNextPage] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isFilterChanging, setIsFilterChanging] = useState(false);
 
@@ -772,8 +769,6 @@ const AllMatchingUsers = ({ navigation, route }) => {
   useEffect(() => {
     setIsFilterChanging(true);
     setCurrentPage(1);
-    setAllUsers([]);
-    setHasNextPage(true);
 
     const timer = setTimeout(() => setIsFilterChanging(false), 300);
     return () => clearTimeout(timer);
@@ -826,39 +821,15 @@ const AllMatchingUsers = ({ navigation, route }) => {
   const refetch = isLandlord ? refetchTenants : refetchLandlords;
   const isFetching = isLandlord ? isFetchingTenants : isFetchingLandlords;
 
-  // Update allUsers when new data comes
-  useEffect(() => {
-    if (currentData?.data) {
-      const newUsers = currentData.data;
-      const pagination = currentData.pagination;
+  // Get pagination info and data from RTK Query with safety checks
+  const allUsers = currentData?.data
+    ? Array.isArray(currentData.data)
+      ? currentData.data
+      : []
+    : [];
+  const hasNextPage = currentData?.pagination?.hasNextPage || false;
 
-      if (currentPage === 1) {
-        setAllUsers(newUsers);
-        setIsFilterChanging(false);
-      } else {
-        setAllUsers((prev) => {
-          const existingIds = new Set(
-            prev.map((item) =>
-              isLandlord
-                ? item.tenantProfileId || item.id
-                : item.landlordProfileId || item.userId || item.id
-            )
-          );
-          const uniqueNewItems = newUsers.filter(
-            (item) =>
-              !existingIds.has(
-                isLandlord
-                  ? item.tenantProfileId || item.id
-                  : item.landlordProfileId || item.userId || item.id
-              )
-          );
-          return [...prev, ...uniqueNewItems];
-        });
-      }
-
-      setHasNextPage(pagination?.hasNextPage || false);
-    }
-  }, [currentData, currentPage, isLandlord]);
+  console.log("AllUsers data:", allUsers.length, allUsers.slice(0, 3));
 
   // Filter and sort users
   const getFilteredAndSortedUsers = useCallback(() => {
@@ -934,8 +905,6 @@ const AllMatchingUsers = ({ navigation, route }) => {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     setCurrentPage(1);
-    setAllUsers([]);
-    setHasNextPage(true);
     setIsFilterChanging(false);
     try {
       await refetch();
@@ -961,10 +930,10 @@ const AllMatchingUsers = ({ navigation, route }) => {
 
   // Loading state effect
   useEffect(() => {
-    if (currentPage > 1) {
+    if (currentPage > 1 && currentData) {
       setLoadingMore(false);
     }
-  }, [currentData]);
+  }, [currentData, currentPage]);
 
   // Render functions
   const renderEmptyState = useCallback(() => {
@@ -1020,6 +989,8 @@ const AllMatchingUsers = ({ navigation, route }) => {
 
   const renderUserItem = useCallback(
     ({ item }) => {
+      if (!item) return null;
+
       if (isLandlord) {
         return <TenantItem item={item} navigation={navigation} />;
       } else {
@@ -1031,25 +1002,19 @@ const AllMatchingUsers = ({ navigation, route }) => {
 
   const keyExtractor = useCallback(
     (item, index) => {
+      if (!item) return `empty_${index}`;
+
+      // Use the most stable unique identifier without index
       if (isLandlord) {
-        return `tenant_${item.tenantProfileId || item.id}_${index}`;
+        return `tenant_${item.tenantProfileId || item.userId || index}`;
       } else {
-        return `landlord_${
-          item.landlordProfileId || item.userId || item.id
-        }_${index}`;
+        return `landlord_${item.landlordProfileId || item.userId || index}`;
       }
     },
     [isLandlord]
   );
 
-  const getItemLayout = useCallback(
-    (data, index) => ({
-      length: 300, // Approximate item height
-      offset: 300 * index,
-      index,
-    }),
-    []
-  );
+  // Remove getItemLayout to prevent layout calculation errors
 
   // Clear search handler
   const clearSearch = useCallback(() => setSearchQuery(""), []);
@@ -1210,7 +1175,6 @@ const AllMatchingUsers = ({ navigation, route }) => {
         data={filteredUsers}
         renderItem={renderUserItem}
         keyExtractor={keyExtractor}
-        getItemLayout={getItemLayout} // CRITICAL for performance
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderEmptyState}
         ListFooterComponent={renderLoadingFooter}
@@ -1220,26 +1184,16 @@ const AllMatchingUsers = ({ navigation, route }) => {
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: false }
         )}
-        scrollEventThrottle={16} // Optimized for performance
         contentContainerStyle={{
           flexGrow: 1,
           paddingBottom: 16,
         }}
-        // CRITICAL Performance optimizations
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={5} // Reduced from 10
-        updateCellsBatchingPeriod={50} // Reduced from 100
-        windowSize={5} // Reduced from 10
-        // NEW performance optimizations
-        legacyImplementation={false}
-        disableVirtualization={false}
-        maintainVisibleContentPosition={{
-          minIndexForVisible: 0,
-          autoscrollToTopThreshold: 100,
-        }}
-        // Memory optimizations
-        recycleViewsOnNext={true}
-        enableFillRate={true}
+        // Basic performance optimizations
+        removeClippedSubviews={false}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={5}
+        windowSize={10}
       />
     </SafeAreaView>
   );
