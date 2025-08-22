@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import {
   View,
   Text,
@@ -38,13 +44,14 @@ import {
   faPlus,
   faSliders,
   faEllipsis,
-  faEye
+  faEye,
+  faEnvelope,
+  faEdit,
+  faTrash,
 } from "@fortawesome/pro-regular-svg-icons";
 import { faSearch } from "@fortawesome/pro-solid-svg-icons";
 import { BlurView } from "expo-blur";
 import {
-  faEdit,
-  faTrash,
   faBed,
   faShower,
   faRuler,
@@ -54,7 +61,6 @@ import {
   faCoins,
   faBedBunk,
   faBath,
-
 } from "@fortawesome/pro-light-svg-icons";
 import PropertiesFilterModal from "../modals/PropertiesFilterModal";
 import { useSearchPostsMutation } from "../redux/api/searchApiSlice";
@@ -121,9 +127,9 @@ const ImageWithFallback = React.memo(
               Math.min(
                 fallbackWidth || style?.width || 200,
                 fallbackHeight || style?.height || 200
-              ) * 0.1
+              ) * 0.2
             }
-            color="#cbd5e1"
+            color="#fff"
           />
         </View>
       );
@@ -153,158 +159,163 @@ const ImageWithFallback = React.memo(
 );
 
 // 🎯 Landlord Actions BottomSheet Modal Component
-const LandlordActionsModal = React.memo(({
-  visible,
-  onClose,
-  item,
-  onEdit,
-  onDelete,
-  onOffers,
-  isDeleting
-}) => {
-  const bottomSheetModalRef = useRef(null);
-  const snapPoints = useMemo(() => ['30%'], []);
+const LandlordActionsModal = React.memo(
+  ({ visible, onClose, item, onEdit, onDelete, onOffers, isDeleting }) => {
+    const bottomSheetModalRef = useRef(null);
+    const snapPoints = useMemo(() => ["30%"], []);
 
-  // Modal açılış/kapanış kontrolü
-  useEffect(() => {
-    if (visible && item) {
-      bottomSheetModalRef.current?.present();
-    } else {
-      bottomSheetModalRef.current?.dismiss();
-    }
-  }, [visible, item]);
-
-  // Bottom Sheet dismiss handler
-  const handleSheetChanges = useCallback(
-    (index) => {
-      if (index === -1) {
-        onClose();
+    // Modal açılış/kapanış kontrolü
+    useEffect(() => {
+      if (visible && item) {
+        bottomSheetModalRef.current?.present();
+      } else {
+        bottomSheetModalRef.current?.dismiss();
       }
-    },
-    [onClose]
-  );
+    }, [visible, item]);
 
-  // Backdrop component
-  const renderBackdrop = useCallback(
-    (props) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0.5}
-        pressBehavior="close"
-      />
-    ),
-    []
-  );
+    // Bottom Sheet dismiss handler
+    const handleSheetChanges = useCallback(
+      (index) => {
+        if (index === -1) {
+          onClose();
+        }
+      },
+      [onClose]
+    );
 
-  if (!item) return null;
+    // Backdrop component
+    const renderBackdrop = useCallback(
+      (props) => (
+        <BottomSheetBackdrop
+          {...props}
+          disappearsOnIndex={-1}
+          appearsOnIndex={0}
+          opacity={0.5}
+          pressBehavior="close"
+        />
+      ),
+      []
+    );
 
-  return (
-    <BottomSheetModal
-      ref={bottomSheetModalRef}
-      index={0}
-      snapPoints={snapPoints}
-      onChange={handleSheetChanges}
-      backdropComponent={renderBackdrop}
-      enablePanDownToClose={true}
-      enableDismissOnClose={true}
-      backgroundStyle={{
-        backgroundColor: "#ffffff",
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-      }}
-      handleIndicatorStyle={{
-        backgroundColor: "#d1d5db",
-        width: 40,
-        height: 4,
-      }}
-    >
-      <BottomSheetView style={{ flex: 1, paddingHorizontal: 20, paddingBottom: 60, paddingTop: 20 }}>
-        <View className="mb-4">
-          <Text style={{ fontSize: 18, fontWeight: 'bold' }} className="text-gray-900 text-center">
-            İlan İşlemleri
-          </Text>
-          <Text style={{ fontSize: 14 }} className="text-gray-500 text-center mt-1">
-            {item.ilanBasligi || 'İlan'}
-          </Text>
-        </View>
+    if (!item) return null;
 
-        <View className="gap-5">
-          {/* Teklifler */}
-          <TouchableOpacity
-            className="flex-row items-center gap-4 mt-2  rounded-xl"
-            onPress={() => {
-              onOffers();
-              onClose();
-            }}
-            activeOpacity={0.7}
-          >
-            <View className=" rounded-full items-center justify-center">
-              <FontAwesomeIcon icon={faEye} size={18} color="#505050" />
-            </View>
-            <View className="flex-1">
-              <Text style={{ fontSize: 16, fontWeight: '600' }} className="text-gray-900">
-                Teklifleri Görüntüle
-              </Text>
-              <Text style={{ fontSize: 14 }} className="text-gray-500">
-                {item.offerCount || 0} teklif var
-              </Text>
-            </View>
-          </TouchableOpacity>
+    return (
+      <BottomSheetModal
+        ref={bottomSheetModalRef}
+        index={0}
+        snapPoints={snapPoints}
+        onChange={handleSheetChanges}
+        backdropComponent={renderBackdrop}
+        enablePanDownToClose={true}
+        enableDismissOnClose={true}
+        backgroundStyle={{
+          backgroundColor: "#ffffff",
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+        }}
+        handleIndicatorStyle={{
+          backgroundColor: "#d1d5db",
+          width: 40,
+          height: 4,
+        }}
+      >
+        <BottomSheetView
+          style={{
+            flex: 1,
+            paddingHorizontal: 20,
+            paddingTop: 20,
+            paddingBottom: 100,
+          }}
+        >
+          <View className="mb-4">
+            <Text
+              style={{ fontSize: 18, fontWeight: "bold" }}
+              className="text-gray-900 text-center"
+            >
+              İlan İşlemleri
+            </Text>
+          </View>
 
-          {/* Düzenle */}
-          <TouchableOpacity
-            className="flex-row items-center gap-4  rounded-xl"
-            onPress={() => {
-              onEdit();
-              onClose();
-            }}
-            activeOpacity={0.7}
-          >
-            <View className="w items-center justify-center">
-              <FontAwesomeIcon icon={faEdit} size={18} color="#505050" />
-            </View>
-            <View className="flex-1">
-              <Text style={{ fontSize: 16, fontWeight: '600' }} className="text-gray-900">
-                İlanı Düzenle
-              </Text>
-              {/* <Text style={{ fontSize: 14 }} className="text-gray-500">
+          <View style={{ gap: 30, marginTop: 10 }}>
+            {/* Teklifler */}
+            <TouchableOpacity
+              className="flex-row items-center gap-4 mt-2  rounded-xl"
+              onPress={() => {
+                onOffers();
+                onClose();
+              }}
+              activeOpacity={0.7}
+            >
+              <View className=" rounded-full items-center justify-center">
+                <FontAwesomeIcon icon={faEnvelope} size={18} color="#505050" />
+              </View>
+              <View className="flex-1">
+                <Text
+                  style={{ fontSize: 16, fontWeight: "400" }}
+                  className="text-gray-900"
+                >
+                  Teklifleri Görüntüle ({item.offerCount || 0})
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Düzenle */}
+            <TouchableOpacity
+              className="flex-row items-center gap-4  rounded-xl"
+              onPress={() => {
+                onEdit();
+                onClose();
+              }}
+              activeOpacity={0.7}
+            >
+              <View className="w items-center justify-center">
+                <FontAwesomeIcon icon={faEdit} size={18} color="#505050" />
+              </View>
+              <View className="flex-1">
+                <Text
+                  style={{ fontSize: 16, fontWeight: "400" }}
+                  className="text-gray-900"
+                >
+                  İlanı Düzenle
+                </Text>
+                {/* <Text style={{ fontSize: 14 }} className="text-gray-500">
                 İlan bilgilerini güncelle
               </Text> */}
-            </View>
-          </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
 
-          {/* Sil */}
-          <TouchableOpacity
-            className="flex-row items-center gap-4  rounded-xl"
-            onPress={() => {
-              onDelete();
-              onClose();
-            }}
-            disabled={isDeleting}
-            activeOpacity={0.7}
-          >
-            <View className="w items-center justify-center">
-              <FontAwesomeIcon icon={faTrash} size={18} color="#ef4444" />
-            </View>
-            <View className="flex-1">
-              <Text style={{ fontSize: 16, fontWeight: '600' }} className="text-red-600">
-                İlanı Sil
-              </Text>
-              {/* <Text style={{ fontSize: 14 }} className="text-red-400">
+            {/* Sil */}
+            <TouchableOpacity
+              className="flex-row items-center gap-4  rounded-xl"
+              onPress={() => {
+                onDelete();
+                onClose();
+              }}
+              disabled={isDeleting}
+              activeOpacity={0.7}
+            >
+              <View className="w items-center justify-center">
+                <FontAwesomeIcon icon={faTrash} size={18} color="#ef4444" />
+              </View>
+              <View className="flex-1">
+                <Text
+                  style={{ fontSize: 16, fontWeight: "400" }}
+                  className="text-red-600"
+                >
+                  İlanı Sil
+                </Text>
+                {/* <Text style={{ fontSize: 14 }} className="text-red-400">
                 Bu işlem geri alınamaz
               </Text> */}
-            </View>
-            {isDeleting && (
-              <ActivityIndicator size="small" color="#ef4444" />
-            )}
-          </TouchableOpacity>
-        </View>
-      </BottomSheetView>
-    </BottomSheetModal>
-  );
-});
+              </View>
+              {isDeleting && <ActivityIndicator size="small" color="#ef4444" />}
+            </TouchableOpacity>
+          </View>
+        </BottomSheetView>
+      </BottomSheetModal>
+    );
+  }
+);
 
 // Property Details Slider Component (AllNearbyPropertiesScreen'den)
 const PropertyDetailsSlider = React.memo(({ item }) => {
@@ -1441,8 +1452,9 @@ const PostsScreen = ({ navigation }) => {
                 className="text-gray-900 underline"
               >
                 {item.kiraFiyati || item.rent
-                  ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
-                  }`
+                  ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
+                      item.paraBirimi || item.currency || "₺"
+                    }`
                   : "Fiyat belirtilmemiş"}
               </Text>
               <Text className="text-sm text-gray-400 ml-1">/ay</Text>
@@ -1532,7 +1544,6 @@ const PostsScreen = ({ navigation }) => {
     [userRole, currentUser?.id, isDeleting, navigation, getRelativeTime]
   );
 
-
   // YENİ TASARIM - EV SAHİBİ İÇİN (NearbyProperties renderVerticalPropertyCard tarzı)
   const renderLandlordPostItem = useCallback(
     ({ item, index }) => {
@@ -1543,9 +1554,17 @@ const PostsScreen = ({ navigation }) => {
       return (
         <TouchableOpacity
           activeOpacity={1}
-          className="overflow-hidden w-full flex flex-row items-center gap-4 py-2 border-b border-gray-100"
+          className="overflow-hidden w-full flex flex-row items-center gap-4 py-2 border-b border-gray-100 relative"
           onPress={() => handlePostNavigation(item.postId)}
         >
+          {/* Sağ taraf - Actions Button */}
+          <TouchableOpacity
+            className="absolute top-3 right-2 p-2 z-10"
+            onPress={() => handleOpenActionsModal(item)}
+          >
+            <FontAwesomeIcon icon={faEllipsis} size={20} color="#000" />
+          </TouchableOpacity>
+
           {/* Sol taraf - Resim */}
           <View className="relative">
             <ImageWithFallback
@@ -1568,8 +1587,6 @@ const PostsScreen = ({ navigation }) => {
               borderRadius={20}
             />
 
-
-
             {/* Status badge - Sol üst köşe */}
             <View className="absolute top-2 left-2">
               <BlurView
@@ -1586,35 +1603,24 @@ const PostsScreen = ({ navigation }) => {
                   {item.status === 0
                     ? "Aktif"
                     : item.status === 1
-                      ? "Kiralandı"
-                      : "Kapalı"}
+                    ? "Kiralandı"
+                    : "Kapalı"}
                 </Text>
               </BlurView>
             </View>
           </View>
 
           {/* Orta kısım - Bilgiler */}
-          <View className="flex-1 flex flex-col">
+          <View className="flex flex-col w-full">
             {/* Başlık */}
-            <View className="items-center flex-row">
-              <Text
-                style={{ fontSize: 15, fontWeight: 600 }}
-                className="text-gray-800 mb-1 w-[240]"
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {item.ilanBasligi || `${item.il} ${item.ilce} Kiralık Daire`}
-              </Text>
-
-              {/* Sağ taraf - Actions Button */}
-              <TouchableOpacity
-                className="p-2"
-                onPress={() => handleOpenActionsModal(item)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <FontAwesomeIcon icon={faEllipsis} size={18} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
+            <Text
+              style={{ fontSize: 15, fontWeight: 600 }}
+              className="text-gray-800 w-full mb-1"
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {item.ilanBasligi || `${item.il} ${item.ilce} Kiralık Daire`}
+            </Text>
 
             {/* Fiyat */}
             <Text
@@ -1624,33 +1630,18 @@ const PostsScreen = ({ navigation }) => {
               ellipsizeMode="tail"
             >
               {item.kiraFiyati || item.rent
-                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
-                }/ay`
+                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
+                    item.paraBirimi || item.currency || "₺"
+                  }/ay`
                 : "Fiyat belirtilmemiş"}
             </Text>
 
             {/* Lokasyon */}
-            <Text style={{ fontSize: 13 }} className="text-gray-500 mb-2">
+            <Text style={{ fontSize: 12 }} className="text-gray-500 mb-2">
               {item.ilce && item.il
                 ? `${item.ilce}, ${item.il}`
                 : item.il || "Konum belirtilmemiş"}
             </Text>
-
-            {/* Oda ve banyo bilgileri */}
-            <View className="flex flex-row gap-4 items-center">
-              <View className="flex flex-row gap-2 items-center">
-                <FontAwesomeIcon color="#6B7280" icon={faBath} size={12} />
-                <Text style={{ fontSize: 12 }} className="text-gray-500">
-                  {item.banyoSayisi || "N/A"} Banyo
-                </Text>
-              </View>
-              <View className="flex flex-row gap-2 items-center">
-                <FontAwesomeIcon color="#6B7280" icon={faBed} size={12} />
-                <Text style={{ fontSize: 12 }} className="text-gray-500">
-                  {item.odaSayisi || "N/A"} Oda
-                </Text>
-              </View>
-            </View>
           </View>
         </TouchableOpacity>
       );
@@ -1751,8 +1742,8 @@ const PostsScreen = ({ navigation }) => {
               {filters.status === 0
                 ? "Aktif"
                 : filters.status === 1
-                  ? "Kiralandı"
-                  : "Kapalı"}
+                ? "Kiralandı"
+                : "Kapalı"}
             </Text>
             <TouchableOpacity
               onPress={() => {
@@ -1800,7 +1791,8 @@ const PostsScreen = ({ navigation }) => {
     const filterButtonWidth = 45; // Filter butonu genişliği
     const createButtonWidth = userRole === "EVSAHIBI" ? 50 : 0; // Create butonu (sadece ev sahibi için)
     const buttonGap = userRole === "EVSAHIBI" ? 8 : 0; // Butonlar arası gap
-    const totalButtonsWidth = filterButtonWidth + createButtonWidth + buttonGap + 16; // 16 = padding right
+    const totalButtonsWidth =
+      filterButtonWidth + createButtonWidth + buttonGap + 16; // 16 = padding right
 
     const searchBarWidth = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
@@ -2012,11 +2004,12 @@ const PostsScreen = ({ navigation }) => {
                   shadowRadius: 8,
                   elevation: 5,
                 }}
-                className={`rounded-full flex justify-center items-center ${isFilterVisible ||
+                className={`rounded-full flex justify-center items-center ${
+                  isFilterVisible ||
                   Object.values(filters).some((val) => val !== null)
-                  ? "bg-gray-900/90"
-                  : "bg-white/90"
-                  }`}
+                    ? "bg-gray-900/90"
+                    : "bg-white/90"
+                }`}
                 onPress={handleFilterPress}
               >
                 <FontAwesomeIcon
@@ -2024,7 +2017,7 @@ const PostsScreen = ({ navigation }) => {
                   size={18}
                   color={
                     isFilterVisible ||
-                      Object.values(filters).some((val) => val !== null)
+                    Object.values(filters).some((val) => val !== null)
                       ? "white"
                       : "#111827"
                   }
@@ -2048,12 +2041,19 @@ const PostsScreen = ({ navigation }) => {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{
                   alignItems: "center",
-                  justifyContent: 'center',
+                  justifyContent: "center",
                   paddingHorizontal: 0,
                 }}
                 style={{ width: "100%" }}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, justifyContent: 'center' }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 4,
+                    justifyContent: "center",
+                  }}
+                >
                   {sortBy && (
                     <TouchableOpacity
                       activeOpacity={0.7}
@@ -2064,7 +2064,6 @@ const PostsScreen = ({ navigation }) => {
                         flexDirection: "row",
                         alignItems: "center",
                         elevation: 2,
-
                       }}
                       onPress={resetSortOptions}
                       className="bg-gray-900"
@@ -2081,7 +2080,6 @@ const PostsScreen = ({ navigation }) => {
                       activeOpacity={0.7}
                       key={option.key}
                       style={{
-                        marginRight: 8,
                         paddingHorizontal: 14,
                         paddingVertical: 7,
                         borderRadius: 18,
@@ -2096,7 +2094,7 @@ const PostsScreen = ({ navigation }) => {
                             : "rgba(209, 213, 219, 0.8)",
                         elevation: 2,
                         width: screenWidth * 0.2,
-                        alignItems: 'center'
+                        alignItems: "center",
                       }}
                       onPress={() => handleSortChange(option.key)}
                     >
@@ -2158,7 +2156,10 @@ const PostsScreen = ({ navigation }) => {
             contentContainerStyle={{
               flexGrow: 1,
               paddingBottom: 16,
-              paddingTop: userRole === "KIRACI" ? getDynamicPaddingTop() : getDynamicPaddingTop() - screenWidth * 0.1,
+              paddingTop:
+                userRole === "KIRACI"
+                  ? getDynamicPaddingTop()
+                  : getDynamicPaddingTop() - screenWidth * 0.1,
               paddingHorizontal: userRole === "KIRACI" ? 0 : 16,
             }}
             ListHeaderComponent={() => (
@@ -2188,8 +2189,9 @@ const PostsScreen = ({ navigation }) => {
             initialNumToRender={8}
             windowSize={5}
             disableVirtualization={false}
-            extraData={`${searchQuery}_${JSON.stringify(filters)}_${allPostsData.length
-              }`}
+            extraData={`${searchQuery}_${JSON.stringify(filters)}_${
+              allPostsData.length
+            }`}
             onScroll={Animated.event(
               [{ nativeEvent: { contentOffset: { y: scrollY } } }],
               { useNativeDriver: false }
