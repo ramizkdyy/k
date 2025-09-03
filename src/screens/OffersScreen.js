@@ -22,7 +22,6 @@ import {
   useGetReceivedOffersQuery,
   useLandlordOfferActionMutation,
   useRentOfferMutation, // YENI EKLEME
-
 } from "../redux/api/apiSlice";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { BlurView } from "expo-blur";
@@ -227,10 +226,10 @@ const OffersScreen = () => {
     refetch,
     error,
   } = isTenant
-      ? useGetSentOffersQuery(currentUser?.id, {
+    ? useGetSentOffersQuery(currentUser?.id, {
         skip: !currentUser?.id,
       })
-      : useGetReceivedOffersQuery(currentUser?.id, {
+    : useGetReceivedOffersQuery(currentUser?.id, {
         skip: !currentUser?.id,
       });
 
@@ -238,7 +237,6 @@ const OffersScreen = () => {
 
   const [landlordOfferAction] = useLandlordOfferActionMutation();
   const [rentOffer] = useRentOfferMutation(); // YENI EKLEME
-
 
   // Log the raw API response for debugging
   useEffect(() => {
@@ -331,7 +329,8 @@ const OffersScreen = () => {
 
       offersData.result.rentalPosts.forEach((post, postIndex) => {
         console.log(
-          `Post ${postIndex}: ${post.ilanBasligi}, has ${post.offers?.length || 0
+          `Post ${postIndex}: ${post.ilanBasligi}, has ${
+            post.offers?.length || 0
           } offers`
         );
 
@@ -447,8 +446,8 @@ const OffersScreen = () => {
                       text: "Tamam",
                       onPress: async () => {
                         await refetch();
-                      }
-                    }
+                      },
+                    },
                   ]
                 );
               } else {
@@ -509,7 +508,7 @@ const OffersScreen = () => {
               Alert.alert(
                 "Hata",
                 error?.data?.message ||
-                "Teklif kabul edilirken bir hata oluştu."
+                  "Teklif kabul edilirken bir hata oluştu."
               );
             }
           },
@@ -778,6 +777,29 @@ const OffersScreen = () => {
                       ? "Gönderilen teklif"
                       : "Gelen teklif"}
                   </Text>
+                  {/* YENI: Kabul edilen teklifler için Kiraya Ver butonu */}
+                  {item.status === 1 && (
+                    <TouchableOpacity
+                      className="rounded-full mt-3 justify-center items-center"
+                      onPress={() =>
+                        handleRentOffer(item.offerId, post.ilanBasligi)
+                      }
+                      activeOpacity={0.8}
+                    >
+                      <BlurView
+                        tint="dark"
+                        className="py-2 px-4 rounded-full overflow-hidden"
+                      >
+                        {" "}
+                        <Text
+                          className="text-white text-center font-medium"
+                          style={{ fontSize: 16 }}
+                        >
+                          Kiraya Ver
+                        </Text>
+                      </BlurView>
+                    </TouchableOpacity>
+                  )}
                 </BlurView>
               ) : (
                 <View
@@ -834,10 +856,10 @@ const OffersScreen = () => {
                     >
                       {item.offerTime
                         ? new Date(item.offerTime).toLocaleDateString("tr-TR", {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                        })
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })
                         : ""}
                     </Text>
                   </View>
@@ -893,7 +915,7 @@ const OffersScreen = () => {
                   activeOpacity={0.7}
                 >
                   {!!item.offeringUser?.profileImageUrl ||
-                    post?.profilePictureUrl ? (
+                  post?.profilePictureUrl ? (
                     <Image
                       style={{ width: 40, height: 40, borderRadius: 100 }}
                       source={{
@@ -975,23 +997,6 @@ const OffersScreen = () => {
                     </TouchableOpacity>
                   </View>
                 )}
-
-                {/* YENI: Kabul edilen teklifler için Kiraya Ver butonu */}
-                {item.status === 1 && (
-                  <TouchableOpacity
-                    className="bg-green-600 rounded-2xl justify-center items-center"
-                    style={{ height: 40 }}
-                    onPress={() => handleRentOffer(item.offerId, post.ilanBasligi)}
-                    activeOpacity={0.8}
-                  >
-                    <Text
-                      className="text-black text-center font-semibold"
-                      style={{ fontSize: 16, lineHeight: 20 }}
-                    >
-                      Kiraya Ver
-                    </Text>
-                  </TouchableOpacity>
-                )}
               </View>
             )}
           </View>
@@ -1024,14 +1029,16 @@ const OffersScreen = () => {
         {tabs.map((tab) => (
           <TouchableOpacity
             key={tab.key}
-            className={`flex-1  rounded-full py-3 ${selectedTab === tab.key ? "bg-black " : ""
-              }`}
+            className={`flex-1  rounded-full py-3 ${
+              selectedTab === tab.key ? "bg-black " : ""
+            }`}
             onPress={() => setSelectedTab(tab.key)}
           >
             <Text
               style={{ fontSize: 12 }}
-              className={`text-center ${selectedTab === tab.key ? "text-white" : "text-gray-900"
-                }`}
+              className={`text-center ${
+                selectedTab === tab.key ? "text-white" : "text-gray-900"
+              }`}
             >
               {tab.label} ({tab.count})
             </Text>
@@ -1194,14 +1201,16 @@ const OffersScreen = () => {
               ].map((tab) => (
                 <TouchableOpacity
                   key={tab.key}
-                  className={`flex-1 rounded-full py-3 ${selectedTab === tab.key ? "bg-black" : ""
-                    }`}
+                  className={`flex-1 rounded-full py-3 ${
+                    selectedTab === tab.key ? "bg-black" : ""
+                  }`}
                   onPress={() => setSelectedTab(tab.key)}
                 >
                   <Text
                     style={{ fontSize: 12 }}
-                    className={`text-center ${selectedTab === tab.key ? "text-white" : "text-gray-900"
-                      }`}
+                    className={`text-center ${
+                      selectedTab === tab.key ? "text-white" : "text-gray-900"
+                    }`}
                   >
                     {tab.label} ({tab.count})
                   </Text>
