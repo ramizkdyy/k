@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Dimensions,
+  Pressable, // 🚀 TouchableOpacity yerine Pressable
 } from "react-native";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
@@ -46,13 +47,23 @@ const ExploreActionButtons = memo(
     totalImages = 0,
   }) => {
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
-    // Animasyon state'leri sadece normal post için
     const [isExpanded, setIsExpanded] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
 
-    // Animation values (sadece normal post için kullanılacak)
+    // Animation values
     const expandedHeight = useSharedValue(0);
     const chevronRotation = useSharedValue(0);
+
+    // 🚀 MODAL AÇMA - Kesinlikle çalışan versiyon
+    const handleModalOpen = () => {
+      console.log('🚀 Modal Opening Triggered'); // Debug
+      setIsDetailModalVisible(true);
+    };
+
+    const handleModalClose = () => {
+      console.log('🚀 Modal Closing Triggered'); // Debug
+      setIsDetailModalVisible(false);
+    };
 
     // Listing verilerini çıkar
     const getListingDetails = () => {
@@ -113,14 +124,14 @@ const ExploreActionButtons = memo(
     const details = getListingDetails();
     if (!details) return null;
 
-    // ANIMASYON BİTİŞ CALLBACK'İ (sadece normal post için)
+    // Animation callback
     const onAnimationComplete = (expanded) => {
       "worklet";
       runOnJS(setIsAnimating)(false);
       runOnJS(setIsExpanded)(expanded);
     };
 
-    // TOGGLE FUNCTION (sadece normal post için)
+    // Toggle function
     const toggleExpanded = () => {
       if (isAnimating || details.type !== "normal") return;
 
@@ -130,9 +141,7 @@ const ExploreActionButtons = memo(
       if (newExpanded) {
         expandedHeight.value = withTiming(
           250,
-          {
-            duration: 200,
-          },
+          { duration: 200 },
           (finished) => {
             if (finished) onAnimationComplete(true);
           }
@@ -141,9 +150,7 @@ const ExploreActionButtons = memo(
       } else {
         expandedHeight.value = withTiming(
           0,
-          {
-            duration: 200,
-          },
+          { duration: 200 },
           (finished) => {
             if (finished) onAnimationComplete(false);
           }
@@ -160,18 +167,14 @@ const ExploreActionButtons = memo(
       let startIndex = 0;
       let endIndex = totalImages - 1;
 
-      // 5'ten fazla resim varsa dots'ları kaydır
       if (totalImages > maxDots) {
         const half = Math.floor(maxDots / 2);
 
         if (currentImageIndex <= half) {
-          // Başlangıçta
           endIndex = maxDots - 1;
         } else if (currentImageIndex >= totalImages - half - 1) {
-          // Sonda
           startIndex = totalImages - maxDots;
         } else {
-          // Ortada
           startIndex = currentImageIndex - half;
           endIndex = currentImageIndex + half;
         }
@@ -186,7 +189,7 @@ const ExploreActionButtons = memo(
         <View
           style={{
             position: "absolute",
-            bottom: 20,
+            bottom: 110,
             left: 0,
             right: 0,
             flexDirection: "row",
@@ -216,7 +219,7 @@ const ExploreActionButtons = memo(
       );
     };
 
-    // Animated styles (sadece normal post için)
+    // Animated styles
     const expandedAnimatedStyle = useAnimatedStyle(() => ({
       height: expandedHeight.value,
       opacity: expandedHeight.value > 0 ? 1 : 0,
@@ -226,7 +229,7 @@ const ExploreActionButtons = memo(
       transform: [{ rotate: `${chevronRotation.value}deg` }],
     }));
 
-    // INSTAGRAM REELS STİLİ SHADOW EFEKTLERİ
+    // Shadow styles
     const textShadowStyle = {
       textShadowColor: "rgba(0, 0, 0, 0.8)",
       textShadowOffset: { width: 0, height: 1 },
@@ -247,13 +250,7 @@ const ExploreActionButtons = memo(
       elevation: 8,
     };
 
-    const counterShadowStyle = {
-      textShadowColor: "rgba(0, 0, 0, 0.9)",
-      textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 8,
-    };
-
-    // Temel detaylar (her zaman görünür - normal post için)
+    // Basic details for normal posts
     const basicDetails = [];
     if (details.type === "normal") {
       if (details.rooms)
@@ -284,13 +281,13 @@ const ExploreActionButtons = memo(
         });
     }
 
-    // Meta post için tüm detaylar (animasyon yok, hep görünür)
+    // Meta post details
     const metaPostDetails = [];
     if (details.type === "meta") {
       if (details.rooms)
         metaPostDetails.push({
           icon: faBed,
-          value: details.rooms + " Oçda",
+          value: details.rooms + " Oda",
           label: "Oda",
         });
       if (details.bathrooms)
@@ -329,22 +326,12 @@ const ExploreActionButtons = memo(
           width: "100%",
         }}
       >
-        <View
-          style={{
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.2,
-            shadowRadius: 4,
-            elevation: 6, // Android için
-          }}
-        >
+        <View style={iconShadowStyle}>
           <FontAwesomeIcon icon={detail.icon} size={22} color="white" />
         </View>
         <Text
           style={{
-            textShadowColor: "rgba(0, 0, 0, 0.2)",
-            textShadowOffset: { width: 0, height: 1 },
-            textShadowRadius: 4,
+            ...subtitleShadowStyle,
             color: "white",
             marginTop: 10,
             textAlign: "center",
@@ -360,34 +347,58 @@ const ExploreActionButtons = memo(
 
     return (
       <>
+        {/* 🚀 ACTION BUTTONS CONTAINER - YENİDEN TASARLANDI */}
         <View
-          className="absolute right-1"
           style={{
+            position: "absolute",
+            right: 4, // Biraz sağa kaydırıldı
             top: safeAreaInsets.top,
-            zIndex: 1000,
+            zIndex: 9999, // 🚀 Çok yüksek z-index
             width: 60,
             maxHeight: 600,
+            elevation: 9999, // Android için
           }}
+          // 🚀 Container'ın kendisi touch olaylarını engellemeyecek
+          pointerEvents="box-none"
         >
-          <View className="py-1">
-            {/* 1. DETAYLAR BUTONU */}
-            <TouchableOpacity
-              style={{
-                alignItems: "center",
-                justifyContent: "center",
-                width: "100%",
-                paddingVertical: 6,
-                minHeight: 50,
-                marginBottom: 4,
+          <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+            {/* 🚀 MODAL AÇMA BUTONU - KESINLIKLE ÇALIŞAN VERSİYON */}
+            <Pressable
+              onPress={handleModalOpen}
+              style={({ pressed }) => [
+                {
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 50,
+                  height: 50,
+                  borderRadius: 25,
+                  backgroundColor: pressed
+                    ? "rgba(0,0,0,0.6)"
+                    : "rgba(0,0,0,0.4)",
+                  marginBottom: 8,
+                  // 🚀 Çok güçlü shadow
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.8,
+                  shadowRadius: 10,
+                  elevation: 20,
+                },
+              ]}
+              // 🚀 Pressable için ek özellikler
+              android_ripple={{
+                color: "rgba(255,255,255,0.3)",
+                borderless: true,
+                radius: 25,
               }}
-              onPress={() => setIsDetailModalVisible(true)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              pressRetentionOffset={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <View>
-                <FontAwesomeIcon icon={faEllipsis} size={20} color="white" />
+              <View style={iconShadowStyle}>
+                <FontAwesomeIcon icon={faEllipsis} size={22} color="white" />
               </View>
-            </TouchableOpacity>
+            </Pressable>
 
-            {/* 2. SCROLL VIEW - İçerik türüne göre farklı render */}
+            {/* 🚀 DETAYLAR - SCROLL VIEW */}
             <ScrollView
               showsVerticalScrollIndicator={false}
               bounces={false}
@@ -395,6 +406,8 @@ const ExploreActionButtons = memo(
               contentContainerStyle={{
                 alignItems: "center",
               }}
+              // 🚀 ScrollView'un touch olayları geçsin
+              pointerEvents="box-none"
             >
               {/* META POST İÇİN - Tüm detaylar direkt görünür */}
               {details.type === "meta" && (
@@ -421,12 +434,14 @@ const ExploreActionButtons = memo(
         {/* Page Indicator Dots */}
         {renderPageIndicator()}
 
-        {/* Detail Modal */}
-        <ExploreDetailModal
-          visible={isDetailModalVisible}
-          onClose={() => setIsDetailModalVisible(false)}
-          listing={listing}
-        />
+        {/* 🚀 DETAIL MODAL - DEBUG VE İYİLEŞTİRME */}
+        {isDetailModalVisible && (
+          <ExploreDetailModal
+            visible={isDetailModalVisible}
+            onClose={handleModalClose}
+            listing={listing}
+          />
+        )}
       </>
     );
   }

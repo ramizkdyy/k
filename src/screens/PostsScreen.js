@@ -1676,6 +1676,31 @@ const PostsScreen = ({ navigation }) => {
   };
 
   const renderEmptyState = () => {
+    // İlk yükleme durumunu kontrol et
+    const isInitialLoading = isLoading && allPostsData.length === 0;
+    const isRefreshLoading = refreshing;
+    const isFilterLoading = isLoadingMore || isLoadingMoreFiltered;
+
+    // Herhangi bir loading durumu varsa loading göster
+    if (isInitialLoading || isRefreshLoading || isFilterLoading) {
+      return (
+        <View className="flex-1 justify-center items-center" style={{ marginTop: 100 }}>
+          <ActivityIndicator size="large" color="#4A90E2" />
+          <Text className="mt-3 text-base text-gray-500">
+            İlanlar yükleniyor...
+          </Text>
+        </View>
+      );
+    }
+
+    // Loading tamamlandıktan sonra veri kontrolü
+    const hasNoData = filteredPosts.length === 0;
+
+    if (!hasNoData) {
+      return null;
+    }
+
+    // Sadece loading bitmiş ve gerçekten veri yoksa empty state göster
     Logger.info(COMPONENT_NAME, "No posts found", {
       userRole,
       hasFilters: Object.values(filters).some((val) => val !== null),
@@ -2124,11 +2149,12 @@ const PostsScreen = ({ navigation }) => {
   };
 
   const getDynamicPaddingTop = () => {
-    const normalPadding = insets.top + 50 + 60 + 50 + 32;
+    const normalPadding = insets.top + 50 + 60 + 32;
     return normalPadding;
   };
 
   // Main return
+  // Ana render kısmını değiştir - debug ile:
   return (
     <View className="flex-1 bg-white">
       <StatusBar
@@ -2140,7 +2166,24 @@ const PostsScreen = ({ navigation }) => {
       {renderAnimatedHeader()}
 
       <View className="flex-1">
-        {isLoading ? (
+
+        {console.log("DEBUG STATES:", {
+          isLoading,
+          isLoadingLandlordListings,
+          isLoadingAllPosts,
+          isFetchingAllPosts,
+          allPostsDataLength: allPostsData.length,
+          filteredPostsLength: filteredPosts.length,
+          userRole,
+          currentPage,
+          hasActiveFilters
+        })}
+
+        {/* Loading condition'ını genişlet */}
+        {(isLoading ||
+          (userRole === "KIRACI" && allPostsData.length === 0 && !hasActiveFilters) ||
+          (userRole === "EVSAHIBI" && (!landlordListingsData || !landlordListingsData.result))
+        ) ? (
           <View className="flex-1 justify-center items-center">
             <ActivityIndicator size="large" color="#4A90E2" />
             <Text className="mt-3 text-base text-gray-500">
@@ -2189,9 +2232,7 @@ const PostsScreen = ({ navigation }) => {
             initialNumToRender={8}
             windowSize={5}
             disableVirtualization={false}
-            extraData={`${searchQuery}_${JSON.stringify(filters)}_${
-              allPostsData.length
-            }`}
+            extraData={`${searchQuery}_${JSON.stringify(filters)}_${allPostsData.length}`}
             onScroll={Animated.event(
               [{ nativeEvent: { contentOffset: { y: scrollY } } }],
               { useNativeDriver: false }
@@ -2201,11 +2242,16 @@ const PostsScreen = ({ navigation }) => {
         )}
       </View>
 
+      {/* Filter Modal */}
       <PropertiesFilterModal
         visible={isFilterModalVisible}
         onClose={handleFilterModalClose}
         onApply={handleFilterModalApply}
+        initialFilters={filters}
+        userRole={userRole}
       />
+
+      {/* Landlord Actions Modal */}
       <LandlordActionsModal
         visible={isActionsModalVisible}
         onClose={handleCloseActionsModal}

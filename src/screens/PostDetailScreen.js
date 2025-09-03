@@ -93,12 +93,13 @@ const getHeatingTypeText = (value) => {
   return mapping[value] || "Belirtilmemiş";
 };
 
+
 const getCurrencyText = (value) => {
   const mapping = {
     1: "₺",
-    2: "USD",
-    3: "EUR",
-    4: "GBP",
+    2: "$",
+    3: "€",
+    4: "£",
   };
   return mapping[value] || "₺";
 };
@@ -457,7 +458,7 @@ const PostDetailScreen = ({ route, navigation }) => {
       activeOpacity={1}
       className="overflow-hidden w-72 flex flex-col px-3 py-3"
       onPress={() => {
-        navigation.navigate("PostDetail", { postId: item.postId });
+        navigation.push("PostDetail", { postId: item.postId });
       }}
     >
       {/* Image Container */}
@@ -644,7 +645,14 @@ const PostDetailScreen = ({ route, navigation }) => {
         offerAmount: offerData.amount,
         actionType: 2,
         description: offerData.message || null,
+        currency: offerData.currency, // (default TRY)
       };
+
+      console.log('Gönderilen teklif payload:', {
+        ...offerPayload,
+        selectedCurrency: offerData.currency,
+        currencyMapping: offerData.currency === 1 ? 'TRY' : offerData.currency === 2 ? 'USD' : offerData.currency === 3 ? 'EUR' : 'GBP'
+      }); // Debug için
 
       const response = await createOffer(offerPayload).unwrap();
 
@@ -1018,8 +1026,8 @@ const PostDetailScreen = ({ route, navigation }) => {
                         <TouchableOpacity
                           key={`dot-${index}`}
                           className={`mx-1 h-2 w-2 rounded-full ${index === currentImageIndex
-                              ? "bg-white"
-                              : "bg-gray-400"
+                            ? "bg-white"
+                            : "bg-gray-400"
                             }`}
                           onPress={() => handleThumbnailPress(index)}
                         />

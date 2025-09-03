@@ -34,7 +34,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get("screen");
 
 // Currency options similar to ProfileExpectation dropdown options
 const currencyOptions = [
-    { label: "Türk Lirası (₺)", value: 1, symbol: "₺" },
+    { label: "Türk Lirası (₺)", value: 1, symbol: "₺" },  // ✅ Sayısal value
     { label: "Amerikan Doları ($)", value: 2, symbol: "$" },
     { label: "Euro (€)", value: 3, symbol: "€" },
     { label: "İngiliz Sterlini (£)", value: 4, symbol: "£" },
@@ -245,6 +245,8 @@ const OfferModal = ({
     const [offerAmount, setOfferAmount] = useState("");
     const [selectedCurrency, setSelectedCurrency] = useState(null);
     const [offerMessage, setOfferMessage] = useState("");
+    const [isInitialized, setIsInitialized] = useState(false); // Yeni state
+
 
     // Modal animation values
     const translateY = useSharedValue(SCREEN_HEIGHT);
@@ -344,7 +346,7 @@ const OfferModal = ({
 
         onSubmit({
             amount,
-            currency: selectedCurrency?.value || 1,
+            currency: selectedCurrency.value,
             message: offerMessage.trim(),
         });
     };
