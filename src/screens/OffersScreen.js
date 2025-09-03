@@ -27,7 +27,7 @@ import {
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { BlurView } from "expo-blur";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faChevronLeft, faEnvelope } from "@fortawesome/pro-regular-svg-icons";
+import { faChevronLeft, faEnvelope, faExclamationCircle } from "@fortawesome/pro-regular-svg-icons";
 import { faStar } from "@fortawesome/pro-solid-svg-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -217,6 +217,8 @@ const OffersScreen = () => {
   // Conditional query based on user role
   const isTenant = userRole === "KIRACI";
   const isLandlord = userRole === "EVSAHIBI";
+
+
 
   // Fetch offers based on user role
   const {
@@ -576,6 +578,16 @@ const OffersScreen = () => {
     }
   };
 
+  const getCurrencySymbol = (currencyType) => {
+    // Backend'den gelen CurrencyType enum değerlerine göre mapping
+    const mapping = {
+      1: "₺",  // TRY
+      2: "$",  // USD  
+      3: "€",  // EUR
+      4: "£",  // GBP
+    };
+    return mapping[currencyType] || "₺";
+  };
   const renderOfferItem = (item, index) => {
     console.log("Rendering offer item:", {
       offerId: item.offerId,
@@ -583,6 +595,7 @@ const OffersScreen = () => {
       offerAmount: item.offerAmount,
       postTitle: item.post?.ilanBasligi || "No title",
     });
+
 
     const statusInfo = getStatusText(item.status);
     const post = item.post || {};
@@ -751,11 +764,7 @@ const OffersScreen = () => {
                       fontWeight: "400",
                     }}
                   >
-                    {post.paraBirimi === "USD"
-                      ? "$"
-                      : post.paraBirimi === "EUR"
-                        ? "€"
-                        : "₺"}
+                    {getCurrencySymbol(post.paraBirimi)}
                     {item.offerAmount?.toLocaleString() || "0"}
                   </Text>
                   <Text
@@ -793,11 +802,7 @@ const OffersScreen = () => {
                       fontWeight: "700",
                     }}
                   >
-                    {post.paraBirimi === "USD"
-                      ? "$"
-                      : post.paraBirimi === "EUR"
-                        ? "€"
-                        : "₺"}
+                    {getCurrencySymbol(post.paraBirimi)}
                     {item.offerAmount?.toLocaleString() || "0"}
                   </Text>
                 </View>
@@ -857,11 +862,7 @@ const OffersScreen = () => {
                       fontWeight: "700",
                     }}
                   >
-                    {post.paraBirimi === "USD"
-                      ? "$"
-                      : post.paraBirimi === "EUR"
-                        ? "€"
-                        : "₺"}
+                    {getCurrencySymbol(post.paraBirimi)}
                     {item.offerAmount?.toLocaleString() || "0"}
                   </Text>
                 </View>

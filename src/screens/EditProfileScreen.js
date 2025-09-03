@@ -345,8 +345,8 @@ const EditProfileScreen = ({ navigation }) => {
     isLoading: profileLoading,
     isSuccess: profileSuccess,
   } = userRole === "EVSAHIBI"
-    ? useGetLandlordProfileQuery(currentUser?.id, { skip: !currentUser?.id })
-    : useGetTenantProfileQuery(currentUser?.id, { skip: !currentUser?.id });
+      ? useGetLandlordProfileQuery(currentUser?.id, { skip: !currentUser?.id })
+      : useGetTenantProfileQuery(currentUser?.id, { skip: !currentUser?.id });
 
   const [updateLandlordProfile, { isLoading: updateLandlordLoading }] =
     useUpdateLandlordProfileMutation();
@@ -499,7 +499,7 @@ const EditProfileScreen = ({ navigation }) => {
         Alert.alert(
           "Güncelleme Hatası",
           error?.data?.message ||
-            "Profil güncellenirken bir hata oluştu. Lütfen tekrar deneyin."
+          "Profil güncellenirken bir hata oluştu. Lütfen tekrar deneyin."
         );
       }
 

@@ -172,7 +172,7 @@ const ListingCard = memo(
           position: "relative",
           backgroundColor: "#000",
         }}
-        key={`listing-${listing.postId || listing.id}-${index}`} // Stable key for PagerView
+        key={`listing-${listing.postId || listing.id}-${index}`}
       >
         {/* Main Image Display */}
         {listingData.images.length > 0 ? (
@@ -234,15 +234,14 @@ const ListingCard = memo(
                   style={{
                     position: "absolute",
                     top: "50%",
-                    left: "50%",
-                    width: SCREEN_WIDTH * 0.9,
+                    left: 0, // ✅ left: "50%" yerine 0 kullan
+                    right: 0, // ✅ Sağ tarafı da sıfırla
                     height: (SCREEN_WIDTH * 0.9) / (9 / 16),
                     transform: [
-                      { translateX: -(SCREEN_WIDTH * 0.9) / 2 },
                       { translateY: -((SCREEN_WIDTH * 0.9) / (9 / 16)) / 2 },
-                    ],
-                    borderRadius: 12,
+                    ], // ✅ translateX'i kaldır
                     overflow: "hidden",
+                    // paddingHorizontal: 16, // ✅ Yan boşluklar için padding ekle
                     paddingBottom: 32,
                   }}
                 >
@@ -288,31 +287,6 @@ const ListingCard = memo(
           }}
         />
 
-        {/* Image Counter - Show only if multiple images */}
-        {/* {listingData.images.length > 1 && (
-          <View
-            style={{
-              position: "absolute",
-              top: 60,
-              right: 20,
-              backgroundColor: "rgba(0,0,0,0.5)",
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              borderRadius: 20,
-            }}
-          >
-            <Text
-              style={{
-                color: "white",
-                fontSize: 14,
-                fontWeight: "600",
-              }}
-            >
-              {currentImageIndex + 1}/{listingData.images.length}
-            </Text>
-          </View>
-        )} */}
-
         {/* Components */}
         <ExplorePostInfo listing={listing} safeAreaInsets={safeAreaInsets} />
         <ExploreActionButtons
@@ -326,7 +300,6 @@ const ListingCard = memo(
     );
   },
   (prevProps, nextProps) => {
-    // Aggressive memo comparison for better performance
     return (
       prevProps.isActive === nextProps.isActive &&
       prevProps.listing.postId === nextProps.listing.postId &&
@@ -336,9 +309,10 @@ const ListingCard = memo(
   }
 );
 
-// Pull-to-refresh wrapper component for PagerView
+// 🚀 SORUN ÇÖZÜMÜ: RefreshablePagerView - Action buttons ile çakışmayı önler
 const RefreshablePagerView = memo(({ children, onRefresh, refreshing }) => {
   const [pullRefreshEnabled, setPullRefreshEnabled] = useState(false);
+  const [pullStartY, setPullStartY] = useState(0);
 
   return (
     <View style={{ flex: 1 }}>
@@ -370,28 +344,47 @@ const RefreshablePagerView = memo(({ children, onRefresh, refreshing }) => {
         </View>
       )}
 
-      {/* Pull-to-refresh detector at top */}
+      {/* 🚀 PULL TO REFRESH - SAĞ ALAN HARİÇ */}
       <View
         style={{
           position: "absolute",
           top: 0,
           left: 0,
-          right: 0,
-          height: 100,
-          zIndex: 999,
+          right: 100, // 🚀 Sağdan 100px alan hariç - action buttons için
+          height: 60,  // 🚀 Sadece çok üst kısım
+          zIndex: 500, // 🚀 Action buttons'tan daha düşük z-index
         }}
         onTouchStart={(e) => {
           const startY = e.nativeEvent.pageY;
-          if (startY < 150) {
-            // If touch starts near top, enable pull to refresh
+          setPullStartY(startY);
+
+          // Sadece çok üst alanda başlayan touch'lar
+          if (startY < 60) {
             setPullRefreshEnabled(true);
           }
         }}
-        onTouchEnd={() => {
+        onTouchMove={(e) => {
           if (pullRefreshEnabled) {
-            onRefresh();
-            setPullRefreshEnabled(false);
+            const currentY = e.nativeEvent.pageY;
+            const pullDistance = currentY - pullStartY;
+
+            // Yetersiz pull distance ise iptal et
+            if (pullDistance < 50) {
+              setPullRefreshEnabled(false);
+            }
           }
+        }}
+        onTouchEnd={(e) => {
+          const endY = e.nativeEvent.pageY;
+          const pullDistance = endY - pullStartY;
+
+          // Yeterli mesafe çekilmiş ve pull aktif ise refresh
+          if (pullRefreshEnabled && pullDistance > 50) {
+            onRefresh();
+          }
+
+          setPullRefreshEnabled(false);
+          setPullStartY(0);
         }}
       />
 
@@ -449,28 +442,21 @@ const ExploreScreen = ({ navigation }) => {
     if (feedParams.userId) {
       refetchFeed();
       setCurrentIndex(0);
-      // Reset to first page after refresh
       setTimeout(() => {
         pagerViewRef.current?.setPage(0);
       }, 100);
     }
   }, [feedParams.userId, refetchFeed]);
 
-  // Handle page selection change - CRITICAL for performance tracking
+  // Handle page selection change
   const handlePageSelected = useCallback((event) => {
     const selectedPageIndex = event.nativeEvent.position;
     setCurrentIndex(selectedPageIndex);
   }, []);
 
-  // Handle page scroll state change - for performance optimization
+  // Handle page scroll state change
   const handlePageScrollStateChanged = useCallback((state) => {
-    // State can be: 'idle', 'dragging', 'settling'
-    // We can use this to optimize performance during transitions
-    if (state === 'dragging') {
-      // User is actively scrolling - can pause expensive operations
-    } else if (state === 'idle') {
-      // Scrolling finished - can resume operations
-    }
+    // State optimization can be added here if needed
   }, []);
 
   // Loading state
@@ -538,15 +524,16 @@ const ExploreScreen = ({ navigation }) => {
           <PagerView
             ref={pagerViewRef}
             style={{ flex: 1 }}
-            orientation="vertical" // 🚀 CRITICAL: Vertical orientation for Instagram-style
+            orientation="vertical"
             initialPage={0}
-            scrollEnabled={!isHorizontalScrollActive} // Disable when horizontal scroll is active
+            scrollEnabled={!isHorizontalScrollActive}
             onPageSelected={handlePageSelected}
             onPageScrollStateChanged={handlePageScrollStateChanged}
-            // 🚀 PERFORMANCE: Critical PagerView optimizations
-            overdrag={false} // Prevents overscroll bounce for better performance
-            pageMargin={0} // No gaps between pages
-            offscreenPageLimit={1} // Keep only 1 page in memory on each side (total 3 pages)
+            overdrag={false}
+            pageMargin={0}
+            offscreenPageLimit={1}
+            // 🚀 MODAL UYUMLULUĞU
+            keyboardShouldPersistTaps="handled"
           >
             {feedData.result.posts.map((item, index) => (
               <View
@@ -555,6 +542,7 @@ const ExploreScreen = ({ navigation }) => {
                   width: SCREEN_WIDTH,
                   height: ITEM_HEIGHT,
                 }}
+                pointerEvents="box-none" // 🚀 Touch geçişkenliği
               >
                 <ListingCard
                   listing={item}
