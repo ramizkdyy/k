@@ -38,30 +38,40 @@ const OffersScreen = () => {
   const userRole = useSelector(selectUserRole);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTab, setSelectedTab] = useState("pending");
+  const insets = useSafeAreaInsets();
 
   // ADDED: Animation for header
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  // ADDED: Header animation transforms (only for tabs section)
+  const SCROLL_DISTANCE = 50;
+
+  const titleOpacity = scrollY.interpolate({
+    inputRange: [0, SCROLL_DISTANCE],
+    outputRange: [1, 0],
+    extrapolate: "clamp",
+  });
+
+  const titleScale = scrollY.interpolate({
+    inputRange: [0, SCROLL_DISTANCE],
+    outputRange: [1, 0.8],
+    extrapolate: "clamp",
+  });
+
   const tabsTranslateY = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [0, -60], // Move tabs up
+    inputRange: [0, SCROLL_DISTANCE],
+    outputRange: [0, -60],
     extrapolate: "clamp",
   });
 
-  const tabsOpacity = scrollY.interpolate({
-    inputRange: [0, 50, 100],
-    outputRange: [1, 0.5, 0],
+  const headerContainerHeight = scrollY.interpolate({
+    inputRange: [0, SCROLL_DISTANCE],
+    outputRange: [
+      insets.top + 50 + 60 + 16,
+      insets.top + 42 + 8,
+    ],
     extrapolate: "clamp",
   });
 
-  const tabsContainerHeight = scrollY.interpolate({
-    inputRange: [0, 50],
-    outputRange: [50, 0], // Tabs container height animation
-    extrapolate: "clamp",
-  });
-
-  const insets = useSafeAreaInsets();
 
   // Rating Score gösterim fonksiyonu
   const getRatingScoreInfo = (rating) => {
@@ -226,10 +236,10 @@ const OffersScreen = () => {
     refetch,
     error,
   } = isTenant
-    ? useGetSentOffersQuery(currentUser?.id, {
+      ? useGetSentOffersQuery(currentUser?.id, {
         skip: !currentUser?.id,
       })
-    : useGetReceivedOffersQuery(currentUser?.id, {
+      : useGetReceivedOffersQuery(currentUser?.id, {
         skip: !currentUser?.id,
       });
 
@@ -329,8 +339,7 @@ const OffersScreen = () => {
 
       offersData.result.rentalPosts.forEach((post, postIndex) => {
         console.log(
-          `Post ${postIndex}: ${post.ilanBasligi}, has ${
-            post.offers?.length || 0
+          `Post ${postIndex}: ${post.ilanBasligi}, has ${post.offers?.length || 0
           } offers`
         );
 
@@ -508,7 +517,7 @@ const OffersScreen = () => {
               Alert.alert(
                 "Hata",
                 error?.data?.message ||
-                  "Teklif kabul edilirken bir hata oluştu."
+                "Teklif kabul edilirken bir hata oluştu."
               );
             }
           },
@@ -588,13 +597,16 @@ const OffersScreen = () => {
     return mapping[currencyType] || "₺";
   };
   const renderOfferItem = (item, index) => {
-    console.log("Rendering offer item:", {
-      offerId: item.offerId,
-      status: item.status,
-      offerAmount: item.offerAmount,
-      postTitle: item.post?.ilanBasligi || "No title",
-    });
-
+    // console.log("Rendering offer item:", {
+    //   offerId: item.offerId,
+    //   status: item.status,
+    //   offerAmount: item.offerAmount,
+    //   postTitle: item.post?.ilanBasligi || "No title",
+    //   // ⬇️ Bu satırları ekleyin
+    //   itemCurrency: item.currency, // Teklifin para birimi
+    //   postCurrency: item.post?.paraBirimi, // Post'un para birimi
+    //   // ⬆️ Bu satırları ekleyin
+    // });
 
     const statusInfo = getStatusText(item.status);
     const post = item.post || {};
@@ -763,7 +775,13 @@ const OffersScreen = () => {
                       fontWeight: "400",
                     }}
                   >
-                    {getCurrencySymbol(post.paraBirimi)}
+                    {getCurrencySymbol(
+                      item.currency ||
+                      item.rentalOfferDto?.currency ||
+                      post.paraBirimi ||
+                      item.postDto?.paraBirimi ||
+                      1
+                    )}
                     {item.offerAmount?.toLocaleString() || "0"}
                   </Text>
                   <Text
@@ -824,7 +842,13 @@ const OffersScreen = () => {
                       fontWeight: "700",
                     }}
                   >
-                    {getCurrencySymbol(post.paraBirimi)}
+                    {getCurrencySymbol(
+                      item.currency ||
+                      item.rentalOfferDto?.currency ||
+                      post.paraBirimi ||
+                      item.postDto?.paraBirimi ||
+                      1
+                    )}
                     {item.offerAmount?.toLocaleString() || "0"}
                   </Text>
                 </View>
@@ -856,10 +880,10 @@ const OffersScreen = () => {
                     >
                       {item.offerTime
                         ? new Date(item.offerTime).toLocaleDateString("tr-TR", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          })
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })
                         : ""}
                     </Text>
                   </View>
@@ -884,7 +908,13 @@ const OffersScreen = () => {
                       fontWeight: "700",
                     }}
                   >
-                    {getCurrencySymbol(post.paraBirimi)}
+                    {getCurrencySymbol(
+                      item.currency ||
+                      item.rentalOfferDto?.currency ||
+                      post.paraBirimi ||
+                      item.postDto?.paraBirimi ||
+                      1
+                    )}
                     {item.offerAmount?.toLocaleString() || "0"}
                   </Text>
                 </View>
@@ -915,7 +945,7 @@ const OffersScreen = () => {
                   activeOpacity={0.7}
                 >
                   {!!item.offeringUser?.profileImageUrl ||
-                  post?.profilePictureUrl ? (
+                    post?.profilePictureUrl ? (
                     <Image
                       style={{ width: 40, height: 40, borderRadius: 100 }}
                       source={{
@@ -1029,22 +1059,138 @@ const OffersScreen = () => {
         {tabs.map((tab) => (
           <TouchableOpacity
             key={tab.key}
-            className={`flex-1  rounded-full py-3 ${
-              selectedTab === tab.key ? "bg-black " : ""
-            }`}
+            className={`flex-1  rounded-full py-3 ${selectedTab === tab.key ? "bg-black " : ""
+              }`}
             onPress={() => setSelectedTab(tab.key)}
           >
             <Text
               style={{ fontSize: 12 }}
-              className={`text-center ${
-                selectedTab === tab.key ? "text-white" : "text-gray-900"
-              }`}
+              className={`text-center ${selectedTab === tab.key ? "text-white" : "text-gray-900"
+                }`}
             >
               {tab.label} ({tab.count})
             </Text>
           </TouchableOpacity>
         ))}
       </View>
+    );
+  };
+
+  const getDynamicPaddingTop = () => {
+    const normalPadding = insets.top + 50 + 60;
+    return normalPadding;
+  };
+
+  const renderAnimatedHeader = () => {
+    return (
+      <Animated.View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 100,
+          height: headerContainerHeight,
+        }}
+      >
+        {/* BlurView Background */}
+        <BlurView
+          intensity={80}
+          tint="light"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+        />
+
+        {/* Semi-transparent overlay */}
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(255, 255, 255, 0.7)",
+          }}
+        />
+
+        {/* Content Container */}
+        <View
+          style={{
+            paddingTop: insets.top,
+            paddingHorizontal: 16,
+            flex: 1,
+            zIndex: 10,
+          }}
+        >
+          {/* Title Section - Kaybolur */}
+          <Animated.View
+            style={{
+              opacity: titleOpacity,
+              transform: [{ scale: titleScale }],
+              height: 50,
+              justifyContent: "center",
+            }}
+          >
+            <Text
+              style={{ fontSize: 18 }}
+              className="text-gray-900 font-bold text-center"
+            >
+              {isTenant ? "Gönderdiğim Teklifler" : "Gelen Teklifler"}
+            </Text>
+            <Text className="text-sm text-gray-500 text-center">
+              {offers.length} teklif
+            </Text>
+          </Animated.View>
+
+          {/* Tabs Section - Title'ın yerine geçer */}
+          <Animated.View
+            style={{
+              marginTop: 10,
+              transform: [{ translateY: tabsTranslateY }],
+            }}
+          >
+            <View className="flex-row bg-transparent gap-2">
+              {[
+                {
+                  key: "pending",
+                  label: "Beklemede",
+                  count: offers.filter((o) => o.status === 0).length,
+                },
+                {
+                  key: "accepted",
+                  label: "Kabul Edildi",
+                  count: offers.filter((o) => o.status === 1).length,
+                },
+                {
+                  key: "rejected",
+                  label: "Reddedildi",
+                  count: offers.filter((o) => o.status === 2).length,
+                },
+              ].map((tab) => (
+                <TouchableOpacity
+                  key={tab.key}
+                  className={`flex-1 rounded-full py-3 ${selectedTab === tab.key ? "bg-black" : "bg-white"
+                    }`}
+                  onPress={() => setSelectedTab(tab.key)}
+                >
+                  <Text
+                    style={{ fontSize: 12 }}
+                    className={`text-center font-medium ${selectedTab === tab.key ? "text-white" : "text-gray-900"
+                      }`}
+                  >
+                    {tab.label} ({tab.count})
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Animated.View>
+        </View>
+      </Animated.View>
     );
   };
 
@@ -1114,112 +1260,8 @@ const OffersScreen = () => {
         translucent={true}
       />
 
-      {/* Animated Blurred Header - Sadece başlık */}
-      <Animated.View
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 100,
-          height: insets.top + 70, // Sadece başlık kısmı
-        }}
-      >
-        <BlurView
-          intensity={50}
-          tint="extralight"
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-          }}
-        />
+      {renderAnimatedHeader()}
 
-        {/* Sadece başlık - blur içinde */}
-        <View style={{ paddingTop: insets.top, flex: 1 }}>
-          <View className="flex flex-row items-center px-5 mt-1">
-            <View className="px-4 items-center" style={{ width: "100%" }}>
-              <View className="gap-2 px-4 flex-row items-center justify-center">
-                <View className="py-4">
-                  <Text className="text-lg font-bold text-gray-800 text-center">
-                    {isTenant ? "Gönderdiğim Teklifler" : "Gelen Teklifler"}
-                  </Text>
-                  <Text className="text-sm text-gray-500 text-center">
-                    {offers.length} teklif
-                  </Text>
-                </View>
-              </View>
-            </View>
-            <View style={{ width: "8%" }}></View>
-          </View>
-        </View>
-      </Animated.View>
-
-      {/* Mevcut animasyonlu tablar - header dışında */}
-      <View
-        style={{ marginTop: insets.top + 70 }}
-        className="bg-white border-b border-gray-200"
-      >
-        <Animated.View
-          style={{
-            height: tabsContainerHeight,
-            overflow: "hidden",
-          }}
-        >
-          <Animated.View
-            className="flex justify-center items-center"
-            style={{
-              paddingHorizontal: 16,
-              paddingBottom: 8,
-              height: 50,
-              opacity: tabsOpacity,
-              transform: [{ translateY: tabsTranslateY }],
-            }}
-          >
-            <View
-              className="flex-row bg-white gap-2 px-8"
-              style={{ width: "100%" }}
-            >
-              {[
-                {
-                  key: "pending",
-                  label: "Beklemede",
-                  count: offers.filter((o) => o.status === 0).length,
-                },
-                {
-                  key: "accepted",
-                  label: "Kabul Edildi",
-                  count: offers.filter((o) => o.status === 1).length,
-                },
-                {
-                  key: "rejected",
-                  label: "Reddedildi",
-                  count: offers.filter((o) => o.status === 2).length,
-                },
-              ].map((tab) => (
-                <TouchableOpacity
-                  key={tab.key}
-                  className={`flex-1 rounded-full py-3 ${
-                    selectedTab === tab.key ? "bg-black" : ""
-                  }`}
-                  onPress={() => setSelectedTab(tab.key)}
-                >
-                  <Text
-                    style={{ fontSize: 12 }}
-                    className={`text-center ${
-                      selectedTab === tab.key ? "text-white" : "text-gray-900"
-                    }`}
-                  >
-                    {tab.label} ({tab.count})
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </Animated.View>
-        </Animated.View>
-      </View>
 
       {/* ScrollView - padding yok, tablar zaten kaybolacak */}
       <Animated.ScrollView
@@ -1228,7 +1270,10 @@ const OffersScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 85 }}
+        contentContainerStyle={{
+          paddingBottom: 100,
+          paddingTop: getDynamicPaddingTop(),
+        }}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: false }
