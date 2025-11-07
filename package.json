@@ -34,7 +34,7 @@
     "@reduxjs/toolkit": "^2.7.0",
     "axios": "^1.9.0",
     "date-fns": "^4.1.0",
-    "eas-cli": "^16.17.4",
+    "eas-cli": "^16.26.0",
     "expo": "53.0.20",
     "expo-blur": "~14.1.5",
     "expo-build-properties": "~0.14.8",
