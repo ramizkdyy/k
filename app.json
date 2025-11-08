@@ -7,7 +7,10 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -74,15 +77,15 @@
             "useFrameworks": "static"
           }
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "extra": {
       "eas": {
         "projectId": "ec7b8e3c-31c0-470c-8664-583719f38588"
       }
     },
-"runtimeVersion": "1.0.3",
-
+    "runtimeVersion": "1.0.3",
     "updates": {
       "url": "https://u.expo.dev/ec7b8e3c-31c0-470c-8664-583719f38588"
     }
