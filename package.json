@@ -49,6 +49,7 @@
     "expo-status-bar": "~2.2.3",
     "expo-updates": "~0.28.17",
     "jwt-decode": "^4.0.0",
+    "lodash": "^4.17.21",
     "moti": "^0.30.0",
     "nativewind": "^4.1.23",
     "react": "19.0.0",
