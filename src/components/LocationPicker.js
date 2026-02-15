@@ -12,8 +12,7 @@ import {
 import MapView from "react-native-maps";
 import * as Location from "expo-location";
 import { MaterialIcons } from "@expo/vector-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faLocationDot, faXmark } from "@fortawesome/pro-solid-svg-icons";
+import { MapPin, X } from "lucide-react-native";
 import { BlurView } from "expo-blur";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
@@ -318,7 +317,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
               borderRadius: 20,
             }}
           >
-            <FontAwesomeIcon icon={faXmark} size={20} color="#fff" />
+            <X size={20} color="#fff" />
           </BlurView>
         </TouchableOpacity>
       </View>
@@ -352,7 +351,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
           zIndex: 5,
         }}
       >
-        <FontAwesomeIcon icon={faLocationDot} size={32} color="#fff" />
+        <MapPin size={32} color="#fff" fill="#fff" />
       </View>
 
       {/* Crosshair/Guide (optional) */}

@@ -12,16 +12,8 @@ import {
   Alert,
 } from "react-native";
 import { Image } from "expo-image";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import {
-  faArrowLeft,
-  faSearch,
-  faCircle,
-  faWifi,
-  faWifiSlash,
-} from "@fortawesome/pro-solid-svg-icons";
+import { ArrowLeft, Search, Circle, Wifi, WifiOff, Edit } from "lucide-react-native";
 import { StatusBar } from "expo-status-bar";
-import { faEdit } from "@fortawesome/pro-regular-svg-icons";
 import {
   useGetChatPartnersQuery,
   useGetUnreadCountQuery,
@@ -532,7 +524,7 @@ const MessagesScreen = ({ navigation }) => {
   if (partnersError && !chatPartners.length) {
     return (
       <View className="flex-1 bg-white justify-center items-center px-4">
-        <FontAwesomeIcon icon={faWifiSlash} size={40} color="#ef4444" />
+        <WifiOff size={40} color="#ef4444" />
         <Text className="mt-4 text-lg font-semibold text-gray-900 text-center">
           Connection Error
         </Text>
@@ -566,7 +558,7 @@ const MessagesScreen = ({ navigation }) => {
             onPress={() => navigation.goBack()}
             className="p-2 -ml-2"
           >
-            <FontAwesomeIcon icon={faArrowLeft} size={20} color="#000" />
+            <ArrowLeft size={20} color="#000" />
           </TouchableOpacity>
 
           <View className="flex-1 items-start">
@@ -612,7 +604,7 @@ const MessagesScreen = ({ navigation }) => {
                 );
               }}
             >
-              <FontAwesomeIcon icon={faEdit} size={22} color="#000" />
+              <Edit size={22} color="#000" />
             </TouchableOpacity>
           </View>
         </View>
@@ -622,7 +614,7 @@ const MessagesScreen = ({ navigation }) => {
           style={{ boxShadow: "0px 0px 12px #00000014" }}
           className=" rounded-full px-4 py-3 flex-row items-center"
         >
-          <FontAwesomeIcon icon={faSearch} size={16} color="#000" />
+          <Search size={16} color="#000" />
           <TextInput
             style={{ fontSize: 15 }}
             className="flex-1 ml-3"

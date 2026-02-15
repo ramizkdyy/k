@@ -16,12 +16,7 @@ import {
     Keyboard,
     ScrollView,
 } from "react-native";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import {
-    faChevronDown,
-    faChevronLeft,
-    faXmark,
-} from "@fortawesome/pro-solid-svg-icons";
+import { ChevronDown, ChevronLeft, X } from "lucide-react-native";
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -135,8 +130,7 @@ const CustomDropdown = ({
                 >
                     {value ? value.label : placeholder}
                 </Text>
-                <FontAwesomeIcon
-                    icon={faChevronDown}
+                <ChevronDown
                     size={16}
                     color={value ? "#111827" : "#9ca3af"}
                 />
@@ -164,7 +158,7 @@ const CustomDropdown = ({
                                 {/* Header */}
                                 <View className="flex-row justify-between items-center px-6 pb-4">
                                     <TouchableOpacity onPress={handleClose}>
-                                        <FontAwesomeIcon icon={faChevronLeft} size={20} color="#6b7280" />
+                                        <ChevronLeft size={20} color="#6b7280" />
                                     </TouchableOpacity>
                                     <Text className="text-lg font-semibold text-gray-800">{label}</Text>
                                     <View className="w-5" />
@@ -428,7 +422,7 @@ const OfferModal = ({
                         <View className="w-5" />
                         <Text className="text-xl font-bold text-gray-800">Teklif Ver</Text>
                         <TouchableOpacity onPress={handleClose} className="p-1">
-                            <FontAwesomeIcon icon={faXmark} size={20} color="#6b7280" />
+                            <X size={20} color="#6b7280" />
                         </TouchableOpacity>
                     </View>
 

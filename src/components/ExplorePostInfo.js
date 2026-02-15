@@ -4,12 +4,7 @@ import { Image } from "expo-image";
 import { useSelector } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
 import { selectCurrentUser } from "../redux/slices/authSlice";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import {
-  faChevronRight,
-  faLocationDot,
-} from "@fortawesome/pro-solid-svg-icons";
-import { faHeart } from "@fortawesome/pro-solid-svg-icons";
+import { Heart } from "lucide-react-native";
 import { SCREEN_WIDTH } from "@gorhom/bottom-sheet";
 
 const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
@@ -155,10 +150,10 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
     // Sadece skor gösterimi (bar olmadan)
     return (
       <View className="flex-row items-center">
-        <FontAwesomeIcon
+        <Heart
           color={scoreInfo.color}
-          icon={faHeart}
           size={currentSize.iconSize}
+          fill={scoreInfo.color}
         />
         <Text
           className="font-medium ml-1"

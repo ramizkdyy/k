@@ -15,11 +15,7 @@ import {
     Keyboard,
     ScrollView,
 } from "react-native";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import {
-    faXmark,
-    faStar,
-} from "@fortawesome/pro-solid-svg-icons";
+import { X, Star } from "lucide-react-native";
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -83,10 +79,10 @@ const StarRating = ({ rating, onRatingChange, size = 40 }) => {
                         className="p-2"
                         activeOpacity={0.7}
                     >
-                        <FontAwesomeIcon
-                            icon={faStar}
+                        <Star
                             size={size}
                             color={isActive ? "#fbbf24" : "#d1d5db"}
+                            fill={isActive ? "#fbbf24" : "none"}
                         />
                     </TouchableOpacity>
                 );
@@ -252,7 +248,7 @@ const ProfileRateModal = ({
                             Profili Değerlendir
                         </Text>
                         <TouchableOpacity onPress={handleClose} className="p-1">
-                            <FontAwesomeIcon icon={faXmark} size={20} color="#6b7280" />
+                            <X size={20} color="#6b7280" />
                         </TouchableOpacity>
                     </View>
 

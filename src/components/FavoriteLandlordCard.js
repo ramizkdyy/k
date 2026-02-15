@@ -8,9 +8,7 @@ import {
     Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faStar as faStarSolid } from '@fortawesome/pro-solid-svg-icons';
-import { faHeart } from '@fortawesome/pro-regular-svg-icons';
+import { Star, Heart } from 'lucide-react-native';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser, selectUserRole } from '../redux/slices/authSlice';
 
@@ -133,9 +131,8 @@ const MatchScoreBar = ({ matchScore, showBar = true, size = "sm" }) => {
 
     return (
         <View className="flex-row items-center">
-            <FontAwesomeIcon
+            <Heart
                 color={scoreInfo.color}
-                icon={faHeart}
                 size={currentSize.iconSize}
             />
             <Text
@@ -182,31 +179,31 @@ const FavoriteLandlordCard = ({
         for (let i = 0; i < 5; i++) {
             if (i < fullStars) {
                 stars.push(
-                    <FontAwesomeIcon
+                    <Star
                         key={i}
-                        icon={faStarSolid}
                         size={12}
                         color="#fbbf24"
+                        fill="#fbbf24"
                         style={{ marginRight: 2 }}
                     />
                 );
             } else if (i === fullStars && hasHalfStar) {
                 stars.push(
-                    <FontAwesomeIcon
+                    <Star
                         key={i}
-                        icon={faStarSolid}
                         size={12}
                         color="#fbbf24"
+                        fill="#fbbf24"
                         style={{ marginRight: 2, opacity: 0.5 }}
                     />
                 );
             } else {
                 stars.push(
-                    <FontAwesomeIcon
+                    <Star
                         key={i}
-                        icon={faStarSolid}
                         size={12}
                         color="#d1d5db"
+                        fill="#d1d5db"
                         style={{ marginRight: 2 }}
                     />
                 );

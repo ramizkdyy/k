@@ -7,26 +7,25 @@ import {
   Dimensions,
   Pressable, // 🚀 TouchableOpacity yerine Pressable
 } from "react-native";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
-  faShare,
-  faBed,
-  faShower,
-  faRuler,
-  faBuilding,
-  faCalendar,
-  faMoneyBills,
-  faCoins,
-  faUsers,
-  faUser,
-  faStar,
-  faHome,
-  faLocationDot,
-  faBedBunk,
-  faEllipsis,
-  faChevronDown,
-  faChevronUp,
-} from "@fortawesome/pro-regular-svg-icons";
+  Share2,
+  Bed,
+  Bath,
+  Ruler,
+  Building,
+  Calendar,
+  Banknote,
+  Coins,
+  Users,
+  User,
+  Star,
+  Home as HomeIcon,
+  MapPin,
+  BedDouble,
+  MoreHorizontal,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -254,28 +253,28 @@ const ExploreActionButtons = memo(
     const basicDetails = [];
     if (details.type === "normal") {
       if (details.rooms)
-        basicDetails.push({ icon: faBed, value: details.rooms, label: "Oda" });
+        basicDetails.push({ icon: Bed, value: details.rooms, label: "Oda" });
       if (details.bedrooms)
         basicDetails.push({
-          icon: faBedBunk,
+          icon: BedDouble,
           value: details.bedrooms,
           label: "Y.Odası",
         });
       if (details.area)
         basicDetails.push({
-          icon: faRuler,
+          icon: Ruler,
           value: `${details.area}m²`,
           label: "Alan",
         });
       if (details.buildingAge)
         basicDetails.push({
-          icon: faCalendar,
+          icon: Calendar,
           value: details.buildingAge + " Yaş",
           label: "Bina Yaşı",
         });
       if (details.floor !== undefined)
         basicDetails.push({
-          icon: faBuilding,
+          icon: Building,
           value: `${details.floor}. Kat`,
           label: "Kat",
         });
@@ -286,64 +285,67 @@ const ExploreActionButtons = memo(
     if (details.type === "meta") {
       if (details.rooms)
         metaPostDetails.push({
-          icon: faBed,
+          icon: Bed,
           value: details.rooms + " Oda",
           label: "Oda",
         });
       if (details.bathrooms)
         metaPostDetails.push({
-          icon: faShower,
+          icon: Bath,
           value: details.bathrooms + " Banyo",
           label: "Banyo",
         });
       if (details.capacity)
         metaPostDetails.push({
-          icon: faUser,
+          icon: User,
           value: `${details.capacity} kişi`,
           label: "Kapasite",
         });
       if (details.rating)
         metaPostDetails.push({
-          icon: faStar,
+          icon: Star,
           value: details.rating.toFixed(2),
           label: "Puan",
         });
       if (details.propertyType)
         metaPostDetails.push({
-          icon: faHome,
+          icon: HomeIcon,
           value: details.propertyType,
           label: "Tür",
         });
     }
 
-    const DetailItem = ({ detail }) => (
-      <View
-        style={{
-          alignItems: "center",
-          justifyContent: "center",
-          paddingVertical: 12,
-          minHeight: 50,
-          width: "100%",
-        }}
-      >
-        <View style={iconShadowStyle}>
-          <FontAwesomeIcon icon={detail.icon} size={22} color="white" />
-        </View>
-        <Text
+    const DetailItem = ({ detail }) => {
+      const IconComponent = detail.icon;
+      return (
+        <View
           style={{
-            ...subtitleShadowStyle,
-            color: "white",
-            marginTop: 10,
-            textAlign: "center",
-            fontWeight: "500",
-            fontSize: 13,
+            alignItems: "center",
+            justifyContent: "center",
+            paddingVertical: 12,
+            minHeight: 50,
+            width: "100%",
           }}
-          numberOfLines={1}
         >
-          {detail.value}
-        </Text>
-      </View>
-    );
+          <View style={iconShadowStyle}>
+            <IconComponent size={22} color="white" />
+          </View>
+          <Text
+            style={{
+              ...subtitleShadowStyle,
+              color: "white",
+              marginTop: 10,
+              textAlign: "center",
+              fontWeight: "500",
+              fontSize: 13,
+            }}
+            numberOfLines={1}
+          >
+            {detail.value}
+          </Text>
+        </View>
+      );
+    };
 
     return (
       <>
@@ -394,7 +396,7 @@ const ExploreActionButtons = memo(
               pressRetentionOffset={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <View style={iconShadowStyle}>
-                <FontAwesomeIcon icon={faEllipsis} size={22} color="white" />
+                <MoreHorizontal size={22} color="white" />
               </View>
             </Pressable>
 

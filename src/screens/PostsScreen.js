@@ -36,32 +36,27 @@ import {
   useDeletePostMutation,
 } from "../redux/api/apiSlice";
 import { useFocusEffect } from "@react-navigation/native";
-import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
+import { MaterialIcons } from "@expo/vector-icons";
 import {
-  faHomeAlt,
-  faHouseBlank,
-  faPlus,
-  faSliders,
-  faEllipsis,
-  faEye,
-  faEnvelope,
-  faEdit,
-  faTrash,
-} from "@fortawesome/pro-regular-svg-icons";
-import { faSearch } from "@fortawesome/pro-solid-svg-icons";
+  Search,
+  Home,
+  Plus,
+  SlidersHorizontal,
+  MoreVertical,
+  Mail,
+  Edit,
+  Trash2,
+  BedDouble,
+  Bath,
+  Ruler,
+  Building2,
+  Calendar,
+  Banknote,
+  Coins,
+  BedSingle,
+  Shower,
+} from "lucide-react-native";
 import { BlurView } from "expo-blur";
-import {
-  faBed,
-  faShower,
-  faRuler,
-  faBuilding,
-  faCalendar,
-  faMoneyBills,
-  faCoins,
-  faBedBunk,
-  faBath,
-} from "@fortawesome/pro-light-svg-icons";
 import PropertiesFilterModal from "../modals/PropertiesFilterModal";
 import { useSearchPostsMutation } from "../redux/api/searchApiSlice";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -121,8 +116,7 @@ const ImageWithFallback = React.memo(
             alignItems: "center",
           }}
         >
-          <FontAwesomeIcon
-            icon={faHouseBlank}
+          <Home
             size={
               Math.min(
                 fallbackWidth || style?.width || 200,
@@ -247,7 +241,7 @@ const LandlordActionsModal = React.memo(
               activeOpacity={0.7}
             >
               <View className=" rounded-full items-center justify-center">
-                <FontAwesomeIcon icon={faEnvelope} size={18} color="#505050" />
+                <Mail size={18} color="#505050" />
               </View>
               <View className="flex-1">
                 <Text
@@ -269,7 +263,7 @@ const LandlordActionsModal = React.memo(
               activeOpacity={0.7}
             >
               <View className="w items-center justify-center">
-                <FontAwesomeIcon icon={faEdit} size={18} color="#505050" />
+                <Edit size={18} color="#505050" />
               </View>
               <View className="flex-1">
                 <Text
@@ -295,7 +289,7 @@ const LandlordActionsModal = React.memo(
               activeOpacity={0.7}
             >
               <View className="w items-center justify-center">
-                <FontAwesomeIcon icon={faTrash} size={18} color="#ef4444" />
+                <Trash2 size={18} color="#ef4444" />
               </View>
               <View className="flex-1">
                 <Text
@@ -320,46 +314,46 @@ const LandlordActionsModal = React.memo(
 // Property Details Slider Component (AllNearbyPropertiesScreen'den)
 const PropertyDetailsSlider = React.memo(({ item }) => {
   const propertyDetails = [
-    { id: "rooms", icon: faBed, value: item.odaSayisi || "N/A", label: "Oda" },
+    { id: "rooms", icon: BedDouble, value: item.odaSayisi || "N/A", label: "Oda" },
     {
       id: "bedrooms",
-      icon: faBedBunk,
+      icon: BedSingle,
       value: item.yatakOdasiSayisi || "N/A",
       label: "Y.Odası",
     },
     {
       id: "bathrooms",
-      icon: faShower,
+      icon: Bath,
       value: item.banyoSayisi || "N/A",
       label: "Banyo",
     },
     {
       id: "area",
-      icon: faRuler,
+      icon: Ruler,
       value: item.brutMetreKare ? `${item.brutMetreKare} m²` : "N/A",
       label: "Alan",
     },
     {
       id: "floor",
-      icon: faBuilding,
+      icon: Building2,
       value: item.bulunduguKat || "N/A",
       label: "Kat",
     },
     {
       id: "age",
-      icon: faCalendar,
+      icon: Calendar,
       value: item.binaYasi ? `${item.binaYasi}` : "N/A",
       label: "Bina yaşı",
     },
     {
       id: "dues",
-      icon: faMoneyBills,
+      icon: Banknote,
       value: item.aidat ? `${item.aidat}₺` : "Yok",
       label: "Aidat",
     },
     {
       id: "deposit",
-      icon: faCoins,
+      icon: Coins,
       value: item.depozito ? `${item.depozito}₺` : "Yok",
       label: "Depozito",
     },
@@ -385,7 +379,7 @@ const PropertyDetailsSlider = React.memo(({ item }) => {
               height: 85,
             }}
           >
-            <FontAwesomeIcon size={30} icon={detail.icon} color="#000" />
+            {React.createElement(detail.icon, { size: 30, color: "#000" })}
             <Text
               style={{ fontSize: 16, fontWeight: 600 }}
               className="text-gray-800 mt-2 text-center"
@@ -446,7 +440,7 @@ const PropertyImageSlider = React.memo(
           onPress={onPress}
           activeOpacity={1}
         >
-          <FontAwesomeIcon icon={faHouseBlank} size={50} color="#cbd5e1" />
+          <Home size={50} color="#cbd5e1" />
         </TouchableOpacity>
       );
     }
@@ -555,7 +549,7 @@ const PropertyImageSlider = React.memo(
                 activeOpacity={1}
               >
                 <View className="flex-row items-center justify-center">
-                  <FontAwesomeIcon color="white" icon={faEdit} />
+                  <Edit color="white" size={20} />
                 </View>
               </TouchableOpacity>
             </BlurView>
@@ -573,7 +567,7 @@ const PropertyImageSlider = React.memo(
                 activeOpacity={1}
               >
                 <View className="flex-row items-center justify-center py-3 px-3">
-                  <FontAwesomeIcon color="#ff0040" icon={faTrash} />
+                  <Trash2 color="#ff0040" size={20} />
                 </View>
               </TouchableOpacity>
             </BlurView>
@@ -1562,7 +1556,7 @@ const PostsScreen = ({ navigation }) => {
             className="absolute top-3 right-2 p-2 z-10"
             onPress={() => handleOpenActionsModal(item)}
           >
-            <FontAwesomeIcon icon={faEllipsis} size={20} color="#000" />
+            <MoreVertical size={20} color="#000" />
           </TouchableOpacity>
 
           {/* Sol taraf - Resim */}
@@ -1712,7 +1706,7 @@ const PostsScreen = ({ navigation }) => {
         style={{ marginBottom: 120 }}
         className="flex-1 justify-center items-center "
       >
-        <FontAwesomeIcon icon={faHouseBlank} size={60} />
+        <Home size={60} color="#6b7280" />
         <Text className="text-lg font-semibold text-gray-500 mt-2 mb-1">
           {userRole === "EVSAHIBI"
             ? "Henüz ilan oluşturmadınız"
@@ -1971,7 +1965,7 @@ const PostsScreen = ({ navigation }) => {
                   }}
                   className="border border-gray-100 border-[1px] rounded-full"
                 >
-                  <FontAwesomeIcon icon={faSearch} size={20} color="#000" />
+                  <Search size={20} color="#000" />
                   <TextInput
                     className="flex-1 placeholder:text-gray-500 placeholder:text-[14px] py-4 text-normal"
                     style={{
@@ -2014,7 +2008,7 @@ const PostsScreen = ({ navigation }) => {
                   className="bg-white/90 backdrop-blur flex justify-center items-center rounded-full"
                   onPress={handleCreatePostNavigation}
                 >
-                  <FontAwesomeIcon icon={faPlus} size={18} />
+                  <Plus size={18} color="#000" />
                 </TouchableOpacity>
               )}
 
@@ -2037,8 +2031,7 @@ const PostsScreen = ({ navigation }) => {
                 }`}
                 onPress={handleFilterPress}
               >
-                <FontAwesomeIcon
-                  icon={faSliders}
+                <SlidersHorizontal
                   size={18}
                   color={
                     isFilterVisible ||

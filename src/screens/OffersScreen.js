@@ -25,9 +25,7 @@ import {
 } from "../redux/api/apiSlice";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { BlurView } from "expo-blur";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faChevronLeft, faEnvelope, faExclamationCircle } from "@fortawesome/pro-regular-svg-icons";
-import { faStar } from "@fortawesome/pro-solid-svg-icons";
+import { Mail, AlertCircle, Star } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
@@ -205,10 +203,10 @@ const OffersScreen = () => {
     // Sadece skor gösterimi (bar olmadan)
     return (
       <View className="flex-row items-center">
-        <FontAwesomeIcon
+        <Star
           color={scoreInfo.color}
-          icon={faStar}
           size={currentSize.iconSize}
+          fill={scoreInfo.color}
         />
         <Text
           className="font-medium ml-1"
@@ -1205,7 +1203,7 @@ const OffersScreen = () => {
       }}
       className="bg-white" // varsa zemin rengi vs.
     >
-      <FontAwesomeIcon icon={faEnvelope} size={60} />
+      <Mail size={60} color="#6B7280" />
       <Text className="text-gray-500 text-lg font-semibold mt-2 text-center">
         {selectedTab === "pending" && "Bekleyen teklif bulunmuyor"}
         {selectedTab === "accepted" && "Kabul edilen teklif bulunmuyor"}
@@ -1233,7 +1231,7 @@ const OffersScreen = () => {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center p-8">
-          <FontAwesomeIcon size={50} icon={faExclamationCircle} />
+          <AlertCircle size={50} color="#111827" />
           <Text className="text-xl font-semibold text-gray-900 mt-2 mb-2 text-center">
             Bir hata oluştu
           </Text>
@@ -1243,7 +1241,7 @@ const OffersScreen = () => {
           </Text>
           <TouchableOpacity
             className="border border-gray-900 px-6 py-3 rounded-full"
-            onPress={onRefresh}
+            onPress={handleRefresh}
           >
             <Text className="text-gray-900 font-medium">Tekrar Dene</Text>
           </TouchableOpacity>

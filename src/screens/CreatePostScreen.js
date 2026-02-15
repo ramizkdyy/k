@@ -27,14 +27,7 @@ import {
 import { useCreatePostMutation } from "../redux/api/apiSlice";
 import {launchImageLibrary, launchCamera, MediaType, ImagePickerResponse} from 'react-native-image-picker';
 import { MaterialIcons } from "@expo/vector-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import {
-  faChevronLeft,
-  faChevronDown,
-  faCheck,
-  faXmark,
-  faLocationDot,
-} from "@fortawesome/pro-solid-svg-icons";
+import { ChevronLeft, ChevronDown, Check, X, MapPin } from "lucide-react-native";
 
 import LocationPicker from "../components/LocationPicker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -161,7 +154,7 @@ const CreatePostHeader = ({
         onPress={() => navigation.goBack()}
         className="flex-row items-center"
       >
-        <FontAwesomeIcon icon={faChevronLeft} size={22} color="#0d0d0d" />
+        <ChevronLeft size={22} color="#0d0d0d" />
       </TouchableOpacity>
 
       {/* Sağ taraf - Submit butonu */}
@@ -382,7 +375,7 @@ const CustomDropdown = ({
         >
           {value || placeholder}
         </Text>
-        <FontAwesomeIcon icon={faChevronDown} size={16} color="#6b7280" />
+        <ChevronDown size={16} color="#6b7280" />
       </TouchableOpacity>
 
       {/* Modal */}
@@ -470,8 +463,7 @@ const CustomDropdown = ({
                       {option}
                     </Text>
                     {value === option && (
-                      <FontAwesomeIcon
-                        icon={faCheck}
+                      <Check
                         size={16}
                         color="#16a34a"
                       />
@@ -1160,7 +1152,7 @@ const CreatePostScreen = ({ navigation, route }) => {
                           className="p-1"
                           onPress={() => removeImage(img.id)}
                         >
-                          <FontAwesomeIcon icon={faXmark} color="white" />
+                          <X color="white" />
                         </TouchableOpacity>
                       </BlurView>
                     </View>
@@ -1619,7 +1611,7 @@ const CreatePostScreen = ({ navigation, route }) => {
                     className="bg-gray-900 rounded-2xl"
                     onPress={() => setShowLocationPicker(true)}
                   >
-                    <FontAwesomeIcon icon={faLocationDot} color="white" />
+                    <MapPin color="white" fill="white" />
                   </TouchableOpacity>
                 </View>
 

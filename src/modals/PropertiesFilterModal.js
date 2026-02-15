@@ -20,18 +20,17 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector, useDispatch } from 'react-redux';
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
-    faTimes,
-    faChevronDown,
-    faChevronLeft,
-    faHome,
-    faUser,
-    faCoins,
-    faSearch,
-    faFilter,
-    faLocationDot
-} from "@fortawesome/pro-solid-svg-icons";
+    X,
+    ChevronDown,
+    ChevronLeft,
+    Home,
+    User,
+    Coins,
+    Search,
+    Filter,
+    MapPin
+} from "lucide-react-native";
 import ReAnimated, {
     useSharedValue,
     useAnimatedStyle,
@@ -853,7 +852,7 @@ const PropertiesFilterModal = ({
                         {/* Konum Filtresi */}
                         <View className="bg-white mt-4 rounded-xl p-4">
                             <View className="flex-row items-center mb-4">
-                                <FontAwesomeIcon icon={faLocationDot} size={18} color="#374151" />
+                                <MapPin size={18} color="#374151" />
                                 <Text className="text-lg font-semibold text-gray-900 ml-2">
                                     Konum
                                 </Text>
@@ -901,7 +900,7 @@ const PropertiesFilterModal = ({
                         {/* Fiyat Filtresi */}
                         <View className="bg-white mt-4 rounded-xl p-4">
                             <View className="flex-row items-center mb-4">
-                                <FontAwesomeIcon icon={faCoins} size={18} color="#374151" />
+                                <Coins size={18} color="#374151" />
                                 <Text className="text-lg font-semibold text-gray-900 ml-2">
                                     Fiyat
                                 </Text>
@@ -972,7 +971,7 @@ const PropertiesFilterModal = ({
                         {/* Ev Özellikleri */}
                         <View className="bg-white mt-4 rounded-xl p-4">
                             <View className="flex-row items-center mb-4">
-                                <FontAwesomeIcon icon={faHome} size={18} color="#374151" />
+                                <Home size={18} color="#374151" />
                                 <Text className="text-lg font-semibold text-gray-900 ml-2">
                                     Ev Özellikleri
                                 </Text>
@@ -1116,7 +1115,7 @@ const PropertiesFilterModal = ({
                         {/* Politikalar */}
                         <View className="bg-white mt-4 rounded-xl p-4">
                             <View className="flex-row items-center mb-4">
-                                <FontAwesomeIcon icon={faUser} size={18} color="#374151" />
+                                <User size={18} color="#374151" />
                                 <Text className="text-lg font-semibold text-gray-900 ml-2">
                                     Politikalar
                                 </Text>
@@ -1162,7 +1161,7 @@ const PropertiesFilterModal = ({
                         {/* Arama */}
                         <View className="bg-white mt-4 rounded-xl p-4">
                             <View className="flex-row items-center mb-4">
-                                <FontAwesomeIcon icon={faSearch} size={18} color="#374151" />
+                                <Search size={18} color="#374151" />
                                 <Text className="text-lg font-semibold text-gray-900 ml-2">
                                     Arama
                                 </Text>
@@ -1192,7 +1191,7 @@ const PropertiesFilterModal = ({
                         {/* Status */}
                         <View className="bg-white mt-4 rounded-xl p-4">
                             <View className="flex-row items-center mb-4">
-                                <FontAwesomeIcon icon={faFilter} size={18} color="#374151" />
+                                <Filter size={18} color="#374151" />
                                 <Text className="text-lg font-semibold text-gray-900 ml-2">
                                     İlan Durumu
                                 </Text>

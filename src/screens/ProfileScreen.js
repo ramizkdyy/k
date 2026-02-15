@@ -30,19 +30,18 @@ import { chatApiHelpers } from "../redux/api/chatApiSlice";
 import { useSignalR } from "../contexts/SignalRContext";
 import { authCleanupHelper } from "../utils/authCleanup";
 import { useNotificationToken } from "../hooks/useNotificationToken";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
-  faChevronRight,
-  faEdit,
-  faHome,
-  faHeart,
-  faHandshake,
-  faPlus,
-  faCog,
-  faQuestionCircle,
-  faSignOut,
-  faUserEdit,
-} from "@fortawesome/pro-regular-svg-icons";
+  ChevronRight,
+  Edit,
+  Home,
+  Heart,
+  Handshake,
+  Plus,
+  Settings,
+  HelpCircle,
+  LogOut,
+  UserCog,
+} from "lucide-react-native";
 
 const ProfileScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -294,7 +293,7 @@ const ProfileScreen = ({ navigation }) => {
               }}
             >
               <View className="flex-row items-center gap-4">
-                <FontAwesomeIcon icon={faCog} size={25} color="black" />
+                <Settings size={25} color="black" />
                 <Text
                   style={{ fontSize: 16 }}
                   className="text-gray-900 font-medium"
@@ -302,7 +301,7 @@ const ProfileScreen = ({ navigation }) => {
                   Ayarlar
                 </Text>
               </View>
-              <FontAwesomeIcon
+              <ChevronRight
                 icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"
@@ -315,7 +314,7 @@ const ProfileScreen = ({ navigation }) => {
               onPress={() => navigation.navigate("EditProfile")}
             >
               <View className="flex-row items-center gap-4">
-                <FontAwesomeIcon icon={faUserEdit} size={25} color="black" />
+                <UserCog size={25} color="black" />
                 <Text
                   style={{ fontSize: 16 }}
                   className="text-gray-900 font-medium"
@@ -323,7 +322,7 @@ const ProfileScreen = ({ navigation }) => {
                   Profili Düzenle
                 </Text>
               </View>
-              <FontAwesomeIcon
+              <ChevronRight
                 icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"
@@ -336,7 +335,7 @@ const ProfileScreen = ({ navigation }) => {
               onPress={() => navigation.navigate("ProfileExpectation")}
             >
               <View className="flex-row items-center gap-4">
-                <FontAwesomeIcon icon={faEdit} size={25} color="black" />
+                <Edit size={25} color="black" />
                 <View className="flex flex-col gap-1">
                   <Text
                     style={{ fontSize: 16 }}
@@ -362,7 +361,7 @@ const ProfileScreen = ({ navigation }) => {
                 {!isExpectationCompleted && (
                   <View className="bg-red-500 w-3 h-3 rounded-full mr-2"></View>
                 )}
-                <FontAwesomeIcon
+                <ChevronRight
                   icon={faChevronRight}
                   size={15}
                   color="#cfcfcf"
@@ -388,7 +387,7 @@ const ProfileScreen = ({ navigation }) => {
               }}
             >
               <View className="flex-row items-center gap-4">
-                <FontAwesomeIcon icon={faHome} size={25} color="black" />
+                <Home size={25} color="black" />
                 <Text
                   style={{ fontSize: 16 }}
                   className="text-gray-900 font-medium"
@@ -396,7 +395,7 @@ const ProfileScreen = ({ navigation }) => {
                   {userRole === "EVSAHIBI" ? "Mülklerim" : "İlan Ara"}
                 </Text>
               </View>
-              {/* <FontAwesomeIcon
+              {/* <ChevronRight
                 icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"
@@ -412,7 +411,7 @@ const ProfileScreen = ({ navigation }) => {
               }}
             >
               <View className="flex-row items-center gap-4">
-                <FontAwesomeIcon icon={faHandshake} size={25} color="black" />
+                <Handshake size={25} color="black" />
                 <Text
                   style={{ fontSize: 16 }}
                   className="text-gray-900 font-medium"
@@ -420,7 +419,7 @@ const ProfileScreen = ({ navigation }) => {
                   {userRole === "EVSAHIBI" ? "Teklifler" : "Tekliflerim"}
                 </Text>
               </View>
-              {/* <FontAwesomeIcon
+              {/* <ChevronRight
                 icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"
@@ -435,7 +434,7 @@ const ProfileScreen = ({ navigation }) => {
                 }}
               >
                 <View className="flex-row items-center gap-4">
-                  <FontAwesomeIcon icon={faHeart} size={25} color="black" />
+                  <Heart size={25} color="black" />
                   <Text
                     style={{ fontSize: 16 }}
                     className="text-gray-900 font-medium"
@@ -443,7 +442,7 @@ const ProfileScreen = ({ navigation }) => {
                     Favorilerim
                   </Text>
                 </View>
-                <FontAwesomeIcon
+                <ChevronRight
                   icon={faChevronRight}
                   size={15}
                   color="#cfcfcf"
@@ -459,7 +458,7 @@ const ProfileScreen = ({ navigation }) => {
                 }}
               >
                 <View className="flex-row items-center gap-4">
-                  <FontAwesomeIcon icon={faPlus} size={25} color="black" />
+                  <Plus size={25} color="black" />
                   <Text
                     style={{ fontSize: 16 }}
                     className="text-gray-900 font-medium"
@@ -467,7 +466,7 @@ const ProfileScreen = ({ navigation }) => {
                     Yeni İlan Oluştur
                   </Text>
                 </View>
-                <FontAwesomeIcon
+                <ChevronRight
                   icon={faChevronRight}
                   size={15}
                   color="#cfcfcf"
@@ -489,7 +488,7 @@ const ProfileScreen = ({ navigation }) => {
                 onPress={() => navigation.navigate("FavoriteProperties")}
               >
                 <View className="flex-row items-center gap-4">
-                  <FontAwesomeIcon icon={faHeart} size={25} color="black" />
+                  <Heart size={25} color="black" />
                   <View className="flex-col">
                     <Text
                       style={{ fontSize: 16 }}
@@ -499,7 +498,7 @@ const ProfileScreen = ({ navigation }) => {
                     </Text>
                   </View>
                 </View>
-                <FontAwesomeIcon
+                <ChevronRight
                   icon={faChevronRight}
                   size={15}
                   color="#cfcfcf"
@@ -513,7 +512,7 @@ const ProfileScreen = ({ navigation }) => {
               onPress={() => navigation.navigate("FavoriteProfiles")}
             >
               <View className="flex-row items-center gap-4">
-                <FontAwesomeIcon icon={faHeart} size={25} color="black" />
+                <Heart size={25} color="black" />
                 <View className="flex-col">
                   <Text
                     style={{ fontSize: 16 }}
@@ -525,7 +524,7 @@ const ProfileScreen = ({ navigation }) => {
                   </Text>
                 </View>
               </View>
-              <FontAwesomeIcon
+              <ChevronRight
                 icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"
@@ -548,7 +547,7 @@ const ProfileScreen = ({ navigation }) => {
               }}
             >
               <View className="flex-row items-center gap-4">
-                <FontAwesomeIcon
+                <ChevronRight
                   icon={faQuestionCircle}
                   size={25}
                   color="black"
@@ -560,7 +559,7 @@ const ProfileScreen = ({ navigation }) => {
                   Yardım & Destek
                 </Text>
               </View>
-              <FontAwesomeIcon
+              <ChevronRight
                 icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"
@@ -572,7 +571,7 @@ const ProfileScreen = ({ navigation }) => {
               onPress={handleLogout}
             >
               <View className="flex-row items-center gap-4">
-                <FontAwesomeIcon icon={faSignOut} size={25} color="#ef4444" />
+                <LogOut size={25} color="#ef4444" />
                 <Text
                   style={{ fontSize: 16 }}
                   className="text-red-600 font-medium"
@@ -580,7 +579,7 @@ const ProfileScreen = ({ navigation }) => {
                   Çıkış Yap
                 </Text>
               </View>
-              {/* <FontAwesomeIcon
+              {/* <ChevronRight
                 icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"

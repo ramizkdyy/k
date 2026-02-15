@@ -13,8 +13,7 @@ import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "../redux/slices/authSlice";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faHome } from "@fortawesome/pro-regular-svg-icons";
+import { Home } from "lucide-react-native";
 import { useGetTikTokFeedQuery } from "../redux/api/apiSlice";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useIsFocused } from "@react-navigation/native";
@@ -47,7 +46,7 @@ const FastImage = memo(({ uri, style, resizeMode = "cover", blurRadius }) => {
           },
         ]}
       >
-        <FontAwesomeIcon icon={faHome} size={40} color="#9CA3AF" />
+        <Home size={40} color="#9CA3AF" />
       </View>
     );
   }
@@ -78,7 +77,7 @@ const FastImage = memo(({ uri, style, resizeMode = "cover", blurRadius }) => {
             },
           ]}
         >
-          <FontAwesomeIcon icon={faHome} size={40} color="#9CA3AF" />
+          <Home size={40} color="#9CA3AF" />
         </View>
       )}
     </View>
@@ -263,7 +262,7 @@ const ListingCard = memo(
               alignItems: "center",
             }}
           >
-            <FontAwesomeIcon icon={faHome} size={60} color="#9CA3AF" />
+            <Home size={60} color="#9CA3AF" />
             <Text
               style={{
                 marginTop: 16,
@@ -492,7 +491,7 @@ const ExploreScreen = ({ navigation }) => {
         <View
           style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
-          <FontAwesomeIcon icon={faHome} size={80} color="#374151" />
+          <Home size={80} color="#374151" />
           <Text
             style={{
               color: "white",

@@ -2,9 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, Dimensions } from "react-native";
 import { Image } from "expo-image";
 import { BlurView } from "expo-blur";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faXmark } from "@fortawesome/pro-regular-svg-icons";
-import { faUserCircle } from "@fortawesome/pro-solid-svg-icons";
+import { X } from "lucide-react-native";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -106,7 +104,7 @@ const CustomToast = ({ text1, text2, hide, onPress, props }) => {
             className="ml-2 p-1"
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <FontAwesomeIcon icon={faXmark} size={16} color="#000" />
+            <X size={16} color="#000" />
           </TouchableOpacity>
         </TouchableOpacity>
       </BlurView>

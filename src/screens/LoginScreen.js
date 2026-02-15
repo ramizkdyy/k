@@ -33,12 +33,10 @@ import { chatApiHelpers } from "../redux/api/chatApiSlice";
 import notificationService from "../services/notificationService";
 
 const { width } = Dimensions.get("window");
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faEyeSlash, faEye } from "@fortawesome/pro-solid-svg-icons";
-import { faApple, faGoogle } from "@fortawesome/free-brands-svg-icons";
+import { EyeOff, Eye, Lock, User } from "lucide-react-native";
+import { AntDesign } from "@expo/vector-icons";
 
 import Checkbox from "expo-checkbox";
-import { faLock, faUser } from "@fortawesome/pro-light-svg-icons";
 
 const LoginScreen = ({ navigation }) => {
   const [username, setUsername] = useState("");
@@ -320,7 +318,7 @@ const LoginScreen = ({ navigation }) => {
               <View className="w-full gap-4">
                 <View className="flex flex-col border rounded-xl">
                   <View className="flex gap-4 flex-row items-center px-4 py-4 w-full border-b">
-                    <FontAwesomeIcon icon={faUser} size={20} />
+                    <User size={20} color="#000" />
                     <TextInput
                       placeholder="Kullanıcı Adı"
                       fontSize={16}
@@ -336,7 +334,7 @@ const LoginScreen = ({ navigation }) => {
 
                   <View className="flex gap-4 flex-row items-center px-4 py-4 w-full">
                     <View className="items-center flex flex-row gap-4 flex-1">
-                      <FontAwesomeIcon icon={faLock} size={20} />
+                      <Lock size={20} color="#000" />
                       <TextInput
                         placeholder="Şifre"
                         fontSize={16}
@@ -352,11 +350,11 @@ const LoginScreen = ({ navigation }) => {
                       onPress={() => setShowPassword(!showPassword)}
                       disabled={isLoading}
                     >
-                      <FontAwesomeIcon
-                        icon={showPassword ? faEye : faEyeSlash}
-                        size={20}
-                        color={isLoading ? "#ccc" : "#000"}
-                      />
+                      {showPassword ? (
+                        <Eye size={20} color={isLoading ? "#ccc" : "#000"} />
+                      ) : (
+                        <EyeOff size={20} color={isLoading ? "#ccc" : "#000"} />
+                      )}
                     </Pressable>
                   </View>
                 </View>
@@ -453,8 +451,8 @@ const LoginScreen = ({ navigation }) => {
                   onPress={() => console.log("Apple login")}
                   disabled={isLoading}
                 >
-                  <FontAwesomeIcon
-                    icon={faApple}
+                  <AntDesign
+                    name="apple1"
                     size={20}
                     color={isLoading ? "#ccc" : "#000"}
                   />
@@ -480,8 +478,8 @@ const LoginScreen = ({ navigation }) => {
                   onPress={() => console.log("Google login")}
                   disabled={isLoading}
                 >
-                  <FontAwesomeIcon
-                    icon={faGoogle}
+                  <AntDesign
+                    name="google"
                     size={20}
                     color={isLoading ? "#ccc" : "#000"}
                   />

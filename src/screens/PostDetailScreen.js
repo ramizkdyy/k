@@ -31,26 +31,24 @@ import {
   addFavoriteProperty,
   removeFavoriteProperty,
 } from "../redux/slices/profileSlice";
-import { FontAwesome } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import {
-  faFireFlameCurved,
-  faGrid2,
-  faMoneyBills,
-  faOven,
-  faRuler,
-  faShower,
-  faArrowLeft,
-  faShare,
-  faChevronLeft,
-  faBed,
-  faBedBunk,
-  faChevronRight,
-  faLocationDot,
-  faUser,
-} from "@fortawesome/pro-light-svg-icons";
-import { faHeart } from "@fortawesome/pro-regular-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
+  Flame,
+  Grid2X2,
+  Banknote,
+  CookingPot,
+  Ruler,
+  ShowerHead,
+  ArrowLeft,
+  Share2,
+  ChevronLeft,
+  BedDouble,
+  BedSingle,
+  ChevronRight,
+  MapPin,
+  User,
+  Heart
+} from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import Carousel from "react-native-reanimated-carousel";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -236,9 +234,8 @@ const MatchScoreBar = ({ matchScore, showBar = false, size = "sm" }) => {
   // Sadece skor gösterimi (bar olmadan)
   return (
     <View className="flex-row items-center">
-      <FontAwesomeIcon
+      <Heart
         color={scoreInfo.color}
-        icon={faHeart}
         size={currentSize.iconSize}
       />
       <Text
@@ -555,7 +552,7 @@ const PostDetailScreen = ({ route, navigation }) => {
             <Text className="text-gray-500" style={{ fontSize: 12 }}>
               Profili görüntüle
             </Text>
-            <FontAwesomeIcon size={12} color="#dee0ea" icon={faChevronRight} />
+            <ChevronRight size={12} color="#dee0ea" />
           </View>
         </View>
       </View>
@@ -853,7 +850,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                 alignItems: "center",
               }}
             >
-              <FontAwesomeIcon icon={faArrowLeft} size={18} color="#374151" />
+              <ArrowLeft size={18} color="#374151" />
             </TouchableOpacity>
 
             {/* Title */}
@@ -923,7 +920,7 @@ const PostDetailScreen = ({ route, navigation }) => {
               boxShadow: "0px 0px 12px #00000020",
             }}
           >
-            <FontAwesomeIcon icon={faChevronLeft} size={22} color="black" />
+            <ChevronLeft size={22} color="black" />
           </View>
         </TouchableOpacity>
       </Animated.View>
@@ -1133,7 +1130,7 @@ const PostDetailScreen = ({ route, navigation }) => {
               matchDetails &&
               matchDetails.matchScore && (
                 <View className="mt-3 flex flex-row items-center gap-2">
-                  <FontAwesomeIcon icon={faHeart} />
+                  <Heart size={16} color="#000" />
                   <Text className="font-medium">
                     {matchDetails.matchScore}% Uyum -{" "}
                     {matchDetails.compatibilityLevel}
@@ -1147,7 +1144,7 @@ const PostDetailScreen = ({ route, navigation }) => {
               className="flex-row justify-between p-4 mb-6 mt-6"
             >
               <View className="items-center gap-2">
-                <FontAwesomeIcon size={26} icon={faBed} />
+                <BedDouble size={26} color="#6b7280" />
                 <Text
                   style={{ fontSize: 13 }}
                   className="font-medium text-center text-gray-500"
@@ -1157,7 +1154,7 @@ const PostDetailScreen = ({ route, navigation }) => {
               </View>
 
               <View className="items-center gap-2">
-                <FontAwesomeIcon size={26} icon={faBedBunk} />
+                <BedSingle size={26} color="#6b7280" />
                 <Text
                   style={{ fontSize: 13 }}
                   className="font-medium text-center text-gray-500"
@@ -1167,7 +1164,7 @@ const PostDetailScreen = ({ route, navigation }) => {
               </View>
 
               <View className="items-center gap-2">
-                <FontAwesomeIcon size={26} icon={faShower} />
+                <ShowerHead size={26} color="#6b7280" />
                 <Text
                   style={{ fontSize: 13 }}
                   className="font-medium text-center text-gray-500"
@@ -1177,7 +1174,7 @@ const PostDetailScreen = ({ route, navigation }) => {
               </View>
 
               <View className="items-center gap-2">
-                <FontAwesomeIcon size={26} icon={faRuler} />
+                <Ruler size={26} color="#6b7280" />
                 <Text
                   style={{ fontSize: 13 }}
                   className="font-medium text-center text-gray-500"
@@ -1187,7 +1184,7 @@ const PostDetailScreen = ({ route, navigation }) => {
               </View>
 
               <View className="items-center gap-2">
-                <FontAwesomeIcon size={26} icon={faMoneyBills} />
+                <Banknote size={26} color="#6b7280" />
                 <Text
                   style={{ fontSize: 13 }}
                   className="font-medium text-center text-gray-500"
