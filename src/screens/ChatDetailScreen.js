@@ -12,21 +12,22 @@ import {
   Platform,
 } from "react-native";
 import { Image } from "expo-image";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
-  faArrowLeft,
-  faPhone,
-  faVideo,
-  faPaperPlane,
-  faCircleInfo,
-  faCircle,
-  faCheck,
-  faCheckDouble,
-  faExclamationCircle,
-  faTimes,
-  faChevronLeft,
-  faPaperPlaneTop,
-} from "@fortawesome/pro-solid-svg-icons";
+  ArrowLeft,
+  Phone,
+  Video,
+  Send,
+  Info,
+  Circle,
+  Check,
+  CheckCheck,
+  CircleAlert,
+  X,
+  ChevronLeft,
+  SendHorizontal,
+  ArrowUp,
+  Plus,
+} from "lucide-react-native";
 import { StatusBar } from "expo-status-bar";
 import {
   useGetChatHistoryQuery,
@@ -46,7 +47,6 @@ import {
 
 import { KeyboardStickyView } from "react-native-keyboard-controller";
 import Animated from "react-native-reanimated";
-import { faArrowUp, faPlus } from "@fortawesome/pro-regular-svg-icons";
 
 const ChatDetailScreen = ({ navigation, route }) => {
   const { partnerId, partnerName, partner } = route.params || {};
@@ -1093,13 +1093,9 @@ const ChatDetailScreen = ({ navigation, route }) => {
                   {item.isOptimistic ? (
                     <View className="w-2 h-2 bg-gray-200 rounded-full animate-pulse" />
                   ) : item.isRead ? (
-                    <FontAwesomeIcon
-                      icon={faCheckDouble}
-                      size={10}
-                      color="#5ba8fc"
-                    />
+                    <CheckCheck size={10} color="#5ba8fc" />
                   ) : (
-                    <FontAwesomeIcon icon={faCheck} size={10} color="#b0b0b0" />
+                    <Check size={10} color="#b0b0b0" />
                   )}
                 </View>
               )}
@@ -1132,11 +1128,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
         <StatusBar style="dark" backgroundColor="transparent" translucent />
 
         <View className="flex-1 justify-center items-center px-4">
-          <FontAwesomeIcon
-            icon={faExclamationCircle}
-            size={40}
-            color="#ef4444"
-          />
+          <CircleAlert size={40} color="#ef4444" />
           <Text className="mt-4 text-lg font-semibold text-gray-900 text-center">
             Failed to load messages
           </Text>
@@ -1169,7 +1161,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
               onPress={() => navigation.goBack()}
               className="p-2 -ml-2 mr-2"
             >
-              <FontAwesomeIcon icon={faArrowLeft} size={20} color="#000" />
+              <ArrowLeft size={20} color="#000" />
             </TouchableOpacity>
             <Text className="text-lg font-semibold text-gray-900">
               {partner?.name && partner?.surname
@@ -1204,7 +1196,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
               onPress={() => navigation.goBack()}
               className="p-2 -ml-2 mr-2"
             >
-              <FontAwesomeIcon icon={faChevronLeft} size={20} color="#000" />
+              <ChevronLeft size={20} color="#000" />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1274,7 +1266,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
           <View className="flex-row items-center space-x-3">
             <TouchableOpacity className="p-2">
-              <FontAwesomeIcon icon={faCircleInfo} size={22} color="#000" />
+              <Info size={22} color="#000" />
             </TouchableOpacity>
           </View>
         </View>
@@ -1354,7 +1346,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
                   console.log("Open attachment picker");
                 }}
               >
-                <FontAwesomeIcon icon={faPlus} size={25} color="#000" />
+                <Plus size={25} color="#000" />
               </TouchableOpacity>
 
               {/* Text Input Container */}
@@ -1404,8 +1396,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
                 className="w-10 h-10 items-center justify-center"
                 disabled={!message.trim() || isSending}
               >
-                <FontAwesomeIcon
-                  icon={faArrowUp}
+                <ArrowUp
                   size={25}
                   color={message.trim() ? "#000" : "#a6a6a6"}
                 />

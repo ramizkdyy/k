@@ -24,30 +24,27 @@ import { Image } from "expo-image";
 import { useSelector } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
 import { useGetNearbyPostsPaginatedQuery } from "../redux/api/apiSlice";
-import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
 import * as Location from "expo-location";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
-  faBed,
-  faGrid2,
-  faMoneyBills,
-  faRuler,
-  faShower,
-  faCar,
-  faCalendar,
-  faBuilding,
-  faCoins,
-  faBedBunk,
-} from "@fortawesome/pro-light-svg-icons";
+  BedDouble,
+  Grid2x2,
+  Banknote,
+  Ruler,
+  ShowerHead,
+  Car,
+  Calendar,
+  Building,
+  Coins,
+  Search,
+  ChevronLeft,
+  CircleAlert,
+  ListFilter,
+  SlidersHorizontal,
+  House,
+  Heart,
+} from "lucide-react-native";
 import { BlurView } from "expo-blur";
-import { faSearch } from "@fortawesome/pro-solid-svg-icons";
-import {
-  faChevronLeft,
-  faExclamationCircle,
-  faFilter,
-  faSliders,
-} from "@fortawesome/pro-regular-svg-icons";
-import { faHouseBlank } from "@fortawesome/pro-regular-svg-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect } from "@react-navigation/native";
 
@@ -71,7 +68,7 @@ const ErrorPlaceholder = memo(({ width, height, borderRadius = 8 }) => {
         alignItems: "center",
       }}
     >
-      <FontAwesomeIcon icon={faHouseBlank} size={iconSize} color="#fff" />
+      <House size={iconSize} color="#fff" />
     </View>
   );
 });
@@ -398,49 +395,49 @@ const PropertyDetailsSlider = memo(({ item }) => {
     () => [
       {
         id: "rooms",
-        icon: faBed,
+        Icon: BedDouble,
         value: item.odaSayisi || "N/A",
         label: "Oda",
       },
       {
         id: "bedrooms",
-        icon: faBedBunk,
+        Icon: BedDouble,
         value: item.yatakOdasiSayisi || "N/A",
         label: "Y.Odası",
       },
       {
         id: "bathrooms",
-        icon: faShower,
+        Icon: ShowerHead,
         value: item.banyoSayisi || "N/A",
         label: "Banyo",
       },
       {
         id: "area",
-        icon: faRuler,
+        Icon: Ruler,
         value: item.brutMetreKare ? `${item.brutMetreKare} m²` : "N/A",
         label: "Alan",
       },
       {
         id: "floor",
-        icon: faBuilding,
+        Icon: Building,
         value: item.bulunduguKat || "N/A",
         label: "Kat",
       },
       {
         id: "age",
-        icon: faCalendar,
+        Icon: Calendar,
         value: item.binaYasi ? `${item.binaYasi}` : "N/A",
         label: "Bina yaşı",
       },
       {
         id: "dues",
-        icon: faMoneyBills,
+        Icon: Banknote,
         value: item.aidat ? `${item.aidat}₺` : "Yok",
         label: "Aidat",
       },
       {
         id: "deposit",
-        icon: faCoins,
+        Icon: Coins,
         value: item.depozito ? `${item.depozito}₺` : "Yok",
         label: "Depozito",
       },
@@ -468,7 +465,7 @@ const PropertyDetailsSlider = memo(({ item }) => {
               height: 85,
             }}
           >
-            <FontAwesomeIcon size={30} icon={detail.icon} color="#000" />
+            <detail.Icon size={30} color="#000" />
             <Text
               style={{ fontSize: 16, fontWeight: 600 }}
               className="text-gray-800 mt-2 text-center"
@@ -1247,7 +1244,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center p-8">
-          <FontAwesomeIcon size={50} icon={faExclamationCircle} />
+          <CircleAlert size={50} color="#000" />
           <Text className="text-xl font-semibold text-gray-900 mt-2 mb-2 text-center">
             Bir hata oluştu
           </Text>
@@ -1271,7 +1268,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
       <View className="bg-white border-b border-gray-200 z-10">
         <View className="flex flex-row items-center px-5">
           <TouchableOpacity onPress={goBack} style={{ width: "8%" }}>
-            <FontAwesomeIcon icon={faChevronLeft} color="black" size={25} />
+            <ChevronLeft size={25} color="black" />
           </TouchableOpacity>
 
           <View className="px-4 py-4" style={{ width: "84%" }}>
@@ -1294,10 +1291,9 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
           </View>
           <View style={{ width: "8%" }}>
             <TouchableOpacity onPress={toggleMatch}>
-              <FontAwesomeIcon
-                icon={faSliders}
-                color={isMatch ? "#4A90E2" : "black"}
+              <SlidersHorizontal
                 size={20}
+                color={isMatch ? "#4A90E2" : "black"}
               />
             </TouchableOpacity>
           </View>

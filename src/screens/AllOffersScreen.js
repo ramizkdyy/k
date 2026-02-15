@@ -24,15 +24,7 @@ import {
 } from "../redux/api/apiSlice";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { BlurView } from "expo-blur";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import {
-    faChevronLeft,
-    faEnvelope,
-    faCheck,
-    faTimes,
-    faClock
-} from "@fortawesome/pro-regular-svg-icons";
-import { faStar } from "@fortawesome/pro-solid-svg-icons";
+import { ChevronLeft, Mail, Check, X, Clock, Star } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
@@ -263,15 +255,15 @@ const AllOffersScreen = () => {
     const getStatusText = (status) => {
         switch (status) {
             case 0:
-                return { text: "Beklemede", color: "#f59e0b", icon: faClock };
+                return { text: "Beklemede", color: "#f59e0b", Icon: Clock };
             case 1:
-                return { text: "Kabul Edildi", color: "#22c55e", icon: faCheck };
+                return { text: "Kabul Edildi", color: "#22c55e", Icon: Check };
             case 2:
-                return { text: "Reddedildi", color: "#ef4444", icon: faTimes };
+                return { text: "Reddedildi", color: "#ef4444", Icon: X };
             case 3: // YENI: Kiraya verildi durumu
-                return { text: "Kiraya Verildi", color: "#8b5cf6", icon: faCheck };
+                return { text: "Kiraya Verildi", color: "#8b5cf6", Icon: Check };
             default:
-                return { text: "Bilinmiyor", color: "#6b7280", icon: faClock };
+                return { text: "Bilinmiyor", color: "#6b7280", Icon: Clock };
         }
     };
 
@@ -307,8 +299,7 @@ const AllOffersScreen = () => {
                     <View className="px-4 py-3">
                         <View className="flex-row items-center justify-between">
                             <View className="flex-row items-center">
-                                <FontAwesomeIcon
-                                    icon={statusInfo.icon}
+                                <statusInfo.Icon
                                     size={14}
                                     color="#111827"
                                 />
@@ -368,10 +359,10 @@ const AllOffersScreen = () => {
 
                                     {offeringUser.profileRating > 0 && (
                                         <View className="flex-row items-center mt-1">
-                                            <FontAwesomeIcon
-                                                icon={faStar}
+                                            <Star
                                                 size={12}
                                                 color="#f59e0b"
+                                                fill="#f59e0b"
                                             />
                                             <Text className="text-gray-500 text-xs ml-1">
                                                 {offeringUser.profileRating.toFixed(1)}
@@ -456,7 +447,7 @@ const AllOffersScreen = () => {
 
     const renderEmptyState = () => (
         <View className="flex-1 justify-center items-center px-8 py-20">
-            <FontAwesomeIcon icon={faEnvelope} size={60} color="#9CA3AF" />
+            <Mail size={60} color="#9CA3AF" />
             <Text className="text-gray-500 text-lg font-semibold mt-4 text-center">
                 Bu ilana henüz teklif gelmemiş
             </Text>
@@ -520,7 +511,7 @@ const AllOffersScreen = () => {
                         className="p-2"
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                        <FontAwesomeIcon icon={faChevronLeft} size={20} color="#111827" />
+                        <ChevronLeft size={20} color="#111827" />
                     </TouchableOpacity>
 
                     <View className="flex-1 px-4">

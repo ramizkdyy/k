@@ -882,10 +882,10 @@ const PostDetailScreen = ({ route, navigation }) => {
                 onPress={handleToggleFavorite}
                 disabled={isProcessingFavorite}
               >
-                <FontAwesome
-                  name={isFavorite ? "heart" : "heart-o"}
+                <Heart
                   size={18}
                   color={isFavorite ? "#ef4444" : "#374151"}
+                  fill={isFavorite ? "#ef4444" : "none"}
                 />
               </TouchableOpacity>
             )}
@@ -956,10 +956,10 @@ const PostDetailScreen = ({ route, navigation }) => {
                 boxShadow: "0px 0px 12px #00000020",
               }}
             >
-              <FontAwesome
-                name={isFavorite ? "heart" : "heart-o"}
+              <Heart
                 size={18}
                 color={isFavorite ? "#ef4444" : "#9ca3af"}
+                fill={isFavorite ? "#ef4444" : "none"}
               />
             </View>
           </TouchableOpacity>

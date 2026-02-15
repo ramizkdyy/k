@@ -30,13 +30,7 @@ import {
   useUpdateTenantExpectationMutation,
 } from "../redux/api/apiSlice";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import {
-  faChevronLeft,
-  faChevronDown,
-  faCalendar,
-  faCheck,
-} from "@fortawesome/pro-solid-svg-icons";
+import { ChevronLeft, ChevronDown, Calendar, Check } from "lucide-react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
@@ -69,7 +63,7 @@ const ProfileExpectationHeader = ({
         onPress={() => navigation.goBack()}
         className="flex-row items-center"
       >
-        <FontAwesomeIcon icon={faChevronLeft} size={22} color="#0d0d0d" />
+        <ChevronLeft size={22} color="#0d0d0d" />
       </TouchableOpacity>
 
       {/* Sağ taraf - Submit/Update butonu */}
@@ -300,7 +294,7 @@ const CustomDropdown = ({
         >
           {value || placeholder}
         </Text>
-        <FontAwesomeIcon icon={faChevronDown} size={16} color="#6b7280" />
+        <ChevronDown size={16} color="#6b7280" />
       </TouchableOpacity>
 
       {/* Modal - PropertiesFilterModal'daki gibi yapı */}
@@ -389,8 +383,7 @@ const CustomDropdown = ({
                       {option}
                     </Text>
                     {value === option && (
-                      <FontAwesomeIcon
-                        icon={faCheck}
+                      <Check
                         size={16}
                         color="#16a34a"
                       />
@@ -509,7 +502,7 @@ const CustomDatePicker = ({ label, value, setValue, required = false }) => {
         onPress={() => setIsOpen(true)}
       >
         <View className="flex-row items-center">
-          <FontAwesomeIcon icon={faCalendar} size={20} color="#0d0d0d" />
+          <Calendar size={20} color="#0d0d0d" />
           <Text
             className={value ? "text-gray-900 ml-3" : "text-gray-500 ml-3"}
             style={{ fontSize: 16 }}

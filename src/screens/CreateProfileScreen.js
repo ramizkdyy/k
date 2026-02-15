@@ -686,7 +686,7 @@ const CreateProfileScreen = (props) => {
                   style={{ boxShadow: "0px 0px 12px #00000014" }}
                   className="absolute right-0 bottom-0 bg-white w-8 h-8 rounded-full justify-center items-center"
                 >
-                  <FontAwesomeIcon icon={faPlus} size={16} color="#000" />
+                  <Plus size={16} color="#000" />
                 </View>
               </TouchableOpacity>
             </View>

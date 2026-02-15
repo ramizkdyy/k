@@ -31,14 +31,7 @@ import {
 } from "../redux/slices/profileSlice";
 import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import {
-  faPlus,
-  faChevronLeft,
-  faImage,
-  faCamera,
-  faTrash,
-} from "@fortawesome/pro-solid-svg-icons";
+import { ChevronLeft, Pencil } from "lucide-react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
@@ -48,7 +41,6 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { faPenToSquare } from "@fortawesome/pro-regular-svg-icons";
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 // Image Picker Modal Component
@@ -220,7 +212,7 @@ const EditProfileHeader = ({ navigation, onSave, isLoading }) => (
         onPress={() => navigation.goBack()}
         className="flex-row items-center"
       >
-        <FontAwesomeIcon icon={faChevronLeft} size={22} color="#0d0d0d" />
+        <ChevronLeft size={22} color="#0d0d0d" />
       </TouchableOpacity>
 
       {/* Sağ taraf - Save butonu */}
@@ -592,8 +584,7 @@ const EditProfileScreen = ({ navigation }) => {
                     elevation: 5,
                   }}
                 >
-                  <FontAwesomeIcon
-                    icon={faPenToSquare}
+                  <Pencil
                     size={16}
                     color="#fff"
                   />

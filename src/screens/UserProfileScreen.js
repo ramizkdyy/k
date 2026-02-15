@@ -12,47 +12,45 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
-  faChevronLeft,
-  faMapMarkerAlt,
-  faUser,
-  faCalendar,
-  faPhone,
-  faEnvelope,
-  faHeart,
-  faMessage,
-  faUserShield,
-  faStar,
-  faHome,
-  faDollarSign,
-  faUsers,
-  faPaw,
-  faGraduationCap,
-  faSmoking,
-  faShield,
-  faCheckCircle,
-  faTimesCircle,
-  faBed,
-  faRulerCombined,
-  faTemperatureHigh,
-  faParking,
-  faElevator,
-  faWifi,
-  faTree,
-  faCar,
-  faHospital,
-  faSchool,
-  faShoppingCart,
-  faSubway,
-  faBalanceScale,
-  faCreditCard,
-  faHandshake,
-  faFileContract,
-  faBuilding,
-  faClock,
-  faMoneyBillWave,
-} from "@fortawesome/pro-solid-svg-icons";
+  ChevronLeft,
+  MapPin,
+  User,
+  Calendar,
+  Phone,
+  Mail,
+  Heart,
+  MessageCircle,
+  ShieldUser,
+  Star,
+  Home,
+  DollarSign,
+  Users,
+  PawPrint,
+  GraduationCap,
+  Cigarette,
+  Shield,
+  CircleCheck,
+  CircleX,
+  BedDouble,
+  Ruler,
+  Thermometer,
+  CircleParking,
+  Building,
+  Wifi,
+  TreePine,
+  Car,
+  Hospital,
+  School,
+  ShoppingCart,
+  TrainFront,
+  Scale,
+  CreditCard,
+  Handshake,
+  FileCheck,
+  Clock,
+  Banknote,
+} from "lucide-react-native";
 import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser } from "../redux/slices/authSlice";
 import {
@@ -417,21 +415,21 @@ const UserProfileScreen = ({ navigation, route }) => {
     for (let i = 0; i < 5; i++) {
       if (i < fullStars) {
         stars.push(
-          <FontAwesomeIcon key={i} icon={faStar} size={size} color="#fbbf24" />
+          <Star key={i} size={size} fill="#fbbf24" color="#fbbf24" />
         );
       } else if (i === fullStars && hasHalfStar) {
         stars.push(
-          <FontAwesomeIcon
+          <Star
             key={i}
-            icon={faStar}
             size={size}
+            fill="#fbbf24"
             color="#fbbf24"
             style={{ opacity: 0.5 }}
           />
         );
       } else {
         stars.push(
-          <FontAwesomeIcon key={i} icon={faStar} size={size} color="#e5e7eb" />
+          <Star key={i} size={size} color="#e5e7eb" />
         );
       }
     }
@@ -503,7 +501,7 @@ const UserProfileScreen = ({ navigation, route }) => {
   if (profileError || !userProfile) {
     return (
       <View className="flex-1 justify-center items-center bg-white px-6">
-        <FontAwesomeIcon icon={faUser} size={64} color="#d1d5db" />
+        <User size={64} color="#d1d5db" />
         <Text className="text-xl font-semibold text-gray-900 mt-4 mb-2">
           Profil Bulunamadı
         </Text>
@@ -549,7 +547,7 @@ const UserProfileScreen = ({ navigation, route }) => {
               onPress={() => navigation.goBack()}
               className="absolute left-5 w-10 h-10 rounded-full justify-center items-center"
             >
-              <FontAwesomeIcon icon={faChevronLeft} size={20} color="#374151" />
+              <ChevronLeft size={20} color="#374151" />
             </TouchableOpacity>
 
             <Text
@@ -563,7 +561,7 @@ const UserProfileScreen = ({ navigation, route }) => {
               onPress={handleReport}
               className="absolute right-5 w-10 h-10 rounded-full justify-center items-center"
             >
-              <FontAwesomeIcon icon={faUserShield} size={20} color="#6b7280" />
+              <ShieldUser size={20} color="#6b7280" />
             </TouchableOpacity>
           </Animated.View>
         </Animated.View>
@@ -662,10 +660,10 @@ const UserProfileScreen = ({ navigation, route }) => {
                   isFavorite ? "bg-red-500" : "bg-gray-100"
                 }`}
               >
-                <FontAwesomeIcon
-                  icon={faHeart}
+                <Heart
                   size={16}
                   color={isFavorite ? "white" : "#6b7280"}
+                  fill={isFavorite ? "white" : "none"}
                 />
               </TouchableOpacity>
 
@@ -674,7 +672,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                 onPress={handleSendMessage}
                 className="bg-gray-900 px-6 py-3 rounded-xl flex-row items-center"
               >
-                <FontAwesomeIcon icon={faMessage} size={16} color="white" />
+                <MessageCircle size={16} color="white" />
               </TouchableOpacity>
 
               {/* YENİ: Değerlendir Butonu */}
@@ -694,10 +692,10 @@ const UserProfileScreen = ({ navigation, route }) => {
                   hasUserRated ? "bg-gray-300" : "bg-yellow-500"
                 }`}
               >
-                <FontAwesomeIcon
-                  icon={faStar}
+                <Star
                   size={16}
                   color={hasUserRated ? "#9ca3af" : "white"}
+                  fill={hasUserRated ? "#9ca3af" : "white"}
                 />
               </TouchableOpacity>
             </View>
@@ -782,8 +780,7 @@ const UserProfileScreen = ({ navigation, route }) => {
 
               <View className="gap-3">
                 <View className="flex-row items-center">
-                  <FontAwesomeIcon
-                    icon={faEnvelope}
+                  <Mail
                     size={16}
                     color="#6b7280"
                   />
@@ -793,7 +790,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                 </View>
 
                 <View className="flex-row items-center">
-                  <FontAwesomeIcon icon={faPhone} size={16} color="#6b7280" />
+                  <Phone size={16} color="#6b7280" />
                   <Text className="ml-3 text-gray-700 flex-1">
                     {user?.phoneNumber}
                   </Text>
@@ -801,7 +798,7 @@ const UserProfileScreen = ({ navigation, route }) => {
 
                 {user?.gender && (
                   <View className="flex-row items-center">
-                    <FontAwesomeIcon icon={faUser} size={16} color="#6b7280" />
+                    <User size={16} color="#6b7280" />
                     <Text className="ml-3 text-gray-700 flex-1">
                       {user.gender === "Man" ? "Erkek" : "Kadın"}
                     </Text>
@@ -822,8 +819,7 @@ const UserProfileScreen = ({ navigation, route }) => {
 
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center">
-                    <FontAwesomeIcon
-                      icon={faBuilding}
+                    <Building
                       size={20}
                       color="#6b7280"
                     />
@@ -935,17 +931,11 @@ const UserProfileScreen = ({ navigation, route }) => {
                   <View className="space-y-3">
                     <View className="flex-row items-center justify-between py-2">
                       <Text className="text-gray-700">Depozito gerekli</Text>
-                      <FontAwesomeIcon
-                        icon={
-                          expectation.isDepositRequired
-                            ? faCheckCircle
-                            : faTimesCircle
-                        }
-                        size={16}
-                        color={
-                          expectation.isDepositRequired ? "#10b981" : "#ef4444"
-                        }
-                      />
+                      {expectation.isDepositRequired ? (
+                        <CircleCheck size={16} color="#10b981" />
+                      ) : (
+                        <CircleX size={16} color="#ef4444" />
+                      )}
                     </View>
 
                     {expectation.isDepositRequired && (
@@ -959,19 +949,11 @@ const UserProfileScreen = ({ navigation, route }) => {
 
                     <View className="flex-row items-center justify-between py-2">
                       <Text className="text-gray-700">Aidat dahil</Text>
-                      <FontAwesomeIcon
-                        icon={
-                          expectation.isMaintenanceFeeIncluded
-                            ? faCheckCircle
-                            : faTimesCircle
-                        }
-                        size={16}
-                        color={
-                          expectation.isMaintenanceFeeIncluded
-                            ? "#10b981"
-                            : "#ef4444"
-                        }
-                      />
+                      {expectation.isMaintenanceFeeIncluded ? (
+                        <CircleCheck size={16} color="#10b981" />
+                      ) : (
+                        <CircleX size={16} color="#ef4444" />
+                      )}
                     </View>
 
                     {!expectation.isMaintenanceFeeIncluded && (
@@ -999,36 +981,20 @@ const UserProfileScreen = ({ navigation, route }) => {
                       <Text className="text-gray-700">
                         Banka transferi gerekli
                       </Text>
-                      <FontAwesomeIcon
-                        icon={
-                          expectation.isBankTransferRequired
-                            ? faCheckCircle
-                            : faTimesCircle
-                        }
-                        size={16}
-                        color={
-                          expectation.isBankTransferRequired
-                            ? "#10b981"
-                            : "#ef4444"
-                        }
-                      />
+                      {expectation.isBankTransferRequired ? (
+                        <CircleCheck size={16} color="#10b981" />
+                      ) : (
+                        <CircleX size={16} color="#ef4444" />
+                      )}
                     </View>
 
                     <View className="flex-row items-center justify-between py-2">
                       <Text className="text-gray-700">Yabancı para kabul</Text>
-                      <FontAwesomeIcon
-                        icon={
-                          expectation.isForeignCurrencyAccepted
-                            ? faCheckCircle
-                            : faTimesCircle
-                        }
-                        size={16}
-                        color={
-                          expectation.isForeignCurrencyAccepted
-                            ? "#10b981"
-                            : "#ef4444"
-                        }
-                      />
+                      {expectation.isForeignCurrencyAccepted ? (
+                        <CircleCheck size={16} color="#10b981" />
+                      ) : (
+                        <CircleX size={16} color="#ef4444" />
+                      )}
                     </View>
                   </View>
                 </View>
@@ -1045,8 +1011,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                   <View className="space-y-3">
                     <View className="flex-row items-center justify-between py-2">
                       <View className="flex-row items-center">
-                        <FontAwesomeIcon
-                          icon={faPaw}
+                        <PawPrint
                           size={16}
                           color="#6b7280"
                         />
@@ -1061,8 +1026,7 @@ const UserProfileScreen = ({ navigation, route }) => {
 
                     <View className="flex-row items-center justify-between py-2">
                       <View className="flex-row items-center">
-                        <FontAwesomeIcon
-                          icon={faSmoking}
+                        <Cigarette
                           size={16}
                           color="#6b7280"
                         />
@@ -1077,8 +1041,7 @@ const UserProfileScreen = ({ navigation, route }) => {
 
                     <View className="flex-row items-center justify-between py-2">
                       <View className="flex-row items-center">
-                        <FontAwesomeIcon
-                          icon={faGraduationCap}
+                        <GraduationCap
                           size={16}
                           color="#6b7280"
                         />
@@ -1093,8 +1056,7 @@ const UserProfileScreen = ({ navigation, route }) => {
 
                     <View className="flex-row items-center justify-between py-2">
                       <View className="flex-row items-center">
-                        <FontAwesomeIcon
-                          icon={faBuilding}
+                        <Building
                           size={16}
                           color="#6b7280"
                         />
@@ -1112,67 +1074,41 @@ const UserProfileScreen = ({ navigation, route }) => {
 
                     <View className="flex-row items-center justify-between py-2">
                       <Text className="text-gray-700">Sadece aile</Text>
-                      <FontAwesomeIcon
-                        icon={
-                          expectation.familyOnly ? faCheckCircle : faTimesCircle
-                        }
-                        size={16}
-                        color={expectation.familyOnly ? "#10b981" : "#ef4444"}
-                      />
+                      {expectation.familyOnly ? (
+                        <CircleCheck size={16} color="#10b981" />
+                      ) : (
+                        <CircleX size={16} color="#ef4444" />
+                      )}
                     </View>
 
                     <View className="flex-row items-center justify-between py-2">
                       <Text className="text-gray-700">Çocuklu aile kabul</Text>
-                      <FontAwesomeIcon
-                        icon={
-                          expectation.acceptChildrenFamily
-                            ? faCheckCircle
-                            : faTimesCircle
-                        }
-                        size={16}
-                        color={
-                          expectation.acceptChildrenFamily
-                            ? "#10b981"
-                            : "#ef4444"
-                        }
-                      />
+                      {expectation.acceptChildrenFamily ? (
+                        <CircleCheck size={16} color="#10b981" />
+                      ) : (
+                        <CircleX size={16} color="#ef4444" />
+                      )}
                     </View>
 
                     <View className="flex-row items-center justify-between py-2">
                       <Text className="text-gray-700">
                         Devlet memuru tercihi
                       </Text>
-                      <FontAwesomeIcon
-                        icon={
-                          expectation.preferGovernmentEmployee
-                            ? faCheckCircle
-                            : faTimesCircle
-                        }
-                        size={16}
-                        color={
-                          expectation.preferGovernmentEmployee
-                            ? "#10b981"
-                            : "#ef4444"
-                        }
-                      />
+                      {expectation.preferGovernmentEmployee ? (
+                        <CircleCheck size={16} color="#10b981" />
+                      ) : (
+                        <CircleX size={16} color="#ef4444" />
+                      )}
                     </View>
                     <View className="flex-row items-center justify-between py-2">
                       <Text className="text-gray-700">
                         Kısa süreli kiralama
                       </Text>
-                      <FontAwesomeIcon
-                        icon={
-                          expectation.isShortTermRentalAvailable
-                            ? faCheckCircle
-                            : faTimesCircle
-                        }
-                        size={16}
-                        color={
-                          expectation.isShortTermRentalAvailable
-                            ? "#10b981"
-                            : "#ef4444"
-                        }
-                      />
+                      {expectation.isShortTermRentalAvailable ? (
+                        <CircleCheck size={16} color="#10b981" />
+                      ) : (
+                        <CircleX size={16} color="#ef4444" />
+                      )}
                     </View>
                   </View>
                 </View>
@@ -1191,8 +1127,7 @@ const UserProfileScreen = ({ navigation, route }) => {
 
                   <View className="space-y-3">
                     <View className="flex-row items-center py-2">
-                      <FontAwesomeIcon
-                        icon={faMapMarkerAlt}
+                      <MapPin
                         size={16}
                         color="#ef4444"
                       />
@@ -1236,7 +1171,7 @@ const UserProfileScreen = ({ navigation, route }) => {
 
                   <View className="flex-row justify-between mb-4">
                     <View className="flex-1 bg-gray-50 rounded-xl p-4 mr-2 items-center">
-                      <FontAwesomeIcon icon={faBed} size={24} color="#6b7280" />
+                      <BedDouble size={24} color="#6b7280" />
                       <Text className="text-sm text-gray-500 mt-2">
                         Min. Oda
                       </Text>
@@ -1246,8 +1181,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                     </View>
 
                     <View className="flex-1 bg-gray-50 rounded-xl p-4 ml-2 items-center">
-                      <FontAwesomeIcon
-                        icon={faRulerCombined}
+                      <Ruler
                         size={24}
                         color="#6b7280"
                       />
@@ -1388,8 +1322,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                   <View className="space-y-3">
                     <View className="flex-row items-center justify-between py-2">
                       <View className="flex-row items-center">
-                        <FontAwesomeIcon
-                          icon={faFileContract}
+                        <FileCheck
                           size={16}
                           color="#6b7280"
                         />
@@ -1397,25 +1330,16 @@ const UserProfileScreen = ({ navigation, route }) => {
                           Gelir belgesi gerekli
                         </Text>
                       </View>
-                      <FontAwesomeIcon
-                        icon={
-                          expectation.isIncomeProofRequired
-                            ? faCheckCircle
-                            : faTimesCircle
-                        }
-                        size={16}
-                        color={
-                          expectation.isIncomeProofRequired
-                            ? "#10b981"
-                            : "#ef4444"
-                        }
-                      />
+                      {expectation.isIncomeProofRequired ? (
+                        <CircleCheck size={16} color="#10b981" />
+                      ) : (
+                        <CircleX size={16} color="#ef4444" />
+                      )}
                     </View>
 
                     <View className="flex-row items-center justify-between py-2">
                       <View className="flex-row items-center">
-                        <FontAwesomeIcon
-                          icon={faHandshake}
+                        <Handshake
                           size={16}
                           color="#6b7280"
                         />
@@ -1423,25 +1347,16 @@ const UserProfileScreen = ({ navigation, route }) => {
                           Kefil gerekli
                         </Text>
                       </View>
-                      <FontAwesomeIcon
-                        icon={
-                          expectation.isGuarantorRequired
-                            ? faCheckCircle
-                            : faTimesCircle
-                        }
-                        size={16}
-                        color={
-                          expectation.isGuarantorRequired
-                            ? "#10b981"
-                            : "#ef4444"
-                        }
-                      />
+                      {expectation.isGuarantorRequired ? (
+                        <CircleCheck size={16} color="#10b981" />
+                      ) : (
+                        <CircleX size={16} color="#ef4444" />
+                      )}
                     </View>
 
                     <View className="flex-row items-center justify-between py-2">
                       <View className="flex-row items-center">
-                        <FontAwesomeIcon
-                          icon={faFileContract}
+                        <FileCheck
                           size={16}
                           color="#6b7280"
                         />
@@ -1449,25 +1364,16 @@ const UserProfileScreen = ({ navigation, route }) => {
                           Referans gerekli
                         </Text>
                       </View>
-                      <FontAwesomeIcon
-                        icon={
-                          expectation.isReferenceRequired
-                            ? faCheckCircle
-                            : faTimesCircle
-                        }
-                        size={16}
-                        color={
-                          expectation.isReferenceRequired
-                            ? "#10b981"
-                            : "#ef4444"
-                        }
-                      />
+                      {expectation.isReferenceRequired ? (
+                        <CircleCheck size={16} color="#10b981" />
+                      ) : (
+                        <CircleX size={16} color="#ef4444" />
+                      )}
                     </View>
 
                     <View className="flex-row items-center justify-between py-2">
                       <View className="flex-row items-center">
-                        <FontAwesomeIcon
-                          icon={faShield}
+                        <Shield
                           size={16}
                           color="#6b7280"
                         />
@@ -1475,19 +1381,11 @@ const UserProfileScreen = ({ navigation, route }) => {
                           Sigortalı iş gerekli
                         </Text>
                       </View>
-                      <FontAwesomeIcon
-                        icon={
-                          expectation.isInsuredJobRequired
-                            ? faCheckCircle
-                            : faTimesCircle
-                        }
-                        size={16}
-                        color={
-                          expectation.isInsuredJobRequired
-                            ? "#10b981"
-                            : "#ef4444"
-                        }
-                      />
+                      {expectation.isInsuredJobRequired ? (
+                        <CircleCheck size={16} color="#10b981" />
+                      ) : (
+                        <CircleX size={16} color="#ef4444" />
+                      )}
                     </View>
                   </View>
                 </View>
@@ -1524,40 +1422,37 @@ const UserProfileScreen = ({ navigation, route }) => {
                       {
                         key: "requiresElevator",
                         label: "Asansör",
-                        icon: faElevator,
+                        Icon: Building,
                       },
                       {
                         key: "requiresParking",
                         label: "Otopark",
-                        icon: faParking,
+                        Icon: CircleParking,
                       },
-                      { key: "requiresBalcony", label: "Balkon", icon: faHome },
-                      { key: "requiresGarden", label: "Bahçe", icon: faTree },
+                      { key: "requiresBalcony", label: "Balkon", Icon: Home },
+                      { key: "requiresGarden", label: "Bahçe", Icon: TreePine },
                       {
                         key: "requiresInternet",
                         label: "İnternet",
-                        icon: faWifi,
+                        Icon: Wifi,
                       },
-                    ].map(({ key, label, icon }) => (
+                    ].map(({ key, label, Icon }) => (
                       <View
                         key={key}
                         className="flex-row items-center justify-between py-2"
                       >
                         <View className="flex-row items-center">
-                          <FontAwesomeIcon
-                            icon={icon}
+                          <Icon
                             size={16}
                             color="#6b7280"
                           />
                           <Text className="ml-3 text-gray-700">{label}</Text>
                         </View>
-                        <FontAwesomeIcon
-                          icon={
-                            expectation[key] ? faCheckCircle : faTimesCircle
-                          }
-                          size={16}
-                          color={expectation[key] ? "#10b981" : "#ef4444"}
-                        />
+                        {expectation[key] ? (
+                          <CircleCheck size={16} color="#10b981" />
+                        ) : (
+                          <CircleX size={16} color="#ef4444" />
+                        )}
                       </View>
                     ))}
                   </View>
@@ -1577,43 +1472,40 @@ const UserProfileScreen = ({ navigation, route }) => {
                       {
                         key: "requiresHospitalAccess",
                         label: "Hastane Erişimi",
-                        icon: faHospital,
+                        Icon: Hospital,
                       },
                       {
                         key: "requiresSchoolAccess",
                         label: "Okul Erişimi",
-                        icon: faSchool,
+                        Icon: School,
                       },
                       {
                         key: "requiresShoppingAccess",
                         label: "Alışveriş Merkezi",
-                        icon: faShoppingCart,
+                        Icon: ShoppingCart,
                       },
                       {
                         key: "requiresPublicTransport",
                         label: "Toplu Taşıma",
-                        icon: faSubway,
+                        Icon: TrainFront,
                       },
-                    ].map(({ key, label, icon }) => (
+                    ].map(({ key, label, Icon }) => (
                       <View
                         key={key}
                         className="flex-row items-center justify-between py-2"
                       >
                         <View className="flex-row items-center">
-                          <FontAwesomeIcon
-                            icon={icon}
+                          <Icon
                             size={16}
                             color="#6b7280"
                           />
                           <Text className="ml-3 text-gray-700">{label}</Text>
                         </View>
-                        <FontAwesomeIcon
-                          icon={
-                            expectation[key] ? faCheckCircle : faTimesCircle
-                          }
-                          size={16}
-                          color={expectation[key] ? "#10b981" : "#ef4444"}
-                        />
+                        {expectation[key] ? (
+                          <CircleCheck size={16} color="#10b981" />
+                        ) : (
+                          <CircleX size={16} color="#ef4444" />
+                        )}
                       </View>
                     ))}
                   </View>
@@ -1718,8 +1610,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                   <View className="space-y-3">
                     <View className="flex-row items-center justify-between py-2">
                       <View className="flex-row items-center">
-                        <FontAwesomeIcon
-                          icon={faCreditCard}
+                        <CreditCard
                           size={16}
                           color="#6b7280"
                         />
@@ -1727,23 +1618,16 @@ const UserProfileScreen = ({ navigation, route }) => {
                           Depozito ödeyebilir
                         </Text>
                       </View>
-                      <FontAwesomeIcon
-                        icon={
-                          expectation.canPayDeposit
-                            ? faCheckCircle
-                            : faTimesCircle
-                        }
-                        size={16}
-                        color={
-                          expectation.canPayDeposit ? "#10b981" : "#ef4444"
-                        }
-                      />
+                      {expectation.canPayDeposit ? (
+                        <CircleCheck size={16} color="#10b981" />
+                      ) : (
+                        <CircleX size={16} color="#ef4444" />
+                      )}
                     </View>
 
                     <View className="flex-row items-center justify-between py-2">
                       <View className="flex-row items-center">
-                        <FontAwesomeIcon
-                          icon={faHandshake}
+                        <Handshake
                           size={16}
                           color="#6b7280"
                         />
@@ -1751,25 +1635,16 @@ const UserProfileScreen = ({ navigation, route }) => {
                           Kefil gösterebilir
                         </Text>
                       </View>
-                      <FontAwesomeIcon
-                        icon={
-                          expectation.canProvideGuarantor
-                            ? faCheckCircle
-                            : faTimesCircle
-                        }
-                        size={16}
-                        color={
-                          expectation.canProvideGuarantor
-                            ? "#10b981"
-                            : "#ef4444"
-                        }
-                      />
+                      {expectation.canProvideGuarantor ? (
+                        <CircleCheck size={16} color="#10b981" />
+                      ) : (
+                        <CircleX size={16} color="#ef4444" />
+                      )}
                     </View>
 
                     <View className="flex-row items-center justify-between py-2">
                       <View className="flex-row items-center">
-                        <FontAwesomeIcon
-                          icon={faFileContract}
+                        <FileCheck
                           size={16}
                           color="#6b7280"
                         />
@@ -1777,19 +1652,11 @@ const UserProfileScreen = ({ navigation, route }) => {
                           Referans verebilir
                         </Text>
                       </View>
-                      <FontAwesomeIcon
-                        icon={
-                          expectation.canProvideReference
-                            ? faCheckCircle
-                            : faTimesCircle
-                        }
-                        size={16}
-                        color={
-                          expectation.canProvideReference
-                            ? "#10b981"
-                            : "#ef4444"
-                        }
-                      />
+                      {expectation.canProvideReference ? (
+                        <CircleCheck size={16} color="#10b981" />
+                      ) : (
+                        <CircleX size={16} color="#ef4444" />
+                      )}
                     </View>
                   </View>
                 </View>
@@ -1808,17 +1675,11 @@ const UserProfileScreen = ({ navigation, route }) => {
                       <Text className="text-gray-700">
                         Kısa süreli kiraya açık
                       </Text>
-                      <FontAwesomeIcon
-                        icon={
-                          expectation.preferShortTerm
-                            ? faCheckCircle
-                            : faTimesCircle
-                        }
-                        size={16}
-                        color={
-                          expectation.preferShortTerm ? "#10b981" : "#ef4444"
-                        }
-                      />
+                      {expectation.preferShortTerm ? (
+                        <CircleCheck size={16} color="#10b981" />
+                      ) : (
+                        <CircleX size={16} color="#ef4444" />
+                      )}
                     </View>
 
                     <View className="flex-row items-center justify-between py-2">
@@ -2006,7 +1867,7 @@ const UserProfileScreen = ({ navigation, route }) => {
               /* Değerlendirme Yoksa */
               <View className="bg-white rounded-xl p-6 border border-gray-100">
                 <View className="items-center">
-                  <FontAwesomeIcon icon={faStar} size={48} color="#d1d5db" />
+                  <Star size={48} color="#d1d5db" />
                   <Text
                     style={{ fontSize: 18 }}
                     className="font-semibold text-gray-900 mt-4 mb-2 text-center"
@@ -2026,8 +1887,7 @@ const UserProfileScreen = ({ navigation, route }) => {
           !expectation && (
             <View className="bg-white rounded-xl p-6 border border-gray-100">
               <View className="items-center">
-                <FontAwesomeIcon
-                  icon={faFileContract}
+                <FileCheck
                   size={48}
                   color="#d1d5db"
                 />

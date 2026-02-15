@@ -25,24 +25,24 @@ import {
     useToggleFavoritePropertyMutation,
     useGetPostQuery,
 } from "../redux/api/apiSlice";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
-    faArrowLeft,
-    faHeartBroken,
-    faMapPin,
-    faHome,
-    faRuler,
-    faBed,
-    faBath,
-    faCalendar,
-    faBuilding,
-    faDollarSign,
-    faEye,
-    faShare,
-    faTrash,
-    faImageSlash,
-} from "@fortawesome/pro-regular-svg-icons";
-import { faHeart, faSearch } from "@fortawesome/pro-solid-svg-icons";
+    ArrowLeft,
+    HeartCrack,
+    MapPin,
+    Home,
+    Ruler,
+    BedDouble,
+    ShowerHead,
+    Calendar,
+    Building,
+    DollarSign,
+    Eye,
+    Share,
+    Trash,
+    ImageOff,
+    Heart,
+    Search,
+} from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 // OfferModal import
@@ -187,7 +187,7 @@ const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onN
                         disabled={removingFavorite}
                         className="bg-red-50 p-3 "
                     >
-                        <FontAwesomeIcon icon={faTrash} size={16} color="#ef4444" />
+                        <Trash size={16} color="#ef4444" />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -229,7 +229,7 @@ const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onN
                         }}
                         className="bg-gray-300 items-center justify-center"
                     >
-                        <FontAwesomeIcon icon={faImageSlash} size={48} color="#9ca3af" />
+                        <ImageOff size={48} color="#9ca3af" />
                         <Text className="text-gray-500 text-sm mt-3 font-medium">Fotoğraf Yok</Text>
                     </View>
                 )}
@@ -272,7 +272,7 @@ const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onN
                             }}
                         >
                             <View className="px-3 py-2 flex-row items-center">
-                                <FontAwesomeIcon icon={faHeart} size={12} color="#ef4444" />
+                                <Heart size={12} color="#ef4444" fill="#ef4444" />
                                 <Text className="text-white text-sm font-semibold ml-2">
                                     {new Date(favoriteItem.dateAdded).toLocaleDateString('tr-TR')}
                                 </Text>
@@ -305,7 +305,7 @@ const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onN
                     </Text>
 
                     <View className="flex-row items-center">
-                        <FontAwesomeIcon icon={faMapPin} size={14} color="#6b7280" />
+                        <MapPin size={14} color="#6b7280" />
                         <Text
                             className="text-gray-600 ml-2 text-sm font-medium"
                             numberOfLines={1}
@@ -324,7 +324,7 @@ const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onN
                         <View className="flex-row gap-4 mt-2">
                             {/* Rooms */}
                             <View className="items-center justify-center mr-8">
-                                <FontAwesomeIcon icon={faBed} size={24} color="#111827" />
+                                <BedDouble size={24} color="#111827" />
                                 <Text className="text-gray-900 mt-2 text-sm font-semibold">{post.odaSayisi}</Text>
                                 <Text className="text-gray-500 text-xs">Oda</Text>
                             </View>
@@ -332,7 +332,7 @@ const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onN
                             {/* Area */}
                             {post.brutMetreKare && (
                                 <View className="items-center justify-center mr-8">
-                                    <FontAwesomeIcon icon={faRuler} size={24} color="#111827" />
+                                    <Ruler size={24} color="#111827" />
                                     <Text className="text-gray-900 mt-2 text-sm font-semibold">{post.brutMetreKare} m²</Text>
                                     <Text className="text-gray-500 text-xs">Alan</Text>
                                 </View>
@@ -340,7 +340,7 @@ const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onN
 
                             {/* Floor */}
                             <View className="items-center justify-center mr-8">
-                                <FontAwesomeIcon icon={faBuilding} size={24} color="#111827" />
+                                <Building size={24} color="#111827" />
                                 <Text className="text-gray-900 mt-2 text-sm font-semibold">
                                     {post.bulunduguKat}/{post.toplamKat}
                                 </Text>
@@ -350,7 +350,7 @@ const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onN
                             {/* Building Age */}
                             {post.binaYasi && (
                                 <View className="items-center justify-center mr-8">
-                                    <FontAwesomeIcon icon={faCalendar} size={24} color="#111827" />
+                                    <Calendar size={24} color="#111827" />
                                     <Text className="text-gray-900 mt-2 text-sm font-semibold">
                                         {post.binaYasi}
                                     </Text>
@@ -670,7 +670,7 @@ const FavoritePropertiesScreen = ({ navigation }) => {
                                 onPress={() => navigation.goBack()}
                                 className="mr-4"
                             >
-                                <FontAwesomeIcon icon={faArrowLeft} size={20} color="#1f2937" />
+                                <ArrowLeft size={20} color="#1f2937" />
                             </TouchableOpacity>
                             <Text className="text-xl font-semibold text-gray-900 flex-1">
                                 Favori İlanlar
@@ -710,7 +710,7 @@ const FavoritePropertiesScreen = ({ navigation }) => {
                                 }}
                                 className="border border-gray-100 border-[1px] rounded-full"
                             >
-                                <FontAwesomeIcon icon={faSearch} size={20} color="#000" />
+                                <Search size={20} color="#000" />
                                 <TextInput
                                     className="flex-1 placeholder:text-gray-500 py-4 text-normal"
                                     style={{
@@ -759,7 +759,7 @@ const FavoritePropertiesScreen = ({ navigation }) => {
                                 gap: 5,
                             }}
                         >
-                            <FontAwesomeIcon icon={faHeart} size={20} color="#ef4444" />
+                            <Heart size={20} color="#ef4444" fill="#ef4444" />
                             <Text className="text-gray-900 text-l font-semibold">
                                 {favoriteProperties.length}
                             </Text>
@@ -820,7 +820,7 @@ const FavoritePropertiesScreen = ({ navigation }) => {
             >
                 {filteredFavorites.length === 0 ? (
                     <View className="flex-1 justify-center items-center py-20">
-                        <FontAwesomeIcon icon={faHeart} size={64} color="#d1d5db" />
+                        <Heart size={64} color="#d1d5db" fill="#d1d5db" />
                         <Text className="text-xl font-semibold text-gray-900 mt-4 mb-2">
                             {searchQuery.trim() ? "Arama Sonucu Bulunamadı" : "Henüz Favori İlan Yok"}
                         </Text>

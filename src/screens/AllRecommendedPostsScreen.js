@@ -17,29 +17,26 @@ import { Image } from "expo-image";
 import { useSelector } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
 import { useGetTenantPostsPaginatedQuery } from "../redux/api/apiSlice";
-import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
-  faBed,
-  faGrid2,
-  faMoneyBills,
-  faRuler,
-  faShower,
-  faCar,
-  faCalendar,
-  faBuilding,
-  faCoins,
-  faBedBunk,
-  faExclamationCircle
-} from "@fortawesome/pro-light-svg-icons";
+  BedDouble,
+  Grid2x2,
+  Banknote,
+  Ruler,
+  ShowerHead,
+  Car,
+  Calendar,
+  Building,
+  Coins,
+  CircleAlert,
+  Search,
+  Heart,
+  ChevronLeft,
+  ListFilter,
+  SlidersHorizontal,
+  Home,
+  X,
+} from "lucide-react-native";
 import { BlurView } from "expo-blur";
-import { faSearch } from "@fortawesome/pro-solid-svg-icons";
-import {
-  faChevronLeft,
-  faFilter,
-  faSliders,
-  faHeart,
-} from "@fortawesome/pro-regular-svg-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
@@ -270,7 +267,7 @@ const MatchScoreBadge = memo(({ matchScore }) => {
       className="absolute top-3 left-3 rounded-full overflow-hidden"
     >
       <View className="px-3 py-1.5 flex-row items-center gap-1">
-        <FontAwesomeIcon color="white" icon={faHeart} size={14} />
+        <Heart fill="white" color="white" size={14} />
         <Text className="text-white text-xs font-semibold">
           {Math.round(matchScore)}%
         </Text>
@@ -282,46 +279,46 @@ const MatchScoreBadge = memo(({ matchScore }) => {
 // Memoized Property Details Slider
 const PropertyDetailsSlider = memo(({ item }) => {
   const propertyDetails = [
-    { id: "rooms", icon: faBed, value: item.odaSayisi || "N/A", label: "Oda" },
+    { id: "rooms", Icon: BedDouble, value: item.odaSayisi || "N/A", label: "Oda" },
     {
       id: "bedrooms",
-      icon: faBedBunk,
+      Icon: BedDouble,
       value: item.yatakOdasiSayisi || "N/A",
       label: "Y.Odası",
     },
     {
       id: "bathrooms",
-      icon: faShower,
+      Icon: ShowerHead,
       value: item.banyoSayisi || "N/A",
       label: "Banyo",
     },
     {
       id: "area",
-      icon: faRuler,
+      Icon: Ruler,
       value: item.brutMetreKare ? `${item.brutMetreKare} m²` : "N/A",
       label: "Alan",
     },
     {
       id: "floor",
-      icon: faBuilding,
+      Icon: Building,
       value: item.bulunduguKat || "N/A",
       label: "Kat",
     },
     {
       id: "age",
-      icon: faCalendar,
+      Icon: Calendar,
       value: item.binaYasi ? `${item.binaYasi}` : "N/A",
       label: "Bina yaşı",
     },
     {
       id: "dues",
-      icon: faMoneyBills,
+      Icon: Banknote,
       value: item.aidat ? `${item.aidat}₺` : "Yok",
       label: "Aidat",
     },
     {
       id: "deposit",
-      icon: faCoins,
+      Icon: Coins,
       value: item.depozito ? `${item.depozito}₺` : "Yok",
       label: "Depozito",
     },
@@ -347,7 +344,7 @@ const PropertyDetailsSlider = memo(({ item }) => {
               height: 85,
             }}
           >
-            <FontAwesomeIcon size={30} icon={detail.icon} color="#000" />
+            <detail.Icon size={30} color="#000" />
             <Text
               style={{ fontSize: 16, fontWeight: 600 }}
               className="text-gray-800 mt-2 text-center"
@@ -390,7 +387,7 @@ const PropertyImageSlider = memo(
     if (!images || images.length === 0) {
       return (
         <View className="w-full h-80 bg-gradient-to-br from-gray-100 to-gray-200 justify-center items-center rounded-3xl">
-          <MaterialIcons name="home" size={32} color="#9CA3AF" />
+          <Home size={32} color="#9CA3AF" />
           <Text className="text-gray-500 mt-2 font-medium">Resim yok</Text>
         </View>
       );
@@ -564,7 +561,7 @@ const PropertyItem = memo(
           {item.matchScore && (
             <View className="mt-2">
               <View className="flex-row items-center mb-1">
-                <FontAwesomeIcon color="#000" icon={faHeart} size={14} />
+                <Heart color="#000" size={14} />
                 <Text className="text-sm font-medium text-gray-900 ml-1">
                   %{Math.round(item.matchScore)} Uyum -{" "}
                   {item.compatibilityLevel} Eşleşme
@@ -824,7 +821,7 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
 
     return (
       <View className="flex-1 justify-center items-center p-8">
-        <FontAwesomeIcon icon={faHeart} size={64} color="#CBD5E0" />
+        <Heart fill="#CBD5E0" color="#CBD5E0" size={64} />
         <Text className="text-xl font-semibold text-gray-700 mt-4 mb-2 text-center">
           Size uygun ilan bulunamadı
         </Text>
@@ -881,7 +878,7 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center p-8">
-          <MaterialIcons name="error" size={64} color="#EF4444" />
+          <CircleAlert size={64} color="#EF4444" />
           <Text className="text-xl font-semibold text-gray-700 mt-4 mb-2 text-center">
             Erişim Engellendi
           </Text>
@@ -921,7 +918,7 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center p-8">
-          <FontAwesomeIcon size={50} icon={faExclamationCircle} />
+          <CircleAlert size={50} color="#000" />
           <Text className="text-xl font-semibold text-gray-900 mt-2 mb-2 text-center">
             Bir hata oluştu
           </Text>
@@ -945,7 +942,7 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
       <View className="bg-white border-b border-gray-200 z-10">
         <View className="flex flex-row items-center px-5">
           <TouchableOpacity onPress={goBack} style={{ width: "8%" }}>
-            <FontAwesomeIcon icon={faChevronLeft} color="black" size={25} />
+            <ChevronLeft color="black" size={25} />
           </TouchableOpacity>
 
           <View className="px-4 py-4" style={{ width: "84%" }}>
@@ -962,13 +959,13 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
               />
               {searchQuery ? (
                 <TouchableOpacity onPress={clearSearch}>
-                  <MaterialIcons name="close" size={20} color="#9CA3AF" />
+                  <X size={20} color="#9CA3AF" />
                 </TouchableOpacity>
               ) : null}
             </View>
           </View>
           <View style={{ width: "8%" }}>
-            <FontAwesomeIcon icon={faHeart} color="#000" size={20} />
+            <Heart color="#000" size={20} />
           </View>
         </View>
 

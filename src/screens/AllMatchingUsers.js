@@ -20,34 +20,32 @@ import {
   useGetLandlordTenantsWithFallbackQuery,
   useGetTenantLandlordsPaginatedQuery,
 } from "../redux/api/apiSlice";
-import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import * as Location from "expo-location";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
-  faGrid2,
-  faRuler,
-  faShower,
-  faCar,
-  faCalendar,
-  faBuilding,
-  faUsers,
-  faPercentage,
-} from "@fortawesome/pro-light-svg-icons";
+  Grid2x2,
+  Ruler,
+  ShowerHead,
+  Car,
+  Calendar,
+  Building,
+  Users,
+  Percent,
+  Heart,
+  ChevronLeft,
+  ListFilter,
+  SlidersHorizontal,
+  ChevronRight,
+  PawPrint,
+  Banknote,
+  Coins,
+  MapPin,
+  BedDouble,
+  GraduationCap,
+  CircleAlert,
+  Home,
+  X,
+} from "lucide-react-native";
 import { BlurView } from "expo-blur";
-import { faHeart } from "@fortawesome/pro-regular-svg-icons";
-import {
-  faChevronLeft,
-  faFilter,
-  faSliders,
-  faChevronRight,
-  faPaw,
-  faMoneyBills,
-  faCoins,
-  faMapMarked,
-  faBed,
-  faGraduationCap,
-  faExclamationCircle,
-} from "@fortawesome/pro-regular-svg-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -299,9 +297,9 @@ const MatchScoreBar = memo(({ matchScore, showBar = false, size = "sm" }) => {
 
   return (
     <View className="flex-row items-start">
-      <FontAwesomeIcon
+      <Heart
         color={scoreInfo.color}
-        icon={faHeart}
+        fill={scoreInfo.color}
         size={currentSize.iconSize}
       />
       <Text
@@ -384,7 +382,7 @@ const TenantItem = ({ item, navigation }) => {
               {/* Compatibility Level */}
               {item.matchScore && (
                 <View className="flex items-center flex-row gap-1">
-                  <FontAwesomeIcon icon={faHeart} />
+                  <Heart size={14} color="black" fill="black" />
                   <Text
                     style={{ fontWeight: 500, fontSize: 14 }}
                     className="text-gray-900"
@@ -562,7 +560,7 @@ const LandlordItem = ({ item, navigation }) => {
               {/* Compatibility Level */}
               {item.matchScore && (
                 <View className="flex items-center flex-row gap-1">
-                  <FontAwesomeIcon icon={faHeart} />
+                  <Heart size={14} color="black" fill="black" />
                   <Text
                     style={{ fontWeight: 500, fontSize: 14 }}
                     className="text-gray-900"
@@ -959,11 +957,11 @@ const AllMatchingUsers = ({ navigation, route }) => {
 
     return (
       <View className="flex-1 justify-center items-center p-8">
-        <FontAwesome
-          name={isLandlord ? "users" : "home"}
-          size={64}
-          color="#9CA3AF"
-        />
+        {isLandlord ? (
+          <Users size={64} color="#9CA3AF" />
+        ) : (
+          <Home size={64} color="#9CA3AF" />
+        )}
         <Text className="text-xl font-semibold text-gray-700 mt-4 mb-2 text-center">
           {emptyTitle}
         </Text>
@@ -1047,7 +1045,7 @@ const AllMatchingUsers = ({ navigation, route }) => {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center p-8">
-          <FontAwesomeIcon size={50} icon={faExclamationCircle} />
+          <CircleAlert size={50} color="black" />
           <Text className="text-xl font-semibold text-gray-900 mt-2 mb-2 text-center">
             Bir hata oluştu
           </Text>
@@ -1092,7 +1090,7 @@ const AllMatchingUsers = ({ navigation, route }) => {
       <View className="bg-white border-b border-gray-200 z-10">
         <View className="flex flex-row items-center px-5">
           <TouchableOpacity onPress={goBack} style={{ width: "8%" }}>
-            <FontAwesomeIcon icon={faChevronLeft} color="black" size={25} />
+            <ChevronLeft color="black" size={25} />
           </TouchableOpacity>
 
           <View className="px-4 py-4" style={{ width: "84%" }}>
@@ -1108,13 +1106,13 @@ const AllMatchingUsers = ({ navigation, route }) => {
               />
               {searchQuery ? (
                 <TouchableOpacity onPress={clearSearch}>
-                  <MaterialIcons name="close" size={20} color="#9CA3AF" />
+                  <X size={20} color="#9CA3AF" />
                 </TouchableOpacity>
               ) : null}
             </View>
           </View>
           <View style={{ width: "8%" }}>
-            <FontAwesomeIcon icon={faSliders} color="black" size={20} />
+            <SlidersHorizontal color="black" size={20} />
           </View>
         </View>
 

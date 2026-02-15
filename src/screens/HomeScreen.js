@@ -419,7 +419,7 @@ const HomeScreen = ({ navigation }) => {
               className="bg-yellow-50 border border-yellow-200 rounded-xl p-4"
             >
               <View className="flex-row items-center">
-                <FontAwesomeIcon icon={faFingerprint} size={24} color="#EAB308" />
+                <Fingerprint size={24} color="#EAB308" />
                 <View className="ml-3 flex-1">
                   <Text className="text-yellow-900 font-semibold">
                     Profilinizi Tamamlayın
@@ -428,7 +428,7 @@ const HomeScreen = ({ navigation }) => {
                     Daha iyi eşleşmeler için profilinizi tamamlayın
                   </Text>
                 </View>
-                <FontAwesomeIcon icon={faEdit} size={16} color="#EAB308" />
+                <Pencil size={16} color="#EAB308" />
               </View>
             </TouchableOpacity>
           </View>

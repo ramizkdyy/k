@@ -684,7 +684,7 @@ const MessagesScreen = ({ navigation }) => {
               </>
             ) : searchQuery.trim() ? (
               <>
-                <FontAwesomeIcon icon={faSearch} size={40} color="#ccc" />
+                <Search size={40} color="#ccc" />
                 <Text className="text-gray-500 mt-4 text-base text-center">
                   "{searchQuery}" için sonuç bulunamadı
                 </Text>
@@ -694,7 +694,7 @@ const MessagesScreen = ({ navigation }) => {
               </>
             ) : activeFilter === "unread" ? (
               <>
-                <FontAwesomeIcon icon={faCircle} size={40} color="#ccc" />
+                <Circle size={40} color="#ccc" />
                 <Text className="text-gray-500 mt-4 text-base text-center">
                   Okunmamış mesaj yok
                 </Text>
@@ -704,7 +704,7 @@ const MessagesScreen = ({ navigation }) => {
               </>
             ) : (
               <>
-                <FontAwesomeIcon icon={faEdit} size={40} color="#ccc" />
+                <Edit size={40} color="#ccc" />
                 <Text className="text-gray-500 mt-4 text-base text-center">
                   Henüz sohbet yok
                 </Text>

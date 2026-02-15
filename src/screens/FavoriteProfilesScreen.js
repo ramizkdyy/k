@@ -21,15 +21,9 @@ import {
     useGetOwnLandlordProfileQuery,
     apiSlice,
 } from "../redux/api/apiSlice";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import {
-    faArrowLeft,
-    faHeart,
-} from "@fortawesome/pro-regular-svg-icons";
-import { faSearch } from "@fortawesome/pro-solid-svg-icons";
+import { ArrowLeft, Heart, Search } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
-import { faHeart as faHeartSolid } from "@fortawesome/pro-solid-svg-icons";
 
 // ✅ Component import'ları
 import FavoriteLandlordCard from "../components/FavoriteLandlordCard";
@@ -296,7 +290,7 @@ const FavoriteProfilesScreen = ({ navigation }) => {
                                 onPress={() => navigation.goBack()}
                                 className="mr-4"
                             >
-                                <FontAwesomeIcon icon={faArrowLeft} size={20} color="#1f2937" />
+                                <ArrowLeft size={20} color="#1f2937" />
                             </TouchableOpacity>
                             <Text className="text-xl font-semibold text-gray-900 flex-1">
                                 Favori {profileType}
@@ -336,7 +330,7 @@ const FavoriteProfilesScreen = ({ navigation }) => {
                                 }}
                                 className="border border-gray-100 border-[1px] rounded-full"
                             >
-                                <FontAwesomeIcon icon={faSearch} size={20} color="#000" />
+                                <Search size={20} color="#000" />
                                 <TextInput
                                     className="flex-1 placeholder:text-gray-500 py-4 text-normal"
                                     style={{
@@ -385,7 +379,7 @@ const FavoriteProfilesScreen = ({ navigation }) => {
                                 gap: 5,
                             }}
                         >
-                            <FontAwesomeIcon icon={faHeartSolid} size={20} color="#ef4444" />
+                            <Heart fill="#ef4444" color="#ef4444" size={20} />
                             <Text className="text-gray-900 text-l font-semibold">
                                 {favoriteProfiles.length}
                             </Text>
@@ -442,7 +436,7 @@ const FavoriteProfilesScreen = ({ navigation }) => {
             >
                 {filteredFavorites.length === 0 ? (
                     <View className="flex-1 justify-center items-center py-20">
-                        <FontAwesomeIcon icon={faHeart} size={64} color="#d1d5db" />
+                        <Heart size={64} color="#d1d5db" />
                         <Text className="text-xl font-semibold text-gray-900 mt-4 mb-2 text-center">
                             {searchQuery.trim() ? "Arama Sonucu Bulunamadı" : emptyMessage}
                         </Text>
