@@ -32,54 +32,53 @@ import BottomSheet, {
   BottomSheetScrollView,
   BottomSheetBackdrop,
 } from "@gorhom/bottom-sheet";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
-  faTimes,
-  faInfo,
-  faBed,
-  faShower,
-  faRuler,
-  faBuilding,
-  faCalendar,
-  faMoneyBills,
-  faCoins,
-  faUsers,
-  faStar,
-  faHome,
-  faLocationDot,
-  faUser,
-  faEnvelope,
-  faPhone,
-  faClock,
-  faEye,
-  faThumbsUp,
-  faCheckCircle,
-  faXCircle,
-  faKey,
-  faParking,
-  faElevator,
-  faTreeCity,
-  faDoorOpen,
-  faFire,
-  faBedBunk,
-  faUtensils,
-  faBarsProgress,
-  faWifi,
-  faCheck,
-  faTv,
-  faSnowflake,
-  faShieldCheck,
-  faCamera,
-  faHashtag,
-  faGlobe,
-  faAward,
-  faCalendarCheck,
-  faDatabase,
-  faCode,
-  faHeart,
-  faArrowLeft,
-} from "@fortawesome/pro-solid-svg-icons";
-import { faExternalLink } from "@fortawesome/pro-light-svg-icons";
+  X,
+  Info,
+  BedDouble,
+  ShowerHead,
+  Ruler,
+  Building2,
+  Calendar,
+  Banknote,
+  Coins,
+  Users,
+  Star,
+  Home,
+  MapPin,
+  User,
+  Mail,
+  Phone,
+  Clock,
+  Eye,
+  ThumbsUp,
+  CheckCircle,
+  XCircle,
+  Key,
+  ParkingCircle,
+  Building,
+  Trees,
+  DoorOpen,
+  Flame,
+  BedSingle,
+  Utensils,
+  BarChart3,
+  Wifi,
+  Check,
+  Tv,
+  Snowflake,
+  ShieldCheck,
+  Camera,
+  Hash,
+  Globe,
+  Award,
+  CalendarCheck,
+  Database,
+  Code,
+  Heart,
+  ArrowLeft,
+  ExternalLink
+} from "lucide-react-native";
 import MapView, { Marker } from "react-native-maps";
 import { BlurView } from "expo-blur";
 import * as Location from "expo-location";
@@ -424,10 +423,10 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
 
     return (
       <View className="flex-row items-center">
-        <FontAwesomeIcon
+        <Heart
           color={scoreInfo.color}
-          icon={faHeart}
           size={currentSize.iconSize}
+          fill={scoreInfo.color}
         />
         <Text
           className="font-medium ml-1"
@@ -533,7 +532,7 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
                 title={post.ilanBasligi || "İlan"}
                 description={`${post.mahalle}, ${post.ilce}`}
               >
-                <FontAwesomeIcon icon={faLocationDot} size={24} color="#000" />
+                <MapPin size={24} color="#000" fill="#000" />
               </Marker>
             </MapView>
 
@@ -580,7 +579,7 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
               )
             }
           >
-            <FontAwesomeIcon icon={faExternalLink} size={12} color="#4b5563" />
+            <ExternalLink size={12} color="#4b5563" />
             <Text
               style={{ fontSize: 12 }}
               className="ml-1 text-gray-600 font-medium"
@@ -639,7 +638,7 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
                     boxShadow: "0px 0px 12px #00000020",
                   }}
                 >
-                  <FontAwesomeIcon icon={faArrowLeft} size={18} color="black" />
+                  <ArrowLeft size={18} color="black" />
                 </View>
               </TouchableOpacity>
             </View>
@@ -664,10 +663,10 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
                 title={post.ilanBasligi || "İlan"}
                 description={`${post.mahalle}, ${post.ilce}`}
               >
-                <FontAwesomeIcon
-                  icon={faLocationDot}
+                <MapPin
                   size={32}
                   color="#ef4444"
+                  fill="#ef4444"
                 />
               </Marker>
             </MapView>
@@ -1045,23 +1044,23 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
               {renderSectionHeader("İlan Detayları")}
               <View className="">
                 {renderDetailItem(
-                  faCheckCircle,
+                  null,
                   "İlan Durumu",
                   statusInfo?.text || "Aktif",
                   statusInfo?.color || "text-green-600"
                 )}
                 {renderDetailItem(
-                  faHome,
+                  null,
                   "İlan Tipi",
                   getPropertyTypeText(post.propertyType)
                 )}
                 {renderDetailItem(
-                  faCalendar,
+                  null,
                   "Kiralama Süresi",
                   getRentalPeriodText(post.rentalPeriod)
                 )}
                 {renderDetailItem(
-                  faCalendar,
+                  null,
                   "İlan Tarihi",
                   post.postTime
                     ? new Date(post.postTime).toLocaleDateString("tr-TR")
@@ -1080,32 +1079,32 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
             >
               {renderSectionHeader("Ev içi")}
               <View className="">
-                {renderDetailItem(faBed, "Oda Sayısı", post.odaSayisi)}
+                {renderDetailItem(null, "Oda Sayısı", post.odaSayisi)}
                 {post.yatakOdasiSayisi !== undefined &&
                   renderDetailItem(
-                    faBedBunk,
+                    null,
                     "Yatak Odası",
                     post.yatakOdasiSayisi
                   )}
-                {renderDetailItem(faShower, "Banyo Sayısı", post.banyoSayisi)}
+                {renderDetailItem(null, "Banyo Sayısı", post.banyoSayisi)}
                 {renderDetailItem(
-                  faFire,
+                  null,
                   "Isınma",
                   getHeatingTypeText(post.isitmaTipi)
                 )}
-                {renderDetailItem(faUtensils, "Mutfak türü", post.mutfak)}
+                {renderDetailItem(null, "Mutfak türü", post.mutfak)}
                 {renderDetailItem(
-                  faRuler,
+                  null,
                   "Net Metrekare",
                   post.netMetreKare ? `${post.netMetreKare} m²` : null
                 )}
                 {renderDetailItem(
-                  faRuler,
+                  null,
                   "Brüt Metrekare",
                   post.brutMetreKare ? `${post.brutMetreKare} m²` : null
                 )}
-                {renderBooleanItem(faCheckCircle, "Eşyalı mı?", post.esyali)}
-                {renderBooleanItem(faTreeCity, "Balkon var mı?", post.balkon)}
+                {renderBooleanItem(null, "Eşyalı mı?", post.esyali)}
+                {renderBooleanItem(null, "Balkon var mı?", post.balkon)}
               </View>
             </View>
 
@@ -1120,24 +1119,24 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
               {renderSectionHeader("Apartman / Bina")}
               <View className="">
                 {renderDetailItem(
-                  faBuilding,
+                  null,
                   "Bulunduğu Kat",
                   post.bulunduguKat || "Belirtilmemiş"
                 )}
                 {renderDetailItem(
-                  faBuilding,
+                  null,
                   "Toplam Kat",
                   post.toplamKat || "Belirtilmemiş"
                 )}
                 {renderDetailItem(
-                  faCalendar,
+                  null,
                   "Bina Yaşı",
                   post.binaYasi ? `${post.binaYasi} yıl` : "Belirtilmemiş"
                 )}
-                {renderBooleanItem(faParking, "Otopark", post.otopark)}
-                {renderBooleanItem(faElevator, "Asansör", post.asansor)}
+                {renderBooleanItem(null, "Otopark", post.otopark)}
+                {renderBooleanItem(null, "Asansör", post.asansor)}
                 {renderBooleanItem(
-                  faBuilding,
+                  null,
                   "Site İçerisinde",
                   post.siteIcerisinde
                 )}
@@ -1155,7 +1154,7 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
               {renderSectionHeader("Ödenekler")}
               <View className="">
                 {renderDetailItem(
-                  faMoneyBills,
+                  null,
                   "Kira",
                   post.kiraFiyati
                     ? `${post.kiraFiyati.toLocaleString()} ${getCurrencyText(
@@ -1164,19 +1163,19 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
                     : "Belirtilmemiş"
                 )}
                 {renderDetailItem(
-                  faMoneyBills,
+                  null,
                   "Aidat",
                   post.aidat ? `${post.aidat} ₺` : "Belirtilmemiş"
                 )}
                 {renderDetailItem(
-                  faCoins,
+                  null,
                   "Depozito",
                   post.depozito
                     ? `${post.depozito} ${getCurrencyText(post.paraBirimi)}`
                     : "Belirtilmemiş"
                 )}
                 {renderDetailItem(
-                  faCalendar,
+                  null,
                   "Min. Kiralama Süresi",
                   post.minimumKiralamaSuresi
                     ? `${post.minimumKiralamaSuresi} Ay`
@@ -1212,10 +1211,10 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
                   </Text>
                 </View>
                 {post.siteAdi &&
-                  renderDetailItem(faHome, "Site adı", post.siteAdi)}
-                {renderBooleanItem(faCheckCircle, "Takas", post.takas)}
+                  renderDetailItem(null, "Site adı", post.siteAdi)}
+                {renderBooleanItem(null, "Takas", post.takas)}
                 {renderDetailItem(
-                  faKey,
+                  null,
                   "Kullanım Durumu",
                   post.kullanimDurumu
                 )}
@@ -1233,10 +1232,10 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
               >
                 {renderSectionHeader("İletişim Bilgileri")}
                 <View className="">
-                  {renderDetailItem(faEnvelope, "E-posta", post.user.email)}
-                  {renderDetailItem(faPhone, "Telefon", post.user.phoneNumber)}
+                  {renderDetailItem(null, "E-posta", post.user.email)}
+                  {renderDetailItem(null, "Telefon", post.user.phoneNumber)}
                   {post.user.gender &&
-                    renderDetailItem(faUser, "Cinsiyet", post.user.gender)}
+                    renderDetailItem(null, "Cinsiyet", post.user.gender)}
                 </View>
               </View>
             )}
@@ -1251,26 +1250,26 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
             >
               {renderSectionHeader("İstatistikler")}
               <View className="">
-                {renderDetailItem(faEye, "Görüntülenme", post.viewCount || 0)}
+                {renderDetailItem(null, "Görüntülenme", post.viewCount || 0)}
                 {renderDetailItem(
-                  faEye,
+                  null,
                   "Benzersiz Görüntülenme",
                   post.uniqueViewCount || 0
                 )}
-                {renderDetailItem(faEye, "Bugün", post.todayViewCount || 0)}
-                {renderDetailItem(faEye, "Bu Hafta", post.weekViewCount || 0)}
+                {renderDetailItem(null, "Bugün", post.todayViewCount || 0)}
+                {renderDetailItem(null, "Bu Hafta", post.weekViewCount || 0)}
                 {renderDetailItem(
-                  faBarsProgress,
+                  null,
                   "Benzerlik Skoru",
                   post.similarityScore || 0
                 )}
                 {renderDetailItem(
-                  faThumbsUp,
+                  null,
                   "Teklif Sayısı",
                   post.offerCount || 0
                 )}
                 {renderBooleanItem(
-                  faCheckCircle,
+                  null,
                   "Teklif Kabul Edildi",
                   post.isOfferAccepted
                 )}
@@ -1304,24 +1303,24 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
                 {renderSectionHeader("Konaklama Bilgileri")}
                 <View className="">
                   {renderDetailItem(
-                    faLocationDot,
+                    null,
                     "Lokasyon",
                     `${metaPost.location}, ${metaPost.city}, ${metaPost.country}`
                   )}
-                  {renderDetailItem(faMoneyBills, "Fiyat", metaPost.priceInfo)}
+                  {renderDetailItem(null, "Fiyat", metaPost.priceInfo)}
                   {renderDetailItem(
-                    faHome,
+                    null,
                     "Emlak Tipi",
                     getPropertyTypeName(metaPost.propertyType)
                   )}
                   {renderDetailItem(
-                    faBed,
+                    null,
                     "Yatak Odası",
                     metaPost.bedroomCount || 0
                   )}
-                  {renderDetailItem(faShower, "Banyo", metaPost.bathroomCount)}
+                  {renderDetailItem(null, "Banyo", metaPost.bathroomCount)}
                   {renderDetailItem(
-                    faUsers,
+                    null,
                     "Kapasite",
                     `${metaPost.personCapacity} kişi`
                   )}
@@ -1352,14 +1351,14 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
               >
                 {renderSectionHeader("Ev Sahibi")}
                 <View className="">
-                  {renderDetailItem(faUser, "İsim", metaPost.hostName)}
+                  {renderDetailItem(null, "İsim", metaPost.hostName)}
                   {renderBooleanItem(
-                    faCheckCircle,
+                    null,
                     "Süper Ev Sahibi",
                     metaPost.isSuperhost
                   )}
                   {renderBooleanItem(
-                    faCheckCircle,
+                    null,
                     "Anında Rezervasyon",
                     metaPost.canInstantBook
                   )}
@@ -1407,8 +1406,7 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
                         key={index}
                         className="flex-row items-center mr-4 mb-2"
                       >
-                        <FontAwesomeIcon
-                          icon={faCheck}
+                        <Check
                           size={10}
                           color="#10B981"
                         />
@@ -1445,17 +1443,17 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
                   <View className="">
                     {metaPost.rating &&
                       renderDetailItem(
-                        faThumbsUp,
+                        null,
                         "Puan",
                         `${metaPost.rating.toFixed(2)} ⭐`
                       )}
                     {renderDetailItem(
-                      faEye,
+                      null,
                       "Yorum Sayısı",
                       metaPost.reviewCount || 0
                     )}
                     {renderDetailItem(
-                      faEye,
+                      null,
                       "Görünür Yorum",
                       metaPost.visibleReviewCount || 0
                     )}

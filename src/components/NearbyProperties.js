@@ -11,16 +11,7 @@ import { useSelector } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
 import { useGetForYouPageQuery } from "../redux/api/apiSlice";
 import * as Location from "expo-location";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faChevronRight } from "@fortawesome/pro-solid-svg-icons";
-import {
-  faList,
-  faRoad,
-  faUser,
-  faBath,
-  faBed,
-} from "@fortawesome/pro-light-svg-icons";
-import { faHeart, faHouseBlank } from "@fortawesome/pro-regular-svg-icons";
+import { ChevronRight, List, Route, User, Bath, BedDouble, Heart, Home } from "lucide-react-native";
 import { BlurView } from "expo-blur";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import { useFypCacheTracker } from "../hooks/useFypCacheTracker";
@@ -37,7 +28,7 @@ const ErrorPlaceholder = React.memo(({ width, height, borderRadius = 30 }) => (
       alignItems: "center",
     }}
   >
-    <FontAwesomeIcon icon={faHouseBlank} size={30} color="#ccc" />
+    <Home size={30} color="#ccc" />
   </View>
 ));
 
@@ -56,7 +47,7 @@ const LoadingPlaceholder = React.memo(({ style, borderRadius }) => (
       alignItems: "center",
     }}
   >
-    <FontAwesomeIcon icon={faHouseBlank} size={20} color="#ccc" />
+    <Home size={20} color="#ccc" />
   </View>
 ));
 
@@ -216,9 +207,8 @@ const MatchScoreBar = React.memo(
 
     return (
       <View className="flex-row items-center">
-        <FontAwesomeIcon
+        <Heart
           color={scoreInfo.color}
-          icon={faHeart}
           size={sizeConfig.iconSize}
         />
         <Text
@@ -457,7 +447,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
               className="absolute top-3 left-3 rounded-full overflow-hidden"
             >
               <View className="px-2 py-1.5 flex-row items-center gap-1">
-                <FontAwesomeIcon color="white" icon={faRoad} size={14} />
+                <Route color="white" size={14} />
                 <Text className="text-white text-xs font-semibold">
                   {(item.distanceInKM || item.distance || 0).toFixed(1)} km
                 </Text>
@@ -472,7 +462,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
               className="absolute top-3 right-3 rounded-full overflow-hidden"
             >
               <View className="px-3 py-1.5 flex-row items-center gap-1">
-                <FontAwesomeIcon color="white" icon={faHeart} size={14} />
+                <Heart color="white" size={14} />
                 <Text className="text-white text-xs font-semibold">
                   {item.matchScore}%
                 </Text>
@@ -574,7 +564,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
 
           {item.matchScore && (
             <View className="flex flex-row items-center gap-1 py-1">
-              <FontAwesomeIcon icon={faHeart} size={15} />
+              <Heart size={15} />
               <Text style={{ fontSize: 12, fontWeight: 500 }}>
                 {item.matchScore}% Uyum
               </Text>
@@ -583,13 +573,13 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
 
           <View className="flex flex-row gap-4 items-center mt-1">
             <View className="flex flex-row gap-2 items-center">
-              <FontAwesomeIcon color="#6B7280" icon={faBath} />
+              <Bath color="#6B7280" size={12} />
               <Text style={{ fontSize: 12 }} className="text-gray-500">
                 {item.banyoSayisi || "N/A"} Banyo
               </Text>
             </View>
             <View className="flex flex-row gap-2 items-center">
-              <FontAwesomeIcon color="#6B7280" icon={faBed} />
+              <BedDouble color="#6B7280" size={12} />
               <Text style={{ fontSize: 12 }} className="text-gray-500">
                 {item.odaSayisi || "N/A"} Yatak odası
               </Text>
@@ -688,7 +678,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
           </View>
 
           <View className=" gap-1 flex flex-row justify-center items-center">
-            <FontAwesomeIcon icon={faHeart} />
+            <Heart size={16} />
             <Text className="font-medium">{item.matchScore}% Uyum</Text>
           </View>
 
@@ -833,7 +823,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
                   <Text style={{ fontSize: 12 }} className="text-gray-900">
                     Tümünü gör
                   </Text>
-                  <FontAwesomeIcon icon={faChevronRight} />
+                  <ChevronRight size={16} />
                 </TouchableOpacity>
               </View>
 
@@ -874,7 +864,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
                   <Text style={{ fontSize: 12 }} className="text-gray-900">
                     Tümünü gör
                   </Text>
-                  <FontAwesomeIcon icon={faChevronRight} />
+                  <ChevronRight size={16} />
                 </TouchableOpacity>
               </View>
 
@@ -917,7 +907,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
                   <Text style={{ fontSize: 12 }} className="text-gray-900">
                     Tümünü gör
                   </Text>
-                  <FontAwesomeIcon icon={faChevronRight} />
+                  <ChevronRight size={16} />
                 </TouchableOpacity>
               </View>
 
@@ -942,10 +932,11 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
             >
               <View className="rounded-xl p-6 bg-white">
                 <View className="items-center">
-                  <FontAwesomeIcon
-                    size={60}
-                    icon={userRole === "KIRACI" ? faList : faUser}
-                  />
+                  {userRole === "KIRACI" ? (
+                    <List size={60} />
+                  ) : (
+                    <User size={60} />
+                  )}
                   <Text
                     style={{ fontSize: 16 }}
                     className="text-gray-500 text-center font-semibold mb-1 mt-2"

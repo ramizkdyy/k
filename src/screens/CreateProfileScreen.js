@@ -31,8 +31,7 @@ import {
   updateCoverImageStatus,
 } from "../redux/slices/profileSlice";
 import * as ImagePicker from "expo-image-picker";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faPlus } from "@fortawesome/pro-solid-svg-icons";
+import { Plus } from "lucide-react-native";
 
 const CustomDropdown = ({
   label,
@@ -644,7 +643,7 @@ const CreateProfileScreen = (props) => {
                     style={{ boxShadow: "0px 0px 12px #00000014" }}
                     className="absolute right-4 bottom-4 bg-white p-2 rounded-full"
                   >
-                    <FontAwesomeIcon icon={faPlus} size={16} color="#000" />
+                    <Plus size={16} color="#000" />
                   </View>
                 </View>
               ) : (
@@ -654,7 +653,7 @@ const CreateProfileScreen = (props) => {
                     style={{ boxShadow: "0px 0px 12px #00000014" }}
                     className="absolute right-4 bottom-4 bg-white p-2 rounded-full"
                   >
-                    <FontAwesomeIcon icon={faPlus} size={16} color="#000" />
+                    <Plus size={16} color="#000" />
                   </View>
                 </View>
               )}

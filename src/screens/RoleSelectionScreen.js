@@ -13,8 +13,7 @@ import { setRole } from "../redux/slices/authSlice";
 import { useAssignRoleMutation, apiSlice } from "../redux/api/apiSlice";
 import { selectCurrentUser } from "../redux/slices/authSlice";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faHome, faKey } from "@fortawesome/pro-regular-svg-icons";
+import { Home, Key } from "lucide-react-native";
 
 const { width } = Dimensions.get("window");
 
@@ -174,7 +173,7 @@ const RoleSelectionScreen = ({ navigation }) => {
             }`}
             onPress={() => setSelectedRole("EVSAHIBI")}
           >
-            <FontAwesomeIcon size={50} icon={faHome} />
+            <Home size={50} color="#1f2937" />
             <Text className="text-xl font-bold text-gray-800">Ev Sahibi</Text>
             <Text
               style={{ fontSize: 12 }}
@@ -193,7 +192,7 @@ const RoleSelectionScreen = ({ navigation }) => {
             }`}
             onPress={() => setSelectedRole("KIRACI")}
           >
-            <FontAwesomeIcon size={50} icon={faKey} />
+            <Key size={50} color="#1f2937" />
             <Text className="text-xl font-bold text-gray-800">Kiracı</Text>
             <Text
               style={{ fontSize: 12 }}

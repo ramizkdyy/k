@@ -28,24 +28,19 @@ import { useDispatch } from "react-redux";
 import { useRegisterMutation, useLoginMutation } from "../redux/api/apiSlice";
 import { setCredentials } from "../redux/slices/authSlice";
 import { CommonActions } from "@react-navigation/native";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
-  faSignature,
-  faEnvelope,
-  faPhone,
-  faVenusMars,
-  faUser,
-  faLock,
-  faEye,
-  faEyeSlash,
-  faCalendar,
-  faArrowLeft,
-  faCheck,
-  faTimes,
-  faChevronLeft,
-  faChevronRight,
-  faChevronDown,
-} from "@fortawesome/pro-solid-svg-icons";
+  Mail,
+  Phone,
+  User,
+  Lock,
+  Eye,
+  EyeOff,
+  Calendar,
+  Check,
+  X,
+  ChevronLeft,
+  ChevronDown,
+} from "lucide-react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 const { width } = Dimensions.get("window");
@@ -298,7 +293,7 @@ const RegisterScreen = ({ navigation }) => {
                 Cinsiyet Seçin
               </Text>
               <TouchableOpacity onPress={onClose}>
-                <FontAwesomeIcon icon={faTimes} size={20} color="#6b7280" />
+                <X size={20} color="#6b7280" />
               </TouchableOpacity>
             </View>
 
@@ -315,7 +310,7 @@ const RegisterScreen = ({ navigation }) => {
                     {option.label}
                   </Text>
                   {selectedGender === option.value && (
-                    <FontAwesomeIcon icon={faCheck} size={20} color="#2C8700" />
+                    <Check size={20} color="#2C8700" />
                   )}
                 </TouchableOpacity>
               ))}
@@ -607,7 +602,7 @@ const RegisterScreen = ({ navigation }) => {
         className="w-4 h-4 rounded-full mr-2 items-center justify-center"
         style={{ backgroundColor: met ? "black" : "#dee0ea" }}
       >
-        {met && <FontAwesomeIcon icon={faCheck} size={10} color="white" />}
+        {met && <Check size={10} color="white" />}
       </View>
       <Text style={{ fontSize: 14, color: met ? "black" : "#b8b8b8" }}>
         {text}
@@ -755,7 +750,7 @@ const RegisterScreen = ({ navigation }) => {
             }}
             className="flex-row items-center"
           >
-            <FontAwesomeIcon icon={faChevronLeft} size={22} color="#0d0d0d" />
+            <ChevronLeft size={22} color="#0d0d0d" />
           </TouchableOpacity>
         </View>
         {/* Step indicators - circular steps */}
@@ -948,8 +943,7 @@ const RegisterScreen = ({ navigation }) => {
                         }
                   }
                 >
-                  <FontAwesomeIcon
-                    icon={faCalendar}
+                  <Calendar
                     size={20}
                     color="#0d0d0d"
                   />
@@ -962,8 +956,7 @@ const RegisterScreen = ({ navigation }) => {
                     >
                       {birthDate || "Doğum tarihi seçin (isteğe bağlı)"}
                     </Text>
-                    <FontAwesomeIcon
-                      icon={faChevronDown}
+                    <ChevronDown
                       size={16}
                       color="#6b7280"
                     />
@@ -1063,8 +1056,7 @@ const RegisterScreen = ({ navigation }) => {
                     handlePresentGenderPicker();
                   }}
                 >
-                  <FontAwesomeIcon
-                    icon={faVenusMars}
+                  <User
                     size={20}
                     color="#0d0d0d"
                   />
@@ -1078,8 +1070,7 @@ const RegisterScreen = ({ navigation }) => {
                       {getGenderLabel(gender) ||
                         "Cinsiyet seçin (isteğe bağlı)"}
                     </Text>
-                    <FontAwesomeIcon
-                      icon={faChevronDown}
+                    <ChevronDown
                       size={16}
                       color="#6b7280"
                     />
@@ -1122,11 +1113,11 @@ const RegisterScreen = ({ navigation }) => {
                     blurOnSubmit={false}
                   />
                   <Pressable onPress={() => setShowPassword(!showPassword)}>
-                    <FontAwesomeIcon
-                      color="#0d0d0d"
-                      icon={showPassword ? faEye : faEyeSlash}
-                      size={20}
-                    />
+                    {showPassword ? (
+                      <Eye color="#0d0d0d" size={20} />
+                    ) : (
+                      <EyeOff color="#0d0d0d" size={20} />
+                    )}
                   </Pressable>
                 </View>
 
@@ -1168,11 +1159,11 @@ const RegisterScreen = ({ navigation }) => {
                           password === confirmPassword ? "#10b981" : "#ef4444",
                       }}
                     >
-                      <FontAwesomeIcon
-                        icon={password === confirmPassword ? faCheck : faTimes}
-                        size={10}
-                        color="white"
-                      />
+                      {password === confirmPassword ? (
+                        <Check size={10} color="white" />
+                      ) : (
+                        <X size={10} color="white" />
+                      )}
                     </View>
                     <Text
                       style={{

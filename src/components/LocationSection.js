@@ -10,10 +10,7 @@ import {
   Dimensions,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import faExternalLink from "@fortawesome/pro-light-svg-icons";
-import { faLocationDot } from "@fortawesome/pro-solid-svg-icons";
-import { faXmark } from "@fortawesome/pro-regular-svg-icons";
+import { ExternalLink, MapPin, X } from "lucide-react-native";
 import * as Location from "expo-location";
 import { BlurView } from "expo-blur";
 
@@ -283,7 +280,7 @@ const LocationSection = ({ post }) => {
                 title={post.ilanBasligi}
                 description={`${post.mahalle}, ${post.ilce}`}
               >
-                <FontAwesomeIcon icon={faLocationDot} size={24} color="#000" />
+                <MapPin size={24} color="#000" />
               </Marker>
             </MapView>
 
@@ -323,7 +320,7 @@ const LocationSection = ({ post }) => {
               elevation: 3,
             }}
           >
-            <FontAwesomeIcon icon={faExternalLink} size={12} color="#4b5563" />
+            <ExternalLink size={12} color="#4b5563" />
             <Text
               style={{ fontSize: 12 }}
               className="ml-1 text-gray-600 font-medium"
@@ -391,7 +388,7 @@ const LocationSection = ({ post }) => {
                 }}
               >
                 {" "}
-                <FontAwesomeIcon icon={faXmark} size={20} color="#dee0ea" />
+                <X size={20} color="#dee0ea" />
               </BlurView>
             </TouchableOpacity>
           </View>
@@ -416,7 +413,7 @@ const LocationSection = ({ post }) => {
               title={post.ilanBasligi}
               description={`${post.mahalle}, ${post.ilce}`}
             >
-              <FontAwesomeIcon icon={faLocationDot} size={32} color="#fff" />
+              <MapPin size={32} color="#fff" />
             </Marker>
           </MapView>
 
@@ -450,7 +447,7 @@ const LocationSection = ({ post }) => {
                 tint="dark"
                 className="flex flex-row px-5 py-3 overflow-hidden rounded-full items-center bg-black bg-opacity-50"
               >
-                <FontAwesomeIcon icon={faLocationDot} size={16} color="white" />
+                <MapPin size={16} color="white" />
                 <Text
                   style={{
                     color: "#dee0ea",

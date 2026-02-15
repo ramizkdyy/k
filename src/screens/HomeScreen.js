@@ -19,18 +19,12 @@ import { useSelector } from "react-redux";
 import { selectUserRole, selectCurrentUser } from "../redux/slices/authSlice";
 import { selectUserProfile } from "../redux/slices/profileSlice";
 import NearbyProperties from "../components/NearbyProperties";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import {
-  faBarsFilter,
-  faSearch,
-  faSliders,
-} from "@fortawesome/pro-solid-svg-icons";
 import { StatusBar } from "expo-status-bar";
 import {
-  faEdit,
-  faMessage,
-  faFingerprint,
-} from "@fortawesome/pro-regular-svg-icons";
+  Search,
+  MessageCircle,
+  Fingerprint,
+} from "lucide-react-native";
 import { useGetUnreadSummaryQuery } from "../redux/api/chatApiSlice";
 import { useSignalR } from "../contexts/SignalRContext";
 import { useFocusEffect } from "@react-navigation/native";
@@ -303,7 +297,7 @@ const HomeScreen = ({ navigation }) => {
                 }}
                 className="border border-gray-100 border-[1px] rounded-full"
               >
-                <FontAwesomeIcon icon={faSearch} size={20} color="#000" />
+                <Search size={20} color="#000" />
                 <TextInput
                   className="flex-1 placeholder:text-gray-500 py-4 text-normal"
                   style={{
@@ -343,7 +337,7 @@ const HomeScreen = ({ navigation }) => {
             className="p-3 rounded-full bg-white"
             onPress={handleMessagesPress}
           >
-            <FontAwesomeIcon icon={faMessage} size={20} color="#111827" />
+            <MessageCircle size={20} color="#111827" />
 
             {/* Kırmızı Yuvarlak Badge */}
             {totalUnreadCount > 0 && (

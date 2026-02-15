@@ -13,13 +13,7 @@ import {
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import {
-    faChevronDown,
-    faCheck,
-    faSearch,
-    faTimes,
-} from "@fortawesome/pro-solid-svg-icons";
+import { ChevronDown, Check, Search, X } from "lucide-react-native";
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -294,7 +288,7 @@ const FilterDropdown = ({
                             )} */}
                         </View>
                         {isSelected && (
-                            <FontAwesomeIcon icon={faCheck} size={16} color="#2563EB" />
+                            <Check size={16} color="#2563EB" />
                         )}
                     </TouchableOpacity>
                 );
@@ -324,7 +318,7 @@ const FilterDropdown = ({
                         {optionLabel}
                     </Text>
                     {isSelected && (
-                        <FontAwesomeIcon icon={faCheck} size={16} color="#16a34a" />
+                        <Check size={16} color="#16a34a" />
                     )}
                 </TouchableOpacity>
             );
@@ -358,8 +352,7 @@ const FilterDropdown = ({
                 >
                     {displayValue()}
                 </Text>
-                <FontAwesomeIcon
-                    icon={faChevronDown}
+                <ChevronDown
                     size={16}
                     color={disabled ? "#D1D5DB" : "#374151"}
                 />
@@ -406,8 +399,7 @@ const FilterDropdown = ({
                             {searchable && (
                                 <View className="px-4 py-3 bg-white border-b border-gray-100">
                                     <View className="flex-row items-center border bg-white border-gray-900 rounded-xl px-4 py-2">
-                                        <FontAwesomeIcon
-                                            icon={faSearch}
+                                        <Search
                                             size={16}
                                             color="#111827"
                                         />
@@ -426,8 +418,7 @@ const FilterDropdown = ({
                                                 onPress={() => handleSearch('')}
                                                 className="p-1"
                                             >
-                                                <FontAwesomeIcon
-                                                    icon={faTimes}
+                                                <X
                                                     size={14}
                                                     color="#6B7280"
                                                 />

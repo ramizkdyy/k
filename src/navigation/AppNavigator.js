@@ -53,43 +53,23 @@ import FavoritePropertiesScreen from "../screens/FavoritePropertiesScreen";
 import FavoriteProfilesScreen from "../screens/FavoriteProfilesScreen";
 // Import icons
 import { BlurView } from "expo-blur";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-// Solid icons (for selected state)
 import {
-  faHouseBlank as faHouseSolid,
-  faBuilding as faBuildingSolid,
-  faEnvelope as faEnvelopeSolid,
-  faUser as faUserSolid,
-  faSearch as faSearchSolid,
-  faCameraRetro as faFingerprintSolid,
-  faBars,
-  faMapMarkerAlt,
-  faGavel,
-  faBell,
-  faComments,
-  faCog,
-  faQuestionCircle,
-  faSignOutAlt,
-  faChevronLeft,
-  faMagnifyingGlass as faMagnifyingGlassSolid,
-} from "@fortawesome/pro-solid-svg-icons";
-// Regular icons (for unselected state)
-import {
-  faHouseBlank as faHouseRegular,
-  faBuilding as faBuildingRegular,
-  faEnvelope as faEnvelopeRegular,
-  faUser as faUserRegular,
-  faSearch as faSearchRegular,
-  faMapMarkerAlt as faMapMarkerAltRegular,
-  faGavel as faGavelRegular,
-  faBell as faBellRegular,
-  faComments as faCommentsRegular,
-  faCog as faCogRegular,
-  faQuestionCircle as faQuestionCircleRegular,
-  faMagnifyingGlass as faMagnifyingGlassLight,
-  faSignOutAlt as faSignOutAltRegular,
-  faCameraRetro as faFingerprintRegular,
-} from "@fortawesome/pro-regular-svg-icons";
+  Home,
+  Building2,
+  Mail,
+  User,
+  Search,
+  Fingerprint,
+  Menu,
+  MapPin,
+  Gavel,
+  Bell,
+  MessageCircle,
+  Settings,
+  HelpCircle,
+  LogOut,
+  ChevronLeft
+} from "lucide-react-native";
 
 import {
   View,
@@ -157,7 +137,7 @@ const CustomDrawerContent = (props) => {
           onPress={() => props.navigation.navigate("MainTabs")}
           labelStyle={{ color: "white", fontSize: 16 }}
           icon={({ focused, size }) => (
-            <FontAwesomeIcon icon={faHouseRegular} size={20} color="white" />
+            <Home size={20} color="white" />
           )}
         />
 
@@ -170,7 +150,7 @@ const CustomDrawerContent = (props) => {
           }
           labelStyle={{ color: "white", fontSize: 16 }}
           icon={({ focused, size }) => (
-            <FontAwesomeIcon icon={faUserRegular} size={20} color="white" />
+            <User size={20} color="white" />
           )}
         />
 
@@ -188,8 +168,8 @@ const CustomDrawerContent = (props) => {
               /* Navigate to legal support page */
             }}
             labelStyle={{ color: "white", fontSize: 16 }}
-            icon={({ focused, size }) => (
-              <FontAwesomeIcon icon={faGavelRegular} size={20} color="white" />
+            icon={({ focused, size}) => (
+              <Gavel size={20} color="white" />
             )}
           />
 
@@ -200,7 +180,7 @@ const CustomDrawerContent = (props) => {
             }}
             labelStyle={{ color: "white", fontSize: 16 }}
             icon={({ focused, size }) => (
-              <FontAwesomeIcon icon={faBellRegular} size={20} color="white" />
+              <Bell size={20} color="white" />
             )}
           />
 
@@ -211,8 +191,7 @@ const CustomDrawerContent = (props) => {
             }}
             labelStyle={{ color: "white", fontSize: 16 }}
             icon={({ focused, size }) => (
-              <FontAwesomeIcon
-                icon={faCommentsRegular}
+              <MessageCircle
                 size={20}
                 color="white"
               />
@@ -235,7 +214,7 @@ const CustomDrawerContent = (props) => {
             }}
             labelStyle={{ color: "white", fontSize: 16 }}
             icon={({ focused, size }) => (
-              <FontAwesomeIcon icon={faCogRegular} size={20} color="white" />
+              <Settings size={20} color="white" />
             )}
           />
 
@@ -246,8 +225,7 @@ const CustomDrawerContent = (props) => {
             }}
             labelStyle={{ color: "white", fontSize: 16 }}
             icon={({ focused, size }) => (
-              <FontAwesomeIcon
-                icon={faQuestionCircleRegular}
+              <HelpCircle
                 size={20}
                 color="white"
               />
@@ -259,8 +237,7 @@ const CustomDrawerContent = (props) => {
             onPress={handleLogout}
             labelStyle={{ color: "white", fontSize: 16 }}
             icon={({ focused, size }) => (
-              <FontAwesomeIcon
-                icon={faSignOutAltRegular}
+              <LogOut
                 size={20}
                 color="white"
               />
@@ -439,10 +416,10 @@ const LandlordTabNavigator = () => {
           title: "Ana Sayfa",
           tabBarLabel: "",
           tabBarIcon: ({ focused }) => (
-            <FontAwesomeIcon
-              icon={focused ? faHouseSolid : faHouseRegular}
+            <Home
               size={24}
               color={focused ? "#000" : "#999999"}
+              fill={focused ? "#000" : "none"}
             />
           ),
         }}
@@ -454,10 +431,10 @@ const LandlordTabNavigator = () => {
           tabBarLabel: "",
           headerShown: false,
           tabBarIcon: ({ focused }) => (
-            <FontAwesomeIcon
-              icon={focused ? faFingerprintSolid : faFingerprintRegular}
+            <Fingerprint
               size={22}
               color={focused ? "#000" : "#999999"}
+              fill={focused ? "#000" : "none"}
             />
           ),
         }}
@@ -471,10 +448,10 @@ const LandlordTabNavigator = () => {
           title: "Mülklerim",
           tabBarLabel: "",
           tabBarIcon: ({ focused }) => (
-            <FontAwesomeIcon
-              icon={focused ? faMagnifyingGlassSolid : faMagnifyingGlassLight}
+            <Search
               size={24}
               color={focused ? "#000" : "#999999"}
+              fill={focused ? "#000" : "none"}
             />
           ),
         }}
@@ -488,10 +465,10 @@ const LandlordTabNavigator = () => {
           title: "Teklifler",
           tabBarLabel: "",
           tabBarIcon: ({ focused }) => (
-            <FontAwesomeIcon
-              icon={focused ? faEnvelopeSolid : faEnvelopeRegular}
+            <Mail
               size={24}
               color={focused ? "#000" : "#999999"}
+              fill={focused ? "#000" : "none"}
             />
           ),
         }}
@@ -631,10 +608,10 @@ const TenantTabNavigator = () => {
           title: "Ana Sayfa",
           tabBarLabel: "",
           tabBarIcon: ({ focused }) => (
-            <FontAwesomeIcon
-              icon={focused ? faHouseSolid : faHouseRegular}
+            <Home
               size={24}
               color={focused ? "#000" : "#999999"} // Sabit renk
+              fill={focused ? "#000" : "none"}
             />
           ),
         }}
@@ -646,10 +623,10 @@ const TenantTabNavigator = () => {
           tabBarLabel: "",
           headerShown: false,
           tabBarIcon: ({ focused }) => (
-            <FontAwesomeIcon
-              icon={focused ? faFingerprintSolid : faFingerprintRegular}
+            <Fingerprint
               size={22}
               color={focused ? "#000" : "#999999"} // Sabit renk
+              fill={focused ? "#000" : "none"}
             />
           ),
         }}
@@ -663,10 +640,10 @@ const TenantTabNavigator = () => {
           title: "İlanlar",
           tabBarLabel: "",
           tabBarIcon: ({ focused }) => (
-            <FontAwesomeIcon
-              icon={focused ? faSearchSolid : faSearchRegular}
+            <Search
               size={24}
               color={focused ? "#000" : "#999999"} // Sabit renk
+              fill={focused ? "#000" : "none"}
             />
           ),
         }}
@@ -680,10 +657,10 @@ const TenantTabNavigator = () => {
           title: "Tekliflerim",
           tabBarLabel: "",
           tabBarIcon: ({ focused }) => (
-            <FontAwesomeIcon
-              icon={focused ? faEnvelopeSolid : faEnvelopeRegular}
+            <Mail
               size={24}
               color={focused ? "#000" : "#999999"} // Sabit renk
+              fill={focused ? "#000" : "none"}
             />
           ),
         }}
@@ -717,10 +694,10 @@ const TenantTabNavigator = () => {
               </View>
             ) : (
               <View>
-                <FontAwesomeIcon
-                  icon={focused ? faUserSolid : faUserRegular}
+                <User
                   size={24}
                   color={focused ? "#000" : "#999999"} // Sabit renk
+                  fill={focused ? "#000" : "none"}
                 />
               </View>
             );
