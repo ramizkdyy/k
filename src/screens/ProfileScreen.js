@@ -301,11 +301,7 @@ const ProfileScreen = ({ navigation }) => {
                   Ayarlar
                 </Text>
               </View>
-              <ChevronRight
-                icon={faChevronRight}
-                size={15}
-                color="#cfcfcf"
-              />
+              <ChevronRight size={15} color="#cfcfcf" />
             </TouchableOpacity>
 
             {/* Profile Edit Button - Always visible */}
@@ -322,11 +318,7 @@ const ProfileScreen = ({ navigation }) => {
                   Profili Düzenle
                 </Text>
               </View>
-              <ChevronRight
-                icon={faChevronRight}
-                size={15}
-                color="#cfcfcf"
-              />
+              <ChevronRight size={15} color="#cfcfcf" />
             </TouchableOpacity>
 
             {/* Expectation Profile Button - Always visible with conditional warning */}
@@ -361,11 +353,7 @@ const ProfileScreen = ({ navigation }) => {
                 {!isExpectationCompleted && (
                   <View className="bg-red-500 w-3 h-3 rounded-full mr-2"></View>
                 )}
-                <ChevronRight
-                  icon={faChevronRight}
-                  size={15}
-                  color="#cfcfcf"
-                />
+                <ChevronRight size={15} color="#cfcfcf" />
               </View>
             </TouchableOpacity>
           </View>
@@ -396,7 +384,6 @@ const ProfileScreen = ({ navigation }) => {
                 </Text>
               </View>
               {/* <ChevronRight
-                icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"
               /> */}
@@ -420,7 +407,6 @@ const ProfileScreen = ({ navigation }) => {
                 </Text>
               </View>
               {/* <ChevronRight
-                icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"
               /> */}
@@ -443,8 +429,7 @@ const ProfileScreen = ({ navigation }) => {
                   </Text>
                 </View>
                 <ChevronRight
-                  icon={faChevronRight}
-                  size={15}
+                    size={15}
                   color="#cfcfcf"
                 />
               </TouchableOpacity>
@@ -467,8 +452,7 @@ const ProfileScreen = ({ navigation }) => {
                   </Text>
                 </View>
                 <ChevronRight
-                  icon={faChevronRight}
-                  size={15}
+                    size={15}
                   color="#cfcfcf"
                 />
               </TouchableOpacity>
@@ -499,8 +483,7 @@ const ProfileScreen = ({ navigation }) => {
                   </View>
                 </View>
                 <ChevronRight
-                  icon={faChevronRight}
-                  size={15}
+                    size={15}
                   color="#cfcfcf"
                 />
               </TouchableOpacity>
@@ -525,7 +508,6 @@ const ProfileScreen = ({ navigation }) => {
                 </View>
               </View>
               <ChevronRight
-                icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"
               />
@@ -547,11 +529,7 @@ const ProfileScreen = ({ navigation }) => {
               }}
             >
               <View className="flex-row items-center gap-4">
-                <ChevronRight
-                  icon={faQuestionCircle}
-                  size={25}
-                  color="black"
-                />
+                <HelpCircle size={25} color="black" />
                 <Text
                   style={{ fontSize: 16 }}
                   className="text-gray-900 font-medium"
@@ -560,7 +538,6 @@ const ProfileScreen = ({ navigation }) => {
                 </Text>
               </View>
               <ChevronRight
-                icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"
               />
@@ -580,7 +557,6 @@ const ProfileScreen = ({ navigation }) => {
                 </Text>
               </View>
               {/* <ChevronRight
-                icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"
               /> */}
