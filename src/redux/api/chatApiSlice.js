@@ -9,10 +9,6 @@ export const chatApiSlice = createApi({
     baseUrl: CHAT_BASE_URL,
     prepareHeaders: (headers, { getState }) => {
       const token = getState().auth.token;
-      console.log(
-        "CHAT BEARER TOKEN:",
-        token ? `${token.substring(0, 20)}...` : "❌ NO TOKEN"
-      );
 
       if (token) {
         headers.set("authorization", `Bearer ${token}`);
@@ -438,7 +434,7 @@ export const chatApiSlice = createApi({
       providesTags: ["UnreadCount"],
       keepUnusedDataFor: 30,
       transformResponse: (response) => {
-        console.log("🔍 Unread Summary Response:", response);
+        
 
         // Backend format: { totalUnreadMessages: number, totalUnreadChats: number, unreadChats: [] }
         if (response && typeof response === "object") {
@@ -906,13 +902,13 @@ export const chatApiHelpers = {
 
   // ✅ Partner listesini manuel güncelle
   updatePartnersList: (dispatch) => {
-    console.log("🔄 Invalidating partners list cache");
+    
     dispatch(chatApiSlice.util.invalidateTags(["ChatPartner"]));
   },
 
   // ✅ Unread count'u manuel güncelle
   updateUnreadCount: (dispatch) => {
-    console.log("🔄 Invalidating unread count cache");
+    
     dispatch(chatApiSlice.util.invalidateTags(["UnreadCount"]));
   },
 

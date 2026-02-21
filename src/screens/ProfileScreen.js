@@ -174,10 +174,6 @@ const ProfileScreen = ({ navigation }) => {
     );
   }
 
-  console.log("CurrentUser:", currentUser);
-  console.log("userProfile:", userProfile);
-  console.log("isExpectationCompleted:", isExpectationCompleted);
-
   return (
     <SafeAreaView className="flex-1 bg-white">
       {/* Animated Header */}
@@ -302,7 +298,7 @@ const ProfileScreen = ({ navigation }) => {
                 </Text>
               </View>
               <ChevronRight
-                icon={faChevronRight}
+
                 size={15}
                 color="#cfcfcf"
               />
@@ -323,7 +319,7 @@ const ProfileScreen = ({ navigation }) => {
                 </Text>
               </View>
               <ChevronRight
-                icon={faChevronRight}
+
                 size={15}
                 color="#cfcfcf"
               />
@@ -362,7 +358,7 @@ const ProfileScreen = ({ navigation }) => {
                   <View className="bg-red-500 w-3 h-3 rounded-full mr-2"></View>
                 )}
                 <ChevronRight
-                  icon={faChevronRight}
+  
                   size={15}
                   color="#cfcfcf"
                 />
@@ -396,7 +392,7 @@ const ProfileScreen = ({ navigation }) => {
                 </Text>
               </View>
               {/* <ChevronRight
-                icon={faChevronRight}
+
                 size={15}
                 color="#cfcfcf"
               /> */}
@@ -420,7 +416,7 @@ const ProfileScreen = ({ navigation }) => {
                 </Text>
               </View>
               {/* <ChevronRight
-                icon={faChevronRight}
+
                 size={15}
                 color="#cfcfcf"
               /> */}
@@ -443,7 +439,7 @@ const ProfileScreen = ({ navigation }) => {
                   </Text>
                 </View>
                 <ChevronRight
-                  icon={faChevronRight}
+  
                   size={15}
                   color="#cfcfcf"
                 />
@@ -467,7 +463,7 @@ const ProfileScreen = ({ navigation }) => {
                   </Text>
                 </View>
                 <ChevronRight
-                  icon={faChevronRight}
+  
                   size={15}
                   color="#cfcfcf"
                 />
@@ -499,7 +495,7 @@ const ProfileScreen = ({ navigation }) => {
                   </View>
                 </View>
                 <ChevronRight
-                  icon={faChevronRight}
+  
                   size={15}
                   color="#cfcfcf"
                 />
@@ -525,7 +521,7 @@ const ProfileScreen = ({ navigation }) => {
                 </View>
               </View>
               <ChevronRight
-                icon={faChevronRight}
+
                 size={15}
                 color="#cfcfcf"
               />
@@ -547,8 +543,7 @@ const ProfileScreen = ({ navigation }) => {
               }}
             >
               <View className="flex-row items-center gap-4">
-                <ChevronRight
-                  icon={faQuestionCircle}
+                <HelpCircle
                   size={25}
                   color="black"
                 />
@@ -560,7 +555,7 @@ const ProfileScreen = ({ navigation }) => {
                 </Text>
               </View>
               <ChevronRight
-                icon={faChevronRight}
+
                 size={15}
                 color="#cfcfcf"
               />
@@ -580,7 +575,7 @@ const ProfileScreen = ({ navigation }) => {
                 </Text>
               </View>
               {/* <ChevronRight
-                icon={faChevronRight}
+
                 size={15}
                 color="#cfcfcf"
               /> */}

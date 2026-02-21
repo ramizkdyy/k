@@ -756,14 +756,14 @@ const OffersScreen = () => {
                     position: "absolute",
                     top: "50%",
                     left: "50%",
-                    transform: [{ translateX: -100 }, { translateY: -50 }],
+                    transform: [{ translateX: -100 }, { translateY: item.status === 1 ? -70 : -50 }],
                     borderRadius: 16,
-                    overflow: "hidden",
+                    overflow: "visible",
                     zIndex: 2,
-                    width: 200, // yazı uzunluğuna göre ayarlanabilir
-                    height: 100, // padding yerine sabit yükseklik daha iyi kontrol sağlar
+                    width: 200,
                     alignItems: "center",
                     justifyContent: "center",
+                    paddingVertical: 10,
                   }}
                 >
                   <Text

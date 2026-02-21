@@ -1,29 +1,18 @@
 // src/modals/PropertiesFilterModal.js
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
     View,
     Text,
     TouchableOpacity,
     TextInput,
-    ScrollView,
     StyleSheet,
     Switch,
-    StatusBar,
-    Dimensions,
     Alert,
-    Modal,
-    TouchableWithoutFeedback,
-    KeyboardAvoidingView,
-    Platform,
-    Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector, useDispatch } from 'react-redux';
 import {
-    X,
-    ChevronDown,
-    ChevronLeft,
     Home,
     User,
     Coins,
@@ -31,18 +20,12 @@ import {
     Filter,
     MapPin
 } from "lucide-react-native";
-import ReAnimated, {
-    useSharedValue,
-    useAnimatedStyle,
-    withSpring,
-    withTiming,
-    runOnJS,
-} from 'react-native-reanimated';
 import {
-    Gesture,
-    GestureDetector,
-    GestureHandlerRootView,
-} from 'react-native-gesture-handler';
+    BottomSheetModal,
+    BottomSheetScrollView,
+    BottomSheetBackdrop,
+    BottomSheetTextInput,
+} from '@gorhom/bottom-sheet';
 import {
     getCities,
     getDistrictsAndNeighbourhoodsByCityCode,
@@ -58,8 +41,6 @@ import {
 import { useSearchPostsMutation } from '../redux/api/searchApiSlice';
 import { selectUserRole } from '../redux/slices/authSlice';
 import FilterDropdown from '../modals/FilterDropdown';
-
-const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Filter options (same as original)
 const roomTypeOptions = [
@@ -194,27 +175,16 @@ const PropertiesFilterModal = ({
     const insets = useSafeAreaInsets();
     const dispatch = useDispatch();
 
+    // Bottom Sheet Ref
+    const bottomSheetModalRef = useRef(null);
+
+    // Snap points - %65 ve %90 ekran
+    const snapPoints = useMemo(() => ["65%", "90%"], []);
+
     // Redux state
     const searchFilters = useSelector(selectSearchFilters);
     const userRole = useSelector(selectUserRole);
     const [searchPosts, { isLoading: isSearching }] = useSearchPostsMutation();
-
-    // Modal boyutları
-    const BUTTON_HEIGHT = 80; // Approximate button area height
-    const SNAP_POINTS = {
-        MEDIUM: SCREEN_HEIGHT * 0.35,  // %65 ekran (orta boyut)
-        LARGE: SCREEN_HEIGHT * 0.1,   // %90 ekran (büyük boyut)
-        CLOSED: SCREEN_HEIGHT
-    };
-
-    // Animated values
-    const translateY = useSharedValue(SCREEN_HEIGHT);
-    const backdropOpacity = useSharedValue(0);
-    const keyboardHeight = useSharedValue(0);
-    const buttonsTranslateY = useSharedValue(SCREEN_HEIGHT); // Buttons için ayrı animasyon
-
-    // State
-    const [currentSnapPoint, setCurrentSnapPoint] = useState(SNAP_POINTS.MEDIUM);
 
     // Location states - Turkey neighbourhoods
     const [allCities, setAllCities] = useState([]);
@@ -274,45 +244,6 @@ const PropertiesFilterModal = ({
         statuses: searchFilters.statuses || [],
     });
 
-    // Keyboard listeners - CommentsBottomSheet'teki gibi
-    useEffect(() => {
-        const showListener = Keyboard.addListener(
-            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-            (e) => {
-                keyboardHeight.value = withSpring(e.endCoordinates.height, {
-                    damping: 80,
-                    stiffness: 300,
-                });
-
-                // Buttons animasyonu - keyboard açılınca yukarı çık
-                buttonsTranslateY.value = withSpring(-e.endCoordinates.height, {
-                    damping: 80,
-                    stiffness: 300,
-                });
-            }
-        );
-
-        const hideListener = Keyboard.addListener(
-            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-            () => {
-                keyboardHeight.value = withSpring(0, {
-                    damping: 80,
-                    stiffness: 300,
-                });
-
-                buttonsTranslateY.value = withSpring(0, {
-                    damping: 80,
-                    stiffness: 300,
-                });
-            }
-        );
-
-        return () => {
-            showListener?.remove();
-            hideListener?.remove();
-        };
-    }, []);
-
     // Load cities on mount
     useEffect(() => {
         try {
@@ -355,180 +286,40 @@ const PropertiesFilterModal = ({
         }
     }, [filters.il, filters.ilce, cityCodeMap]);
 
-    // snapTo fonksiyonu - buttonsTranslateY animasyonu eklendi
-    const snapTo = useCallback((position) => {
-        console.log(`Modal snap to position: ${position}`);
-
-        if (position === SNAP_POINTS.CLOSED) {
-            // Modal kapanış animasyonu
-            translateY.value = withSpring(SCREEN_HEIGHT, {
-                damping: 80,
-                stiffness: 400,
-            });
-
-            // ✅ Buttons da aynı anda aşağı insin
-            buttonsTranslateY.value = withSpring(SCREEN_HEIGHT, {
-                damping: 80,
-                stiffness: 400,
-            });
-
-            backdropOpacity.value = withTiming(0, { duration: 300 });
-
-            // Animasyon bittikten sonra modal'ı kapat
-            setTimeout(() => onClose(), 300);
-            return;
-        }
-
-        // CurrentSnapPoint'i güncelle
-        setCurrentSnapPoint(position);
-
-        // Modal animasyonu
-        translateY.value = withSpring(position, {
-            damping: 80,
-            stiffness: 400,
-        });
-
-        // Backdrop opacity'i ayarla
-        const newOpacity = position === SNAP_POINTS.LARGE ? 0.7 : 0.5;
-        backdropOpacity.value = withTiming(newOpacity, { duration: 200 });
-
-        console.log(`Modal snap completed to: ${position === SNAP_POINTS.MEDIUM ? 'MEDIUM' : 'LARGE'}`);
-    }, [onClose]);
-
-    // Pan gesture - ExploreDetailModal'daki aynı mantık
-    const panGesture = Gesture.Pan()
-        .onUpdate((event) => {
-            const newY = currentSnapPoint + event.translationY;
-
-            if (event.translationY > 0) {
-                // AŞAĞI hareket - Modal kapanma/küçülme yönü
-                translateY.value = Math.min(newY, SCREEN_HEIGHT);
-                const progress = event.translationY / 200;
-                backdropOpacity.value = Math.max(0, 0.5 - progress * 0.5);
-            } else if (event.translationY < 0) {
-                // YUKARI hareket - Modal büyüme yönü
-                translateY.value = Math.max(newY, SNAP_POINTS.LARGE);
-                const progress = Math.abs(event.translationY) / 200;
-                backdropOpacity.value = Math.min(0.7, 0.5 + progress * 0.2);
-            }
-        })
-        .onEnd((event) => {
-            const velocity = event.velocityY;
-            const translation = event.translationY;
-
-            console.log(`Gesture ended - Translation: ${translation}, Velocity: ${velocity}, Current: ${currentSnapPoint === SNAP_POINTS.MEDIUM ? 'MEDIUM' : 'LARGE'}`);
-
-            // ÇOK HIZLI AŞAĞI HAREKET - Sadece MEDIUM modaldan direkt kapatmaya izin ver
-            if (velocity > 1000 && currentSnapPoint === SNAP_POINTS.MEDIUM) {
-                console.log('Modal kapatılıyor - çok hızlı aşağı hareket (sadece MEDIUM\'dan)');
-                runOnJS(snapTo)(SNAP_POINTS.CLOSED);
-                return;
-            }
-
-            // BÜYÜK MODAL'dan (LARGE) hareket
-            if (currentSnapPoint === SNAP_POINTS.LARGE) {
-                if (translation > 30 || velocity > 300) {
-                    console.log('Büyük modaldan orta modala geçiliyor');
-                    runOnJS(snapTo)(SNAP_POINTS.MEDIUM);
-                } else {
-                    console.log('Büyük modal konumunda kalıyor');
-                    runOnJS(snapTo)(SNAP_POINTS.LARGE);
-                }
-            }
-            // ORTA MODAL'dan (MEDIUM) hareket
-            else if (currentSnapPoint === SNAP_POINTS.MEDIUM) {
-                // Yukarı hareket - büyük modala geç
-                if (translation < -80 || velocity < -600) {
-                    console.log('Orta modaldan büyük modala geçiliyor');
-                    runOnJS(snapTo)(SNAP_POINTS.LARGE);
-                }
-                // Aşağı hareket - kapat
-                else if (translation > 120 || velocity > 800) {
-                    console.log('Modal kapatılıyor - orta modaldan yeterli aşağı hareket');
-                    runOnJS(snapTo)(SNAP_POINTS.CLOSED);
-                }
-                // Küçük hareket - aynı yerde kal
-                else {
-                    console.log('Orta modal konumunda kalıyor');
-                    runOnJS(snapTo)(SNAP_POINTS.MEDIUM);
-                }
-            }
-            // Fallback
-            else {
-                console.log('Fallback - mevcut konuma dönülüyor');
-                runOnJS(snapTo)(currentSnapPoint);
-            }
-        })
-        .shouldCancelWhenOutside(false)
-        .onTouchesDown((event) => {
-            const { y } = event.changedTouches[0];
-
-            // Button alanının yaklaşık pozisyonu (en alt 100px)
-            const buttonAreaY = SCREEN_HEIGHT - 120;
-
-            // Eğer touch button alanındaysa gesture'ı iptal et
-            if (y > buttonAreaY) {
-                console.log('🚫 Touch button alanında, gesture iptal ediliyor');
-                return false; // Gesture'ı iptal et
-            }
-
-            return true; // Normal gesture davranışı
-        });
-
-    // Modal açılış/kapanış
+    // Present/dismiss based on visible prop
     useEffect(() => {
         if (visible) {
-            translateY.value = withSpring(SNAP_POINTS.MEDIUM, {
-                damping: 80,
-                stiffness: 400,
-            });
-
-            // Buttons animasyonu - modaldan biraz sonra
-            buttonsTranslateY.value = withSpring(0, {
-                damping: 80,
-                stiffness: 400,
-            });
-
-            backdropOpacity.value = withTiming(0.5, { duration: 300 });
-            setCurrentSnapPoint(SNAP_POINTS.MEDIUM);
-        } else if (visible === false && translateY.value !== SCREEN_HEIGHT) {
-            translateY.value = withSpring(SCREEN_HEIGHT, {
-                damping: 80,
-                stiffness: 400,
-            });
-            buttonsTranslateY.value = withSpring(SCREEN_HEIGHT, {
-                damping: 80,
-                stiffness: 400,
-            });
-            backdropOpacity.value = withTiming(0, { duration: 250 });
+            bottomSheetModalRef.current?.present();
+        } else {
+            bottomSheetModalRef.current?.dismiss();
         }
     }, [visible]);
 
+    // Bottom Sheet dismiss handler
+    const handleSheetChanges = useCallback((index) => {
+        if (index === -1) {
+            onClose();
+        }
+    }, [onClose]);
+
+    // Backdrop component
+    const renderBackdrop = useCallback(
+        (props) => (
+            <BottomSheetBackdrop
+                {...props}
+                disappearsOnIndex={-1}
+                appearsOnIndex={0}
+                opacity={0.5}
+                pressBehavior="close"
+            />
+        ),
+        []
+    );
+
     // Close handler
     const handleClose = () => {
-        snapTo(SNAP_POINTS.CLOSED);
+        bottomSheetModalRef.current?.dismiss();
     };
-
-    // Backdrop press handler
-    const handleBackdropPress = () => {
-        snapTo(SNAP_POINTS.CLOSED);
-    };
-
-    // Animated styles
-    const backdropStyle = useAnimatedStyle(() => ({
-        opacity: backdropOpacity.value,
-    }));
-
-    const modalStyle = useAnimatedStyle(() => ({
-        transform: [{ translateY: translateY.value - keyboardHeight.value }],
-    }));
-
-    // Buttons için ayrı animated style
-    const buttonsStyle = useAnimatedStyle(() => ({
-        transform: [{
-            translateY: buttonsTranslateY.value
-        }],
-    }));
 
     // Filter update function
     const updateFilter = (key, value) => {
@@ -592,8 +383,8 @@ const PropertiesFilterModal = ({
             const searchPayload = {
                 // Konum - küçük harfle başlamalı
                 il: filters.il || null,
-                ilceler: ilceArray.length > 0 ? ilceArray : null,  // ⚠️ ilce -> ilceler
-                mahalleler: mahalleArray.length > 0 ? mahalleArray : null,  // ⚠️ mahalle -> mahalleler
+                ilceler: ilceArray.length > 0 ? ilceArray : null,
+                mahalleler: mahalleArray.length > 0 ? mahalleArray : null,
                 latitude: null,
                 longitude: null,
                 maxDistance: null,
@@ -685,13 +476,12 @@ const PropertiesFilterModal = ({
 
             console.log('Gönderilen payload:', JSON.stringify(cleanedPayload, null, 2));
 
-            // API çağrısı yap - searchApiSlice'dan import edilmeli
+            // API çağrısı yap
             const result = await searchPosts(cleanedPayload).unwrap();
 
             console.log('API yanıtı:', result);
 
             if (onApply) {
-                // API response'unu da parent component'e gönder
                 onApply(cleanedPayload, result);
             }
 
@@ -699,7 +489,6 @@ const PropertiesFilterModal = ({
         } catch (error) {
             console.error('Filtre uygulama hatası:', error);
 
-            // Daha detaylı hata mesajı
             let errorMessage = 'Filtreler uygulanırken bir hata oluştu.';
 
             if (error?.data) {
@@ -793,537 +582,433 @@ const PropertiesFilterModal = ({
         dispatch(clearSearchFilters());
     };
 
-    if (!visible) return null;
-
     return (
-        <Modal
-            visible={visible}
-            transparent
-            animationType="none"
-            statusBarTranslucent
-            onRequestClose={handleClose}
+        <BottomSheetModal
+            ref={bottomSheetModalRef}
+            index={0}
+            snapPoints={snapPoints}
+            onChange={handleSheetChanges}
+            backdropComponent={renderBackdrop}
+            enablePanDownToClose={true}
+            enableDismissOnClose={true}
+            enableDynamicSizing={false}
+            enableOverDrag={false}
+            android_keyboardInputMode="adjustResize"
+            keyboardBehavior="interactive"
+            keyboardBlurBehavior="restore"
+            backgroundStyle={styles.bottomSheetBackground}
+            handleIndicatorStyle={styles.handleIndicator}
         >
-            <GestureHandlerRootView style={styles.container}>
-                <StatusBar backgroundColor="transparent" barStyle="light-content" translucent />
+            {/* Header */}
+            <View className="px-4 pb-3 border-b border-gray-200 bg-white mt-1">
+                <View className="flex-row justify-between items-center w-full">
+                    <Text className="text-xl font-bold text-gray-900">
+                        Filtreler
+                    </Text>
+                    <View className="flex-row gap-2">
+                        <TouchableOpacity
+                            onPress={handleResetFilters}
+                            className="items-center justify-center"
+                        >
+                            <Text
+                                style={{ fontSize: 13 }}
+                                className="font-medium border px-4 py-2 border-gray-300 text-gray-700 rounded-full"
+                            >
+                                Sıfırla
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={handleApplyFilters}
+                            disabled={isSearching}
+                            className="items-center justify-center bg-gray-900 rounded-full px-4 py-2"
+                        >
+                            <Text
+                                style={{ fontSize: 13 }}
+                                className="font-medium text-white"
+                            >
+                                {isSearching ? '...' : 'Uygula'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </View>
 
-                {/* Backdrop */}
-                <ReAnimated.View style={[styles.backdrop, backdropStyle]}>
-                    <TouchableWithoutFeedback onPress={handleBackdropPress}>
-                        <View style={styles.backdropTouchable} />
-                    </TouchableWithoutFeedback>
-                </ReAnimated.View>
+            {/* Content */}
+            <BottomSheetScrollView
+                contentContainerStyle={{
+                    paddingBottom: 20 + (insets.bottom || 16),
+                }}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Konum Filtresi */}
+                <View className="bg-white mt-4 rounded-xl p-4">
+                    <View className="flex-row items-center mb-4">
+                        <MapPin size={18} color="#374151" />
+                        <Text className="text-lg font-semibold text-gray-900 ml-2">
+                            Konum
+                        </Text>
+                    </View>
 
-                {/* Modal Content */}
-                <ReAnimated.View style={[styles.modal, modalStyle]}>
-                    {/* Header - GESTİKLİ ALAN */}
-                    <GestureDetector gesture={panGesture}>
-                        <View className="items-center py-4 px-2 border-b border-[1px] border-gray-200 bg-white">
-                            <View className="w-10 h-1 bg-gray-300 rounded-sm mb-3" />
-                            <View className="flex-row justify-between items-center w-full">
-                                <View className="flex-row items-center">
-                                    <Text className="text-xl font-bold text-gray-900 px-2">
-                                        Filtreler
-                                    </Text>
-                                </View>
-                                <TouchableOpacity
-                                    onPress={handleResetFilters}
-                                    className="px-1 items-center justify-center"
-                                >
-                                    <Text
-                                        style={{ fontSize: 16 }}
-                                        className="font-normal border px-4 py-2 border-gray-900 text-gray-900 rounded-full"
-                                    >
-                                        Sıfırla
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </GestureDetector>
-
-                    {/* Content - SCROLLABİL ALAN */}
-                    <ScrollView
-                        className="flex-1"
-                        showsVerticalScrollIndicator={false}
-                        bounces={false}
-                        contentContainerStyle={{
-                            paddingBottom: 140 + insets.bottom // Bottom buttons için sabit alan
+                    <FilterDropdown
+                        label="Şehir"
+                        value={filters.il}
+                        setValue={(value) => {
+                            updateFilter('il', value);
+                            updateFilter('ilce', []);
+                            updateFilter('mahalle', []);
                         }}
-                    >
-                        {/* Konum Filtresi */}
-                        <View className="bg-white mt-4 rounded-xl p-4">
-                            <View className="flex-row items-center mb-4">
-                                <MapPin size={18} color="#374151" />
-                                <Text className="text-lg font-semibold text-gray-900 ml-2">
-                                    Konum
-                                </Text>
-                            </View>
+                        options={allCities}
+                        placeholder="Şehir seçiniz"
+                        searchable={true}
+                    />
 
-                            <FilterDropdown
-                                label="Şehir"
-                                value={filters.il}
-                                setValue={(value) => {
-                                    updateFilter('il', value);
-                                    updateFilter('ilce', []);
-                                    updateFilter('mahalle', []);
-                                }}
-                                options={allCities}
-                                placeholder="Şehir seçiniz"
-                                searchable={true}
-                            />
+                    <FilterDropdown
+                        label="İlçe"
+                        value={filters.ilce}
+                        setValue={(value) => {
+                            updateFilter('ilce', value);
+                            updateFilter('mahalle', []);
+                        }}
+                        options={districtOptions}
+                        placeholder="İlçe seçiniz"
+                        disabled={!filters.il || districtOptions.length === 0}
+                        multiSelect={true}
+                        searchable={true}
+                    />
 
-                            <FilterDropdown
-                                label="İlçe"
-                                value={filters.ilce}
-                                setValue={(value) => {
-                                    updateFilter('ilce', value);
-                                    updateFilter('mahalle', []);
-                                }}
-                                options={districtOptions}
-                                placeholder="İlçe seçiniz"
-                                disabled={!filters.il || districtOptions.length === 0}
-                                multiSelect={true}
-                                searchable={true}
-                            />
+                    <FilterDropdown
+                        label="Mahalle"
+                        value={filters.mahalle}
+                        setValue={(value) => updateFilter('mahalle', value)}
+                        options={neighborhoodOptions}
+                        placeholder="Mahalle seçiniz"
+                        disabled={!filters.il || filters.ilce.length === 0 || neighborhoodOptions.length === 0}
+                        multiSelect={true}
+                        searchable={true}
+                    />
+                </View>
 
-                            <FilterDropdown
-                                label="Mahalle"
-                                value={filters.mahalle}
-                                setValue={(value) => updateFilter('mahalle', value)}
-                                options={neighborhoodOptions}
-                                placeholder="Mahalle seçiniz"
-                                disabled={!filters.il || filters.ilce.length === 0 || neighborhoodOptions.length === 0}
-                                multiSelect={true}
-                                searchable={true}
-                            />
-                        </View>
+                {/* Fiyat Filtresi */}
+                <View className="bg-white mt-4 rounded-xl p-4">
+                    <View className="flex-row items-center mb-4">
+                        <Coins size={18} color="#374151" />
+                        <Text className="text-lg font-semibold text-gray-900 ml-2">
+                            Fiyat
+                        </Text>
+                    </View>
 
-                        {/* Fiyat Filtresi */}
-                        <View className="bg-white mt-4 rounded-xl p-4">
-                            <View className="flex-row items-center mb-4">
-                                <Coins size={18} color="#374151" />
-                                <Text className="text-lg font-semibold text-gray-900 ml-2">
-                                    Fiyat
-                                </Text>
-                            </View>
+                    {/* Para Birimi Seçimi */}
+                    <FilterDropdown
+                        label="Para Birimi"
+                        value={filters.paraBirimi}
+                        setValue={(value) => updateFilter('paraBirimi', value)}
+                        options={currencyOptions}
+                        placeholder="Para birimi seçiniz"
+                    />
 
-                            {/* Para Birimi Seçimi */}
-                            <FilterDropdown
-                                label="Para Birimi"
-                                value={filters.paraBirimi}
-                                setValue={(value) => updateFilter('paraBirimi', value)}
-                                options={currencyOptions}
-                                placeholder="Para birimi seçiniz"
-                            />
-
-                            {/* Hızlı Fiyat Seçimi */}
-                            <Text className="text-gray-700 font-medium mb-3">Hızlı Seçim</Text>
-                            {renderOptionButtons(
-                                getQuickPriceOptions(filters.paraBirimi),
-                                filters.quickPrice,
-                                (value) => {
-                                    updateFilter('quickPrice', value);
-                                    if (value) {
-                                        updateFilter('minKiraFiyati', value.min ? String(value.min) : "");
-                                        updateFilter('maxKiraFiyati', value.max ? String(value.max) : "");
-                                    }
-                                }
-                            )}
-
-                            {/* Manuel Fiyat Girişi */}
-                            <View className="flex-row gap-3 mb-4">
-                                <View className="flex-1">
-                                    <Text className="text-gray-700 font-medium mb-2">
-                                        Min. Fiyat ({getCurrencySymbol(filters.paraBirimi)})
-                                    </Text>
-                                    <TextInput
-                                        className="bg-white border border-gray-900 p-4 rounded-xl"
-                                        placeholder="0"
-                                        placeholderTextColor="#808080"
-                                        keyboardType="numeric"
-                                        value={filters.minKiraFiyati}
-                                        onChangeText={(text) => {
-                                            updateFilter('minKiraFiyati', text);
-                                            updateFilter('quickPrice', null);
-                                        }}
-                                        style={{ fontSize: 16 }}
-                                    />
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="text-gray-700 font-medium mb-2">
-                                        Max. Fiyat ({getCurrencySymbol(filters.paraBirimi)})
-                                    </Text>
-                                    <TextInput
-                                        className="bg-white border border-gray-900 p-4 rounded-xl"
-                                        placeholder="∞"
-                                        placeholderTextColor="#808080"
-                                        keyboardType="numeric"
-                                        value={filters.maxKiraFiyati}
-                                        onChangeText={(text) => {
-                                            updateFilter('maxKiraFiyati', text);
-                                            updateFilter('quickPrice', null);
-                                        }}
-                                        style={{ fontSize: 16 }}
-                                    />
-                                </View>
-                            </View>
-                        </View>
-
-                        {/* Ev Özellikleri */}
-                        <View className="bg-white mt-4 rounded-xl p-4">
-                            <View className="flex-row items-center mb-4">
-                                <Home size={18} color="#374151" />
-                                <Text className="text-lg font-semibold text-gray-900 ml-2">
-                                    Ev Özellikleri
-                                </Text>
-                            </View>
-
-                            {/* Oda Türleri */}
-                            <Text className="text-gray-700 font-medium mb-3">Oda Türü</Text>
-                            {renderOptionButtons(
-                                roomTypeOptions,
-                                filters.odaSayilari,
-                                (value) => updateFilter('odaSayilari', value),
-                                true
-                            )}
-
-                            {/* Emlak Türleri */}
-                            <Text className="text-gray-700 font-medium mb-3">Emlak Türü</Text>
-                            {renderOptionButtons(
-                                propertyTypeOptions,
-                                filters.propertyTypes,
-                                (value) => updateFilter('propertyTypes', value),
-                                true
-                            )}
-
-                            {/* Metrekare */}
-                            <View className="flex-row gap-3 mb-4">
-                                <View className="flex-1">
-                                    <Text className="text-gray-700 font-medium mb-2">Min. m²</Text>
-                                    <TextInput
-                                        className="bg-white border border-gray-900 p-4 rounded-xl"
-                                        placeholder="0"
-                                        placeholderTextColor="#9CA3AF"
-                                        keyboardType="numeric"
-                                        value={filters.minBrutMetreKare}
-                                        onChangeText={(text) => updateFilter('minBrutMetreKare', text)}
-                                        style={{ fontSize: 16 }}
-                                    />
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="text-gray-700 font-medium mb-2">Max. m²</Text>
-                                    <TextInput
-                                        className="bg-white border border-gray-900 p-4 rounded-xl"
-                                        placeholder="∞"
-                                        placeholderTextColor="#9CA3AF"
-                                        keyboardType="numeric"
-                                        value={filters.maxBrutMetreKare}
-                                        onChangeText={(text) => updateFilter('maxBrutMetreKare', text)}
-                                        style={{ fontSize: 16 }}
-                                    />
-                                </View>
-                            </View>
-
-                            {/* Bina Yaşı */}
-                            <View className="flex-row gap-3 mb-4">
-                                <View className="flex-1">
-                                    <Text className="text-gray-700 font-medium mb-2">Min. Bina Yaşı</Text>
-                                    <TextInput
-                                        className="bg-white border border-gray-900 p-4 rounded-xl"
-                                        placeholder="0"
-                                        placeholderTextColor="#9CA3AF"
-                                        keyboardType="numeric"
-                                        value={filters.minBinaYasi}
-                                        onChangeText={(text) => updateFilter('minBinaYasi', text)}
-                                        style={{ fontSize: 16 }}
-                                    />
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="text-gray-700 font-medium mb-2">Max. Bina Yaşı</Text>
-                                    <TextInput
-                                        className="bg-white border border-gray-900 p-4 rounded-xl"
-                                        placeholder="∞"
-                                        placeholderTextColor="#9CA3AF"
-                                        keyboardType="numeric"
-                                        value={filters.maxBinaYasi}
-                                        onChangeText={(text) => updateFilter('maxBinaYasi', text)}
-                                        style={{ fontSize: 16 }}
-                                    />
-                                </View>
-                            </View>
-
-                            {/* Kat */}
-                            <View className="flex-row gap-3 mb-4">
-                                <View className="flex-1">
-                                    <Text className="text-gray-700 font-medium mb-2">Min. Kat</Text>
-                                    <TextInput
-                                        className="bg-white border border-gray-900 p-4 rounded-xl"
-                                        placeholder="0"
-                                        placeholderTextColor="#9CA3AF"
-                                        keyboardType="numeric"
-                                        value={filters.minKat}
-                                        onChangeText={(text) => updateFilter('minKat', text)}
-                                        style={{ fontSize: 16 }}
-                                    />
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="text-gray-700 font-medium mb-2">Max. Kat</Text>
-                                    <TextInput
-                                        className="bg-white border border-gray-900 p-4 rounded-xl"
-                                        placeholder="∞"
-                                        placeholderTextColor="#9CA3AF"
-                                        keyboardType="numeric"
-                                        value={filters.maxKat}
-                                        onChangeText={(text) => updateFilter('maxKat', text)}
-                                        style={{ fontSize: 16 }}
-                                    />
-                                </View>
-                            </View>
-
-                            {/* Isıtma Türü */}
-                            <Text className="text-gray-700 font-medium mb-3">Isıtma Türü</Text>
-                            {renderOptionButtons(
-                                heatingTypeOptions,
-                                filters.isitmaTipleri,
-                                (value) => updateFilter('isitmaTipleri', value),
-                                true
-                            )}
-
-                            {/* Boolean Özellikler */}
-                            <Text className="text-gray-700 font-medium mb-3">Özellikler</Text>
-
-                            <View className="space-y-3">
-                                {[
-                                    { key: 'balkon', label: 'Balkon' },
-                                    { key: 'asansor', label: 'Asansör' },
-                                    { key: 'otopark', label: 'Otopark' },
-                                    { key: 'esyali', label: 'Eşyalı' },
-                                    { key: 'siteIcerisinde', label: 'Site İçerisinde' },
-                                ].map(({ key, label }) => (
-                                    <View key={key} className="flex-row justify-between items-center py-2">
-                                        <Text className="text-gray-700 font-medium">{label}</Text>
-                                        <Switch
-                                            value={filters[key] === true}
-                                            onValueChange={(value) => updateFilter(key, value ? true : null)}
-                                            trackColor={{ false: '#d1d5db', true: '#059669' }}
-                                            thumbColor={filters[key] === true ? '#ffffff' : '#ffffff'}
-                                        />
-                                    </View>
-                                ))}
-                            </View>
-                        </View>
-
-                        {/* Politikalar */}
-                        <View className="bg-white mt-4 rounded-xl p-4">
-                            <View className="flex-row items-center mb-4">
-                                <User size={18} color="#374151" />
-                                <Text className="text-lg font-semibold text-gray-900 ml-2">
-                                    Politikalar
-                                </Text>
-                            </View>
-
-                            <FilterDropdown
-                                label="Evcil Hayvan Politikası"
-                                value={filters.petPolicies}
-                                setValue={(value) => updateFilter('petPolicies', value)}
-                                options={petPolicyOptions}
-                                placeholder="Seçiniz"
-                                multiSelect={true}
-                            />
-
-                            <FilterDropdown
-                                label="Öğrenci Politikası"
-                                value={filters.studentPolicies}
-                                setValue={(value) => updateFilter('studentPolicies', value)}
-                                options={studentPolicyOptions}
-                                placeholder="Seçiniz"
-                                multiSelect={true}
-                            />
-
-                            <FilterDropdown
-                                label="Sigara Politikası"
-                                value={filters.smokingPolicies}
-                                setValue={(value) => updateFilter('smokingPolicies', value)}
-                                options={smokingPolicyOptions}
-                                placeholder="Seçiniz"
-                                multiSelect={true}
-                            />
-
-                            <FilterDropdown
-                                label="Aidat Sorumluluğu"
-                                value={filters.maintenanceFeeResponsibilities}
-                                setValue={(value) => updateFilter('maintenanceFeeResponsibilities', value)}
-                                options={maintenanceFeeOptions}
-                                placeholder="Seçiniz"
-                                multiSelect={true}
-                            />
-                        </View>
-
-                        {/* Arama */}
-                        <View className="bg-white mt-4 rounded-xl p-4">
-                            <View className="flex-row items-center mb-4">
-                                <Search size={18} color="#374151" />
-                                <Text className="text-lg font-semibold text-gray-900 ml-2">
-                                    Arama
-                                </Text>
-                            </View>
-
-                            <Text className="text-gray-700 font-medium mb-2">Anahtar Kelime</Text>
-                            <TextInput
-                                className="bg-white border border-gray-900 p-4 rounded-xl mb-4"
-                                placeholder="Ev, daire, villa..."
-                                placeholderTextColor="#9CA3AF"
-                                value={filters.searchKeyword}
-                                onChangeText={(text) => updateFilter('searchKeyword', text)}
-                                style={{ fontSize: 16 }}
-                            />
-
-                            <Text className="text-gray-700 font-medium mb-2">Site Adı</Text>
-                            <TextInput
-                                className="bg-white border border-gray-900 p-4 rounded-xl mb-4"
-                                placeholder="Site adı..."
-                                placeholderTextColor="#9CA3AF"
-                                value={filters.siteAdi}
-                                onChangeText={(text) => updateFilter('siteAdi', text)}
-                                style={{ fontSize: 16 }}
-                            />
-                        </View>
-
-                        {/* Status */}
-                        <View className="bg-white mt-4 rounded-xl p-4">
-                            <View className="flex-row items-center mb-4">
-                                <Filter size={18} color="#374151" />
-                                <Text className="text-lg font-semibold text-gray-900 ml-2">
-                                    İlan Durumu
-                                </Text>
-                            </View>
-
-                            <Text className="text-gray-700 font-medium mb-3">Durum</Text>
-                            {renderOptionButtons(
-                                statusOptions,
-                                filters.statuses,
-                                (value) => updateFilter('statuses', value),
-                                true
-                            )}
-                        </View>
-                    </ScrollView>
-                </ReAnimated.View>
-            </GestureHandlerRootView>
-
-            {/* Bottom Buttons - MODAL DIŞINDA, ABSOLUTE POSİTİON */}
-            {visible && (
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        zIndex: 1000
-                    }}
-                    keyboardVerticalOffset={0}
-                >
-                    <ReAnimated.View
-                        style={[
-                            styles.buttonsContainer,
-                            buttonsStyle,
-                            {
-                                paddingBottom: insets.bottom,
+                    {/* Hızlı Fiyat Seçimi */}
+                    <Text className="text-gray-700 font-medium mb-3">Hızlı Seçim</Text>
+                    {renderOptionButtons(
+                        getQuickPriceOptions(filters.paraBirimi),
+                        filters.quickPrice,
+                        (value) => {
+                            updateFilter('quickPrice', value);
+                            if (value) {
+                                updateFilter('minKiraFiyati', value.min ? String(value.min) : "");
+                                updateFilter('maxKiraFiyati', value.max ? String(value.max) : "");
                             }
-                        ]}
-                    >
-                        <View className="flex-row gap-3">
-                            <TouchableOpacity
-                                className="flex-1 bg-white py-3.5 rounded-full"
-                                onPress={handleResetFilters}
-                                style={{
-                                    shadowColor: "#000",
-                                    shadowOffset: {
-                                        width: 0,
-                                        height: 1,
-                                    },
-                                    shadowOpacity: 0.1,
-                                    shadowRadius: 2,
-                                    elevation: 2,
-                                }}
-                            >
-                                <Text className="text-gray-900 font-bold text-center text-base">
-                                    Sıfırla
-                                </Text>
-                            </TouchableOpacity>
+                        }
+                    )}
 
-                            <TouchableOpacity
-                                className="flex-1 bg-gray-900 py-3.5 rounded-full"
-                                onPress={handleApplyFilters}
-                                disabled={isSearching}
-                                style={{
-                                    shadowColor: "#000",
-                                    shadowOffset: {
-                                        width: 0,
-                                        height: 2,
-                                    },
-                                    shadowOpacity: 0.15,
-                                    shadowRadius: 4,
-                                    elevation: 4,
+                    {/* Manuel Fiyat Girişi */}
+                    <View className="flex-row gap-3 mb-4">
+                        <View className="flex-1">
+                            <Text className="text-gray-700 font-medium mb-2">
+                                Min. Fiyat ({getCurrencySymbol(filters.paraBirimi)})
+                            </Text>
+                            <BottomSheetTextInput
+                                style={styles.textInput}
+                                placeholder="0"
+                                placeholderTextColor="#808080"
+                                keyboardType="numeric"
+                                value={filters.minKiraFiyati}
+                                onChangeText={(text) => {
+                                    updateFilter('minKiraFiyati', text);
+                                    updateFilter('quickPrice', null);
                                 }}
-                            >
-                                <Text className="text-white font-bold text-center text-base">
-                                    {isSearching ? 'Uygulanıyor...' : 'Filtreleri Uygula'}
-                                </Text>
-                            </TouchableOpacity>
+                            />
                         </View>
-                    </ReAnimated.View>
-                </KeyboardAvoidingView>
-            )}
-        </Modal>
+                        <View className="flex-1">
+                            <Text className="text-gray-700 font-medium mb-2">
+                                Max. Fiyat ({getCurrencySymbol(filters.paraBirimi)})
+                            </Text>
+                            <BottomSheetTextInput
+                                style={styles.textInput}
+                                placeholder="∞"
+                                placeholderTextColor="#808080"
+                                keyboardType="numeric"
+                                value={filters.maxKiraFiyati}
+                                onChangeText={(text) => {
+                                    updateFilter('maxKiraFiyati', text);
+                                    updateFilter('quickPrice', null);
+                                }}
+                            />
+                        </View>
+                    </View>
+                </View>
+
+                {/* Ev Özellikleri */}
+                <View className="bg-white mt-4 rounded-xl p-4">
+                    <View className="flex-row items-center mb-4">
+                        <Home size={18} color="#374151" />
+                        <Text className="text-lg font-semibold text-gray-900 ml-2">
+                            Ev Özellikleri
+                        </Text>
+                    </View>
+
+                    {/* Oda Türleri */}
+                    <Text className="text-gray-700 font-medium mb-3">Oda Türü</Text>
+                    {renderOptionButtons(
+                        roomTypeOptions,
+                        filters.odaSayilari,
+                        (value) => updateFilter('odaSayilari', value),
+                        true
+                    )}
+
+                    {/* Emlak Türleri */}
+                    <Text className="text-gray-700 font-medium mb-3">Emlak Türü</Text>
+                    {renderOptionButtons(
+                        propertyTypeOptions,
+                        filters.propertyTypes,
+                        (value) => updateFilter('propertyTypes', value),
+                        true
+                    )}
+
+                    {/* Metrekare */}
+                    <View className="flex-row gap-3 mb-4">
+                        <View className="flex-1">
+                            <Text className="text-gray-700 font-medium mb-2">Min. m²</Text>
+                            <BottomSheetTextInput
+                                style={styles.textInput}
+                                placeholder="0"
+                                placeholderTextColor="#9CA3AF"
+                                keyboardType="numeric"
+                                value={filters.minBrutMetreKare}
+                                onChangeText={(text) => updateFilter('minBrutMetreKare', text)}
+                            />
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-gray-700 font-medium mb-2">Max. m²</Text>
+                            <BottomSheetTextInput
+                                style={styles.textInput}
+                                placeholder="∞"
+                                placeholderTextColor="#9CA3AF"
+                                keyboardType="numeric"
+                                value={filters.maxBrutMetreKare}
+                                onChangeText={(text) => updateFilter('maxBrutMetreKare', text)}
+                            />
+                        </View>
+                    </View>
+
+                    {/* Bina Yaşı */}
+                    <View className="flex-row gap-3 mb-4">
+                        <View className="flex-1">
+                            <Text className="text-gray-700 font-medium mb-2">Min. Bina Yaşı</Text>
+                            <BottomSheetTextInput
+                                style={styles.textInput}
+                                placeholder="0"
+                                placeholderTextColor="#9CA3AF"
+                                keyboardType="numeric"
+                                value={filters.minBinaYasi}
+                                onChangeText={(text) => updateFilter('minBinaYasi', text)}
+                            />
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-gray-700 font-medium mb-2">Max. Bina Yaşı</Text>
+                            <BottomSheetTextInput
+                                style={styles.textInput}
+                                placeholder="∞"
+                                placeholderTextColor="#9CA3AF"
+                                keyboardType="numeric"
+                                value={filters.maxBinaYasi}
+                                onChangeText={(text) => updateFilter('maxBinaYasi', text)}
+                            />
+                        </View>
+                    </View>
+
+                    {/* Kat */}
+                    <View className="flex-row gap-3 mb-4">
+                        <View className="flex-1">
+                            <Text className="text-gray-700 font-medium mb-2">Min. Kat</Text>
+                            <BottomSheetTextInput
+                                style={styles.textInput}
+                                placeholder="0"
+                                placeholderTextColor="#9CA3AF"
+                                keyboardType="numeric"
+                                value={filters.minKat}
+                                onChangeText={(text) => updateFilter('minKat', text)}
+                            />
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-gray-700 font-medium mb-2">Max. Kat</Text>
+                            <BottomSheetTextInput
+                                style={styles.textInput}
+                                placeholder="∞"
+                                placeholderTextColor="#9CA3AF"
+                                keyboardType="numeric"
+                                value={filters.maxKat}
+                                onChangeText={(text) => updateFilter('maxKat', text)}
+                            />
+                        </View>
+                    </View>
+
+                    {/* Isıtma Türü */}
+                    <Text className="text-gray-700 font-medium mb-3">Isıtma Türü</Text>
+                    {renderOptionButtons(
+                        heatingTypeOptions,
+                        filters.isitmaTipleri,
+                        (value) => updateFilter('isitmaTipleri', value),
+                        true
+                    )}
+
+                    {/* Boolean Özellikler */}
+                    <Text className="text-gray-700 font-medium mb-3">Özellikler</Text>
+
+                    <View className="space-y-3">
+                        {[
+                            { key: 'balkon', label: 'Balkon' },
+                            { key: 'asansor', label: 'Asansör' },
+                            { key: 'otopark', label: 'Otopark' },
+                            { key: 'esyali', label: 'Eşyalı' },
+                            { key: 'siteIcerisinde', label: 'Site İçerisinde' },
+                        ].map(({ key, label }) => (
+                            <View key={key} className="flex-row justify-between items-center py-2">
+                                <Text className="text-gray-700 font-medium">{label}</Text>
+                                <Switch
+                                    value={filters[key] === true}
+                                    onValueChange={(value) => updateFilter(key, value ? true : null)}
+                                    trackColor={{ false: '#d1d5db', true: '#059669' }}
+                                    thumbColor={filters[key] === true ? '#ffffff' : '#ffffff'}
+                                />
+                            </View>
+                        ))}
+                    </View>
+                </View>
+
+                {/* Politikalar */}
+                <View className="bg-white mt-4 rounded-xl p-4">
+                    <View className="flex-row items-center mb-4">
+                        <User size={18} color="#374151" />
+                        <Text className="text-lg font-semibold text-gray-900 ml-2">
+                            Politikalar
+                        </Text>
+                    </View>
+
+                    <FilterDropdown
+                        label="Evcil Hayvan Politikası"
+                        value={filters.petPolicies}
+                        setValue={(value) => updateFilter('petPolicies', value)}
+                        options={petPolicyOptions}
+                        placeholder="Seçiniz"
+                        multiSelect={true}
+                    />
+
+                    <FilterDropdown
+                        label="Öğrenci Politikası"
+                        value={filters.studentPolicies}
+                        setValue={(value) => updateFilter('studentPolicies', value)}
+                        options={studentPolicyOptions}
+                        placeholder="Seçiniz"
+                        multiSelect={true}
+                    />
+
+                    <FilterDropdown
+                        label="Sigara Politikası"
+                        value={filters.smokingPolicies}
+                        setValue={(value) => updateFilter('smokingPolicies', value)}
+                        options={smokingPolicyOptions}
+                        placeholder="Seçiniz"
+                        multiSelect={true}
+                    />
+
+                    <FilterDropdown
+                        label="Aidat Sorumluluğu"
+                        value={filters.maintenanceFeeResponsibilities}
+                        setValue={(value) => updateFilter('maintenanceFeeResponsibilities', value)}
+                        options={maintenanceFeeOptions}
+                        placeholder="Seçiniz"
+                        multiSelect={true}
+                    />
+                </View>
+
+                {/* Arama */}
+                <View className="bg-white mt-4 rounded-xl p-4">
+                    <View className="flex-row items-center mb-4">
+                        <Search size={18} color="#374151" />
+                        <Text className="text-lg font-semibold text-gray-900 ml-2">
+                            Arama
+                        </Text>
+                    </View>
+
+                    <Text className="text-gray-700 font-medium mb-2">Anahtar Kelime</Text>
+                    <BottomSheetTextInput
+                        style={[styles.textInput, { marginBottom: 16 }]}
+                        placeholder="Ev, daire, villa..."
+                        placeholderTextColor="#9CA3AF"
+                        value={filters.searchKeyword}
+                        onChangeText={(text) => updateFilter('searchKeyword', text)}
+                    />
+
+                    <Text className="text-gray-700 font-medium mb-2">Site Adı</Text>
+                    <BottomSheetTextInput
+                        style={[styles.textInput, { marginBottom: 16 }]}
+                        placeholder="Site adı..."
+                        placeholderTextColor="#9CA3AF"
+                        value={filters.siteAdi}
+                        onChangeText={(text) => updateFilter('siteAdi', text)}
+                    />
+                </View>
+
+                {/* Status */}
+                <View className="bg-white mt-4 rounded-xl p-4">
+                    <View className="flex-row items-center mb-4">
+                        <Filter size={18} color="#374151" />
+                        <Text className="text-lg font-semibold text-gray-900 ml-2">
+                            İlan Durumu
+                        </Text>
+                    </View>
+
+                    <Text className="text-gray-700 font-medium mb-3">Durum</Text>
+                    {renderOptionButtons(
+                        statusOptions,
+                        filters.statuses,
+                        (value) => updateFilter('statuses', value),
+                        true
+                    )}
+                </View>
+            </BottomSheetScrollView>
+        </BottomSheetModal>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    backdrop: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    },
-    backdropTouchable: {
-        flex: 1,
-    },
-    modal: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        top: 0,
-        bottom: 0,
+    bottomSheetBackground: {
         backgroundColor: '#ffffff',
-        elevation: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -3 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        borderTopLeftRadius: 16,
-        borderTopRightRadius: 16,
-        overflow: 'hidden',
+        borderTopLeftRadius: 22,
+        borderTopRightRadius: 22,
     },
-    // Buttons container - modal dışında, absolute position
-    buttonsContainer: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
+    handleIndicator: {
+        backgroundColor: '#d1d5db',
+        width: 40,
+        height: 4,
+    },
+    textInput: {
         backgroundColor: '#ffffff',
-        paddingTop: 12,
-        paddingHorizontal: 16,
-        borderTopWidth: 1,
-        borderTopColor: '#f0f0f0',
-        elevation: 25, // Modal'dan daha yüksek z-index
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        zIndex: 1000,
-        minHeight: 80,
-        pointerEvents: 'auto',
+        borderWidth: 1,
+        borderColor: '#111827',
+        padding: 16,
+        borderRadius: 12,
+        fontSize: 16,
     },
 });
 

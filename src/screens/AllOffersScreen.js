@@ -37,10 +37,7 @@ const AllOffersScreen = () => {
     const [refreshing, setRefreshing] = useState(false);
     const insets = useSafeAreaInsets();
 
-    // Debug logs
-    console.log("🔵 AllOffersScreen RENDERED");
-    console.log("🔵 PostId:", postId);
-    console.log("🔵 CurrentUser:", currentUser?.id);
+
 
     // Animation for header
     const scrollY = useRef(new Animated.Value(0)).current;

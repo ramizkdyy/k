@@ -769,11 +769,13 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   }, [nearbyData, getCacheValueForQuery, recordApiCall]);
 
   // ✅ ULTRA OPTIMIZED: Computed Values
-  const isLoading = isLoadingNearby || isRefreshing;
-  const hasNoData =
-    nearFromYouProperties.length === 0 &&
-    secondSectionData.length === 0 &&
-    thirdSectionData.length === 0;
+  const hasExistingData =
+    nearFromYouProperties.length > 0 ||
+    secondSectionData.length > 0 ||
+    thirdSectionData.length > 0;
+  // Sadece ilk yüklemede skeleton göster, refresh sırasında mevcut veriyi koru
+  const isLoading = (isLoadingNearby || isRefreshing) && !hasExistingData;
+  const hasNoData = !hasExistingData;
   const shouldShowSecondSection =
     !isLoadingNearby || secondSectionData.length > 0;
 

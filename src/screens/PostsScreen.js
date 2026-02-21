@@ -58,6 +58,7 @@ import {
 } from "lucide-react-native";
 import { BlurView } from "expo-blur";
 import PropertiesFilterModal from "../modals/PropertiesFilterModal";
+import { PostsScreenSkeleton } from "../components/PostsScreenSkeleton";
 import { useSearchPostsMutation } from "../redux/api/searchApiSlice";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -1302,7 +1303,6 @@ const PostsScreen = ({ navigation }) => {
       console.log("Using all posts data:", filteredPosts.length);
     }
 
-    console.log("Raw filtered posts sample:", filteredPosts.slice(0, 2));
 
     const validPosts = filteredPosts.filter((post) => {
       const isValid =
@@ -1538,7 +1538,7 @@ const PostsScreen = ({ navigation }) => {
     [userRole, currentUser?.id, isDeleting, navigation, getRelativeTime]
   );
 
-  // YENİ TASARIM - EV SAHİBİ İÇİN (NearbyProperties renderVerticalPropertyCard tarzı)
+  
   const renderLandlordPostItem = useCallback(
     ({ item, index }) => {
       if (!item || !item.postId) {
@@ -1548,17 +1548,9 @@ const PostsScreen = ({ navigation }) => {
       return (
         <TouchableOpacity
           activeOpacity={1}
-          className="overflow-hidden w-full flex flex-row items-center gap-4 py-2 border-b border-gray-100 relative"
+          className="overflow-hidden w-full flex flex-row items-center gap-4 py-2 border-b border-gray-100"
           onPress={() => handlePostNavigation(item.postId)}
         >
-          {/* Sağ taraf - Actions Button */}
-          <TouchableOpacity
-            className="absolute top-3 right-2 p-2 z-10"
-            onPress={() => handleOpenActionsModal(item)}
-          >
-            <MoreVertical size={20} color="#000" />
-          </TouchableOpacity>
-
           {/* Sol taraf - Resim */}
           <View className="relative">
             <ImageWithFallback
@@ -1605,16 +1597,24 @@ const PostsScreen = ({ navigation }) => {
           </View>
 
           {/* Orta kısım - Bilgiler */}
-          <View className="flex flex-col w-full">
-            {/* Başlık */}
-            <Text
-              style={{ fontSize: 15, fontWeight: 600 }}
-              className="text-gray-800 w-full mb-1"
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {item.ilanBasligi || `${item.il} ${item.ilce} Kiralık Daire`}
-            </Text>
+          <View className="flex flex-col flex-1">
+            {/* Başlık + Actions */}
+            <View className="flex-row items-center justify-between">
+              <Text
+                style={{ fontSize: 15, fontWeight: 600 }}
+                className="text-gray-800 flex-1 mr-2"
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {item.ilanBasligi || `${item.il} ${item.ilce} Kiralık Daire`}
+              </Text>
+              <TouchableOpacity
+                className="p-1"
+                onPress={() => handleOpenActionsModal(item)}
+              >
+                <MoreVertical size={18} color="#000" />
+              </TouchableOpacity>
+            </View>
 
             {/* Fiyat */}
             <Text
@@ -1675,14 +1675,11 @@ const PostsScreen = ({ navigation }) => {
     const isRefreshLoading = refreshing;
     const isFilterLoading = isLoadingMore || isLoadingMoreFiltered;
 
-    // Herhangi bir loading durumu varsa loading göster
+    // Herhangi bir loading durumu varsa skeleton göster
     if (isInitialLoading || isRefreshLoading || isFilterLoading) {
       return (
-        <View className="flex-1 justify-center items-center" style={{ marginTop: 100 }}>
-          <ActivityIndicator size="large" color="#4A90E2" />
-          <Text className="mt-3 text-base text-gray-500">
-            İlanlar yükleniyor...
-          </Text>
+        <View style={{ marginTop: 16 }}>
+          <PostsScreenSkeleton userRole={userRole} count={userRole === "KIRACI" ? 2 : 4} />
         </View>
       );
     }
@@ -1731,59 +1728,7 @@ const PostsScreen = ({ navigation }) => {
   };
 
   const renderAppliedFilters = () => {
-    const hasFilters = Object.values(filters).some((val) => val !== null);
-
-    if (!hasFilters) return null;
-
-    return (
-      <View className="flex-row flex-wrap mb-4">
-        {filters.location && (
-          <View className="bg-green-100 rounded-full px-3 py-1 mr-2 mb-1 flex-row items-center">
-            <Text className="text-green-800 text-sm mr-1">
-              Konum: {filters.location}
-            </Text>
-            <TouchableOpacity
-              onPress={() => {
-                Logger.event("remove_filter", { type: "location" });
-                dispatch(setPostFilters({ ...filters, location: null }));
-                setLocalFilters({ ...localFilters, location: "" });
-              }}
-            >
-              <MaterialIcons name="close" size={16} color="#1E40AF" />
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {filters.status !== null && (
-          <View className="bg-green-100 rounded-full px-3 py-1 mr-2 mb-1 flex-row items-center">
-            <Text className="text-green-800 text-sm mr-1">
-              Durum:{" "}
-              {filters.status === 0
-                ? "Aktif"
-                : filters.status === 1
-                ? "Kiralandı"
-                : "Kapalı"}
-            </Text>
-            <TouchableOpacity
-              onPress={() => {
-                Logger.event("remove_filter", { type: "status" });
-                dispatch(setPostFilters({ ...filters, status: null }));
-                setLocalFilters({ ...localFilters, status: null });
-              }}
-            >
-              <MaterialIcons name="close" size={16} color="#1E40AF" />
-            </TouchableOpacity>
-          </View>
-        )}
-
-        <TouchableOpacity
-          className="bg-gray-900 rounded-full px-4 py-2 mb-1 flex-row items-center"
-          onPress={resetFilters}
-        >
-          <Text className="text-white text-s">Tümünü Temizle</Text>
-        </TouchableOpacity>
-      </View>
-    );
+    return null;
   };
 
   const isLoading =
@@ -1797,7 +1742,7 @@ const PostsScreen = ({ navigation }) => {
     return `post_index_${index}`;
   }, []);
 
-  // renderAnimatedHeader fonksiyonundaki düzeltilmiş kod
+  
 
   const renderAnimatedHeader = () => {
     const headerContainerHeight = scrollY.interpolate({
@@ -2090,6 +2035,33 @@ const PostsScreen = ({ navigation }) => {
                     </TouchableOpacity>
                   )}
 
+                  {hasActiveFilters && (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 7,
+                        borderRadius: 18,
+                        backgroundColor: "#111827",
+                        elevation: 2,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                      onPress={resetFilters}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontWeight: "500",
+                          color: "white",
+                        }}
+                      >
+                        Tümünü Temizle
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
                   {[
                     { key: "price", label: "Fiyat" },
                     { key: "date", label: "Tarih" },
@@ -2177,11 +2149,8 @@ const PostsScreen = ({ navigation }) => {
           (userRole === "KIRACI" && allPostsData.length === 0 && !hasActiveFilters) ||
           (userRole === "EVSAHIBI" && (!landlordListingsData || !landlordListingsData.result))
         ) ? (
-          <View className="flex-1 justify-center items-center">
-            <ActivityIndicator size="large" color="#4A90E2" />
-            <Text className="mt-3 text-base text-gray-500">
-              İlanlar yükleniyor...
-            </Text>
+          <View style={{ paddingTop: getDynamicPaddingTop() + 20, paddingHorizontal: userRole === "KIRACI" ? 0 : 16 }}>
+            <PostsScreenSkeleton userRole={userRole} count={userRole === "KIRACI" ? 3 : 5} />
           </View>
         ) : (
           <Animated.FlatList
@@ -2192,10 +2161,7 @@ const PostsScreen = ({ navigation }) => {
             contentContainerStyle={{
               flexGrow: 1,
               paddingBottom: 16,
-              paddingTop:
-                userRole === "KIRACI"
-                  ? getDynamicPaddingTop()
-                  : getDynamicPaddingTop() - screenWidth * 0.1,
+              paddingTop: getDynamicPaddingTop() + 20,
               paddingHorizontal: userRole === "KIRACI" ? 0 : 16,
             }}
             ListHeaderComponent={() => (

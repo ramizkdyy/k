@@ -281,7 +281,6 @@ export const SignalRProvider = ({ children }) => {
 
       // ✅ Global unread count update handler'ı
       const handleGlobalUnreadCountUpdate = (updateData) => {
-        console.log("📊 GLOBAL unread count update:", updateData);
         chatApiHelpers.updateUnreadCount(dispatch);
 
         const totalUnreadCount =
@@ -290,11 +289,7 @@ export const SignalRProvider = ({ children }) => {
           updateData.TotalUnreadChats || updateData.totalUnreadChats;
         const fromUserId = updateData.FromUserId || updateData.fromUserId;
 
-        console.log("📊 Global unread details:", {
-          totalUnreadCount,
-          totalUnreadChats,
-          fromUserId,
-        });
+
       };
 
       // ✅ Global partner list update handler'ı
@@ -374,7 +369,6 @@ export const SignalRProvider = ({ children }) => {
 
       // ✅ Global unread summary update handler'ı
       const handleGlobalUnreadSummaryUpdate = (summaryData) => {
-        console.log("📋 GLOBAL unread summary update:", summaryData);
         chatApiHelpers.updateUnreadCount(dispatch);
 
         const totalUnreadMessages =
@@ -454,22 +448,16 @@ export const SignalRProvider = ({ children }) => {
 
       // ✅ Global heartbeat response handler'ı
       const handleGlobalHeartbeatResponse = (responseData) => {
-        console.log("💓 GLOBAL heartbeat response:", responseData);
         const timestamp = responseData.Timestamp || responseData.timestamp;
         setLastPingTime(new Date(timestamp));
       };
 
       // ✅ Global connection established handler'ı
       const handleGlobalConnectionEstablished = (connectionData) => {
-        console.log("🔗 GLOBAL connection established:", connectionData);
         const connectionId =
           connectionData.ConnectionId || connectionData.connectionId;
         const connectedAt =
           connectionData.ConnectedAt || connectionData.connectedAt;
-        console.log("🔗 Global connection details:", {
-          connectionId,
-          connectedAt,
-        });
       };
 
       // ✅ Backward compatibility handlers
@@ -547,7 +535,6 @@ export const SignalRProvider = ({ children }) => {
       ) {
         try {
           await connectionRef.current.invoke("Heartbeat");
-          console.log("💓 Heartbeat gönderildi");
         } catch (error) {
           console.log("⚠️ Heartbeat hatası:", error.message);
         }
@@ -725,7 +712,6 @@ export const SignalRProvider = ({ children }) => {
       // Test mesajı gönder
       try {
         await newConnection.invoke("TestMethod");
-        console.log("🧪 Test method çağrıldı");
       } catch (testError) {
         console.log("⚠️ Test method hatası:", testError.message);
       }
@@ -1032,10 +1018,6 @@ export const SignalRProvider = ({ children }) => {
     }
 
     if (token && currentUserId) {
-      console.log("🔑 Token ve user mevcut, SignalR başlatılıyor...");
-      console.log("👤 Current user ID:", currentUserId);
-      console.log("🔑 Token preview:", token.substring(0, 20) + "...");
-
       // ✅ FIXED: Prevent multiple connections
       if (isConnecting || (connection && connection.state === "Connected")) {
         console.log("⚠️ Connection already in progress or connected, skipping");

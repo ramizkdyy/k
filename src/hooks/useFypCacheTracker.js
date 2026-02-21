@@ -7,27 +7,18 @@ export const useFypCacheTracker = () => {
 
     const CACHE_DURATION = 10000; // 10 saniye
 
-    // 🔧 MAIN FIX: Her çağrıda real-time hesaplama yap
+    
     const getCacheValueForQuery = useCallback(() => {
         const now = Date.now();
 
         if (!lastApiCallTimeRef.current) {
-            console.log('🆕 İlk API çağrısı - Cache: FALSE');
             return false;
         }
 
         const timeSinceLastCall = now - lastApiCallTimeRef.current;
         const shouldCache = timeSinceLastCall < CACHE_DURATION;
 
-        if (shouldCache) {
-            console.log('🚀 Cache KULLANILACAK:', {
-                timeSinceLastCall: `${(timeSinceLastCall / 1000).toFixed(1)}s`
-            });
-        } else {
-            console.log('⏰ Cache süresi dolmuş - Yeni data gerekli:', {
-                timeSinceLastCall: `${(timeSinceLastCall / 1000).toFixed(1)}s`
-            });
-        }
+
 
         return shouldCache;
     }, []);

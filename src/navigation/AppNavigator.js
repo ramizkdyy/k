@@ -419,7 +419,7 @@ const LandlordTabNavigator = () => {
             <Home
               size={24}
               color={focused ? "#000" : "#999999"}
-              fill={focused ? "#000" : "none"}
+              strokeWidth={focused ? 2.5 : 1.5}
             />
           ),
         }}
@@ -434,7 +434,7 @@ const LandlordTabNavigator = () => {
             <Fingerprint
               size={22}
               color={focused ? "#000" : "#999999"}
-              fill={focused ? "#000" : "none"}
+              strokeWidth={focused ? 2.5 : 1.5}
             />
           ),
         }}
@@ -451,7 +451,7 @@ const LandlordTabNavigator = () => {
             <Search
               size={24}
               color={focused ? "#000" : "#999999"}
-              fill={focused ? "#000" : "none"}
+              strokeWidth={focused ? 2.5 : 1.5}
             />
           ),
         }}
@@ -468,7 +468,7 @@ const LandlordTabNavigator = () => {
             <Mail
               size={24}
               color={focused ? "#000" : "#999999"}
-              fill={focused ? "#000" : "none"}
+              strokeWidth={focused ? 2.5 : 1.5}
             />
           ),
         }}
@@ -610,8 +610,8 @@ const TenantTabNavigator = () => {
           tabBarIcon: ({ focused }) => (
             <Home
               size={24}
-              color={focused ? "#000" : "#999999"} // Sabit renk
-              fill={focused ? "#000" : "none"}
+              color={focused ? "#000" : "#999999"}
+              strokeWidth={focused ? 2.5 : 1.5}
             />
           ),
         }}
@@ -625,8 +625,8 @@ const TenantTabNavigator = () => {
           tabBarIcon: ({ focused }) => (
             <Fingerprint
               size={22}
-              color={focused ? "#000" : "#999999"} // Sabit renk
-              fill={focused ? "#000" : "none"}
+              color={focused ? "#000" : "#999999"}
+              strokeWidth={focused ? 2.5 : 1.5}
             />
           ),
         }}
@@ -642,8 +642,8 @@ const TenantTabNavigator = () => {
           tabBarIcon: ({ focused }) => (
             <Search
               size={24}
-              color={focused ? "#000" : "#999999"} // Sabit renk
-              fill={focused ? "#000" : "none"}
+              color={focused ? "#000" : "#999999"}
+              strokeWidth={focused ? 2.5 : 1.5}
             />
           ),
         }}
@@ -659,8 +659,8 @@ const TenantTabNavigator = () => {
           tabBarIcon: ({ focused }) => (
             <Mail
               size={24}
-              color={focused ? "#000" : "#999999"} // Sabit renk
-              fill={focused ? "#000" : "none"}
+              color={focused ? "#000" : "#999999"}
+              strokeWidth={focused ? 2.5 : 1.5}
             />
           ),
         }}
