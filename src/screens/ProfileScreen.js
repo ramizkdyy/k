@@ -297,11 +297,7 @@ const ProfileScreen = ({ navigation }) => {
                   Ayarlar
                 </Text>
               </View>
-              <ChevronRight
-
-                size={15}
-                color="#cfcfcf"
-              />
+              <ChevronRight size={15} color="#cfcfcf" />
             </TouchableOpacity>
 
             {/* Profile Edit Button - Always visible */}
@@ -319,7 +315,7 @@ const ProfileScreen = ({ navigation }) => {
                 </Text>
               </View>
               <ChevronRight
-
+                icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"
               />
@@ -358,7 +354,7 @@ const ProfileScreen = ({ navigation }) => {
                   <View className="bg-red-500 w-3 h-3 rounded-full mr-2"></View>
                 )}
                 <ChevronRight
-  
+                  icon={faChevronRight}
                   size={15}
                   color="#cfcfcf"
                 />
@@ -392,7 +388,7 @@ const ProfileScreen = ({ navigation }) => {
                 </Text>
               </View>
               {/* <ChevronRight
-
+                icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"
               /> */}
@@ -416,7 +412,7 @@ const ProfileScreen = ({ navigation }) => {
                 </Text>
               </View>
               {/* <ChevronRight
-
+                icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"
               /> */}
@@ -439,7 +435,7 @@ const ProfileScreen = ({ navigation }) => {
                   </Text>
                 </View>
                 <ChevronRight
-  
+                  icon={faChevronRight}
                   size={15}
                   color="#cfcfcf"
                 />
@@ -463,7 +459,7 @@ const ProfileScreen = ({ navigation }) => {
                   </Text>
                 </View>
                 <ChevronRight
-  
+                  icon={faChevronRight}
                   size={15}
                   color="#cfcfcf"
                 />
@@ -495,7 +491,7 @@ const ProfileScreen = ({ navigation }) => {
                   </View>
                 </View>
                 <ChevronRight
-  
+                  icon={faChevronRight}
                   size={15}
                   color="#cfcfcf"
                 />
@@ -521,7 +517,7 @@ const ProfileScreen = ({ navigation }) => {
                 </View>
               </View>
               <ChevronRight
-
+                icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"
               />
@@ -543,7 +539,8 @@ const ProfileScreen = ({ navigation }) => {
               }}
             >
               <View className="flex-row items-center gap-4">
-                <HelpCircle
+                <ChevronRight
+                  icon={faQuestionCircle}
                   size={25}
                   color="black"
                 />
@@ -555,7 +552,7 @@ const ProfileScreen = ({ navigation }) => {
                 </Text>
               </View>
               <ChevronRight
-
+                icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"
               />
@@ -575,7 +572,7 @@ const ProfileScreen = ({ navigation }) => {
                 </Text>
               </View>
               {/* <ChevronRight
-
+                icon={faChevronRight}
                 size={15}
                 color="#cfcfcf"
               /> */}
