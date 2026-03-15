@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { useDispatch, useSelector } from "react-redux";
-import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
+import { selectCurrentUser, selectUserRole, selectAuthToken } from "../redux/slices/authSlice";
 import {
   useUpdateLandlordProfileMutation,
   useUpdateTenantProfileMutation,
@@ -281,6 +281,7 @@ const EditProfileScreen = ({ navigation }) => {
   const currentUser = useSelector(selectCurrentUser);
   const userRole = useSelector(selectUserRole);
   const userProfile = useSelector(selectUserProfile);
+  const authToken = useSelector(selectAuthToken);
 
   // Tab Management for hiding bottom tabs
   useFocusEffect(
@@ -429,6 +430,7 @@ const EditProfileScreen = ({ navigation }) => {
 
   const handleSaveProfile = async () => {
     try {
+      console.log("EditProfile - currentUser.id:", currentUser?.id, "userRole:", userRole, "tokenExists:", !!authToken);
       const formData = new FormData();
       formData.append("UserId", currentUser.id);
 
@@ -471,6 +473,7 @@ const EditProfileScreen = ({ navigation }) => {
       // Reset image upload status
       dispatch(updateProfileImageStatus(null));
     } catch (error) {
+      console.error("EditProfile - handleSaveProfile error:", JSON.stringify(error, null, 2));
 
       if (error && error.data && error.data.errors) {
         let errorMessage = "API şu hataları döndürdü:\n";

@@ -504,7 +504,8 @@ const AllOffersScreen = () => {
             <ScrollView
                 className="flex-1"
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+                    <RefreshControl color={"#303030"}
+                        refreshing={refreshing} onRefresh={handleRefresh} />
                 }
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{

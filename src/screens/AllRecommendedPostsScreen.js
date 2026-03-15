@@ -32,7 +32,7 @@ import {
   Heart,
   ChevronLeft,
   ListFilter,
-  SlidersHorizontal,
+
   Home,
   X,
 } from "lucide-react-native";
@@ -943,7 +943,7 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
             <ChevronLeft color="black" size={25} />
           </TouchableOpacity>
 
-          <View className="px-4 py-4" style={{ width: "84%" }}>
+          <View className="px-4 py-4" style={{ flex: 1 }}>
             <View
               style={{ boxShadow: "0px 0px 12px #00000014" }}
               className="bg-white rounded-3xl gap-2 px-4 flex-row items-center"
@@ -961,9 +961,6 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
                 </TouchableOpacity>
               ) : null}
             </View>
-          </View>
-          <View style={{ width: "8%" }}>
-            <Heart color="#000" size={20} />
           </View>
         </View>
 
@@ -993,21 +990,38 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
               }}
               style={{ width: "100%" }}
             >
-              <View className="flex-row">
+              <View className="flex-row items-center">
+                {minMatchScore !== 0.1 && (
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => handleMatchScoreChange(0.1)}
+                    style={{
+                      paddingHorizontal: 10,
+                      paddingVertical: 5,
+                      borderRadius: 16,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      marginRight: 6,
+                    }}
+                    className="bg-gray-900"
+                  >
+                    <X size={16} color="white" />
+                  </TouchableOpacity>
+                )}
                 {matchScoreOptions.map((option) => (
                   <TouchableOpacity
                     activeOpacity={1}
                     key={option.key}
                     className={`mr-3 px-4 py-2 rounded-full border ${minMatchScore === option.key
-                        ? "bg-gray-900"
-                        : "bg-white border-white"
+                      ? "bg-gray-900"
+                      : "bg-white border-white"
                       }`}
                     onPress={() => handleMatchScoreChange(option.key)}
                   >
                     <Text
                       className={`text-sm font-medium ${minMatchScore === option.key
-                          ? "text-white"
-                          : "text-gray-700"
+                        ? "text-white"
+                        : "text-gray-700"
                         }`}
                     >
                       {option.label}
@@ -1040,8 +1054,8 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#4A90E2"]}
-            tintColor="#4A90E2"
+            colors={["#303030"]}
+            tintColor="#303030"
           />
         }
         contentContainerStyle={{

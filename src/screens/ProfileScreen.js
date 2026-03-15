@@ -191,7 +191,10 @@ const ProfileScreen = ({ navigation }) => {
         contentContainerStyle={{ paddingBottom: 100 }}
         className="flex-1 bg-white px-5"
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh}
+            colors={["#303030"]}
+            tintColor="#303030"
+          />
         }
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],

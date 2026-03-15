@@ -1070,7 +1070,6 @@ const PostsScreen = ({ navigation }) => {
     setRefreshing(true);
     setCurrentPage(1);
     setHasNextPage(true);
-    setAllPostsData([]);
 
     try {
       if (userRole === "EVSAHIBI") {
@@ -1408,9 +1407,8 @@ const PostsScreen = ({ navigation }) => {
                 className="text-gray-900 underline"
               >
                 {item.kiraFiyati || item.rent
-                  ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-                      item.paraBirimi || item.currency || "₺"
-                    }`
+                  ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
+                  }`
                   : "Fiyat belirtilmemiş"}
               </Text>
               <Text className="text-sm text-gray-400 ml-1">/ay</Text>
@@ -1500,7 +1498,7 @@ const PostsScreen = ({ navigation }) => {
     [userRole, currentUser?.id, isDeleting, navigation, getRelativeTime]
   );
 
-  
+
   const renderLandlordPostItem = useCallback(
     ({ item, index }) => {
       if (!item || !item.postId) {
@@ -1551,8 +1549,8 @@ const PostsScreen = ({ navigation }) => {
                   {item.status === 0
                     ? "Aktif"
                     : item.status === 1
-                    ? "Kiralandı"
-                    : "Kapalı"}
+                      ? "Kiralandı"
+                      : "Kapalı"}
                 </Text>
               </BlurView>
             </View>
@@ -1586,9 +1584,8 @@ const PostsScreen = ({ navigation }) => {
               ellipsizeMode="tail"
             >
               {item.kiraFiyati || item.rent
-                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-                    item.paraBirimi || item.currency || "₺"
-                  }/ay`
+                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
+                }/ay`
                 : "Fiyat belirtilmemiş"}
             </Text>
 
@@ -1704,7 +1701,7 @@ const PostsScreen = ({ navigation }) => {
     return `post_index_${index}`;
   }, []);
 
-  
+
 
   const renderAnimatedHeader = () => {
     const headerContainerHeight = scrollY.interpolate({
@@ -1930,19 +1927,18 @@ const PostsScreen = ({ navigation }) => {
                   shadowRadius: 8,
                   elevation: 5,
                 }}
-                className={`rounded-full flex justify-center items-center ${
-                  isFilterVisible ||
-                  Object.values(filters).some((val) => val !== null)
+                className={`rounded-full flex justify-center items-center ${isFilterVisible ||
+                    Object.values(filters).some((val) => val !== null)
                     ? "bg-gray-900/90"
                     : "bg-white/90"
-                }`}
+                  }`}
                 onPress={handleFilterPress}
               >
                 <SlidersHorizontal
                   size={18}
                   color={
                     isFilterVisible ||
-                    Object.values(filters).some((val) => val !== null)
+                      Object.values(filters).some((val) => val !== null)
                       ? "white"
                       : "#111827"
                   }
@@ -2130,6 +2126,7 @@ const PostsScreen = ({ navigation }) => {
                 refreshing={refreshing}
                 onRefresh={onRefresh}
                 progressViewOffset={getDynamicPaddingTop()}
+                colors={["#303030"]}
               />
             }
             onEndReached={loadMorePosts}

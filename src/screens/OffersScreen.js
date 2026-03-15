@@ -1193,7 +1193,7 @@ const OffersScreen = () => {
       <Animated.ScrollView
         className="flex-1 py-6"
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl colors={["#303030"]} tintColor="#303030" refreshing={refreshing} onRefresh={handleRefresh} />
         }
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{

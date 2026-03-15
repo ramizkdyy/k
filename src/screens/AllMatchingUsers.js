@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  RefreshControl,
   Alert,
   SafeAreaView,
   Dimensions,
@@ -33,7 +32,7 @@ import {
   Heart,
   ChevronLeft,
   ListFilter,
-  SlidersHorizontal,
+
   ChevronRight,
   PawPrint,
   Banknote,
@@ -811,11 +810,25 @@ const AllMatchingUsers = ({ navigation, route }) => {
   const isFetching = isLandlord ? isFetchingTenants : isFetchingLandlords;
 
   // Get pagination info and data from RTK Query with safety checks
-  const allUsers = currentData?.data
+  const rawUsers = currentData?.data
     ? Array.isArray(currentData.data)
       ? currentData.data
       : []
     : [];
+
+  // Deduplicate to prevent duplicate key warnings
+  const allUsers = (() => {
+    const seen = new Set();
+    return rawUsers.filter((item) => {
+      const id = isLandlord
+        ? item.tenantProfileId || item.userId
+        : item.landlordProfileId || item.userId;
+      if (!id || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+  })();
+
   const hasNextPage = currentData?.pagination?.hasNextPage || false;
 
 
@@ -1018,7 +1031,7 @@ const AllMatchingUsers = ({ navigation, route }) => {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#4A90E2" />
+          <ActivityIndicator size="large" color="#303030" />
           <Text className="text-gray-600 mt-4 text-center">{loadingText}</Text>
         </View>
       </SafeAreaView>
@@ -1082,7 +1095,7 @@ const AllMatchingUsers = ({ navigation, route }) => {
             <ChevronLeft color="black" size={25} />
           </TouchableOpacity>
 
-          <View className="px-4 py-4" style={{ width: "84%" }}>
+          <View className="px-4 py-4" style={{ flex: 1 }}>
             <View
               style={{ boxShadow: "0px 0px 12px #00000014" }}
               className="bg-white rounded-3xl gap-2 px-4 flex-row items-center"
@@ -1099,9 +1112,6 @@ const AllMatchingUsers = ({ navigation, route }) => {
                 </TouchableOpacity>
               ) : null}
             </View>
-          </View>
-          <View style={{ width: "8%" }}>
-            <SlidersHorizontal color="black" size={20} />
           </View>
         </View>
 
@@ -1135,7 +1145,24 @@ const AllMatchingUsers = ({ navigation, route }) => {
               }}
               style={{ width: "100%" }}
             > */}
-            <View className="flex-row">
+            <View className="flex-row items-center">
+              {sortBy !== "compatibility" && (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => setSortBy("compatibility")}
+                  style={{
+                    paddingHorizontal: 10,
+                    paddingVertical: 5,
+                    borderRadius: 16,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginRight: 6,
+                  }}
+                  className="bg-gray-900"
+                >
+                  <X size={16} color="white" />
+                </TouchableOpacity>
+              )}
               {sortOptions.map((option) => (
                 <TouchableOpacity
                   key={option.key}

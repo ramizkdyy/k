@@ -13,7 +13,6 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  RefreshControl,
   Alert,
   SafeAreaView,
   Dimensions,
@@ -40,7 +39,7 @@ import {
   ChevronLeft,
   CircleAlert,
   ListFilter,
-  SlidersHorizontal,
+
   House,
   Heart,
 } from "lucide-react-native";
@@ -832,7 +831,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
   const [sortBy, setSortBy] = useState(0);
   const [sortDirection, setSortDirection] = useState(0);
   const [isMapView, setIsMapView] = useState(false);
-  const [isMatch, setIsMatch] = useState(false);
+  const isMatch = false;
   const [currentPage, setCurrentPage] = useState(1);
   const [allProperties, setAllProperties] = useState([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -1209,7 +1208,6 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
   // ✅ OPTIMIZED: Memoized event handlers
   const clearSearch = useCallback(() => setSearchQuery(""), []);
   const goBack = useCallback(() => navigation.goBack(), [navigation]);
-  const toggleMatch = useCallback(() => setIsMatch(!isMatch), [isMatch]);
 
   const handleScroll = useMemo(
     () =>
@@ -1224,7 +1222,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#4A90E2" />
+          <ActivityIndicator size="large" color="#303030" />
           <Text className="mt-3 text-base text-gray-500">
             {locationLoading
               ? "Konum alınıyor..."
@@ -1266,7 +1264,7 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
             <ChevronLeft size={25} color="black" />
           </TouchableOpacity>
 
-          <View className="px-4 py-4" style={{ width: "84%" }}>
+          <View className="px-4 py-4" style={{ flex: 1 }}>
             <View
               style={{ boxShadow: "0px 0px 12px #00000014" }}
               className="bg-white rounded-3xl gap-2 px-4 flex-row items-center"
@@ -1283,14 +1281,6 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
                 </TouchableOpacity>
               ) : null}
             </View>
-          </View>
-          <View style={{ width: "8%" }}>
-            <TouchableOpacity onPress={toggleMatch}>
-              <SlidersHorizontal
-                size={20}
-                color={isMatch ? "#4A90E2" : "black"}
-              />
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -1320,14 +1310,31 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
               }}
               style={{ width: "100%" }}
             >
-              <View className="flex-row">
+              <View className="flex-row items-center">
+                {sortBy !== 0 && (
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => { setSortBy(0); setSortDirection(0); }}
+                    style={{
+                      paddingHorizontal: 10,
+                      paddingVertical: 5,
+                      borderRadius: 16,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      marginRight: 6,
+                    }}
+                    className="bg-gray-900"
+                  >
+                    <MaterialIcons name="close" size={16} color="white" />
+                  </TouchableOpacity>
+                )}
                 {sortOptions.map((option) => (
                   <TouchableOpacity
                     activeOpacity={1}
                     key={option.key}
                     className={`mr-3 px-4 py-2 rounded-full border ${sortBy === option.key
-                        ? "bg-gray-900"
-                        : "bg-white border-white"
+                      ? "bg-gray-900"
+                      : "bg-white border-white"
                       }`}
                     onPress={() => handleSortChange(option.key)}
                   >

@@ -338,9 +338,8 @@ const MessagesScreen = ({ navigation }) => {
   // ✅ Filter button component
   const FilterButton = ({ filter, title, count, isActive, onPress }) => (
     <TouchableOpacity
-      className={`py-2 px-4 rounded-full ${
-        isActive ? "bg-black" : "border border-gray-200 bg-white"
-      }`}
+      className={`py-2 px-4 rounded-full ${isActive ? "bg-black" : "border border-gray-200 bg-white"
+        }`}
       onPress={onPress}
       activeOpacity={0.7}
     >
@@ -422,9 +421,8 @@ const MessagesScreen = ({ navigation }) => {
           <View className="flex-row justify-between items-center">
             <Text
               style={{ fontSize: 15 }}
-              className={` text-gray-900 flex-1 mb-1 ${
-                isUnread ? "font-bold" : " font-medium"
-              }`}
+              className={` text-gray-900 flex-1 mb-1 ${isUnread ? "font-bold" : " font-medium"
+                }`}
               numberOfLines={1}
             >
               {partnerName}
@@ -433,11 +431,10 @@ const MessagesScreen = ({ navigation }) => {
               {messageTime && (
                 <Text
                   style={{ fontSize: 14 }}
-                  className={` ${
-                    isUnread
+                  className={` ${isUnread
                       ? "text-gray-900 font-bold"
                       : "text-gray-500 font-normal"
-                  }`}
+                    }`}
                 >
                   {messageTime}
                 </Text>
@@ -448,9 +445,8 @@ const MessagesScreen = ({ navigation }) => {
           <View className="flex-row justify-between items-center">
             <Text
               style={{ fontSize: 15 }}
-              className={` flex-1 mr-2 ${
-                isUnread ? "text-gray-900 font-bold" : "text-gray-500"
-              }`}
+              className={` flex-1 mr-2 ${isUnread ? "text-gray-900 font-bold" : "text-gray-500"
+                }`}
               numberOfLines={1}
             >
               {lastMessage || ""}
@@ -609,9 +605,8 @@ const MessagesScreen = ({ navigation }) => {
             <Text className="text-gray-500 text-sm ml-2">
               {isSearching
                 ? "Searching..."
-                : `${filteredPartners.length} result${
-                    filteredPartners.length !== 1 ? "s" : ""
-                  }`}
+                : `${filteredPartners.length} result${filteredPartners.length !== 1 ? "s" : ""
+                }`}
             </Text>
           )}
         </View>
@@ -630,8 +625,8 @@ const MessagesScreen = ({ navigation }) => {
           <RefreshControl
             refreshing={partnersLoading || unreadLoading}
             onRefresh={onRefresh}
-            colors={["#0ea5e9"]}
-            tintColor="#0ea5e9"
+            colors={["#303030"]}
+            tintColor="#303030"
           />
         }
         ListEmptyComponent={() => (

@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  RefreshControl,
   SafeAreaView,
   Dimensions,
   ScrollView,
@@ -30,7 +29,7 @@ import {
   House,
   Heart,
   ChevronLeft,
-  SlidersHorizontal,
+
   CircleAlert,
 } from "lucide-react-native";
 import { BlurView } from "expo-blur";
@@ -986,7 +985,7 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#4A90E2" />
+          <ActivityIndicator size="large" color="#303030" />
           <Text className="text-gray-600 mt-4">
             Benzer ilanlar yükleniyor...
           </Text>
@@ -1027,7 +1026,7 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
             <ChevronLeft color="black" size={25} />
           </TouchableOpacity>
 
-          <View className="px-4 py-4" style={{ width: "84%" }}>
+          <View className="px-4 py-4" style={{ flex: 1 }}>
             <View
               style={{ boxShadow: "0px 0px 12px #00000014" }}
               className="bg-white rounded-3xl gap-2 px-4 flex-row items-center"
@@ -1044,9 +1043,6 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
                 </TouchableOpacity>
               ) : null}
             </View>
-          </View>
-          <View style={{ width: "8%" }}>
-            <SlidersHorizontal color="black" size={20} />
           </View>
         </View>
 

@@ -38,6 +38,7 @@ import {
 import { useSignalR } from "../contexts/SignalRContext";
 import { useNotification } from "../contexts/NotificationContext";
 import { useSelector, useDispatch } from "react-redux";
+import { selectUserRole } from "../redux/slices/authSlice";
 import { BlurView } from "expo-blur";
 import { useHeaderHeight } from "@react-navigation/elements";
 import {
@@ -77,6 +78,8 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
   const { user } = useSelector((state) => state.auth);
   const currentUserId = user?.id || user?.userId;
+  const currentUserRole = useSelector(selectUserRole);
+  const partnerRole = currentUserRole === "KIRACI" ? "EVSAHIBI" : "KIRACI";
   const dispatch = useDispatch();
 
   // Get notification context for screen tracking
@@ -1088,7 +1091,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
               onPress={() => {
                 navigation.navigate("UserProfile", {
                   userId: partnerId,
-                  userRole: partner?.role || "KIRACI", // Default to KIRACI if role not available
+                  userRole: partnerRole,
                 });
               }}
             >
