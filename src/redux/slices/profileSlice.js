@@ -350,14 +350,6 @@ const profileSlice = createSlice({
         if (payload && payload.isSuccess) {
           const actionData = meta.arg;
 
-          console.log("Profile action başarılı:", {
-            action: actionData.profileAction,
-            senderUserId: actionData.SenderUserId,
-            receiverUserId: actionData.ReceiverUserId,
-            ratingValue: actionData.RatingValue,
-            message: actionData.Message,
-            result: payload.result
-          });
 
           // Rating işlemi ise profil rating'ini güncelle
           if (actionData.profileAction === 2 && payload.result?.newRating) {
@@ -382,13 +374,11 @@ const profileSlice = createSlice({
 
           // YENİ: Favorite işlemleri için handler
           if (actionData.profileAction === 0) { // AddFavorite
-            console.log("✅ Kullanıcı favorilere eklendi");
             // Favorilere ekleme işlemi başarılı
             // İsteğe bağlı olarak favoriler listesini güncelleyebiliriz
           }
 
           if (actionData.profileAction === 1) { // RemoveFavorite  
-            console.log("✅ Kullanıcı favorilerden çıkarıldı");
             // Favorilerden çıkarma işlemi başarılı
             // İsteğe bağlı olarak favoriler listesini güncelleyebiliriz
           }
@@ -738,7 +728,6 @@ const profileSlice = createSlice({
       apiSlice.endpoints.toggleFavoriteProperty.matchRejected,
       (state, { payload, error }) => {
         // Error handling is done in the component, but you can add state updates here if needed
-        console.error("Toggle favorite failed:", error);
       }
     );
     // Profile Action API handlers - basit versiyon
@@ -751,14 +740,6 @@ const profileSlice = createSlice({
         if (payload && payload.isSuccess) {
           const actionData = meta.arg;
 
-          console.log("Profile action başarılı:", {
-            action: actionData.profileAction,
-            senderUserId: actionData.SenderUserId,
-            receiverUserId: actionData.ReceiverUserId,
-            ratingValue: actionData.RatingValue,
-            message: actionData.Message,
-            result: payload.result
-          });
 
           // Rating işlemi ise profil rating'ini güncelle (opsiyonel)
           if (actionData.profileAction === 2 && payload.result?.newRating) {
@@ -802,7 +783,6 @@ const profileSlice = createSlice({
           error?.message ||
           "Profil işlemi başarısız oldu";
 
-        console.error("Profile action hatası:", state.profileActionError);
       }
     );
 

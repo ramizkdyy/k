@@ -62,8 +62,6 @@ const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onN
     const existingOffers = favoriteItem.offers || [];
     const existingOffer = existingOffers.length > 0 ? existingOffers[0] : null;
 
-    console.log("Checking existing offer for post:", favoriteItem.postId);
-    console.log("Found existing offers from favoritePropertiesOffers:", existingOffers);
 
     // 🔧 BASIT IMAGE URL ALMA - Sadece ilk geçerli resmi al
     const getFirstValidImage = (images) => {
@@ -591,7 +589,6 @@ const FavoritePropertiesScreen = ({ navigation }) => {
                             await toggleFavoriteProperty(favoriteData).unwrap();
                             refetchProfile();
                         } catch (error) {
-                            console.error("Error removing from favorites:", error);
                             Alert.alert("Hata", "Favorilerden kaldırılırken bir hata oluştu.");
                         }
                     },

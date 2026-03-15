@@ -223,12 +223,6 @@ const FavoriteLandlordCard = ({
     // Doğru matching score'u al
     const matchScore = matchingScore || landlord.matchingScore || landlord.matchScore || 0;
 
-    console.log("🔍 FavoriteLandlordCard Debug:", {
-        directMatchScore: matchingScore,
-        landlordMatchScore: landlord.matchingScore,
-        landlordMatchScore2: landlord.matchScore,
-        finalMatchScore: matchScore
-    });
 
     return (
         <TouchableOpacity

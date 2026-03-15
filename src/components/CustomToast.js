@@ -56,7 +56,6 @@ const CustomToast = ({ text1, text2, hide, onPress, props }) => {
                   cachePolicy="memory-disk"
                   transition={200}
                   onError={(error) => {
-                    console.log("❌ Profile image load error:", error);
                   }}
                 />
               ) : (

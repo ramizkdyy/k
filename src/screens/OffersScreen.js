@@ -249,13 +249,6 @@ const OffersScreen = () => {
   // Log the raw API response for debugging
   useEffect(() => {
     if (offersData) {
-      console.log("========== OFFERS API RESPONSE ==========");
-      console.log("User Role:", userRole);
-      console.log("Is Tenant:", isTenant);
-      console.log("Is Landlord:", isLandlord);
-      console.log("Raw API Response:", JSON.stringify(offersData, null, 2));
-      console.log("Result field:", offersData.result);
-      console.log("========================================");
     }
   }, [offersData, userRole, isTenant, isLandlord]);
 
@@ -316,30 +309,17 @@ const OffersScreen = () => {
             new Date(offer.offerTime) > new Date(existingOffer.offerTime)
           ) {
             uniqueOffers.set(postId, offer);
-            console.log(
-              `Updated offer for postId ${postId}: offerId ${offer.offerId}, time: ${offer.offerTime}`
-            );
           } else {
-            console.log(
-              `Skipped older offer for postId ${postId}: offerId ${offer.offerId}, time: ${offer.offerTime}`
-            );
           }
         }
       });
 
       offers = Array.from(uniqueOffers.values());
-      console.log("Processed offers after deduplication:", offers.length);
-      console.log("Sample processed offer:", offers[0] || "No offers");
     } else if (isLandlord && offersData.result.rentalPosts) {
       // Landlord için rentalPosts yapısından teklifleri çıkar
-      console.log("Extracting offers from rentalPosts...");
       const allOffers = [];
 
       offersData.result.rentalPosts.forEach((post, postIndex) => {
-        console.log(
-          `Post ${postIndex}: ${post.ilanBasligi}, has ${post.offers?.length || 0
-          } offers`
-        );
 
         if (post.offers && Array.isArray(post.offers)) {
           // EKLEME: Her post için sadece en son aktif teklifi al
@@ -369,16 +349,10 @@ const OffersScreen = () => {
               },
             };
             allOffers.push(offerWithPost);
-            console.log(
-              `  - Latest Active Offer: ID ${latestOffer.offerId}, Amount: ${latestOffer.offerAmount}, Status: ${latestOffer.status}, Time: ${latestOffer.offerTime}`
-            );
 
             // Diğer teklifleri logla
             activeOffers.forEach((offer, offerIndex) => {
               if (offer.offerId !== latestOffer.offerId) {
-                console.log(
-                  `  - Skipped Older Offer ${offerIndex}: ID ${offer.offerId}, Time: ${offer.offerTime}`
-                );
               }
             });
           }
@@ -386,11 +360,9 @@ const OffersScreen = () => {
       });
 
       offers = allOffers;
-      console.log("Total latest active offers extracted:", offers.length);
     }
   }
 
-  console.log("Final offers array:", offers);
 
   // Filter offers based on selected tab
   const filteredOffers = offers.filter((offer) => {
@@ -406,12 +378,6 @@ const OffersScreen = () => {
     }
   });
 
-  console.log(
-    "Filtered offers for tab",
-    selectedTab,
-    ":",
-    filteredOffers.length
-  );
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -431,18 +397,12 @@ const OffersScreen = () => {
           style: "default",
           onPress: async () => {
             try {
-              console.log("Renting property:", {
-                userId: currentUser?.id,
-                offerId: offerId,
-                actionType: 2, // Rent action
-              });
 
               const response = await rentOffer({
                 userId: currentUser?.id,
                 offerId: Number(offerId),
               }).unwrap();
 
-              console.log("Rent response:", response);
 
               if (response.isSuccess) {
                 Alert.alert(
@@ -464,7 +424,6 @@ const OffersScreen = () => {
                 );
               }
             } catch (error) {
-              console.log("Rent offer error:", error);
               Alert.alert(
                 "Hata",
                 error?.data?.message || "Ev kiraya verilirken bir hata oluştu."
@@ -487,11 +446,6 @@ const OffersScreen = () => {
           text: "Kabul Et",
           onPress: async () => {
             try {
-              console.log("Accepting offer:", {
-                userId: currentUser?.id,
-                offerId: offerId,
-                actionType: 0, // 1 = Accept (sizin verdiğiniz bilgiye göre)
-              });
 
               const response = await landlordOfferAction({
                 userId: currentUser?.id,
@@ -499,7 +453,6 @@ const OffersScreen = () => {
                 actionType: 0, // Accept action
               }).unwrap();
 
-              console.log("Accept response:", response);
 
               if (response.isSuccess) {
                 Alert.alert("Başarılı", "Teklif kabul edildi.");
@@ -511,7 +464,6 @@ const OffersScreen = () => {
                 );
               }
             } catch (error) {
-              console.log("Accept offer error:", error);
               Alert.alert(
                 "Hata",
                 error?.data?.message ||
@@ -535,11 +487,6 @@ const OffersScreen = () => {
           text: "Reddet",
           onPress: async () => {
             try {
-              console.log("Rejecting offer:", {
-                userId: currentUser?.id,
-                offerId: offerId,
-                actionType: 1, // 0 = Reject (sizin verdiğiniz bilgiye göre)
-              });
 
               const response = await landlordOfferAction({
                 userId: currentUser?.id,
@@ -547,7 +494,6 @@ const OffersScreen = () => {
                 actionType: 1, // Reject action
               }).unwrap();
 
-              console.log("Reject response:", response);
 
               if (response.isSuccess) {
                 Alert.alert("Başarılı", "Teklif reddedildi.");
@@ -559,7 +505,6 @@ const OffersScreen = () => {
                 );
               }
             } catch (error) {
-              console.log("Reject offer error:", error);
               Alert.alert(
                 "Hata",
                 error?.data?.message || "Teklif reddedilirken bir hata oluştu."
@@ -595,17 +540,7 @@ const OffersScreen = () => {
     return mapping[currencyType] || "₺";
   };
   const renderOfferItem = (item, index) => {
-    // console.log("Rendering offer item:", {
-    //   offerId: item.offerId,
-    //   status: item.status,
-    //   offerAmount: item.offerAmount,
-    //   postTitle: item.post?.ilanBasligi || "No title",
-    //   // ⬇️ Bu satırları ekleyin
-    //   itemCurrency: item.currency, // Teklifin para birimi
-    //   postCurrency: item.post?.paraBirimi, // Post'un para birimi
-    //   // ⬆️ Bu satırları ekleyin
-    // });
-
+    //
     const statusInfo = getStatusText(item.status);
     const post = item.post || {};
 
@@ -614,7 +549,6 @@ const OffersScreen = () => {
       ? Math.min(5, Math.max(1, item.offeringUser.ratingCount / 10)) // 1-5 arası bir değer
       : 0;
 
-    console.log("itemitem", item);
 
     return (
       <TouchableOpacity
@@ -644,9 +578,6 @@ const OffersScreen = () => {
                     contentFit="cover"
                     cachePolicy="memory-disk"
                     transition={200}
-                    onError={(e) =>
-                      console.log("Image load error:", e.nativeEvent.error)
-                    }
                   />
 
                   {/* Full Image Blur Overlay */}
@@ -806,7 +737,6 @@ const OffersScreen = () => {
                         tint="dark"
                         className="py-2 px-4 rounded-full overflow-hidden"
                       >
-                        {" "}
                         <Text
                           className="text-white text-center font-medium"
                           style={{ fontSize: 16 }}
@@ -921,7 +851,6 @@ const OffersScreen = () => {
                 style={{ bottom: 10, left: 10 }}
                 className="items-center flex flex-row gap-1 mt-1 absolute"
               >
-                {" "}
                 <TouchableOpacity
                   style={{ borderWidth: 1.5 }}
                   className="w-10 h-10 rounded-full justify-center items-center mr-2 border border-white"
@@ -1227,7 +1156,6 @@ const OffersScreen = () => {
   }
 
   if (error) {
-    console.log("API Error:", error);
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center p-8">

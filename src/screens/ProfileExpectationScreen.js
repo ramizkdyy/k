@@ -665,12 +665,10 @@ const ProfileExpectationScreen = ({ navigation }) => {
         });
         setCityCodeMap(codeMap);
 
-        console.log(`Toplam ${cityNames.length} şehir yüklendi`);
       } else {
         throw new Error("Cities array not found");
       }
     } catch (error) {
-      console.error("Şehirler yüklenirken hata:", error);
       // Hata durumunda fallback liste kullan
       loadFallbackCities();
     }
@@ -771,7 +769,6 @@ const ProfileExpectationScreen = ({ navigation }) => {
       const cityCode = cityCodeMap[selectedCity];
 
       if (!cityCode) {
-        console.log(`${selectedCity} için şehir kodu bulunamadı`);
         setDistrictOptions([]);
         return;
       }
@@ -784,15 +781,10 @@ const ProfileExpectationScreen = ({ navigation }) => {
           a.localeCompare(b, "tr")
         );
         setDistrictOptions(districtNames);
-        console.log(
-          `${selectedCity} için ${districtNames.length} ilçe yüklendi`
-        );
       } else {
         setDistrictOptions([]);
-        console.log(`${selectedCity} için ilçe bulunamadı`);
       }
     } catch (error) {
-      console.error("İlçeler yüklenirken hata:", error);
       setDistrictOptions([]);
     }
   };
@@ -852,11 +844,6 @@ const ProfileExpectationScreen = ({ navigation }) => {
   // Populate form data when expectation is completed
   useEffect(() => {
     if (userProfile && isExpectationCompleted) {
-      console.log("Populating form data from existing expectations:", {
-        userRole,
-        userProfile,
-        isExpectationCompleted,
-      });
 
       if (userRole === "EVSAHIBI" && userProfile.tenantExpectation) {
         // Populate landlord form with tenant expectation data
@@ -997,7 +984,6 @@ const ProfileExpectationScreen = ({ navigation }) => {
     }
   }, [userProfile, isExpectationCompleted, userRole, city, districtOptions]);
 
-  console.log("isExpectationCompleted:", isExpectationCompleted);
 
   // Common state
 
@@ -1802,7 +1788,6 @@ const ProfileExpectationScreen = ({ navigation }) => {
   const handleSubmit = async () => {
     // VALIDATION: Ensure we have current user data
     if (!currentUser || !currentUser.id) {
-      console.error("No current user found in Redux state:", currentUser);
       Alert.alert(
         "Hata",
         "Kullanıcı bilgileri bulunamadı. Lütfen tekrar giriş yapın.",
@@ -1824,7 +1809,6 @@ const ProfileExpectationScreen = ({ navigation }) => {
 
     // VALIDATION: Ensure we have user role
     if (!userRole) {
-      console.error("No user role found:", { userRole, currentUser });
       Alert.alert(
         "Hata",
         "Kullanıcı rolü bulunamadı. Lütfen rol seçimini tekrar yapın."
@@ -1832,12 +1816,6 @@ const ProfileExpectationScreen = ({ navigation }) => {
       return;
     }
 
-    console.log("Starting expectation submission:", {
-      userId: currentUser.id,
-      userRole,
-      userName: currentUser.userName || currentUser.email,
-      currentUserData: currentUser,
-    });
 
     try {
       if (userRole === "EVSAHIBI") {
@@ -1873,20 +1851,17 @@ const ProfileExpectationScreen = ({ navigation }) => {
           buildingApprovalPolicy,
         };
 
-        console.log("Sending landlord expectation data:", expectationData);
 
         const response = await createLandlordExpectation(
           expectationData
         ).unwrap();
 
-        console.log("Landlord expectation response:", response);
 
         if (response && response.isSuccess) {
           Alert.alert("Başarılı", "Beklenti profili başarıyla oluşturuldu", [
             { text: "Tamam", onPress: () => navigation.goBack() },
           ]);
         } else {
-          console.error("Landlord expectation creation failed:", response);
           Alert.alert(
             "Hata",
             response?.message || "Beklenti profili oluşturulamadı"
@@ -1944,20 +1919,17 @@ const ProfileExpectationScreen = ({ navigation }) => {
           additionalNotes,
         };
 
-        console.log("Sending tenant expectation data:", expectationData);
 
         const response = await createTenantExpectation(
           expectationData
         ).unwrap();
 
-        console.log("Tenant expectation response:", response);
 
         if (response && response.isSuccess) {
           Alert.alert("Başarılı", "Beklenti profili başarıyla oluşturuldu", [
             { text: "Tamam", onPress: () => navigation.goBack() },
           ]);
         } else {
-          console.error("Tenant expectation creation failed:", response);
           Alert.alert(
             "Hata",
             response?.message || "Beklenti profili oluşturulamadı"
@@ -1965,12 +1937,6 @@ const ProfileExpectationScreen = ({ navigation }) => {
         }
       }
     } catch (error) {
-      console.error("Beklenti profili oluşturma hatası:", {
-        error,
-        errorData: error?.data,
-        currentUser,
-        userRole,
-      });
 
       Alert.alert(
         "Hata",
@@ -2098,7 +2064,6 @@ const ProfileExpectationScreen = ({ navigation }) => {
         }
       }
     } catch (error) {
-      console.error("Beklenti profili güncelleme hatası:", error);
       Alert.alert(
         "Hata",
         error?.data?.message ||

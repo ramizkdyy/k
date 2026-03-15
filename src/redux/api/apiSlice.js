@@ -1,6 +1,30 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { logout } from "../slices/authSlice";
 
 const BASE_URL = "https://kiraxapiyeni.justkey.online";
+
+const rawBaseQuery = fetchBaseQuery({
+  baseUrl: BASE_URL,
+  prepareHeaders: (headers, { getState }) => {
+    const token = getState().auth.token;
+
+    if (token) {
+      headers.set("authorization", `Bearer ${token}`);
+    }
+
+    return headers;
+  },
+});
+
+const baseQueryWithReauth = async (args, api, extraOptions) => {
+  const result = await rawBaseQuery(args, api, extraOptions);
+
+  if (result.error && result.error.status === 401) {
+    api.dispatch(logout());
+  }
+
+  return result;
+};
 
 export const apiSlice = createApi({
   reducerPath: "api",
@@ -9,18 +33,7 @@ export const apiSlice = createApi({
   refetchOnMountOrArgChange: 60, // ✅ OPTIMIZED: 1 dakika cooldown
   refetchOnFocus: false, // ✅ OPTIMIZED: Focus'ta otomatik refetch'i kapat
   refetchOnReconnect: true, // Network bağlantısı düzeldiğinde refetch
-  baseQuery: fetchBaseQuery({
-    baseUrl: BASE_URL,
-    prepareHeaders: (headers, { getState }) => {
-      const token = getState().auth.token;
-
-      if (token) {
-        headers.set("authorization", `Bearer ${token}`);
-      }
-
-      return headers;
-    },
-  }),
+  baseQuery: baseQueryWithReauth,
   tagTypes: [
     "Post",
     "Offer",
@@ -639,24 +652,18 @@ export const apiSlice = createApi({
     }),
     getOwnTenantProfile: builder.query({
       query: (id) => {
-        console.log("🔍 GetOwnTenantProfile API çağrısı yapılıyor, ID:", id);
         return `/api/profile/GetOwnTenantProfile/${id}`;
       },
       providesTags: (result, error, id) => {
-        console.log("📊 GetOwnTenantProfile sonucu:", result);
-        console.log("❌ GetOwnTenantProfile hatası:", error);
         return [{ type: "Profile", id: "own-tenant" }, "ProfileFavorites"];
       },
     }),
 
     getOwnLandlordProfile: builder.query({
       query: (id) => {
-        console.log("🔍 GetOwnLandlordProfile API çağrısı yapılıyor, ID:", id);
         return `/api/profile/GetOwnLandlordProfile/${id}`;
       },
       providesTags: (result, error, id) => {
-        console.log("📊 GetOwnLandlordProfile sonucu:", result);
-        console.log("❌ GetOwnLandlordProfile hatası:", error);
         return [{ type: "Profile", id: "own-landlord" }, "ProfileFavorites"];
       },
     }),
@@ -785,7 +792,6 @@ export const apiSlice = createApi({
             );
           }
         } catch (error) {
-          console.error("Profile action failed:", error);
         }
       },
     }),

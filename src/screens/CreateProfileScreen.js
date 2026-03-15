@@ -401,7 +401,6 @@ const CreateProfileScreen = (props) => {
         }
       }
     } catch (error) {
-      console.error("Image picker error:", error);
       Alert.alert("Hata", "Fotoğraf seçilirken bir hata oluştu.");
     }
   };
@@ -433,7 +432,6 @@ const CreateProfileScreen = (props) => {
         }
       }
     } catch (error) {
-      console.error("Camera error:", error);
       Alert.alert("Hata", "Fotoğraf çekilirken bir hata oluştu.");
     }
   };
@@ -515,19 +513,15 @@ const CreateProfileScreen = (props) => {
       }
 
       // Log the fields in the form
-      console.log("Formda bulunan alanlar:");
       for (let [key, value] of formData.entries()) {
-        console.log(`- ${key}: ${value}`);
       }
 
       // Create profile based on user role
       let response;
       if (userRole === "EVSAHIBI") {
         response = await createLandlordProfile(formData).unwrap();
-        console.log("EVSAHIBI profil oluşturma yanıtı:", response);
       } else {
         response = await createTenantProfile(formData).unwrap();
-        console.log("Tenant profil oluşturma yanıtı:", response);
       }
 
       if (response && response.isSuccess) {
@@ -555,7 +549,6 @@ const CreateProfileScreen = (props) => {
       dispatch(updateProfileImageStatus(null));
       dispatch(updateCoverImageStatus(null));
     } catch (error) {
-      console.error("Profile creation error:", error);
 
       // Show detailed error messages
       if (error && error.data && error.data.errors) {

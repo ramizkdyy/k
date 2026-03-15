@@ -325,14 +325,9 @@ const PostDetailScreen = ({ route, navigation }) => {
     useCreateOfferMutation();
   const [toggleFavoriteProperty] = useToggleFavoritePropertyMutation();
 
-  console.log("similar:", similarPostsData);
-  console.log("matching tenants:", matchingTenantsData);
-  console.log("match details:", matchDetails); // Debug için match details
-
   useEffect(() => {
     if (data && data.isSuccess && data.result && data.result.post) {
       dispatch(setCurrentPost(data.result.post));
-      console.log("DATA:", data.result.post);
     }
   }, [data, dispatch]);
 
@@ -635,22 +630,15 @@ const PostDetailScreen = ({ route, navigation }) => {
   };
 
   const handleCreateOffer = async (offerData) => {
+    const offerPayload = {
+      postId,
+      userId: currentUser.id,
+      offerAmount: offerData.amount,
+      actionType: 2,
+      description: offerData.message || null,
+      currency: offerData.currency, // (default TRY)
+    };
     try {
-      const offerPayload = {
-        postId,
-        userId: currentUser.id,
-        offerAmount: offerData.amount,
-        actionType: 2,
-        description: offerData.message || null,
-        currency: offerData.currency, // (default TRY)
-      };
-
-      console.log('Gönderilen teklif payload:', {
-        ...offerPayload,
-        selectedCurrency: offerData.currency,
-        currencyMapping: offerData.currency === 1 ? 'TRY' : offerData.currency === 2 ? 'USD' : offerData.currency === 3 ? 'EUR' : 'GBP'
-      }); // Debug için
-
       const response = await createOffer(offerPayload).unwrap();
 
       if (response && response.isSuccess) {
@@ -658,18 +646,28 @@ const PostDetailScreen = ({ route, navigation }) => {
           { text: "Tamam", onPress: () => setIsOfferModalVisible(false) },
         ]);
       } else {
+        console.log("OFFER RESPONSE (isSuccess=false):", JSON.stringify(response));
+        console.log("OFFER PAYLOAD:", JSON.stringify(offerPayload));
         Alert.alert(
           "Hata",
           response?.message || "Teklif gönderilirken bir hata oluştu."
         );
       }
     } catch (error) {
-      console.error("Offer creation error:", error);
-      Alert.alert(
-        "Hata",
-        error.data?.message ||
-        "Teklif gönderilirken bir hata oluştu. Lütfen tekrar deneyin."
-      );
+      console.log("OFFER ERROR STATUS:", error.status);
+      console.log("OFFER ERROR DATA:", JSON.stringify(error.data));
+      console.log("OFFER PAYLOAD:", JSON.stringify(offerPayload));
+      if (error.status === 401) {
+        Alert.alert(
+          "Oturum Süresi Doldu",
+          "Lütfen tekrar giriş yapın.",
+        );
+      } else {
+        Alert.alert(
+          "Hata",
+          `[${error.status}] ${error.data?.message || "Teklif gönderilirken bir hata oluştu."}`
+        );
+      }
     }
   };
 
@@ -728,7 +726,6 @@ const PostDetailScreen = ({ route, navigation }) => {
         throw new Error(response?.message || "İşlem başarısız");
       }
     } catch (error) {
-      console.error("Favorite toggle error:", error);
 
       // Rollback on error
       setIsFavorite(previousIsFavorite);

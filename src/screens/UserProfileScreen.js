@@ -100,7 +100,6 @@ const UserProfileScreen = ({ navigation, route }) => {
   const profileActionError = useSelector(selectProfileActionError);
   const insets = useSafeAreaInsets();
 
-  console.log("UserProfileScreen params:", { userId, userRole });
 
   // YENİ: Mevcut kullanıcının kendi profilini fetch et (favoriler için)
   const {
@@ -130,12 +129,6 @@ const UserProfileScreen = ({ navigation, route }) => {
 
   const [profileAction] = apiSlice.endpoints.profileAction.useMutation();
 
-  console.log("🔍 Current Redux State:", {
-    profileActionLoading: profileActionLoading,
-    profileActionError: profileActionError,
-    showRatingModal: showRatingModal,
-    isFavorite: isFavorite,
-  });
 
   const handleRateProfile = async (ratingData) => {
     if (hasUserRated) {
@@ -146,12 +139,6 @@ const UserProfileScreen = ({ navigation, route }) => {
       return;
     }
     try {
-      console.log("🎯 Rating başlatılıyor:", {
-        senderUserId: currentUserProfile?.id,
-        receiverUserId: userId,
-        ratingValue: ratingData.rating,
-        message: ratingData.message,
-      });
 
       // 1. Önce Rating Gönder
       const ratingResult = await profileAction({
@@ -161,11 +148,9 @@ const UserProfileScreen = ({ navigation, route }) => {
         RatingValue: ratingData.rating,
       }).unwrap();
 
-      console.log("✅ Rating gönderildi:", ratingResult);
 
       // 2. Eğer mesaj varsa, ayrı olarak MessageProfile gönder
       if (ratingData.message?.trim()) {
-        console.log("📝 Mesaj gönderiliyor:", ratingData.message);
 
         const messageResult = await profileAction({
           SenderUserId: currentUserProfile?.id,
@@ -174,7 +159,6 @@ const UserProfileScreen = ({ navigation, route }) => {
           Message: ratingData.message.trim(),
         }).unwrap();
 
-        console.log("✅ Mesaj gönderildi:", messageResult);
       }
 
       // İşlemler başarılı olduysa modal'ı kapat ve profili yenile
@@ -191,7 +175,6 @@ const UserProfileScreen = ({ navigation, route }) => {
         refetchProfile();
       }
     } catch (error) {
-      console.error("❌ Rating/Message hatası:", error);
       setShowRatingModal(false);
       Alert.alert(
         "Hata",
@@ -213,15 +196,6 @@ const UserProfileScreen = ({ navigation, route }) => {
     if (myProfile && userId && userRole) {
       let isUserFavorited = false;
 
-      console.log("🔍 Favori kontrol ediliyor:", {
-        userId: userId,
-        userRole: userRole,
-        myProfile: {
-          favoriteLandlordProfile:
-            myProfile.favoriteLandlordProfile?.length || 0,
-          favoriteTenantProfile: myProfile.favoriteTenantProfile?.length || 0,
-        },
-      });
 
       // Görüntülenen profil türüne göre kontrol et
       if (userRole === "EVSAHIBI" && myProfile.favoriteLandlordProfile) {
@@ -238,11 +212,6 @@ const UserProfileScreen = ({ navigation, route }) => {
 
       setIsFavorite(isUserFavorited);
 
-      console.log("🔍 Favori durumu sonucu:", {
-        userId: userId,
-        userRole: userRole,
-        isUserFavorited: isUserFavorited,
-      });
     }
   }, [myProfile, userId, userRole]);
 
@@ -254,17 +223,10 @@ const UserProfileScreen = ({ navigation, route }) => {
       );
       setHasUserRated(hasRated);
 
-      console.log("🔍 Rating kontrol ediliyor:", {
-        ratedByUserIds: userProfile.ratedByUserIds,
-        currentUserId: currentUserProfile.id,
-        hasRated: hasRated,
-      });
     }
   }, [userProfile?.ratedByUserIds, currentUserProfile?.id]);
 
-  console.log("API Response:", { profileData, profileError, profileLoading });
 
-  console.log("Parsed userProfile:", userProfile);
 
   const expectation =
     userRole === "EVSAHIBI"
@@ -289,11 +251,6 @@ const UserProfileScreen = ({ navigation, route }) => {
 
   const handleFavoriteToggle = async () => {
     try {
-      console.log("🎯 Favorite toggle başlatılıyor:", {
-        senderUserId: currentUserProfile?.id,
-        receiverUserId: userId,
-        currentFavoriteState: isFavorite,
-      });
 
       const actionType = isFavorite ? 1 : 0; // 1: RemoveFavorite, 0: AddFavorite
 
@@ -303,14 +260,12 @@ const UserProfileScreen = ({ navigation, route }) => {
         profileAction: actionType, // ProfileAction enum'ından AddFavorite (0) veya RemoveFavorite (1)
       }).unwrap();
 
-      console.log("✅ Favorite action tamamlandı:", result);
 
       if (result.isSuccess) {
         // Local state'i güncelle
         setIsFavorite(!isFavorite);
       }
     } catch (error) {
-      console.error("❌ Favorite toggle hatası:", error);
       Alert.alert(
         "Hata",
         error?.data?.message || "Favori işlemi sırasında bir hata oluştu."
@@ -329,20 +284,16 @@ const UserProfileScreen = ({ navigation, route }) => {
   // Tab Management for hiding bottom tabs
   useFocusEffect(
     useCallback(() => {
-      console.log("🔍 UserProfile focused, userRole:", userRole);
 
       const parent = navigation.getParent();
-      console.log("👨‍👦 Parent exists:", !!parent);
 
       if (parent) {
         parent.setOptions({
           tabBarStyle: { display: "none" },
         });
-        console.log("✅ Tab bar hidden");
       }
 
       return () => {
-        console.log("👋 UserProfile cleanup, userRole:", userRole);
 
         const parent = navigation.getParent();
         if (parent) {
@@ -360,7 +311,6 @@ const UserProfileScreen = ({ navigation, route }) => {
                 elevation: 8,
               },
             });
-            console.log("✅ Landlord tab bar restored");
           } else if (userRole === "KIRACI") {
             parent.setOptions({
               tabBarStyle: {
@@ -370,7 +320,6 @@ const UserProfileScreen = ({ navigation, route }) => {
                 paddingBottom: 5,
               },
             });
-            console.log("✅ Tenant tab bar restored");
           }
         }
       };

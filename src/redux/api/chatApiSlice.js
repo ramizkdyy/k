@@ -15,18 +15,12 @@ export const chatApiSlice = createApi({
         headers.set("ngrok-skip-browser-warning", "true");
         headers.set("Content-Type", "application/json");
       } else {
-        console.error("❌ No auth token available for API call");
       }
 
       return headers;
     },
     // ✅ Enhanced response transformer - Backend'in yeni response format'ına uyumlu
     transformResponse: (response, meta, arg) => {
-      console.log("🔍 API Response received:", {
-        endpoint: arg.endpointName || "unknown",
-        response: response,
-        meta: meta,
-      });
 
       // Eğer response direkt array veya primitive ise, doğrudan döndür
       if (Array.isArray(response) || typeof response !== "object") {
@@ -47,11 +41,6 @@ export const chatApiSlice = createApi({
     },
     // Enhanced error handler
     transformErrorResponse: (response, meta, arg) => {
-      console.error("❌ API Error Response:", {
-        endpoint: arg.endpointName || "unknown",
-        response: response,
-        meta: meta,
-      });
 
       // Backend error response'unu handle et
       if (response.data?.message) {
@@ -97,7 +86,6 @@ export const chatApiSlice = createApi({
       keepUnusedDataFor: 600, // ✅ OPTIMIZED: 5 dakika → 10 dakika cache
       // ✅ ENHANCED: Backend'in yeni response format'ını handle et
       transformResponse: (response, meta, arg) => {
-        console.log(`🔍 Chat History Response (Page ${arg.page}):`, response);
 
         // ✅ Backend'in yeni format'ı: { messages: [], hasNextPage: boolean, currentPage: number, pageSize: number }
         if (response && typeof response === "object" && response.messages) {
@@ -105,9 +93,6 @@ export const chatApiSlice = createApi({
 
           // Messages array'ini validate et
           if (Array.isArray(messages)) {
-            console.log(
-              `✅ Valid backend format - Page ${currentPage}: ${messages.length} messages, hasNext: ${hasNextPage}`
-            );
             return {
               messages: messages,
               hasNextPage: Boolean(hasNextPage),
@@ -119,9 +104,6 @@ export const chatApiSlice = createApi({
 
         // ✅ Fallback: Response array ise (eski format için backward compatibility)
         if (Array.isArray(response)) {
-          console.log(
-            `⚠️ Legacy array format detected - ${response.length} messages`
-          );
           return {
             messages: response,
             hasNextPage: response.length === (arg.pageSize || 20),
@@ -150,7 +132,6 @@ export const chatApiSlice = createApi({
         }
 
         // ✅ Default: Boş response
-        console.log("⚠️ Unknown response format, returning empty");
         return {
           messages: [],
           hasNextPage: false,
@@ -176,11 +157,9 @@ export const chatApiSlice = createApi({
       refetchOnMountOrArgChange: true,
       refetchOnFocus: true,
       transformResponse: (response) => {
-        console.log("🔍 Chat Partners Response:", response);
 
         // Response direkt array ise
         if (Array.isArray(response)) {
-          console.log(`✅ Partners array format - ${response.length} partners`);
           return response;
         }
 
@@ -202,7 +181,6 @@ export const chatApiSlice = createApi({
         }
 
         // Eğer hiç partner yoksa boş array döndür
-        console.log("⚠️ No partners found or invalid format");
         return [];
       },
     }),
@@ -215,7 +193,6 @@ export const chatApiSlice = createApi({
       refetchOnMountOrArgChange: true,
       refetchOnFocus: true,
       transformResponse: (response) => {
-        console.log("🔍 Unread Count Response:", response);
 
         // Response direkt number ise
         if (typeof response === "number") {
@@ -247,7 +224,6 @@ export const chatApiSlice = createApi({
         }
 
         // Default 0
-        console.log("⚠️ No valid count found, defaulting to 0");
         return { count: 0 };
       },
     }),
@@ -264,7 +240,6 @@ export const chatApiSlice = createApi({
       }),
       // ✅ Enhanced response handling
       transformResponse: (response) => {
-        console.log("🔍 Send Message Response:", response);
 
         // Backend'in success response'unu handle et
         if (response?.success) {
@@ -303,7 +278,6 @@ export const chatApiSlice = createApi({
         method: "POST",
       }),
       transformResponse: (response) => {
-        console.log("🔍 Mark Read Response:", response);
         return response;
       },
       invalidatesTags: (result, error, partnerId) => [
@@ -319,7 +293,6 @@ export const chatApiSlice = createApi({
       query: (partnerId) => `/api/chat/GetPartner/${partnerId}`,
       keepUnusedDataFor: 120, // 2 minutes cache
       transformResponse: (response) => {
-        console.log("🔍 Partner By ID Response:", response);
 
         // Response direkt partner object ise
         if (response && typeof response === "object" && response.id) {
@@ -344,7 +317,6 @@ export const chatApiSlice = createApi({
       query: (username) => `/api/chat/GetPartnerByUsername/${username}`,
       keepUnusedDataFor: 60, // 1 minute cache
       transformResponse: (response) => {
-        console.log("🔍 Partner By Username Response:", response);
 
         if (response && typeof response === "object" && response.id) {
           return response;
@@ -370,7 +342,6 @@ export const chatApiSlice = createApi({
         )}&limit=${limit}`,
       keepUnusedDataFor: 30, // 30 seconds cache for search results
       transformResponse: (response) => {
-        console.log("🔍 Search Partners Response:", response);
 
         // Backend format: { searchTerm: string, results: [], count: number }
         if (response?.results && Array.isArray(response.results)) {
@@ -402,7 +373,6 @@ export const chatApiSlice = createApi({
         )}&limit=${limit}`,
       keepUnusedDataFor: 30,
       transformResponse: (response) => {
-        console.log("🔍 Search Chat Partners Response:", response);
 
         if (response?.results && Array.isArray(response.results)) {
           return {
@@ -460,7 +430,6 @@ export const chatApiSlice = createApi({
       query: (partnerId) => `/api/chat/unread-count/${partnerId}`,
       keepUnusedDataFor: 15,
       transformResponse: (response) => {
-        console.log("🔍 Unread Count For Chat Response:", response);
 
         if (response?.unreadCount !== undefined) {
           return {
@@ -489,7 +458,6 @@ export const chatApiSlice = createApi({
       providesTags: ["ChatPartner", "UnreadCount"],
       keepUnusedDataFor: 30,
       transformResponse: (response) => {
-        console.log("🔍 Chat Partners With Unread Response:", response);
 
         if (Array.isArray(response)) {
           return response;
@@ -512,7 +480,6 @@ export const chatApiSlice = createApi({
       query: () => "/health",
       keepUnusedDataFor: 0,
       transformResponse: (response) => {
-        console.log("🔍 Health Check Response:", response);
         return response;
       },
     }),
@@ -522,7 +489,6 @@ export const chatApiSlice = createApi({
       query: (userId) => `/api/chat/user-status/${userId}`,
       keepUnusedDataFor: 30,
       transformResponse: (response) => {
-        console.log("🔍 User Online Status Response:", response);
         return {
           userId: response.userId || response.UserId,
           isOnline: response.isOnline || response.IsOnline || false,
@@ -536,7 +502,6 @@ export const chatApiSlice = createApi({
       query: () => "/api/chat/stats",
       keepUnusedDataFor: 300,
       transformResponse: (response) => {
-        console.log("🔍 Chat Stats Response:", response);
         return {
           totalChats: response.totalChats || response.TotalChats || 0,
           unreadCount: response.unreadCount || response.UnreadCount || 0,
@@ -553,7 +518,6 @@ export const chatApiSlice = createApi({
         body: tokenData,
       }),
       transformResponse: (response) => {
-        console.log("🔍 Register Notification Token Response:", response);
         return response;
       },
       invalidatesTags: ["Notification"],
@@ -566,7 +530,6 @@ export const chatApiSlice = createApi({
         body: tokenData,
       }),
       transformResponse: (response) => {
-        console.log("🔍 Unregister Notification Token Response:", response);
         return response;
       },
       invalidatesTags: ["Notification"],
@@ -626,22 +589,15 @@ export const chatApiHelpers = {
         }
 
         if (pageMessages.length > 0) {
-          console.log(
-            `📖 Page ${page} found with ${pageMessages.length} messages`
-          );
           allMessages.push(...pageMessages);
         } else if (page === 1) {
-          console.log("📖 No first page data found");
           break;
         } else {
-          console.log(`📖 No more pages after ${page - 1}`);
           break;
         }
       } else if (page === 1) {
-        console.log("📖 No first page cache found");
         break;
       } else {
-        console.log(`📖 No more cached pages after ${page - 1}`);
         break;
       }
     }
@@ -655,17 +611,11 @@ export const chatApiHelpers = {
     // En yeni mesajlar önce olacak şekilde sırala
     uniqueMessages.sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt));
 
-    console.log(
-      `📖 Combined ${uniqueMessages.length} unique messages from ${Math.ceil(
-        allMessages.length / 20
-      )} pages`
-    );
     return uniqueMessages;
   },
 
   // ✅ ENHANCED: SignalR'dan gelen mesajı cache'e manuel ekle - Backend field names ile uyumlu
   addMessageToCache: (dispatch, partnerId, messageData) => {
-    console.log("🔄 Adding message to cache:", { partnerId, messageData });
 
     // ✅ Backend field names'leri normalize et
     const normalizedMessage = {
@@ -724,11 +674,9 @@ export const chatApiHelpers = {
           );
 
           if (!exists) {
-            console.log("✅ Adding new message to cache");
             // Add at the beginning since latest messages come first
             messages.unshift(normalizedMessage);
           } else {
-            console.log("⚠️ Duplicate message, not adding to cache");
           }
         }
       )
@@ -737,10 +685,6 @@ export const chatApiHelpers = {
 
   // ✅ ENHANCED: Cache'deki mesajları okundu olarak işaretle - Backend format'ına uyumlu
   markCacheMessagesAsRead: (dispatch, partnerId, currentUserId) => {
-    console.log("👁️ Marking cache messages as read:", {
-      partnerId,
-      currentUserId,
-    });
 
     // Tüm sayfaları güncelle
     for (let page = 1; page <= 10; page++) {
@@ -780,7 +724,6 @@ export const chatApiHelpers = {
       isOptimistic: true,
     };
 
-    console.log("🔮 Adding optimistic message to cache:", optimisticMessage);
 
     dispatch(
       chatApiSlice.util.updateQueryData(
@@ -821,7 +764,6 @@ export const chatApiHelpers = {
 
   // ✅ ENHANCED: Optimistic mesajı kaldır - Backend format'ına uyumlu
   removeOptimisticMessage: (dispatch, partnerId, messageId) => {
-    console.log("🗑️ Removing optimistic message:", { partnerId, messageId });
 
     dispatch(
       chatApiSlice.util.updateQueryData(
@@ -847,11 +789,6 @@ export const chatApiHelpers = {
 
   // ✅ ENHANCED: Optimistic mesajı gerçek mesajla değiştir - Backend format'ına uyumlu
   replaceOptimisticMessage: (dispatch, partnerId, tempId, realMessage) => {
-    console.log("🔄 Replacing optimistic message:", {
-      partnerId,
-      tempId,
-      realMessage,
-    });
 
     dispatch(
       chatApiSlice.util.updateQueryData(
@@ -880,13 +817,11 @@ export const chatApiHelpers = {
 
   // ✅ Cache'i temizle (çıkış yaparken)
   clearChatCache: (dispatch) => {
-    console.log("🧹 Clearing all chat cache");
     dispatch(chatApiSlice.util.resetApiState());
   },
 
   // ✅ Belirli bir chat'in cache'ini temizle
   clearSpecificChatCache: (dispatch, partnerId) => {
-    console.log("🗑️ Clearing specific chat cache:", partnerId);
     // Tüm sayfa cache'lerini temizle
     for (let page = 1; page <= 10; page++) {
       dispatch(
@@ -914,7 +849,6 @@ export const chatApiHelpers = {
 
   // ✅ Specific chat'i yenile
   refreshSpecificChat: (dispatch, partnerId) => {
-    console.log("🔄 Refreshing specific chat:", partnerId);
     // Tüm sayfa cache'lerini yenile
     for (let page = 1; page <= 10; page++) {
       dispatch(
@@ -930,7 +864,6 @@ export const chatApiHelpers = {
 
   // ✅ Tüm cache'i yenile (SignalR reconnect durumunda)
   refreshAllCache: (dispatch) => {
-    console.log("🔄 Refreshing all cache");
     dispatch(
       chatApiSlice.util.invalidateTags([
         "ChatMessage",
@@ -979,7 +912,6 @@ export const chatApiHelpers = {
 
   // ✅ Manuel prefetch - Chat'e girmeden önce data'yı yükle
   prefetchChatHistory: (dispatch, partnerId, page = 1) => {
-    console.log("📥 Prefetching chat history for:", partnerId, "page:", page);
     dispatch(
       chatApiSlice.util.prefetch(
         "getChatHistory",
@@ -991,11 +923,6 @@ export const chatApiHelpers = {
 
   // ✅ ENHANCED: Cache'deki bir mesajı güncelle - Backend format'ına uyumlu
   updateMessageInCache: (dispatch, partnerId, messageId, updates) => {
-    console.log("🔄 Updating message in cache:", {
-      partnerId,
-      messageId,
-      updates,
-    });
 
     // Tüm sayfaları kontrol et ve mesajı bul
     for (let page = 1; page <= 10; page++) {
@@ -1031,17 +958,14 @@ export const chatApiHelpers = {
       const result = await dispatch(
         chatApiSlice.endpoints.chatHealthCheck.initiate()
       ).unwrap();
-      console.log("✅ Backend health check passed:", result);
       return true;
     } catch (error) {
-      console.error("❌ Backend health check failed:", error);
       return false;
     }
   },
 
   // ✅ NEW: Cache migration helper (eski format'tan yeni format'a)
   migrateCacheFormat: (dispatch, partnerId) => {
-    console.log("🔄 Migrating cache format for:", partnerId);
 
     dispatch(
       chatApiSlice.util.updateQueryData(
@@ -1057,7 +981,6 @@ export const chatApiHelpers = {
               currentPage: 1,
               pageSize: 20,
             });
-            console.log("✅ Migrated cache from legacy format to new format");
           }
         }
       )

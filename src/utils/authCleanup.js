@@ -11,7 +11,6 @@ export const authCleanupHelper = {
    * Use during logout and user switching
    */
   clearUserStorage: async () => {
-    console.log("🧹 Clearing user storage data...");
     
     try {
       const keysToRemove = [
@@ -42,10 +41,8 @@ export const authCleanupHelper = {
       ];
       
       await AsyncStorage.multiRemove(keysToRemove);
-      console.log("✅ User storage cleared successfully");
       
     } catch (error) {
-      console.error("❌ Error clearing user storage:", error);
       // Try to clear individual keys if multiRemove fails
       await this.clearUserStorageFallback();
     }
@@ -55,7 +52,6 @@ export const authCleanupHelper = {
    * Fallback method for clearing storage when multiRemove fails
    */
   clearUserStorageFallback: async () => {
-    console.log("🔄 Using fallback storage cleanup method...");
     
     try {
       // Get all keys and filter user-related ones
@@ -72,13 +68,10 @@ export const authCleanupHelper = {
       // Remove user-related keys
       for (const key of userKeys) {
         await AsyncStorage.removeItem(key);
-        console.log(`🗑️ Removed key: ${key}`);
       }
       
-      console.log("✅ Fallback storage cleanup completed");
       
     } catch (error) {
-      console.error("❌ Fallback storage cleanup failed:", error);
     }
   },
 
@@ -87,13 +80,10 @@ export const authCleanupHelper = {
    * Use only when other methods fail
    */
   emergencyCleanup: async () => {
-    console.log("🚨 EMERGENCY CLEANUP - Clearing all AsyncStorage data");
     
     try {
       await AsyncStorage.clear();
-      console.log("✅ Emergency cleanup completed - all data cleared");
     } catch (error) {
-      console.error("❌ Emergency cleanup failed:", error);
     }
   },
 
@@ -101,10 +91,6 @@ export const authCleanupHelper = {
    * Prepare for user switch - selective cleanup that preserves app settings
    */
   prepareForUserSwitch: async (currentUserId, newUserId) => {
-    console.log("🔄 Preparing for user switch:", {
-      from: currentUserId,
-      to: newUserId
-    });
     
     try {
       // Clear user-specific data but keep app settings
@@ -130,10 +116,8 @@ export const authCleanupHelper = {
         timestamp: new Date().toISOString()
       }));
       
-      console.log("✅ User switch preparation completed");
       
     } catch (error) {
-      console.error("❌ Error preparing for user switch:", error);
       // Fallback to full cleanup
       await this.clearUserStorage();
     }
@@ -143,7 +127,6 @@ export const authCleanupHelper = {
    * Validate storage state - check for inconsistencies
    */
   validateStorageState: async () => {
-    console.log("🔍 Validating storage state...");
     
     try {
       const allKeys = await AsyncStorage.getAllKeys();
@@ -178,15 +161,12 @@ export const authCleanupHelper = {
       }
       
       if (suspiciousKeys.length > 0) {
-        console.warn("⚠️ Found suspicious storage keys:", suspiciousKeys);
         return { isValid: false, issues: suspiciousKeys };
       }
       
-      console.log("✅ Storage state validation passed");
       return { isValid: true, issues: [] };
       
     } catch (error) {
-      console.error("❌ Storage validation error:", error);
       return { isValid: false, error: error.message };
     }
   },
@@ -195,22 +175,18 @@ export const authCleanupHelper = {
    * Debug storage contents - helpful for troubleshooting
    */
   debugStorageContents: async () => {
-    console.log("🐛 DEBUG: Storage contents");
     
     try {
       const allKeys = await AsyncStorage.getAllKeys();
-      console.log("📋 All storage keys:", allKeys);
       
       for (const key of allKeys) {
         const value = await AsyncStorage.getItem(key);
         const preview = value ? 
           (value.length > 100 ? value.substring(0, 100) + '...' : value) : 
           'null';
-        console.log(`🔑 ${key}: ${preview}`);
       }
       
     } catch (error) {
-      console.error("❌ Debug storage error:", error);
     }
   }
 };

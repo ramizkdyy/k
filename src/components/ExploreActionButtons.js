@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Dimensions,
-  Pressable, // 🚀 TouchableOpacity yerine Pressable
+  Pressable,
 } from "react-native";
 import {
   Share2,
@@ -55,12 +55,10 @@ const ExploreActionButtons = memo(
 
     // 🚀 MODAL AÇMA - Kesinlikle çalışan versiyon
     const handleModalOpen = () => {
-      console.log('🚀 Modal Opening Triggered'); // Debug
       setIsDetailModalVisible(true);
     };
 
     const handleModalClose = () => {
-      console.log('🚀 Modal Closing Triggered'); // Debug
       setIsDetailModalVisible(false);
     };
 

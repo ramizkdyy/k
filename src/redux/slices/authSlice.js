@@ -47,11 +47,6 @@ const authSlice = createSlice({
       // Reset FCM registration status on new login (will be re-registered)
       state.fcmTokenRegistered = false;
 
-      console.log("✅ Login successful - Redux state updated", {
-        userId: user?.id,
-        role: user?.role,
-        hasProfile: hasUserProfile,
-      });
     },
 
     loginFailure: (state, action) => {
@@ -64,7 +59,6 @@ const authSlice = createSlice({
       state.userRole = null;
       state.hasUserProfile = false;
 
-      console.log("❌ Login failed - Redux state cleared");
     },
 
     // ENHANCED: Better user switching detection and cleanup in setCredentials
@@ -78,11 +72,6 @@ const authSlice = createSlice({
         previousUserId && currentUserId && previousUserId !== currentUserId;
 
       if (isUserSwitch) {
-        console.log("🔄 USER SWITCH in setCredentials:", {
-          previousUserId,
-          currentUserId,
-          clearingPreviousData: true,
-        });
 
         // Clear previous user's data completely for user switch
         Object.assign(state, initialState);
@@ -107,21 +96,10 @@ const authSlice = createSlice({
 
       state.error = null;
 
-      console.log("setCredentials çalıştı:", {
-        userId: user?.id,
-        wasUserSwitch: isUserSwitch,
-        previousUserId,
-        user,
-        token: token?.substring(0, 20) + "...",
-        role: state.role,
-        userRole: state.userRole,
-        hasUserProfile: state.hasUserProfile,
-      });
     },
 
     // ENHANCED: More thorough logout with detailed logging and FCM cleanup
     logout: (state) => {
-      console.log("🚪 Logout initiated for user:", state.user?.id);
 
       // Store previous user info for logging
       const previousUserId = state.user?.id;
@@ -131,17 +109,10 @@ const authSlice = createSlice({
       // Reset to initial state completely
       Object.assign(state, initialState);
 
-      console.log("🧹 Logout completed - all auth state cleared:", {
-        previousUserId,
-        previousRole,
-        hadFcmToken,
-        stateReset: true,
-      });
     },
 
     // NEW: Force clear all user data for hard reset (emergency logout)
     forceLogout: (state) => {
-      console.log("🔥 FORCE LOGOUT initiated - clearing everything");
 
       // Store previous info
       const previousUserId = state.user?.id;
@@ -160,10 +131,6 @@ const authSlice = createSlice({
       state.lastLoginTime = null;
       state.deviceInfo = null;
 
-      console.log("🔥 FORCE LOGOUT completed:", {
-        previousUserId,
-        allDataCleared: true,
-      });
     },
 
     // ENHANCED: More robust role setting
@@ -180,25 +147,15 @@ const authSlice = createSlice({
         };
       }
 
-      console.log("setRole çalıştı:", {
-        newRole,
-        userId: state.user?.id,
-        userObject: state.user,
-      });
     },
 
     setHasUserProfile: (state, action) => {
       state.hasUserProfile = action.payload;
-      console.log("setHasUserProfile çalıştı:", {
-        hasProfile: action.payload,
-        userId: state.user?.id,
-      });
     },
 
     // ENHANCED: Better user data updates
     updateUserData: (state, action) => {
       if (!state.user) {
-        console.warn("Trying to update user data but no user exists");
         return;
       }
 
@@ -212,10 +169,6 @@ const authSlice = createSlice({
         state.userRole = action.payload.role;
       }
 
-      console.log("updateUserData çalıştı:", {
-        updatedUser: state.user,
-        userId: state.user?.id,
-      });
     },
 
     syncUserDataFromProfile: (state, action) => {
@@ -230,10 +183,6 @@ const authSlice = createSlice({
           isTenantExpectationCompleted: profile.isTenantExpectationCompleted,
         };
 
-        console.log("User data synced from profile:", {
-          userId: state.user.id,
-          user: state.user,
-        });
       }
     },
 
@@ -251,12 +200,6 @@ const authSlice = createSlice({
             isLandlordExpectationCompleted;
         }
 
-        console.log("Expectation status synced:", {
-          userId: state.user.id,
-          isTenantExpectationCompleted: state.user.isTenantExpectationCompleted,
-          isLandlordExpectationCompleted:
-            state.user.isLandlordExpectationCompleted,
-        });
       }
     },
 
@@ -275,34 +218,26 @@ const authSlice = createSlice({
       state.role = null;
       state.userRole = null;
       state.hasUserProfile = false;
-      console.log("User data cleared");
     },
 
     // ✅ FCM Token management
     setFcmToken: (state, action) => {
       state.fcmToken = action.payload;
-      console.log(
-        "🔥 FCM token stored in Redux:",
-        action.payload?.substring(0, 20) + "..."
-      );
     },
 
     setFcmTokenRegistered: (state, action) => {
       state.fcmTokenRegistered = action.payload;
-      console.log("📝 FCM token registration status updated:", action.payload);
     },
 
     clearFcmToken: (state) => {
       state.fcmToken = null;
       state.fcmTokenRegistered = false;
-      console.log("🗑️ FCM token cleared from Redux");
     },
 
 
     // ✅ Device info (optional)
     setDeviceInfo: (state, action) => {
       state.deviceInfo = action.payload;
-      console.log("📱 Device info stored:", action.payload);
     },
 
     // ✅ Loading states
@@ -313,7 +248,6 @@ const authSlice = createSlice({
     // ✅ Complete reset (for app restart or critical errors)
     resetAuthState: (state) => {
       Object.assign(state, initialState);
-      console.log("🔄 Auth state completely reset");
     },
   },
 
@@ -338,11 +272,6 @@ const authSlice = createSlice({
           state.error = null;
           state.lastLoginTime = new Date().toISOString();
 
-          console.log("Login API successful:", {
-            userId: user?.id,
-            role: user?.role,
-            hasUserProfile,
-          });
         }
       }
     );
@@ -353,7 +282,6 @@ const authSlice = createSlice({
         state.error = payload?.message || "Login failed";
         state.isAuthenticated = false;
         state.isLoading = false;
-        console.error("Login failed:", payload);
       }
     );
 
@@ -361,7 +289,6 @@ const authSlice = createSlice({
     builder.addMatcher(
       apiSlice.endpoints.register?.matchFulfilled,
       (state, { payload }) => {
-        console.log("Register API yanıtı:", payload);
         if (payload && payload.result) {
           const { user, token, hasUserProfile } = payload.result;
 
@@ -378,11 +305,6 @@ const authSlice = createSlice({
           state.error = null;
           state.lastLoginTime = new Date().toISOString();
 
-          console.log("Registration successful:", {
-            userId: user?.id,
-            role: user?.role,
-            hasUserProfile,
-          });
         }
       }
     );
@@ -392,7 +314,6 @@ const authSlice = createSlice({
       (state, { payload }) => {
         state.error = payload?.message || "Registration failed";
         state.isLoading = false;
-        console.error("Registration failed:", payload);
       }
     );
 
@@ -400,8 +321,6 @@ const authSlice = createSlice({
     builder.addMatcher(
       apiSlice.endpoints.assignRole?.matchFulfilled,
       (state, { payload, meta }) => {
-        console.log("AssignRole API yanıtı:", payload);
-        console.log("AssignRole meta:", meta);
 
         if (payload && payload.result && state.user) {
           const newRole = payload.result.role;
@@ -409,14 +328,7 @@ const authSlice = createSlice({
           state.userRole = newRole;
           state.user.role = newRole;
 
-          console.log("Rol atama başarılı:", {
-            userId: state.user.id,
-            oldRole: meta.arg.role,
-            newRole: newRole,
-            currentUser: state.user,
-          });
         } else if (!state.user) {
-          console.error("Role assignment failed: No user in state");
         }
       }
     );
@@ -424,8 +336,6 @@ const authSlice = createSlice({
     builder.addMatcher(
       apiSlice.endpoints.assignRole?.matchRejected,
       (state, { payload, meta }) => {
-        console.error("Role assignment failed:", payload);
-        console.log("Failed role assignment meta:", meta);
         state.error = payload?.message || "Role assignment failed";
       }
     );
@@ -435,11 +345,6 @@ const authSlice = createSlice({
       apiSlice.endpoints.createLandlordProfile?.matchFulfilled,
       (state, { payload, meta }) => {
         state.hasUserProfile = true;
-        console.log("Ev sahibi profili oluşturuldu:", {
-          userId: state.user?.id,
-          profileData: meta.arg,
-          response: payload,
-        });
       }
     );
 
@@ -447,11 +352,6 @@ const authSlice = createSlice({
       apiSlice.endpoints.createTenantProfile?.matchFulfilled,
       (state, { payload, meta }) => {
         state.hasUserProfile = true;
-        console.log("Kiracı profili oluşturuldu:", {
-          userId: state.user?.id,
-          profileData: meta.arg,
-          response: payload,
-        });
       }
     );
 
@@ -461,11 +361,6 @@ const authSlice = createSlice({
       (state, { payload, meta }) => {
         if (payload && payload.isSuccess && state.user) {
           state.user.isLandlordExpectationCompleted = true;
-          console.log("Landlord expectation created successfully:", {
-            userId: state.user.id,
-            expectationData: meta.arg,
-            response: payload,
-          });
         }
       }
     );
@@ -473,11 +368,6 @@ const authSlice = createSlice({
     builder.addMatcher(
       apiSlice.endpoints.createLandlordExpectation?.matchRejected,
       (state, { payload, meta }) => {
-        console.error("Landlord expectation creation failed:", {
-          error: payload,
-          sentData: meta.arg,
-          currentUserId: state.user?.id,
-        });
         state.error =
           payload?.message || "Landlord expectation creation failed";
       }
@@ -488,11 +378,6 @@ const authSlice = createSlice({
       (state, { payload, meta }) => {
         if (payload && payload.isSuccess && state.user) {
           state.user.isTenantExpectationCompleted = true;
-          console.log("Tenant expectation created successfully:", {
-            userId: state.user.id,
-            expectationData: meta.arg,
-            response: payload,
-          });
         }
       }
     );
@@ -500,11 +385,6 @@ const authSlice = createSlice({
     builder.addMatcher(
       apiSlice.endpoints.createTenantExpectation?.matchRejected,
       (state, { payload, meta }) => {
-        console.error("Tenant expectation creation failed:", {
-          error: payload,
-          sentData: meta.arg,
-          currentUserId: state.user?.id,
-        });
         state.error = payload?.message || "Tenant expectation creation failed";
       }
     );

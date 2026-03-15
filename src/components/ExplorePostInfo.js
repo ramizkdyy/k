@@ -192,7 +192,6 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
           matchScore = rawMatchScore > 1 ? rawMatchScore / 100 : rawMatchScore; // 0-1 aralığına getir
         }
       }
-      console.log(post);
 
       return {
         title:
@@ -254,43 +253,26 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
 
   // İlan detayına git fonksiyonu - sadece normal postlar için
   const handlePostDetailPress = () => {
-    console.log("handlePostDetailPress called");
-    console.log("navigation object:", navigation);
-    console.log("postId:", listingData.postId);
-    console.log("listing type:", listingData.type);
 
     // Sadece normal postlarda çalışsın
     if (listingData.type !== "normal") {
-      console.log("Navigation blocked - not a normal post");
       return;
     }
 
     if (listingData.postId) {
-      console.log("Attempting to navigate to PostDetail with params:", {
-        postId: listingData.postId,
-      });
 
       // PostDetailScreen'e navigate et
       navigation.navigate("PostDetail", {
         postId: listingData.postId,
       });
     } else {
-      console.log("Navigation failed - missing postId");
     }
   };
 
   // Kullanıcı profiline git fonksiyonu
   const handleUserProfilePress = () => {
-    console.log("handleUserProfilePress called");
-    console.log("navigation object:", navigation);
-    console.log("landlordUserId:", listingData.landlordUserId);
-    console.log("landlordUserRole:", listingData.landlordUserRole);
 
     if (listingData.landlordUserId && listingData.landlordUserRole) {
-      console.log("Attempting to navigate to UserProfile with params:", {
-        userId: listingData.landlordUserId,
-        userRole: listingData.landlordUserRole,
-      });
 
       // AppNavigator'da gördüğümüz gibi ekran adı "UserProfile" olmalı
       navigation.navigate("UserProfile", {
@@ -298,7 +280,6 @@ const ExplorePostInfo = memo(({ listing, safeAreaInsets }) => {
         userRole: listingData.landlordUserRole,
       });
     } else {
-      console.log("Navigation failed - missing user data");
     }
   };
 

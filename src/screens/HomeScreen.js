@@ -105,14 +105,12 @@ const HomeScreen = ({ navigation }) => {
   });
 
   const totalUnreadCount = React.useMemo(() => {
-    console.log("HomeScreen - Unread Data Response:", unreadData);
     return unreadData?.totalUnreadChats || 0;
   }, [unreadData?.totalUnreadChats]);
 
   // Focus effect - Ekrana gelince unread count'u yenile
   useFocusEffect(
     useCallback(() => {
-      console.log("📱 HomeScreen focused, refreshing unread count...");
       refetchUnread();
     }, [refetchUnread])
   );
@@ -121,23 +119,16 @@ const HomeScreen = ({ navigation }) => {
   useEffect(() => {
     if (!connection || !isConnected) return;
 
-    console.log("🔔 Setting up SignalR listeners for HomeScreen unread count");
 
     const handleReceiveMessage = (messageData) => {
-      console.log("📨 New message received in HomeScreen:", messageData);
       refetchUnread();
     };
 
     const handleMessageSent = (confirmationData) => {
-      console.log(
-        "✅ Message sent confirmation in HomeScreen:",
-        confirmationData
-      );
       refetchUnread();
     };
 
     const handleMessagesRead = (readData) => {
-      console.log("👁️ Messages read in HomeScreen:", readData);
       refetchUnread();
     };
 
@@ -146,7 +137,6 @@ const HomeScreen = ({ navigation }) => {
     connection.on("MessagesRead", handleMessagesRead);
 
     return () => {
-      console.log("🧹 Cleaning up SignalR listeners for HomeScreen");
       connection.off("ReceiveMessage", handleReceiveMessage);
       connection.off("MessageSent", handleMessageSent);
       connection.off("MessagesRead", handleMessagesRead);
@@ -166,9 +156,7 @@ const HomeScreen = ({ navigation }) => {
         refetchUnread(),
         new Promise((resolve) => setTimeout(resolve, 800)), // ✅ OPTIMIZED: 1500ms → 800ms
       ]);
-      console.log("Page refreshed successfully");
     } catch (error) {
-      console.error("Refresh failed:", error);
     } finally {
       setRefreshing(false);
     }
@@ -396,8 +384,8 @@ const HomeScreen = ({ navigation }) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#A0E79E"
-            colors={["#A0E79E"]}
+            tintColor="#303030"
+            colors={["#303030"]}
             progressBackgroundColor="#fff"
             progressViewOffset={getDynamicPaddingTop()}
             title="Yenileniyor..."

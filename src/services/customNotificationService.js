@@ -10,28 +10,19 @@ class CustomNotificationService {
   // Set the showNotification function from context
   setShowNotification(showNotificationFn) {
     this.showNotification = showNotificationFn;
-    console.log("✅ CustomNotificationService: showNotification function set");
   }
 
   // Set the filtering function from context
   setFilterFunction(filterFn) {
     this.shouldFilterNotification = filterFn;
-    console.log("✅ CustomNotificationService: filter function set");
   }
 
   // ✅ Enhanced duplicate notification kontrolü
   isDuplicate(messageId, content, source = "unknown") {
     this.notificationCounter++;
 
-    console.log(`🔔 NOTIFICATION #${this.notificationCounter} ATTEMPT:`, {
-      source,
-      messageId,
-      content: content?.substring(0, 50),
-      timestamp: new Date().toISOString(),
-    });
 
     if (!messageId && !content) {
-      console.log("⚠️ No messageId or content for duplicate check");
       return false;
     }
 
@@ -51,13 +42,6 @@ class CustomNotificationService {
         const timeDiff = now - lastTime;
 
         if (timeDiff < this.duplicateThreshold) {
-          console.log(`🔄 DUPLICATE NOTIFICATION PREVENTED (${source}):`, {
-            key,
-            timeDiff: `${timeDiff}ms`,
-            threshold: `${this.duplicateThreshold}ms`,
-            lastTime: new Date(lastTime).toISOString(),
-            currentTime: new Date(now).toISOString(),
-          });
           return true;
         }
       }
@@ -68,10 +52,6 @@ class CustomNotificationService {
       this.recentNotifications.set(key, now);
     });
 
-    console.log(`✅ NEW NOTIFICATION ALLOWED (${source}):`, {
-      keys,
-      savedAt: new Date(now).toISOString(),
-    });
 
     // Clean up old notifications
     this.cleanupOldNotifications(now);
@@ -90,7 +70,6 @@ class CustomNotificationService {
     }
 
     if (cleanupCount > 0) {
-      console.log(`🧹 Cleaned up ${cleanupCount} old notification records`);
     }
   }
 
@@ -104,19 +83,8 @@ class CustomNotificationService {
     duration = 4000,
     source = "unknown", // ✅ Add source tracking
   }) {
-    console.log(`📱 SHOW NOTIFICATION CALLED (${source}):`, {
-      title,
-      message: message?.substring(0, 50),
-      messageId: data?.messageId || data?.id,
-      source,
-      hasShowFunction: !!this.showNotification,
-      timestamp: new Date().toISOString(),
-    });
 
     if (!this.showNotification) {
-      console.warn(
-        `❌ CustomNotificationService: showNotification not set (${source})`
-      );
       return;
     }
 
@@ -131,23 +99,15 @@ class CustomNotificationService {
     };
     
     if (this.shouldFilterNotification && this.shouldFilterNotification(notificationData)) {
-      console.log(`🚫 NOTIFICATION BLOCKED (${source}): Filtered by navigation state`);
       return; // Filtered by navigation state
     }
 
     // ✅ Enhanced duplicate kontrolü with source tracking
     const messageId = data?.messageId || data?.id;
     if (this.isDuplicate(messageId, message, source)) {
-      console.log(`🚫 NOTIFICATION BLOCKED (${source}): Duplicate detected`);
       return; // Duplicate, gösterme
     }
 
-    console.log(`🎯 SHOWING NOTIFICATION (${source}):`, {
-      title,
-      messageId,
-      source,
-      notificationCount: this.notificationCounter,
-    });
 
     return this.showNotification({
       title,
@@ -219,23 +179,10 @@ class CustomNotificationService {
     const cacheSize = this.recentNotifications.size;
     this.recentNotifications.clear();
     this.notificationCounter = 0;
-    console.log(`🧹 Notification cache cleared: ${cacheSize} items removed`);
   }
 
   // ✅ Debug metodu - cache durumunu göster
   debugStatus() {
-    console.log("📊 NOTIFICATION SERVICE DEBUG STATUS:", {
-      cacheSize: this.recentNotifications.size,
-      totalNotificationAttempts: this.notificationCounter,
-      hasShowFunction: !!this.showNotification,
-      recentNotifications: Array.from(this.recentNotifications.entries()).map(
-        ([key, timestamp]) => ({
-          key,
-          timestamp: new Date(timestamp).toISOString(),
-          ageMs: Date.now() - timestamp,
-        })
-      ),
-    });
   }
 }
 

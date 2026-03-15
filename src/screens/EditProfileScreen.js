@@ -353,7 +353,6 @@ const EditProfileScreen = ({ navigation }) => {
   useEffect(() => {
     if (profileSuccess && profileData?.isSuccess && profileData?.result) {
       const profile = profileData.result;
-      console.log("Loading profile data:", profile);
       dispatch(setUserProfile(profile));
 
       if (profile.profileImageUrl) {
@@ -393,7 +392,6 @@ const EditProfileScreen = ({ navigation }) => {
         setImageRemoved(false); // Reset removal flag when new image is selected
       }
     } catch (error) {
-      console.error("Image picker error:", error);
       Alert.alert("Hata", "Fotoğraf seçilirken bir hata oluştu");
     }
   };
@@ -419,7 +417,6 @@ const EditProfileScreen = ({ navigation }) => {
         setImageRemoved(false); // Reset removal flag when new image is taken
       }
     } catch (error) {
-      console.error("Camera error:", error);
       Alert.alert("Hata", "Fotoğraf çekilirken bir hata oluştu.");
     }
   };
@@ -459,7 +456,6 @@ const EditProfileScreen = ({ navigation }) => {
           ? await updateLandlordProfile(formData).unwrap()
           : await updateTenantProfile(formData).unwrap();
 
-      console.log("Profil güncelleme yanıtı:", response);
 
       if (response && response.isSuccess) {
         // Reset the removal flag after successful update
@@ -475,7 +471,6 @@ const EditProfileScreen = ({ navigation }) => {
       // Reset image upload status
       dispatch(updateProfileImageStatus(null));
     } catch (error) {
-      console.error("Profile update error:", error);
 
       if (error && error.data && error.data.errors) {
         let errorMessage = "API şu hataları döndürdü:\n";

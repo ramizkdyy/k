@@ -49,7 +49,6 @@ const MessagesScreen = ({ navigation }) => {
     refetchOnFocus: true,
     refetchOnMountOrArgChange: true,
     onError: (error) => {
-      console.error("❌ Chat partners fetch error:", error);
     },
   });
 
@@ -62,7 +61,6 @@ const MessagesScreen = ({ navigation }) => {
     refetchOnFocus: true,
     refetchOnMountOrArgChange: true,
     onError: (error) => {
-      console.error("❌ Unread count fetch error:", error);
     },
   });
 
@@ -75,7 +73,6 @@ const MessagesScreen = ({ navigation }) => {
     refetchOnFocus: true,
     refetchOnMountOrArgChange: true,
     onError: (error) => {
-      console.error("❌ Unread count fetch error:", error);
     },
   });
 
@@ -87,12 +84,8 @@ const MessagesScreen = ({ navigation }) => {
 
   // ✅ API response handling with backend format compatibility
   const chatPartners = React.useMemo(() => {
-    console.log("🔍 Chat Partners Response Processing:", unreadEachChatData);
 
     if (Array.isArray(chatPartnersResponse)) {
-      console.log(
-        `✅ Partners array format - ${chatPartnersResponse.length} partners`
-      );
       return chatPartnersResponse;
     }
 
@@ -110,13 +103,11 @@ const MessagesScreen = ({ navigation }) => {
       return chatPartnersResponse.data;
     }
 
-    console.log("⚠️ Unknown chat partners format, returning empty array");
     return [];
   }, [chatPartnersResponse]);
 
   // ✅ Unread count handling with backend format compatibility
   const totalUnreadCount = React.useMemo(() => {
-    console.log("🔍 Unread Data Response Processing:", unreadData);
 
     if (typeof unreadData === "number") {
       return unreadData;
@@ -143,7 +134,6 @@ const MessagesScreen = ({ navigation }) => {
       }
     }
 
-    console.log("⚠️ Unknown unread count format, defaulting to 0");
     return 0;
   }, [unreadData]);
 
@@ -164,7 +154,6 @@ const MessagesScreen = ({ navigation }) => {
           limit: 20,
         }).unwrap();
 
-        console.log("🔍 Search result:", result);
 
         if (result?.results && Array.isArray(result.results)) {
           setSearchResults(result.results);
@@ -174,7 +163,6 @@ const MessagesScreen = ({ navigation }) => {
           setSearchResults([]);
         }
       } catch (error) {
-        console.error("❌ Search error:", error);
         setSearchResults([]);
       } finally {
         setIsSearching(false);
@@ -185,14 +173,10 @@ const MessagesScreen = ({ navigation }) => {
 
   // Register current screen for notification filtering
   useEffect(() => {
-    console.log(
-      "📍 MessagesScreen: Registering current screen for notification filtering"
-    );
     updateCurrentScreen("MessagesScreen", null);
 
     // Cleanup when leaving screen
     return () => {
-      console.log("📍 MessagesScreen: Clearing current screen");
       updateCurrentScreen(null, null);
     };
   }, [updateCurrentScreen]);
@@ -214,7 +198,6 @@ const MessagesScreen = ({ navigation }) => {
   // Focus effect - Sadece refetch yapıyoruz, SignalR listener'lar global olarak yönetiliyor
   useFocusEffect(
     useCallback(() => {
-      console.log("📱 MessagesScreen focused, refreshing data...");
       refetchPartners();
       refetchUnread();
     }, [refetchPartners, refetchUnread])
@@ -225,14 +208,11 @@ const MessagesScreen = ({ navigation }) => {
 
   // ✅ Refresh handler with better error handling
   const onRefresh = useCallback(() => {
-    console.log("🔄 Manual refresh requested");
 
     Promise.all([refetchPartners(), refetchUnread()])
       .then(() => {
-        console.log("✅ Manual refresh completed successfully");
       })
       .catch((error) => {
-        console.error("❌ Manual refresh failed:", error);
         Alert.alert(
           "Refresh Failed",
           "Unable to refresh chat data. Please check your connection and try again.",
@@ -307,7 +287,6 @@ const MessagesScreen = ({ navigation }) => {
         });
       }
     } catch (error) {
-      console.error("❌ Date formatting error:", error);
       return "";
     }
   };
@@ -336,18 +315,14 @@ const MessagesScreen = ({ navigation }) => {
 
     if (searchQuery.trim() && searchResults.length > 0) {
       filtered = searchResults;
-      console.log(`🔍 Using search results: ${filtered.length} partners`);
     } else if (searchQuery.trim() && !isSearching) {
       filtered = [];
-      console.log("🔍 Search completed but no results");
     } else {
       filtered = chatPartners;
-      console.log(`📝 Using normal partners: ${filtered.length} partners`);
     }
 
     if (activeFilter === "unread") {
       filtered = filtered.filter((partner) => isMessageUnread(partner));
-      console.log(`🔍 After unread filter: ${filtered.length} partners`);
     }
 
     return filtered;
@@ -392,18 +367,6 @@ const MessagesScreen = ({ navigation }) => {
       <TouchableOpacity
         className="flex flex-row items-center justify-center py-2 px-4 bg-white gap-4"
         onPress={() => {
-          console.log("🚀 Navigating to chat with:", {
-            partnerId,
-            partnerName,
-            partner: {
-              ...partner,
-              id: partnerId,
-              name: partner.name || partner.Name,
-              surname: partner.surname || partner.Surname,
-              userName: partner.userName || partner.UserName,
-              profileImageUrl: profileImage,
-            },
-          });
 
           navigation.navigate("ChatDetail", {
             partnerId: partnerId,
@@ -433,7 +396,6 @@ const MessagesScreen = ({ navigation }) => {
               cachePolicy="memory-disk"
               transition={200}
               onError={(error) => {
-                console.log("❌ Profile image load error:", error);
               }}
             />
           ) : (
@@ -583,7 +545,6 @@ const MessagesScreen = ({ navigation }) => {
                       text: "Start Chat",
                       onPress: (userId) => {
                         if (userId && userId.trim()) {
-                          console.log("🚀 Starting chat with user ID:", userId);
                           navigation.navigate("ChatDetail", {
                             partnerId: userId.trim(),
                             partnerName: `User ${userId.trim()}`,

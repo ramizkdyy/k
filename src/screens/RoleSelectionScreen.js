@@ -34,7 +34,6 @@ const RoleSelectionScreen = ({ navigation }) => {
     }
 
     if (!user || !user.id) {
-      console.error("No user found for role assignment:", user);
       Alert.alert(
         "Hata",
         "Kullanıcı bilgileri bulunamadı. Lütfen tekrar giriş yapın."
@@ -42,17 +41,10 @@ const RoleSelectionScreen = ({ navigation }) => {
       return;
     }
 
-    console.log("Starting role assignment:", {
-      selectedRole,
-      currentUser: user,
-      userId: user.id,
-      userName: user.userName || user.email,
-    });
 
     try {
       // First, update Redux state immediately
       dispatch(setRole(selectedRole));
-      console.log("Role updated in Redux:", selectedRole);
 
       // Prepare role assignment data
       const roleAssignmentData = {
@@ -61,31 +53,24 @@ const RoleSelectionScreen = ({ navigation }) => {
         email: user.email || "",
       };
 
-      console.log("Sending role assignment request:", roleAssignmentData);
 
       // Call the assignRole API
       const response = await assignRole(roleAssignmentData).unwrap();
 
-      console.log("Role assignment API response:", response);
 
       // After successful role assignment, check for existing profile
       try {
         const userId = user.id;
 
         if (selectedRole === "EVSAHIBI") {
-          console.log("Checking for existing landlord profile...");
 
           try {
             const profileResponse = await dispatch(
               apiSlice.endpoints.getLandlordProfile.initiate(userId)
             ).unwrap();
 
-            console.log("Landlord profile check response:", profileResponse);
 
             if (profileResponse?.isSuccess && profileResponse.result) {
-              console.log(
-                "Existing landlord profile found, navigating to Main"
-              );
               navigation.reset({
                 index: 0,
                 routes: [{ name: "Main" }],
@@ -93,21 +78,17 @@ const RoleSelectionScreen = ({ navigation }) => {
               return;
             }
           } catch (profileError) {
-            console.log("No existing landlord profile found:", profileError);
             // This is expected if no profile exists
           }
         } else if (selectedRole === "KIRACI") {
-          console.log("Checking for existing tenant profile...");
 
           try {
             const profileResponse = await dispatch(
               apiSlice.endpoints.getTenantProfile.initiate(userId)
             ).unwrap();
 
-            console.log("Tenant profile check response:", profileResponse);
 
             if (profileResponse?.isSuccess && profileResponse.result) {
-              console.log("Existing tenant profile found, navigating to Main");
               navigation.reset({
                 index: 0,
                 routes: [{ name: "Main" }],
@@ -115,26 +96,19 @@ const RoleSelectionScreen = ({ navigation }) => {
               return;
             }
           } catch (profileError) {
-            console.log("No existing tenant profile found:", profileError);
             // This is expected if no profile exists
           }
         }
 
         // No existing profile found, navigate to profile creation
-        console.log("No existing profile found, navigating to CreateProfile");
         navigation.navigate("CreateProfile");
       } catch (profileError) {
-        console.error("Error checking existing profile:", profileError);
         // Continue to profile creation even if check fails
         navigation.navigate("CreateProfile");
       }
     } catch (error) {
-      console.error("Role assignment error:", error);
 
       // Even if API fails, continue to profile creation since Redux state is updated
-      console.log(
-        "API failed but Redux state updated, continuing to profile creation"
-      );
 
       Alert.alert(
         "Uyarı",

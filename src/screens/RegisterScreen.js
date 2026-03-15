@@ -613,7 +613,6 @@ const RegisterScreen = ({ navigation }) => {
   // Handle register button press (final step)
   const handleRegister = async () => {
     try {
-      console.log("Kayıt işlemi başlatılıyor...");
 
       const cleanedPhone = phoneNumber.replace(/\D/g, "");
       const finalPhone = "0" + cleanedPhone;
@@ -633,22 +632,18 @@ const RegisterScreen = ({ navigation }) => {
         birthDate: formattedBirthDate,
       }).unwrap();
 
-      console.log("API yanıtı:", response);
 
       // Check if registration successful
       if (response && response.isSuccess) {
-        console.log("Kayıt başarılı");
 
         // API kayıt işlemi başarılı ama token dönmediyse, otomatik olarak login yapalım
         try {
-          console.log("Otomatik giriş yapılıyor...");
 
           const loginResponse = await login({
             userName: username.trim(),
             password: password.trim(),
           }).unwrap();
 
-          console.log("Giriş yanıtı:", loginResponse);
 
           if (
             loginResponse &&
@@ -663,7 +658,6 @@ const RegisterScreen = ({ navigation }) => {
               })
             );
 
-            console.log("Kimlik bilgileri Redux'a kaydedildi");
 
             navigation.dispatch(
               CommonActions.reset({
@@ -698,7 +692,6 @@ const RegisterScreen = ({ navigation }) => {
             );
           }
         } catch (loginError) {
-          console.error("Otomatik giriş hatası:", loginError);
 
           // Even if auto login fails, registration was successful
           Alert.alert(
@@ -716,7 +709,6 @@ const RegisterScreen = ({ navigation }) => {
         }
       } else {
         // Show error if response is not successful
-        console.log("Kayıt hatası:", response?.message);
         Alert.alert(
           "Kayıt Hatası",
           response?.message || "Kayıt işlemi başarısız oldu."
@@ -724,7 +716,6 @@ const RegisterScreen = ({ navigation }) => {
       }
     } catch (error) {
       // Handle API call errors
-      console.error("Register error:", error);
       Alert.alert(
         "Kayıt Hatası",
         error.data?.message ||

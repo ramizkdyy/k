@@ -28,15 +28,10 @@ export const useFypCacheTracker = () => {
         const now = Date.now();
         lastApiCallTimeRef.current = now;
 
-        console.log('📡 FRESH API çağrısı kaydedildi:', {
-            time: new Date(now).toLocaleTimeString(),
-            nextCacheUntil: new Date(now + CACHE_DURATION).toLocaleTimeString()
-        });
     }, []);
 
     // Manuel cache reset
     const resetCache = useCallback(() => {
-        console.log('🔄 Cache manuel olarak resetlendi');
         lastApiCallTimeRef.current = null;
     }, []);
 

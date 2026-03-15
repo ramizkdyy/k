@@ -396,37 +396,37 @@ const PropertyDetailsSlider = memo(({ item }) => {
       {
         id: "rooms",
         Icon: BedDouble,
-        value: item.odaSayisi || "N/A",
+        value: item.odaSayisi || "Belirtilmemiş",
         label: "Oda",
       },
       {
         id: "bedrooms",
         Icon: BedDouble,
-        value: item.yatakOdasiSayisi || "N/A",
+        value: item.yatakOdasiSayisi || "Belirtilmemiş",
         label: "Y.Odası",
       },
       {
         id: "bathrooms",
         Icon: ShowerHead,
-        value: item.banyoSayisi || "N/A",
+        value: item.banyoSayisi || "Belirtilmemiş",
         label: "Banyo",
       },
       {
         id: "area",
         Icon: Ruler,
-        value: item.brutMetreKare ? `${item.brutMetreKare} m²` : "N/A",
+        value: item.brutMetreKare ? `${item.brutMetreKare} m²` : "Belirtilmemiş",
         label: "Alan",
       },
       {
         id: "floor",
         Icon: Building,
-        value: item.bulunduguKat || "N/A",
+        value: item.bulunduguKat || "Belirtilmemiş",
         label: "Kat",
       },
       {
         id: "age",
         Icon: Calendar,
-        value: item.binaYasi ? `${item.binaYasi}` : "N/A",
+        value: item.binaYasi ? `${item.binaYasi}` : "Belirtilmemiş",
         label: "Bina yaşı",
       },
       {
@@ -659,8 +659,6 @@ const PropertyItem = memo(
     }, [item.postId, navigation]);
 
     const handleProfilePress = useCallback(() => {
-      console.log("PROFILE NAVIGATION DATA:", JSON.stringify(item, null, 2));
-      console.log("userId:", item.userId);
 
       navigation.navigate("UserProfile", {
         userId: item.userId,
@@ -682,9 +680,8 @@ const PropertyItem = memo(
 
     const priceText = useMemo(() => {
       if (item.kiraFiyati || item.rent) {
-        return `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-          item.paraBirimi || item.currency || "₺"
-        }`;
+        return `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
+          }`;
       }
       return "Fiyat belirtilmemiş";
     }, [item.kiraFiyati, item.rent, item.paraBirimi, item.currency]);
@@ -982,7 +979,6 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
         longitude: location.coords.longitude,
       });
     } catch (error) {
-      console.log("Location error:", error);
       setUserLocation({ latitude: 41.0082, longitude: 28.9784 });
     } finally {
       setLocationLoading(false);
@@ -1085,7 +1081,6 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
     try {
       await refetch();
     } catch (error) {
-      console.log("Refresh error:", error);
     } finally {
       setRefreshing(false);
     }
@@ -1330,17 +1325,15 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
                   <TouchableOpacity
                     activeOpacity={1}
                     key={option.key}
-                    className={`mr-3 px-4 py-2 rounded-full border ${
-                      sortBy === option.key
+                    className={`mr-3 px-4 py-2 rounded-full border ${sortBy === option.key
                         ? "bg-gray-900"
                         : "bg-white border-white"
-                    }`}
+                      }`}
                     onPress={() => handleSortChange(option.key)}
                   >
                     <Text
-                      className={`text-sm font-medium ${
-                        sortBy === option.key ? "text-white" : "text-gray-700"
-                      }`}
+                      className={`text-sm font-medium ${sortBy === option.key ? "text-white" : "text-gray-700"
+                        }`}
                     >
                       {option.label}
                       {sortBy === option.key && (

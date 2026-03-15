@@ -84,14 +84,13 @@ const ProfileScreen = ({ navigation }) => {
     isLoading,
     refetch,
   } = userRole === "EVSAHIBI"
-    ? useGetLandlordProfileQuery(currentUser?.id)
-    : useGetTenantProfileQuery(currentUser?.id);
+      ? useGetLandlordProfileQuery(currentUser?.id)
+      : useGetTenantProfileQuery(currentUser?.id);
 
   useEffect(() => {
     if (profileData && profileData.isSuccess && profileData.result) {
       dispatch(setUserProfile(profileData.result));
     }
-    console.log("seks", profileData);
   }, [profileData, dispatch]);
 
   const onRefresh = async () => {
@@ -107,46 +106,31 @@ const ProfileScreen = ({ navigation }) => {
       {
         text: "Çıkış Yap",
         onPress: async () => {
-          console.log("🚪 User initiated logout from ProfileScreen");
-          console.log("👤 Current user being logged out:", currentUser?.id);
 
           try {
             // 1. ✅ FIXED: Unregister FCM token BEFORE clearing auth token
-            console.log("🔕 Unregistering FCM token before logout...");
             try {
               const unregisterResult = await unregisterFcmToken();
               if (unregisterResult.success) {
-                console.log("✅ FCM token unregistered successfully");
               } else if (!unregisterResult.skipLogging) {
-                console.warn(
-                  "⚠️ FCM token unregistration failed:",
-                  unregisterResult.error
-                );
               }
             } catch (fcmError) {
-              console.warn("⚠️ FCM token unregistration error:", fcmError);
               // Continue with logout even if FCM unregistration fails
             }
 
             // 2. Stop SignalR connection to prevent message sending with stale token
-            console.log("🔌 Stopping SignalR connection...");
             await stopConnection();
 
             // 3. Clear chat cache to remove old user's messages
-            console.log("🧹 Clearing chat cache...");
             chatApiHelpers.clearChatCache(dispatch);
 
             // 4. Comprehensive storage cleanup
-            console.log("🗑️ Performing comprehensive storage cleanup...");
             await authCleanupHelper.clearUserStorage();
 
             // 5. Force logout to ensure complete state reset
-            console.log("🔥 Executing force logout...");
             dispatch(forceLogout());
 
-            console.log("✅ Logout process completed successfully");
           } catch (error) {
-            console.error("❌ Error during logout process:", error);
             // Even if cleanup fails, still logout
             dispatch(forceLogout());
           }
@@ -314,11 +298,7 @@ const ProfileScreen = ({ navigation }) => {
                   Profili Düzenle
                 </Text>
               </View>
-              <ChevronRight
-                icon={faChevronRight}
-                size={15}
-                color="#cfcfcf"
-              />
+              <ChevronRight size={15} color="#cfcfcf" />
             </TouchableOpacity>
 
             {/* Expectation Profile Button - Always visible with conditional warning */}
@@ -353,11 +333,7 @@ const ProfileScreen = ({ navigation }) => {
                 {!isExpectationCompleted && (
                   <View className="bg-red-500 w-3 h-3 rounded-full mr-2"></View>
                 )}
-                <ChevronRight
-                  icon={faChevronRight}
-                  size={15}
-                  color="#cfcfcf"
-                />
+                <ChevronRight size={15} color="#cfcfcf" />
               </View>
             </TouchableOpacity>
           </View>
@@ -387,11 +363,6 @@ const ProfileScreen = ({ navigation }) => {
                   {userRole === "EVSAHIBI" ? "Mülklerim" : "İlan Ara"}
                 </Text>
               </View>
-              {/* <ChevronRight
-                icon={faChevronRight}
-                size={15}
-                color="#cfcfcf"
-              /> */}
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -411,11 +382,6 @@ const ProfileScreen = ({ navigation }) => {
                   {userRole === "EVSAHIBI" ? "Teklifler" : "Tekliflerim"}
                 </Text>
               </View>
-              {/* <ChevronRight
-                icon={faChevronRight}
-                size={15}
-                color="#cfcfcf"
-              /> */}
             </TouchableOpacity>
 
             {/* {userRole === "KIRACI" && (
@@ -458,11 +424,7 @@ const ProfileScreen = ({ navigation }) => {
                     Yeni İlan Oluştur
                   </Text>
                 </View>
-                <ChevronRight
-                  icon={faChevronRight}
-                  size={15}
-                  color="#cfcfcf"
-                />
+                <ChevronRight size={15} color="#cfcfcf" />
               </TouchableOpacity>
             )}
           </View>
@@ -490,11 +452,7 @@ const ProfileScreen = ({ navigation }) => {
                     </Text>
                   </View>
                 </View>
-                <ChevronRight
-                  icon={faChevronRight}
-                  size={15}
-                  color="#cfcfcf"
-                />
+                <ChevronRight size={15} color="#cfcfcf" />
               </TouchableOpacity>
             )}
 
@@ -516,11 +474,7 @@ const ProfileScreen = ({ navigation }) => {
                   </Text>
                 </View>
               </View>
-              <ChevronRight
-                icon={faChevronRight}
-                size={15}
-                color="#cfcfcf"
-              />
+              <ChevronRight size={15} color="#cfcfcf" />
             </TouchableOpacity>
           </View>
 
@@ -539,11 +493,7 @@ const ProfileScreen = ({ navigation }) => {
               }}
             >
               <View className="flex-row items-center gap-4">
-                <ChevronRight
-                  icon={faQuestionCircle}
-                  size={25}
-                  color="black"
-                />
+                <HelpCircle size={25} color="black" />
                 <Text
                   style={{ fontSize: 16 }}
                   className="text-gray-900 font-medium"
@@ -551,11 +501,7 @@ const ProfileScreen = ({ navigation }) => {
                   Yardım & Destek
                 </Text>
               </View>
-              <ChevronRight
-                icon={faChevronRight}
-                size={15}
-                color="#cfcfcf"
-              />
+              <ChevronRight size={15} color="#cfcfcf" />
             </TouchableOpacity>
 
             <TouchableOpacity

@@ -118,7 +118,6 @@ const loadDistrictsForCity = async (cityCode, setCityCodeMap, setDistrictOptions
         }));
         setDistrictOptions(districtOptions);
     } catch (error) {
-        console.error('İlçeler yüklenirken hata:', error);
         setDistrictOptions([]);
     }
 };
@@ -155,13 +154,11 @@ const loadNeighborhoodsForDistricts = async (cityCode, selectedDistricts, setNei
                     });
                 }
             } catch (error) {
-                console.log(`${district} için mahalleler yüklenirken hata:`, error);
             }
         });
 
         setNeighborhoodOptions(groupedNeighborhoods);
     } catch (error) {
-        console.error('Mahalleler yüklenirken hata:', error);
         setNeighborhoodOptions([]);
     }
 };
@@ -262,7 +259,6 @@ const PropertiesFilterModal = ({
             setCityCodeMap(codeMap);
 
         } catch (error) {
-            console.error('Şehirler yüklenirken hata:', error);
             setAllCities([]);
         }
     }, []);
@@ -474,12 +470,10 @@ const PropertiesFilterModal = ({
                 Object.entries(searchPayload).filter(([_, v]) => v !== null)
             );
 
-            console.log('Gönderilen payload:', JSON.stringify(cleanedPayload, null, 2));
 
             // API çağrısı yap
             const result = await searchPosts(cleanedPayload).unwrap();
 
-            console.log('API yanıtı:', result);
 
             if (onApply) {
                 onApply(cleanedPayload, result);
@@ -487,7 +481,6 @@ const PropertiesFilterModal = ({
 
             handleClose();
         } catch (error) {
-            console.error('Filtre uygulama hatası:', error);
 
             let errorMessage = 'Filtreler uygulanırken bir hata oluştu.';
 

@@ -126,7 +126,6 @@ const FilterDropdown = ({
                     setFilteredOptions(formattedSuggestions);
                 }
             } catch (error) {
-                console.error('Öneri alınırken hata:', error);
                 // Hata durumunda local filtreleme yap
                 performLocalSearch(query);
             }

@@ -96,7 +96,6 @@ const LocationSection = ({ post }) => {
       setCurrentLocation(location.coords);
       return location.coords;
     } catch (error) {
-      console.error("Konum alınamadı:", error);
       Alert.alert("Hata", "Konum bilgisi alınamadı.");
       return null;
     }
@@ -132,7 +131,6 @@ const LocationSection = ({ post }) => {
         setTravelTime(timeMinutes);
       }
     } catch (error) {
-      console.error("Mesafe hesaplanamadı:", error);
       Alert.alert("Hata", "Mesafe hesaplanamadı.");
     } finally {
       setIsLoadingDistance(false);
