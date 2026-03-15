@@ -494,7 +494,6 @@ const PropertyItem = memo(
 
     const handleProfilePress = useCallback(() => {
       // API'den gelen veride landlord ID'si yok, bu yüzden navigation disable
-      console.log("Landlord profile tıklandı:", item);
     }, [item.landlordName, navigation]);
 
     // Dummy image array oluştur (API'den firstPostİmageURL boş geliyor)
@@ -778,7 +777,6 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
     try {
       await refetch();
     } catch (error) {
-      console.log("Refresh error:", error);
     } finally {
       setRefreshing(false);
     }

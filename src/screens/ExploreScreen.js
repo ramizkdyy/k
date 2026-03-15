@@ -114,7 +114,6 @@ const ListingCard = memo(
                 .map((img) => ({ url: img.url }));
             }
           } catch (error) {
-            console.warn("Image parse error:", error);
           }
         }
 
@@ -335,7 +334,7 @@ const RefreshablePagerView = memo(({ children, onRefresh, refreshing }) => {
               alignItems: "center",
             }}
           >
-            <ActivityIndicator color="#4A90E2" size="small" />
+            <ActivityIndicator color="#606060" size="small" />
             <Text style={{ color: "white", marginLeft: 8, fontSize: 14 }}>
               Yenileniyor...
             </Text>
@@ -470,7 +469,7 @@ const ExploreScreen = ({ navigation }) => {
         <View
           style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
-          <ActivityIndicator size="large" color="#4A90E2" />
+          <ActivityIndicator size="large" color="#606060c" />
           <Text style={{ marginTop: 16, fontSize: 18, color: "white" }}>
             Yükleniyor...
           </Text>

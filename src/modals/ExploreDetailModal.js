@@ -204,7 +204,6 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
       setCurrentLocation(location.coords);
       return location.coords;
     } catch (error) {
-      console.error("Konum alınamadı:", error);
       Alert.alert("Hata", "Konum bilgisi alınamadı.");
       return null;
     }
@@ -231,7 +230,6 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
         setTravelTime(timeMinutes);
       }
     } catch (error) {
-      console.error("Mesafe hesaplanamadı:", error);
     } finally {
       setIsLoadingDistance(false);
     }
@@ -755,7 +753,6 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
   // Bottom Sheet dismiss handler
   const handleSheetChanges = useCallback(
     (index) => {
-      console.log("BottomSheet index changed:", index);
       if (index === -1) {
         // Modal kapatıldı
         onClose();

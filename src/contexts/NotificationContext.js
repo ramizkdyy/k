@@ -19,7 +19,6 @@ export const NotificationProvider = ({ children }) => {
   // Function to update current screen info (to be called from screens)
   const updateCurrentScreen = useCallback((screenName, partnerId = null) => {
     currentScreenInfo.current = { screenName, partnerId };
-    console.log('📱 Current screen updated:', { screenName, partnerId });
   }, []);
   
   // Helper function to get current screen info
@@ -31,23 +30,11 @@ export const NotificationProvider = ({ children }) => {
   const shouldFilterNotification = useCallback((notification) => {
     const { screenName, partnerId: currentPartnerId } = getCurrentScreenInfo();
     
-    console.log('🔍 NOTIFICATION FILTERING DEBUG:', {
-      currentScreen: screenName,
-      currentPartnerId,
-      notificationData: notification?.data,
-      notificationTitle: notification?.title,
-      notificationMessage: notification?.message?.substring(0, 50)
-    });
     
     // Filter chat notifications based on current screen
     if (notification?.data?.type === 'new_message') {
       // If on MessagesScreen, filter all chat notifications
       if (screenName === 'MessagesScreen') {
-        console.log('🚫 FILTERING ALL CHAT NOTIFICATIONS on MessagesScreen:', {
-          currentScreen: screenName,
-          notificationTitle: notification?.title,
-          notificationMessage: notification?.message?.substring(0, 50)
-        });
         return true; // Filter out all chat notifications
       }
       
@@ -62,33 +49,13 @@ export const NotificationProvider = ({ children }) => {
           notificationSenderId === currentPartnerId || 
           (notificationChatId && notificationChatId.includes(currentPartnerId));
         
-        console.log('📋 DETAILED FILTERING CHECK for ChatDetailScreen:', {
-          isOnChatDetailScreen: screenName === 'ChatDetailScreen',
-          isNewMessage: notification?.data?.type === 'new_message',
-          currentPartnerId,
-          notificationSenderId,
-          notificationChatId,
-          senderIdMatch: notificationSenderId === currentPartnerId,
-          chatIdContainsPartner: notificationChatId?.includes(currentPartnerId),
-          isFromCurrentPartner,
-          currentPartnerType: typeof currentPartnerId,
-          senderIdType: typeof notificationSenderId
-        });
         
         if (isFromCurrentPartner && currentPartnerId) {
-          console.log('🚫 FILTERING NOTIFICATION from current chat partner:', {
-            currentScreen: screenName,
-            currentPartnerId,
-            notificationSenderId,
-            notificationTitle: notification?.title
-          });
           return true; // Filter out this notification
         } else {
-          console.log('✅ ALLOWING NOTIFICATION - different partner');
         }
       }
     } else {
-      console.log('✅ ALLOWING NOTIFICATION - not a chat message type');
     }
     
     return false; // Don't filter
@@ -98,7 +65,6 @@ export const NotificationProvider = ({ children }) => {
     (notification) => {
       // First check if notification should be filtered based on current screen
       if (shouldFilterNotification(notification)) {
-        console.log("🚫 Notification filtered - user is viewing this chat");
         return null;
       }
       
@@ -106,7 +72,6 @@ export const NotificationProvider = ({ children }) => {
 
       // Check if there's already a visible notification
       if (notifications.length > 0) {
-        console.log("🔄 Updating existing notification content");
         
         // Update the existing notification with new content
         const existingNotification = notifications[0]; // Take the first (most recent) notification
@@ -124,12 +89,6 @@ export const NotificationProvider = ({ children }) => {
 
         setNotifications([updatedNotification]);
 
-        console.log("📱 NotificationProvider: Updated existing notification:", {
-          id: existingNotification.id,
-          newTitle: notification.title,
-          newMessage: notification.message,
-          timestamp: new Date(now).toISOString(),
-        });
 
         // Reset the updating flag after a brief delay
         setTimeout(() => {
@@ -149,18 +108,9 @@ export const NotificationProvider = ({ children }) => {
           isUpdating: false,
         };
 
-        console.log("📱 NotificationProvider: Adding new notification to state:", {
-          id,
-          title: notification.title,
-          duration: notification.duration,
-          timestamp: new Date(now).toISOString(),
-        });
 
         setNotifications([newNotification]);
 
-        console.log(
-          "⏱️ NotificationProvider: No auto-hide timer set, component will handle its own timing"
-        );
 
         return id;
       }
@@ -169,19 +119,16 @@ export const NotificationProvider = ({ children }) => {
   );
 
   const hideNotification = useCallback((id) => {
-    console.log("🗑️ NotificationProvider: Hiding notification:", id);
     setNotifications((prev) =>
       prev.filter((notification) => notification.id !== id)
     );
   }, []);
 
   const hideAllNotifications = useCallback(() => {
-    console.log("🗑️ NotificationProvider: Hiding all notifications");
     setNotifications([]);
   }, []);
 
   const updateNotification = useCallback((id, updates) => {
-    console.log("🔄 NotificationProvider: Updating notification:", id, updates);
     setNotifications((prev) =>
       prev.map((notification) =>
         notification.id === id ? { ...notification, ...updates } : notification

@@ -254,7 +254,6 @@ const OfferModal = ({
         const showListener = Keyboard.addListener(
             Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
             (e) => {
-                console.log('🎹 Klavye açılıyor, yükseklik:', e.endCoordinates.height);
                 keyboardHeight.value = withSpring(e.endCoordinates.height, {
                     damping: 80,
                     stiffness: 300,
@@ -265,7 +264,6 @@ const OfferModal = ({
         const hideListener = Keyboard.addListener(
             Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
             () => {
-                console.log('🎹 Klavye kapanıyor');
                 keyboardHeight.value = withSpring(0, {
                     damping: 80,
                     stiffness: 300,

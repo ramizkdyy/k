@@ -353,35 +353,35 @@ const SimilarityScoreBar = memo(
 // Memoized Property Details Slider
 const PropertyDetailsSlider = memo(({ item }) => {
   const propertyDetails = [
-    { id: "rooms", Icon: BedDouble, value: item.odaSayisi || "N/A", label: "Oda" },
+    { id: "rooms", Icon: BedDouble, value: item.odaSayisi || "Belirtilmemiş", label: "Oda" },
     {
       id: "bedrooms",
       Icon: BedDouble,
-      value: item.yatakOdasiSayisi || "N/A",
+      value: item.yatakOdasiSayisi || "Belirtilmemiş",
       label: "Y.Odası",
     },
     {
       id: "bathrooms",
       Icon: ShowerHead,
-      value: item.banyoSayisi || "N/A",
+      value: item.banyoSayisi || "Belirtilmemiş",
       label: "Banyo",
     },
     {
       id: "area",
       Icon: Ruler,
-      value: item.brutMetreKare ? `${item.brutMetreKare} m²` : "N/A",
+      value: item.brutMetreKare ? `${item.brutMetreKare} m²` : "Belirtilmemiş",
       label: "Alan",
     },
     {
       id: "floor",
       Icon: Building,
-      value: item.bulunduguKat || "N/A",
+      value: item.bulunduguKat || "Belirtilmemiş",
       label: "Kat",
     },
     {
       id: "age",
       Icon: Calendar,
-      value: item.binaYasi ? `${item.binaYasi}` : "N/A",
+      value: item.binaYasi ? `${item.binaYasi}` : "Belirtilmemiş",
       label: "Bina yaşı",
     },
     {
@@ -610,9 +610,8 @@ const PropertyItem = memo(
               className="text-gray-900 underline"
             >
               {item.kiraFiyati || item.rent
-                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-                    getCurrencyText(item.paraBirimi) || "₺"
-                  }`
+                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${getCurrencyText(item.paraBirimi) || "₺"
+                }`
                 : "Fiyat belirtilmemiş"}
             </Text>
             <Text className="text-sm text-gray-400 ml-1">/ay</Text>
@@ -878,7 +877,6 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
     try {
       await refetch();
     } catch (error) {
-      console.log("Refresh error:", error);
     } finally {
       setRefreshing(false);
     }

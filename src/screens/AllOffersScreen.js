@@ -58,9 +58,6 @@ const AllOffersScreen = () => {
 
     // Debug API response
     useEffect(() => {
-        console.log("🟢 API Response - Loading:", isLoading);
-        console.log("🟢 API Response - Error:", error);
-        console.log("🟢 API Response - Data:", offersData);
     }, [isLoading, error, offersData]);
 
     // Process and sort offers
@@ -105,11 +102,6 @@ const AllOffersScreen = () => {
                     text: "Kabul Et",
                     onPress: async () => {
                         try {
-                            console.log("Accepting offer:", {
-                                userId: currentUser?.id,
-                                offerId: offerId,
-                                actionType: 0, // Accept action
-                            });
 
                             const response = await landlordOfferAction({
                                 userId: currentUser?.id,
@@ -117,7 +109,6 @@ const AllOffersScreen = () => {
                                 actionType: 0, // Accept action
                             }).unwrap();
 
-                            console.log("Accept response:", response);
 
                             if (response.isSuccess) {
                                 Alert.alert("Başarılı", "Teklif kabul edildi.");
@@ -129,7 +120,6 @@ const AllOffersScreen = () => {
                                 );
                             }
                         } catch (error) {
-                            console.log("Accept offer error:", error);
                             Alert.alert(
                                 "Hata",
                                 error?.data?.message ||
@@ -155,18 +145,12 @@ const AllOffersScreen = () => {
                     style: "default",
                     onPress: async () => {
                         try {
-                            console.log("Renting property:", {
-                                userId: currentUser?.id,
-                                offerId: offerId,
-                                actionType: 2, // Rent action
-                            });
 
                             const response = await rentOffer({
                                 userId: currentUser?.id,
                                 offerId: Number(offerId),
                             }).unwrap();
 
-                            console.log("Rent response:", response);
 
                             if (response.isSuccess) {
                                 Alert.alert(
@@ -190,7 +174,6 @@ const AllOffersScreen = () => {
                                 );
                             }
                         } catch (error) {
-                            console.log("Rent offer error:", error);
                             Alert.alert(
                                 "Hata",
                                 error?.data?.message || "Ev kiraya verilirken bir hata oluştu."
@@ -213,11 +196,6 @@ const AllOffersScreen = () => {
                     style: "destructive",
                     onPress: async () => {
                         try {
-                            console.log("Rejecting offer:", {
-                                userId: currentUser?.id,
-                                offerId: offerId,
-                                actionType: 1, // Reject action
-                            });
 
                             const response = await landlordOfferAction({
                                 userId: currentUser?.id,
@@ -225,7 +203,6 @@ const AllOffersScreen = () => {
                                 actionType: 1, // Reject action
                             }).unwrap();
 
-                            console.log("Reject response:", response);
 
                             if (response.isSuccess) {
                                 Alert.alert("Başarılı", "Teklif reddedildi.");
@@ -237,7 +214,6 @@ const AllOffersScreen = () => {
                                 );
                             }
                         } catch (error) {
-                            console.log("Reject offer error:", error);
                             Alert.alert(
                                 "Hata",
                                 error?.data?.message || "Teklif reddedilirken bir hata oluştu."

@@ -319,9 +319,6 @@ const MatchScoreBar = memo(({ matchScore, showBar = false, size = "sm" }) => {
 const TenantItem = ({ item, navigation }) => {
   const userRole = useSelector(selectUserRole);
   const handleTenantPress = () => {
-    console.log("TENANT ITEM DATA:", JSON.stringify(item, null, 2));
-    console.log("item.userId:", item.userId); // UUID'yi logla
-
     navigation.navigate("UserProfile", {
       userId: item.userId, // ✅ UUID kullan
       userRole: "KIRACI",
@@ -354,7 +351,6 @@ const TenantItem = ({ item, navigation }) => {
                   cachePolicy="memory-disk"
                   transition={200}
                   onError={(error) => {
-                    console.log("❌ Tenant profile image load error:", error);
                   }}
                 />
               ) : (
@@ -493,10 +489,6 @@ const TenantItem = ({ item, navigation }) => {
 // Landlord Item
 const LandlordItem = ({ item, navigation }) => {
   const handleLandlordPress = () => {
-    console.log("LANDLORD ITEM DATA:", JSON.stringify(item, null, 2));
-    console.log("Available keys:", Object.keys(item));
-    console.log("item.userId:", item.userId);
-    console.log("item.landlordProfileId:", item.landlordProfileId);
 
     navigation.navigate("UserProfile", {
       userId: item.userId,
@@ -533,7 +525,6 @@ const LandlordItem = ({ item, navigation }) => {
                   cachePolicy="memory-disk"
                   transition={200}
                   onError={(error) => {
-                    console.log("❌ Landlord profile image load error:", error);
                   }}
                 />
               ) : (
@@ -827,7 +818,6 @@ const AllMatchingUsers = ({ navigation, route }) => {
     : [];
   const hasNextPage = currentData?.pagination?.hasNextPage || false;
 
-  console.log("AllUsers data:", allUsers.length, allUsers.slice(0, 3));
 
   // Filter and sort users
   const getFilteredAndSortedUsers = useCallback(() => {
@@ -907,7 +897,6 @@ const AllMatchingUsers = ({ navigation, route }) => {
     try {
       await refetch();
     } catch (error) {
-      console.error("Refresh error:", error);
     } finally {
       setRefreshing(false);
     }

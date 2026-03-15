@@ -268,7 +268,6 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
           });
         }
       } catch (error) {
-        console.log("Location error:", error);
         if (isMounted) {
           setUserLocation({ latitude: 41.0082, longitude: 28.9784 });
         }
@@ -349,7 +348,6 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
       const result = await refetch();
       if (onRefresh) onRefresh();
     } catch (error) {
-      console.log("Refresh error:", error);
     } finally {
       setIsRefreshing(false);
     }

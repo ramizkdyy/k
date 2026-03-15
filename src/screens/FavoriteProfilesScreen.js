@@ -132,13 +132,6 @@ const FavoriteProfilesScreen = ({ navigation }) => {
     }));
 
     // 🔍 DEBUG: Matching score verilerini kontrol et
-    console.log("🔍 DEBUG FavoriteProfilesScreen:", {
-        userRole,
-        matchingScores,
-        favoriteProfilesCount: favoriteProfiles.length,
-        enrichedFavoritesCount: enrichedFavorites.length,
-        firstEnrichedProfile: enrichedFavorites[0] || null
-    });
 
     // Arama filtresi
     const filteredFavorites = enrichedFavorites.filter(profile => {
@@ -196,7 +189,6 @@ const FavoriteProfilesScreen = ({ navigation }) => {
                             // Profile'ı yenile
                             refetchProfile();
                         } catch (error) {
-                            console.error("Error removing from favorites:", error);
                             Alert.alert("Hata", "Favorilerden kaldırılırken bir hata oluştu.");
                         } finally {
                             setRemovingFavorite(false);

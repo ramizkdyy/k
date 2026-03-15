@@ -224,13 +224,6 @@ const FavoriteTenantCard = ({
     // Doğru matching score'u al
     const matchScore = matchingScore || tenant.matchingScore || tenant.matchScore || 0;
 
-    console.log("🔍 FavoriteTenantCard Debug:", {
-        tenantUserId: tenant.userId,
-        directMatchScore: matchingScore,
-        tenantMatchScore: tenant.matchScore,
-        tenantMatchingScore: tenant.matchingScore,
-        finalMatchScore: matchScore
-    });
 
     return (
         <TouchableOpacity

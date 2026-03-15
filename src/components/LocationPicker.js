@@ -94,7 +94,6 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
 
       reverseGeocode(location.coords.latitude, location.coords.longitude);
     } catch (error) {
-      console.log("Konum alınamadı:", error);
       // Hata durumunda varsayılan konumu kullan
       reverseGeocode(defaultRegion.latitude, defaultRegion.longitude);
     } finally {
@@ -126,7 +125,6 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
         setLocationName(address || "Seçilen Konum");
       }
     } catch (error) {
-      console.log("Reverse geocode hatası:", error);
       setLocationName("Konum bilgisi alınamadı");
     } finally {
       setIsLoadingLocation(false);
@@ -193,7 +191,6 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
         Alert.alert("Hata", "Konum bulunamadı.");
       }
     } catch (error) {
-      console.log("Geocode hatası:", error);
       Alert.alert("Hata", "Konum aranırken bir hata oluştu.");
     } finally {
       setIsLoadingLocation(false);

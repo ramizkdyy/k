@@ -100,7 +100,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
   const parseBackendResponse = (response) => {
     if (!response) return { messages: [], hasNextPage: false, currentPage: 1 };
 
-    console.log("🔍 Parsing backend response:", response);
 
     // Backend'den gelen format: { messages: [], hasNextPage: boolean, currentPage: number, pageSize: number }
     if (response.messages && Array.isArray(response.messages)) {
@@ -111,9 +110,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
         pageSize,
       } = response;
 
-      console.log(
-        `📊 Backend response - Page ${respCurrentPage}: ${messages.length} messages, hasNextPage: ${hasNextPage}`
-      );
 
       return {
         messages,
@@ -189,21 +185,12 @@ const ChatDetailScreen = ({ navigation, route }) => {
   // Register current screen for notification filtering
   useEffect(() => {
     if (partnerId) {
-      console.log(
-        "📍 ChatDetailScreen: Registering current screen for notification filtering",
-        {
-          partnerId,
-          partnerName,
-          timestamp: new Date().toISOString(),
-        }
-      );
 
       updateCurrentScreen("ChatDetailScreen", partnerId);
     }
 
     // Cleanup when leaving screen
     return () => {
-      console.log("📍 ChatDetailScreen: Clearing current screen");
       updateCurrentScreen(null, null);
     };
   }, [partnerId, updateCurrentScreen]);
@@ -222,7 +209,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
           animated,
         });
       } catch (error) {
-        console.log("Scroll error:", error);
         try {
           flatListRef.current?.scrollToIndex({
             index: 0,
@@ -230,7 +216,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
             viewPosition: 0,
           });
         } catch (indexError) {
-          console.log("Index scroll error:", indexError);
         }
       }
     });
@@ -255,30 +240,17 @@ const ChatDetailScreen = ({ navigation, route }) => {
       backgroundLoadedUntilPage >= 5 ||
       paginationComplete
     ) {
-      console.log("⏭️ Skipping background preloading:", {
-        hasMoreMessages,
-        isBackgroundLoading,
-        backgroundLoadedUntilPage,
-        paginationComplete,
-      });
       return;
     }
 
-    console.log(
-      `🔄 Starting background preloading from page ${
-        backgroundLoadedUntilPage + 1
-      } to 5`
-    );
     setIsBackgroundLoading(true);
 
     for (let page = backgroundLoadedUntilPage + 1; page <= 5; page++) {
       if (loadedPages.has(page)) {
-        console.log(`⏭️ Page ${page} already loaded, skipping`);
         continue;
       }
 
       try {
-        console.log(`📦 Background loading page ${page}...`);
 
         await new Promise((resolve) => {
           backgroundLoadingTimeoutRef.current = setTimeout(
@@ -295,9 +267,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
         const { messages: pageMessages, hasNextPage } =
           parseBackendResponse(result);
 
-        console.log(
-          `✅ Background loaded page ${page}: ${pageMessages.length} messages, hasNext: ${hasNextPage}`
-        );
 
         setMessages((prevMessages) => {
           const combinedMessages = [...prevMessages, ...pageMessages];
@@ -314,9 +283,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
               )
           );
 
-          console.log(
-            `📦 Background merge page ${page}: ${combinedMessages.length} -> ${uniqueMessages.length}`
-          );
           return uniqueMessages;
         });
 
@@ -332,7 +298,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
           break;
         }
       } catch (error) {
-        console.error(`❌ Background loading failed for page ${page}:`, error);
         break;
       }
     }
@@ -356,12 +321,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
       const { messages: secondPageMessages, hasNextPage: secondHasNext } =
         parseBackendResponse(secondPageResponse);
 
-      console.log("📖 Setting initial messages from pages 1 & 2:", {
-        page1Count: firstPageMessages.length,
-        page2Count: secondPageMessages.length,
-        page1HasNext: firstHasNext,
-        page2HasNext: secondHasNext,
-      });
 
       const combinedMessages = [...firstPageMessages, ...secondPageMessages];
       const uniqueMessages = combinedMessages.filter(
@@ -383,7 +342,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
       // ✅ Backend'in hasNextPage response'una göre pagination kontrolü
       if (!secondHasNext || secondPageMessages.length === 0) {
-        console.log("🏁 Pagination complete after page 2");
         setHasMoreMessages(false);
         setPaginationComplete(true);
       } else {
@@ -396,11 +354,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
         setTimeout(() => {
           startBackgroundPreloading();
         }, 500);
-        console.log(
-          "📖 Initial load complete, starting background preloading..."
-        );
       } else {
-        console.log("📖 Initial load complete, no more messages to load");
       }
     } else if (
       firstPageResponse &&
@@ -418,7 +372,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
       if (!hasNextPage || firstPageMessages.length === 0) {
         setHasMoreMessages(false);
         setPaginationComplete(true);
-        console.log("🏁 Pagination complete after page 1");
       } else {
         setHasMoreMessages(hasNextPage);
       }
@@ -442,13 +395,8 @@ const ChatDetailScreen = ({ navigation, route }) => {
       const { messages: currentPageMessages, hasNextPage } =
         parseBackendResponse(currentPageResponse);
 
-      console.log(`📖 Loading page ${currentPage}:`, {
-        messageCount: currentPageMessages.length,
-        hasNextPage,
-      });
 
       if (!hasNextPage || currentPageMessages.length === 0) {
-        console.log(`🏁 Pagination complete at page ${currentPage}`);
         setHasMoreMessages(false);
         setPaginationComplete(true);
       }
@@ -475,11 +423,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
       setHasMoreMessages(hasNextPage && currentPageMessages.length > 0);
       setIsLoadingMore(false);
 
-      console.log(
-        `📖 Page ${currentPage} loaded. HasMore: ${hasNextPage}, Complete: ${
-          !hasNextPage || currentPageMessages.length === 0
-        }`
-      );
     }
   }, [currentPageResponse, currentPage, loadedPages]);
 
@@ -493,14 +436,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
       currentPage <= 5 ||
       isBackgroundLoading
     ) {
-      console.log("⚠️ Skipping load more:", {
-        isLoadingMore,
-        hasMoreMessages,
-        paginationComplete,
-        isLoadingCurrentPage,
-        currentPage,
-        isBackgroundLoading,
-      });
       return;
     }
 
@@ -508,7 +443,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
     const startPage = currentPage;
     const endPage = startPage + pagesToLoad - 1;
 
-    console.log(`📖 Loading pages ${startPage} to ${endPage}...`);
     setIsLoadingMore(true);
 
     try {
@@ -536,13 +470,9 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
         if (!hasNextPage || pageMessages.length === 0) {
           shouldComplete = true;
-          console.log(`🏁 Pagination should complete at page ${actualPage}`);
         }
 
         setLoadedPages((prev) => new Set([...prev, actualPage]));
-        console.log(
-          `📖 Batch loaded page ${actualPage}: ${pageMessages.length} messages`
-        );
       });
 
       setMessages((prevMessages) => {
@@ -560,9 +490,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
             )
         );
 
-        console.log(
-          `📖 Batch merge: ${combinedMessages.length} -> ${uniqueMessages.length}`
-        );
         return uniqueMessages;
       });
 
@@ -571,18 +498,11 @@ const ChatDetailScreen = ({ navigation, route }) => {
       if (shouldComplete || !finalHasMore || allMessages.length === 0) {
         setHasMoreMessages(false);
         setPaginationComplete(true);
-        console.log("🏁 Pagination marked as complete");
       } else {
         setHasMoreMessages(finalHasMore);
       }
 
-      console.log(
-        `📖 Batch load complete. Next page: ${
-          endPage + 1
-        }, HasMore: ${finalHasMore}, Complete: ${shouldComplete}`
-      );
     } catch (error) {
-      console.error("❌ Failed to load more pages:", error);
       Alert.alert("Error", "Failed to load more messages. Please try again.");
     } finally {
       setIsLoadingMore(false);
@@ -614,7 +534,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
         !isLoadingMore &&
         !isBackgroundLoading
       ) {
-        console.log("📜 User scrolled to top, triggering load more");
         handleLoadMore();
       }
     },
@@ -641,7 +560,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
   // ✅ Enhanced refresh messages - Reset all pagination state
   const refreshMessages = useCallback(() => {
-    console.log("🔄 Refreshing messages - resetting all pagination state");
 
     if (backgroundLoadingTimeoutRef.current) {
       clearTimeout(backgroundLoadingTimeoutRef.current);
@@ -665,14 +583,9 @@ const ChatDetailScreen = ({ navigation, route }) => {
   useEffect(() => {
     if (!connection || !isConnected) return;
 
-    console.log(
-      "🎯 Setting up SCREEN-SPECIFIC SignalR listeners for chat:",
-      partnerId
-    );
 
     // ✅ Screen-specific: Sadece bu chat'e gelen mesajları real-time UI'da göster
     const handleScreenReceiveMessage = (messageData) => {
-      console.log("📨 SCREEN: Received message for current chat:", messageData);
 
       const senderId = messageData.SenderUserId || messageData.senderUserId;
       const receiverId =
@@ -703,12 +616,8 @@ const ChatDetailScreen = ({ navigation, route }) => {
           );
 
           if (!exists) {
-            console.log(
-              "✅ SCREEN: Adding new message to local state at index 0"
-            );
             return [newMessage, ...prevMessages];
           } else {
-            console.log("⚠️ SCREEN: Duplicate message, not adding");
           }
           return prevMessages;
         });
@@ -726,7 +635,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
     // ✅ Screen-specific: Optimistic message'ların confirmation'ını handle et
     const handleScreenMessageSent = (confirmationData) => {
-      console.log("✅ SCREEN: Message sent confirmation:", confirmationData);
 
       setMessages((prevMessages) =>
         prevMessages.map((msg) => {
@@ -753,7 +661,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
     // ✅ Screen-specific: Bu chat'teki mesajların read status'unu güncelle
     const handleScreenMessagesRead = (readData) => {
-      console.log("👁️ SCREEN: Messages marked as read:", readData);
 
       const readByUserId = readData.ReadByUserId || readData.readByUserId;
 
@@ -768,7 +675,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
     // ✅ Screen-specific: Message error handling
     const handleScreenMessageError = (errorData) => {
-      console.error("❌ SCREEN: Message error:", errorData);
 
       setMessages((prevMessages) => {
         const filteredMessages = prevMessages.filter(
@@ -790,7 +696,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
     connection.on("MessageError", handleScreenMessageError);
 
     return () => {
-      console.log("🧹 Cleaning up SCREEN-SPECIFIC SignalR listeners");
       connection.off("ReceiveMessage", handleScreenReceiveMessage);
       connection.off("MessageSent", handleScreenMessageSent);
       connection.off("MessagesRead", handleScreenMessagesRead);
@@ -815,7 +720,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
   // Update partners list when leaving chat
   useEffect(() => {
     return () => {
-      console.log("🔄 Chat screen unmounting, updating partners list");
       chatApiHelpers.updatePartnersList(dispatch);
       chatApiHelpers.updateUnreadCount(dispatch);
     };
@@ -829,7 +733,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
         route.params?.fromNotification || route.params?.type === "new_message";
 
       if (fromNotification) {
-        console.log("🎯 Auto-focusing keyboard from notification");
         // Add a small delay to ensure screen is fully rendered
         setTimeout(() => {
           textInputRef.current?.focus();
@@ -840,17 +743,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
   // Debug logging
   useEffect(() => {
-    console.log("📊 Messages state updated:", {
-      count: messages.length,
-      latestMessage: messages[0],
-      optimisticCount: messages.filter((m) => m.isOptimistic).length,
-      currentPage,
-      hasMoreMessages,
-      paginationComplete,
-      loadedPages: Array.from(loadedPages),
-      backgroundLoadedUntilPage,
-      isBackgroundLoading,
-    });
   }, [
     messages,
     currentPage,
@@ -881,12 +773,10 @@ const ChatDetailScreen = ({ navigation, route }) => {
   // ✅ Enhanced send message handler - Backend API format'ına uygun
   const handleSendMessage = async () => {
     if (!message.trim() || !partnerId) {
-      console.log("❌ Empty message or no partnerId");
       return;
     }
 
     const messageText = message.trim();
-    console.log("📤 Sending message:", { partnerId, messageText, isConnected });
     setMessage("");
 
     if (isTyping) {
@@ -908,7 +798,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
       isOptimistic: true,
     };
 
-    console.log("🔮 Adding optimistic message at index 0:", optimisticMessage);
 
     setMessages((prevMessages) => {
       const newMessages = [optimisticMessage, ...prevMessages];
@@ -919,17 +808,13 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
     try {
       if (isConnected) {
-        console.log("📡 Sending message via SignalR...");
         await sendSignalRMessage(partnerId, messageText);
-        console.log("✅ Message sent via SignalR successfully");
       } else {
-        console.log("🌐 SignalR not connected, using REST API...");
         const result = await sendMessage({
           receiverUserId: partnerId,
           content: messageText,
         }).unwrap();
 
-        console.log("✅ Message sent via REST API:", result);
 
         const confirmedMessage = {
           ...optimisticMessage,
@@ -944,7 +829,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
         );
       }
     } catch (error) {
-      console.error("❌ Failed to send message:", error);
 
       setMessages((prevMessages) => {
         const filteredMessages = prevMessages.filter(
@@ -1202,8 +1086,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
             <TouchableOpacity
               className="flex-row items-center flex-1"
               onPress={() => {
-                console.log("🔍 Header pressed - partnerId:", partnerId);
-                console.log("🔍 Partner data:", partner);
                 navigation.navigate("UserProfile", {
                   userId: partnerId,
                   userRole: partner?.role || "KIRACI", // Default to KIRACI if role not available
@@ -1343,7 +1225,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
               <TouchableOpacity
                 className="w-8 h-8 rounded-full items-center justify-center mr-2 mb-1"
                 onPress={() => {
-                  console.log("Open attachment picker");
                 }}
               >
                 <Plus size={25} color="#000" />

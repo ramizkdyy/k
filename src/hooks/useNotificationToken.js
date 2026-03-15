@@ -43,19 +43,13 @@ export const useNotificationToken = () => {
 
       try {
         initializationAttemptedRef.current = true;
-        console.log("🚀 Initializing FCM token in hook...");
 
         const tokens = await notificationService.initialize();
 
         if (tokens?.fcmToken) {
           dispatch(setFcmToken(tokens.fcmToken));
-          console.log(
-            "🔥 FCM token initialized in hook:",
-            tokens.fcmToken.substring(0, 20) + "..."
-          );
         }
       } catch (error) {
-        console.error("❌ Failed to initialize FCM token in hook:", error);
       }
     };
 
@@ -65,22 +59,18 @@ export const useNotificationToken = () => {
   // Register token function
   const registerFcmToken = useCallback(async () => {
     if (!isAuthenticated || !authToken) {
-      console.log("❌ Cannot register: user not authenticated");
       return { success: false, error: "User not authenticated" };
     }
 
     if (!fcmToken) {
-      console.log("❌ Cannot register: no FCM token available");
       return { success: false, error: "No FCM token available" };
     }
 
     if (fcmTokenRegistered) {
-      console.log("⚠️ Token already registered, skipping");
       return { success: true, alreadyRegistered: true };
     }
 
     try {
-      console.log("📝 Registering FCM token via hook...");
 
       const tokenData = {
         token: fcmToken,
@@ -95,14 +85,10 @@ export const useNotificationToken = () => {
       const result = await registerToken(tokenData).unwrap();
 
       dispatch(setFcmTokenRegistered(true));
-      console.log("✅ FCM token registered successfully via hook");
 
       return { success: true, data: result };
     } catch (error) {
       if (error.status === 404) {
-        console.warn(
-          "⚠️ Notification endpoints not available - skipping registration"
-        );
         return {
           success: false,
           error: "Endpoints not available",
@@ -110,7 +96,6 @@ export const useNotificationToken = () => {
         };
       }
 
-      console.error("❌ Failed to register FCM token via hook:", error);
       return { success: false, error: error.message || "Registration failed" };
     }
   }, [
@@ -125,17 +110,14 @@ export const useNotificationToken = () => {
   // Unregister token function
   const unregisterFcmToken = useCallback(async () => {
     if (!fcmToken) {
-      console.log("⚠️ No FCM token available for unregistration");
       return { success: true, noToken: true };
     }
 
     if (!fcmTokenRegistered) {
-      console.log("⚠️ No token registered, skipping unregistration");
       return { success: true, notRegistered: true };
     }
 
     try {
-      console.log("🗑️ Unregistering FCM token via hook...");
 
       const tokenData = {
         token: fcmToken,
@@ -150,11 +132,9 @@ export const useNotificationToken = () => {
       const result = await unregisterToken(tokenData).unwrap();
 
       dispatch(setFcmTokenRegistered(false));
-      console.log("✅ FCM token unregistered successfully via hook");
 
       return { success: true, data: result };
     } catch (error) {
-      console.error("❌ Failed to unregister FCM token via hook:", error);
 
       // Still mark as unregistered locally even if API call fails
       dispatch(setFcmTokenRegistered(false));
@@ -190,24 +170,13 @@ export const useNotificationToken = () => {
       previousUserId &&
       currentUserId !== previousUserId;
 
-    console.log("🔄 Auth state change detected in hook:", {
-      userLoggedIn,
-      userLoggedOut,
-      userSwitched,
-      currentUserId,
-      previousUserId,
-      fcmTokenRegistered,
-    });
 
     // Handle different scenarios
     if (userLoggedIn) {
-      console.log("🚪 User logged in - registering FCM token via hook");
       registerFcmToken();
     } else if (userLoggedOut) {
-      console.log("🚪 User logged out - unregistering FCM token via hook");
       unregisterFcmToken();
     } else if (userSwitched) {
-      console.log("🔄 User switched - re-registering FCM token via hook");
       // First unregister old token, then register for new user
       unregisterFcmToken().then(() => {
         registerFcmToken();
@@ -231,9 +200,6 @@ export const useNotificationToken = () => {
     return () => {
       // Only unregister if still authenticated (prevents unregistering on normal unmounts)
       if (fcmTokenRegistered && !isAuthenticated) {
-        console.log(
-          "🧹 Hook unmounting with logged out user - unregistering token"
-        );
         unregisterFcmToken();
       }
     };

@@ -25,7 +25,7 @@ import {
   updatePostImageStatus,
 } from "../redux/slices/postSlice";
 import { useCreatePostMutation } from "../redux/api/apiSlice";
-import {launchImageLibrary, launchCamera, MediaType, ImagePickerResponse} from 'react-native-image-picker';
+import { launchImageLibrary, launchCamera, MediaType, ImagePickerResponse } from 'react-native-image-picker';
 import { MaterialIcons } from "@expo/vector-icons";
 import { ChevronLeft, ChevronDown, Check, X, MapPin } from "lucide-react-native";
 
@@ -172,8 +172,8 @@ const CreatePostHeader = ({
               ? "Güncelleniyor..."
               : "Oluşturuluyor..."
             : propertyData
-            ? "Güncelle"
-            : "Oluştur"}
+              ? "Güncelle"
+              : "Oluştur"}
         </Text>
       </TouchableOpacity>
     </View>
@@ -443,20 +443,18 @@ const CustomDropdown = ({
                 {options.map((option, index) => (
                   <TouchableOpacity
                     key={index}
-                    className={`py-4 px-7 flex-row items-center justify-between ${
-                      index !== options.length - 1
-                        ? "border-b border-gray-50"
-                        : ""
-                    } ${value === option ? "bg-gray-100" : "bg-white"}`}
+                    className={`py-4 px-7 flex-row items-center justify-between ${index !== options.length - 1
+                      ? "border-b border-gray-50"
+                      : ""
+                      } ${value === option ? "bg-gray-100" : "bg-white"}`}
                     onPress={() => handleOptionSelect(option)}
                     activeOpacity={0.7}
                   >
                     <Text
-                      className={`text-lg flex-1 mr-3 ${
-                        value === option
-                          ? "text-gray-900 font-medium"
-                          : "text-gray-600"
-                      }`}
+                      className={`text-lg flex-1 mr-3 ${value === option
+                        ? "text-gray-900 font-medium"
+                        : "text-gray-600"
+                        }`}
                       numberOfLines={2}
                       ellipsizeMode="tail"
                     >
@@ -584,7 +582,6 @@ const CreatePostScreen = ({ navigation, route }) => {
       const cityCode = cityCodeMap[selectedCity];
 
       if (!cityCode) {
-        console.log(`${selectedCity} için şehir kodu bulunamadı`);
         setNeighbourhoodOptions([]);
         return;
       }
@@ -600,17 +597,10 @@ const CreatePostScreen = ({ navigation, route }) => {
           a.localeCompare(b, "tr")
         );
         setNeighbourhoodOptions(sortedNeighbourhoods);
-        console.log(
-          `${selectedCity} ${selectedDistrict} için ${sortedNeighbourhoods.length} mahalle yüklendi`
-        );
       } else {
         setNeighbourhoodOptions([]);
-        console.log(
-          `${selectedCity} ${selectedDistrict} için mahalle bulunamadı`
-        );
       }
     } catch (error) {
-      console.error("Mahalleler yüklenirken hata:", error);
       setNeighbourhoodOptions([]);
     }
   };
@@ -633,12 +623,10 @@ const CreatePostScreen = ({ navigation, route }) => {
         });
         setCityCodeMap(codeMap);
 
-        console.log(`CreatePost: Toplam ${cityNames.length} şehir yüklendi`);
       } else {
         throw new Error("Cities array not found");
       }
     } catch (error) {
-      console.error("CreatePost şehirler yüklenirken hata:", error);
       // Hata durumunda fallback liste kullan
       loadFallbackCities();
     }
@@ -739,7 +727,6 @@ const CreatePostScreen = ({ navigation, route }) => {
       const cityCode = cityCodeMap[selectedCity];
 
       if (!cityCode) {
-        console.log(`CreatePost: ${selectedCity} için şehir kodu bulunamadı`);
         setDistrictOptions([]);
         return;
       }
@@ -752,15 +739,10 @@ const CreatePostScreen = ({ navigation, route }) => {
           a.localeCompare(b, "tr")
         );
         setDistrictOptions(districtNames);
-        console.log(
-          `CreatePost: ${selectedCity} için ${districtNames.length} ilçe yüklendi`
-        );
       } else {
         setDistrictOptions([]);
-        console.log(`CreatePost: ${selectedCity} için ilçe bulunamadı`);
       }
     } catch (error) {
-      console.error("CreatePost ilçeler yüklenirken hata:", error);
       setDistrictOptions([]);
     }
   };
@@ -813,7 +795,7 @@ const CreatePostScreen = ({ navigation, route }) => {
   ];
 
   // Currency options
-  const currencyOptions = ["TL", "USD", "EUR", "GBP"];
+  const currencyOptions = ["TRY", "USD", "EUR", "GBP"];
 
   // Payment method options
   const paymentMethodOptions = [
@@ -1045,7 +1027,7 @@ const CreatePostScreen = ({ navigation, route }) => {
           ...options,
           selectionLimit: 10, // Allow multiple selection
         };
-        
+
         launchImageLibrary(galleryOptions, (response) => {
           handleImagePickerResponse(response);
         });
@@ -1083,10 +1065,8 @@ const CreatePostScreen = ({ navigation, route }) => {
       if (totalImages > maxImages) {
         Alert.alert(
           "Fotoğraf Limiti",
-          `En fazla ${maxImages} fotoğraf ekleyebilirsiniz. ${
-            newImages.length
-          } fotoğraf seçtiniz, ancak sadece ${
-            maxImages - images.length
+          `En fazla ${maxImages} fotoğraf ekleyebilirsiniz. ${newImages.length
+          } fotoğraf seçtiniz, ancak sadece ${maxImages - images.length
           } tanesi eklenecek.`
         );
         const allowedImages = newImages.slice(0, maxImages - images.length);
@@ -1401,32 +1381,11 @@ const CreatePostScreen = ({ navigation, route }) => {
       });
 
       // Log the form data being sent
-      console.log("===== SENDING POST DATA =====");
-      console.log("UserId:", currentUser.id);
-      console.log("RentalPeriod enum:", mapRentalPeriodToEnum(RentalPeriod));
-      console.log(
-        "PropertyType enum:",
-        propertyType ? mapPropertyTypeToEnum(propertyType) : "Not set"
-      );
-      console.log(
-        "MaintenanceFeeResponsibility enum:",
-        maintenanceFeeResponsibility
-          ? mapMaintenanceFeeResponsibilityToEnum(maintenanceFeeResponsibility)
-          : "Not set"
-      );
-      console.log("Total images being sent:", newImages.length);
-      console.log("Selected coordinates:", selectedCoordinates);
-      console.log("BulunduguKat:", bulunduguKat);
-      console.log("YatakOdasiSayisi:", yatakOdasiSayisi);
-      console.log("=============================");
 
       // Submit post
       const response = await createPost(formData).unwrap();
 
       // Log the response
-      console.log("===== POST RESPONSE =====");
-      console.log(JSON.stringify(response, null, 2));
-      console.log("=========================");
 
       if (response && response.isSuccess) {
         setUploadStatus("success");
@@ -1452,17 +1411,11 @@ const CreatePostScreen = ({ navigation, route }) => {
       }
     } catch (error) {
       setUploadStatus("error");
-      console.error("Create/Update post error:", error);
-      console.log("===== POST ERROR =====");
-      console.log("Error data:", JSON.stringify(error.data, null, 2));
-      console.log("Error status:", error.status);
-      console.log("Error message:", error.message);
-      console.log("======================");
 
       Alert.alert(
         "Hata",
         error.data?.message ||
-          "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin."
+        "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin."
       );
     }
   };
@@ -1536,7 +1489,7 @@ const CreatePostScreen = ({ navigation, route }) => {
               />
 
               <CustomTextInput
-                label="Kira Tutarı (₺)"
+                label="Kira Tutarı"
                 value={kiraFiyati}
                 onChangeText={setKiraFiyati}
                 placeholder="3500"
@@ -1545,7 +1498,7 @@ const CreatePostScreen = ({ navigation, route }) => {
               />
 
               <CustomTextInput
-                label="Depozito Tutarı (₺)"
+                label="Depozito Tutarı"
                 value={depozito}
                 onChangeText={setDepozito}
                 placeholder="7000"
@@ -1669,8 +1622,8 @@ const CreatePostScreen = ({ navigation, route }) => {
                       !il
                         ? "Önce il seçiniz"
                         : !ilce
-                        ? "Önce ilçe seçiniz"
-                        : "Mahalle seçiniz"
+                          ? "Önce ilçe seçiniz"
+                          : "Mahalle seçiniz"
                     }
                     required
                     disabled={!il || !ilce || neighbourhoodOptions.length === 0} // İl veya ilçe seçilmemişse disabled

@@ -69,7 +69,6 @@ const LoginScreen = ({ navigation }) => {
   // ✅ Enhanced FCM token registration function
   const registerFcmTokenAfterLogin = async () => {
     try {
-      console.log("📱 Starting FCM token registration after login...");
 
       // Wait a bit for auth state to fully propagate to RTK Query
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -80,16 +79,11 @@ const LoginScreen = ({ navigation }) => {
       if (tokens?.fcmToken) {
         // Store FCM token in Redux
         dispatch(setFcmToken(tokens.fcmToken));
-        console.log(
-          "🔥 FCM token stored in Redux:",
-          tokens.fcmToken.substring(0, 20) + "..."
-        );
 
         // Wait another bit to ensure RTK Query has the auth token in its state
         await new Promise((resolve) => setTimeout(resolve, 200));
 
         // Register FCM token with backend
-        console.log("📝 Registering FCM token with backend...");
         const registerResult =
           await notificationService.registerTokenWithServer(
             registerNotificationToken
@@ -97,21 +91,11 @@ const LoginScreen = ({ navigation }) => {
 
         if (registerResult.success) {
           dispatch(setFcmTokenRegistered(true));
-          console.log("✅ FCM token registered successfully after login");
         } else if (!registerResult.skipLogging) {
-          console.error(
-            "❌ Failed to register FCM token after login:",
-            registerResult.error
-          );
         }
       } else {
-        console.log("⚠️ No FCM token available after login");
       }
     } catch (notificationError) {
-      console.error(
-        "❌ Notification setup failed after login:",
-        notificationError
-      );
       // Don't fail the login process for notification errors
     }
   };
@@ -129,7 +113,6 @@ const LoginScreen = ({ navigation }) => {
     }
 
     try {
-      console.log("🚪 Login process starting...");
       setErrorLogin(""); // Clear previous errors
 
       // 1. Call the login API
@@ -138,7 +121,6 @@ const LoginScreen = ({ navigation }) => {
         password: password.trim(),
       }).unwrap();
 
-      console.log("✅ Login API response received:", response);
 
       // Check if login successful
       if (response && response.isSuccess) {
@@ -148,8 +130,6 @@ const LoginScreen = ({ navigation }) => {
             ? response.result.roles[0]
             : null;
 
-        console.log("👤 API roles array:", response.result.roles);
-        console.log("🏷️ Selected role:", userRole);
 
         // Kullanıcı nesnesini güncellenmiş rolle oluştur
         const updatedUser = {
@@ -157,11 +137,9 @@ const LoginScreen = ({ navigation }) => {
           role: response.result.user?.role || userRole,
         };
 
-        console.log("👤 Updated user object:", updatedUser);
 
         // API'den gelen hasUserProfile değerini al
         const hasUserProfile = response.result.hasUserProfile === true;
-        console.log("📋 Profile status from API:", hasUserProfile);
 
         // ✅ ENHANCED: Handle potential user switching with FCM cleanup
         const isUserSwitch =
@@ -170,23 +148,14 @@ const LoginScreen = ({ navigation }) => {
           currentUser.id !== updatedUser.id;
 
         if (isUserSwitch) {
-          console.log("🔄 USER SWITCH DETECTED in LoginScreen:", {
-            previousUserId: currentUser.id,
-            newUserId: updatedUser.id,
-          });
 
           // Clean up previous user's FCM token
           try {
-            console.log("🧹 Cleaning up previous user's FCM token...");
             await notificationService.unregisterTokenWithServer(
               registerNotificationToken
             );
             dispatch(setFcmTokenRegistered(false));
           } catch (cleanupError) {
-            console.log(
-              "⚠️ FCM cleanup failed for previous user:",
-              cleanupError.message
-            );
           }
 
           // Prepare for user switch - clean up old user data
@@ -211,15 +180,10 @@ const LoginScreen = ({ navigation }) => {
         // Profil durumunu açıkça belirt (Redux persist için)
         dispatch(setHasUserProfile(hasUserProfile));
 
-        console.log("✅ Credentials stored in Redux");
-        console.log("🏷️ User role:", updatedUser.role);
-        console.log("📋 Profile status:", hasUserProfile);
 
         // 3. ✅ Setup FCM token for new login
         await registerFcmTokenAfterLogin();
 
-        console.log("🎉 Login process completed successfully");
-        console.log("🔄 AppNavigator will handle navigation");
 
         // Clear form
         setUsername("");
@@ -227,7 +191,6 @@ const LoginScreen = ({ navigation }) => {
         setErrorLogin("");
       } else {
         // Show error if response is not successful
-        console.log("❌ Login error:", response?.message);
         Alert.alert(
           "Giriş Başarısız",
           response?.message || "Kullanıcı adı veya şifre hatalı."
@@ -235,7 +198,6 @@ const LoginScreen = ({ navigation }) => {
       }
     } catch (error) {
       // Handle API call errors
-      console.error("❌ Login error:", error);
       const errorMessage =
         error.data?.message ||
         "Giriş sırasında bir hata oluştu. Lütfen tekrar deneyin.";
@@ -448,7 +410,7 @@ const LoginScreen = ({ navigation }) => {
                   className={`rounded-xl bg-white flex-row items-center px-4 py-3 gap-2 w-full border ${
                     isLoading ? "border-gray-300" : "border-gray-900"
                   }`}
-                  onPress={() => console.log("Apple login")}
+                  onPress={() => {}}
                   disabled={isLoading}
                 >
                   <AntDesign
@@ -475,7 +437,7 @@ const LoginScreen = ({ navigation }) => {
                   className={`rounded-xl bg-white flex-row items-center px-4 py-3 gap-2 w-full border ${
                     isLoading ? "border-gray-300" : "border-gray-900"
                   }`}
-                  onPress={() => console.log("Google login")}
+                  onPress={() => {}}
                   disabled={isLoading}
                 >
                   <AntDesign

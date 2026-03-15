@@ -69,13 +69,10 @@ import {
 // Logger utility
 const Logger = {
   info: (component, action, data = {}) => {
-    console.log(`[${component}] ${action}`, data);
   },
   error: (component, action, error) => {
-    console.error(`[${component}] ERROR: ${action}`, error);
   },
   event: (eventName, properties = {}) => {
-    console.log(`[EVENT] ${eventName}`, properties);
   },
 };
 
@@ -861,9 +858,6 @@ const PostsScreen = ({ navigation }) => {
             (item) => item && item.postId && !existingPostIds.has(item.postId)
           );
 
-          console.log(
-            `Adding ${uniqueNewData.length} new unique posts out of ${newData.length} total`
-          );
 
           return [...prevData, ...uniqueNewData];
         });
@@ -900,9 +894,6 @@ const PostsScreen = ({ navigation }) => {
   }, []);
 
   const handleFilterModalApply = (appliedFilters, searchResult) => {
-    console.log("=== FILTER MODAL APPLY DEBUG ===");
-    console.log("Applied filters:", appliedFilters);
-    console.log("Search result:", searchResult);
 
     Logger.event("filter_modal_applied", {
       filtersCount: Object.keys(appliedFilters).length,
@@ -981,7 +972,6 @@ const PostsScreen = ({ navigation }) => {
         pageSize: PAGE_SIZE,
       };
 
-      console.log("Loading more filtered posts with:", filtersWithPagination);
 
       const searchResult = await searchPosts(filtersWithPagination).unwrap();
 
@@ -997,7 +987,6 @@ const PostsScreen = ({ navigation }) => {
             (typeof post.postId === "number" || typeof post.postId === "string")
         );
 
-        console.log(`Adding ${validNewPosts.length} more filtered posts`);
 
         setAllPostsData((prevData) => {
           const existingPostIds = new Set(prevData.map((item) => item.postId));
@@ -1018,7 +1007,6 @@ const PostsScreen = ({ navigation }) => {
       }
     } catch (error) {
       Logger.error(COMPONENT_NAME, "Load more filtered posts failed", error);
-      console.error("Load more filtered posts error:", error);
     } finally {
       setIsLoadingMoreFiltered(false);
     }
@@ -1104,7 +1092,6 @@ const PostsScreen = ({ navigation }) => {
               }
             }
           } catch (filterError) {
-            console.error("Filter refresh error:", filterError);
             setHasActiveFilters(false);
             setActiveFilterData(null);
             setFilterMetadata(null);
@@ -1269,7 +1256,6 @@ const PostsScreen = ({ navigation }) => {
         propertyData: postToEdit,
       });
     } else {
-      console.error("Post data not found for editing:", postId);
       Alert.alert("Hata", "İlan verisi bulunamadı.");
     }
   };
@@ -1286,21 +1272,13 @@ const PostsScreen = ({ navigation }) => {
   };
 
   const getFilteredPosts = () => {
-    console.log("=== GET FILTERED POSTS DEBUG ===");
-    console.log("User role:", userRole);
-    console.log("Has active filters:", hasActiveFilters);
-    console.log("All posts data length:", allPostsData?.length || 0);
-    console.log("Search query:", searchQuery);
-    console.log("Sort by:", sortBy, "Sort direction:", sortDirection);
 
     let filteredPosts = [];
 
     if (userRole === "EVSAHIBI") {
       filteredPosts = landlordListingsData?.result || [];
-      console.log("Using landlord listings:", filteredPosts.length);
     } else {
       filteredPosts = allPostsData || [];
-      console.log("Using all posts data:", filteredPosts.length);
     }
 
 
@@ -1311,19 +1289,13 @@ const PostsScreen = ({ navigation }) => {
         (typeof post.postId === "number" || typeof post.postId === "string");
 
       if (!isValid && post) {
-        console.log("Filtering out invalid post:", {
-          postId: post.postId,
-          type: typeof post.postId,
-        });
       }
 
       return isValid;
     });
 
-    console.log(`Valid posts after null check: ${validPosts.length}`);
 
     if (hasActiveFilters) {
-      console.log("Processing with active filters");
 
       const uniquePosts = [];
       const seenPostIds = new Set();
@@ -1335,7 +1307,6 @@ const PostsScreen = ({ navigation }) => {
         }
       });
 
-      console.log(`Unique posts: ${uniquePosts.length}`);
 
       let finalPosts = uniquePosts;
 
@@ -1349,17 +1320,12 @@ const PostsScreen = ({ navigation }) => {
             (post.ilce && post.ilce.toLowerCase().includes(query))
         );
 
-        console.log(`After search filter: ${finalPosts.length}`);
       }
 
       const sortedPosts = sortPosts(finalPosts, sortBy, sortDirection);
-      console.log(
-        `Final result (with filters and sorting): ${sortedPosts.length}`
-      );
       return sortedPosts;
     }
 
-    console.log("Processing without active filters");
 
     const uniquePosts = [];
     const seenPostIds = new Set();
@@ -1383,13 +1349,9 @@ const PostsScreen = ({ navigation }) => {
           (post.ilce && post.ilce.toLowerCase().includes(query))
       );
 
-      console.log(`After search filter: ${finalPosts.length}`);
     }
 
     const sortedPosts = sortPosts(finalPosts, sortBy, sortDirection);
-    console.log(
-      `Final result (no filters, with sorting): ${sortedPosts.length}`
-    );
     return sortedPosts;
   };
 
@@ -2132,19 +2094,6 @@ const PostsScreen = ({ navigation }) => {
 
       <View className="flex-1">
 
-        {console.log("DEBUG STATES:", {
-          isLoading,
-          isLoadingLandlordListings,
-          isLoadingAllPosts,
-          isFetchingAllPosts,
-          allPostsDataLength: allPostsData.length,
-          filteredPostsLength: filteredPosts.length,
-          userRole,
-          currentPage,
-          hasActiveFilters
-        })}
-
-        {/* Loading condition'ını genişlet */}
         {(isLoading ||
           (userRole === "KIRACI" && allPostsData.length === 0 && !hasActiveFilters) ||
           (userRole === "EVSAHIBI" && (!landlordListingsData || !landlordListingsData.result))

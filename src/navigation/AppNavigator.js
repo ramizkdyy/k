@@ -981,9 +981,6 @@ const AppNavigatorContent = () => {
   const userProfile = useSelector(selectUserProfile);
   const currentUser = useSelector(selectCurrentUser);
 
-  console.log("Navigation State:", {
-    currentUser,
-  });
 
   // More reliable profile check
   const profileExists = userProfile && Object.keys(userProfile).length > 0;

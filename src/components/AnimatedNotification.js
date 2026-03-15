@@ -54,9 +54,6 @@ const AnimatedNotification = ({
   // Handle content updates with smooth transition
   useEffect(() => {
     if (isUpdating) {
-      console.log(
-        "🔄 AnimatedNotification: Content updating, starting transition and restarting timer"
-      );
 
       // Clear existing timer when content updates
       if (autoHideTimerRef.current) {
@@ -77,9 +74,6 @@ const AnimatedNotification = ({
       // Restart the auto-hide timer with full duration after content update
       setTimeout(() => {
         if (!isExitingRef.current && !isDragging.value) {
-          console.log(
-            "⏰ AnimatedNotification: Restarting auto-hide timer after content update"
-          );
           autoHideTimerRef.current = setTimeout(() => {
             if (!isExitingRef.current && !isDragging.value) {
               exitAnimation();
@@ -149,22 +143,12 @@ const AnimatedNotification = ({
     // Set up auto-hide timer after enter animation completes
     const autoHideTimer = setTimeout(() => {
       if (!isExitingRef.current) {
-        console.log(
-          "⏰ AnimatedNotification: Auto-hide timer triggered after",
-          duration,
-          "ms"
-        );
         exitAnimation();
       }
     }, duration);
 
     autoHideTimerRef.current = autoHideTimer;
 
-    console.log(
-      "⏱️ AnimatedNotification: Auto-hide timer set for",
-      duration,
-      "ms"
-    );
 
     // Cleanup function
     return () => {
@@ -300,8 +284,6 @@ const AnimatedNotification = ({
           <TouchableOpacity
             onPress={() => {
               if (data?.chatId) {
-                console.log("🔗 Navigating to chat:", data.chatId);
-                console.log("🔗 Notification data:", data);
                 // Ensure type is set for proper navigation
                 const navigationData = {
                   ...data,
@@ -311,7 +293,6 @@ const AnimatedNotification = ({
                 onPress?.(navigationData);
                 exitAnimation();
               } else {
-                console.warn("⚠️ No chatId found in notification data");
               }
             }}
             style={{
@@ -345,7 +326,6 @@ const AnimatedNotification = ({
                       cachePolicy="memory-disk"
                       transition={200}
                       onError={(error) => {
-                        console.log("❌ Profile image load error:", error);
                       }}
                     />
                   ) : (
