@@ -725,7 +725,7 @@ const OffersScreen = () => {
                       : "Gelen teklif"}
                   </Text>
                   {/* YENI: Kabul edilen teklifler için Kiraya Ver butonu */}
-                  {item.status === 1 && (
+                  {item.status === 1 && isLandlord && (
                     <TouchableOpacity
                       className="rounded-full mt-3 justify-center items-center"
                       onPress={() =>

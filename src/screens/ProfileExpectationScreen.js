@@ -402,6 +402,172 @@ const CustomDropdown = ({
   );
 };
 
+const MultiSelectDropdown = ({
+  label,
+  value = [],
+  setValue,
+  options,
+  placeholder,
+  required = false,
+  disabled = false,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const getModalHeight = () => {
+    const headerHeight = 80;
+    const itemHeight = 50;
+    const bottomPadding = 40;
+    const maxHeight = SCREEN_HEIGHT * 0.6;
+    const calculatedHeight = headerHeight + options.length * itemHeight + bottomPadding;
+    if (options.length <= 7) return Math.min(calculatedHeight, SCREEN_HEIGHT * 0.55);
+    return maxHeight;
+  };
+
+  const SNAP_POINTS = {
+    CLOSED: SCREEN_HEIGHT,
+    OPEN: SCREEN_HEIGHT - getModalHeight(),
+  };
+
+  const translateY = useSharedValue(SCREEN_HEIGHT);
+  const backdropOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (isOpen) {
+      translateY.value = withSpring(SNAP_POINTS.OPEN, { damping: 80, stiffness: 400 });
+      backdropOpacity.value = withTiming(0.5, { duration: 300 });
+    } else if (isOpen === false && translateY.value !== SCREEN_HEIGHT) {
+      translateY.value = withSpring(SCREEN_HEIGHT, { damping: 80, stiffness: 400 });
+      backdropOpacity.value = withTiming(0, { duration: 250 });
+    }
+  }, [isOpen]);
+
+  const handleClose = () => {
+    translateY.value = withSpring(SCREEN_HEIGHT, { damping: 80, stiffness: 400 });
+    backdropOpacity.value = withTiming(0, { duration: 250 });
+    setTimeout(() => setIsOpen(false), 300);
+  };
+
+  const handleToggle = (option) => {
+    if (value.includes(option)) {
+      setValue(value.filter((v) => v !== option));
+    } else {
+      setValue([...value, option]);
+    }
+  };
+
+  const backdropStyle = useAnimatedStyle(() => ({ opacity: backdropOpacity.value }));
+  const modalStyle = useAnimatedStyle(() => ({ transform: [{ translateY: translateY.value }] }));
+
+  return (
+    <View className="mb-6">
+      <Text style={{ fontSize: 14 }} className="text-gray-900 font-semibold mb-3">
+        {label} {required && <Text className="text-red-500">*</Text>}
+      </Text>
+
+      <TouchableOpacity
+        className="border border-gray-900 rounded-xl px-4 py-4"
+        onPress={() => !disabled && setIsOpen(true)}
+        disabled={disabled}
+        style={disabled ? { opacity: 0.4 } : {}}
+      >
+        {value.length === 0 ? (
+          <View className="flex-row justify-between items-center">
+            <Text className="text-gray-500" style={{ fontSize: 16 }}>{placeholder}</Text>
+            <ChevronDown size={16} color="#6b7280" />
+          </View>
+        ) : (
+          <View>
+            <View className="flex-row flex-wrap gap-2">
+              {value.map((v) => (
+                <View key={v} className="bg-gray-900 rounded-full px-3 py-1">
+                  <Text className="text-white" style={{ fontSize: 13 }}>{v}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+      </TouchableOpacity>
+
+      {isOpen && (
+        <Modal
+          visible={isOpen}
+          transparent
+          animationType="none"
+          statusBarTranslucent
+          onRequestClose={handleClose}
+        >
+          <GestureHandlerRootView style={styles.container}>
+            <Animated.View style={[styles.backdrop, backdropStyle]}>
+              <TouchableWithoutFeedback onPress={handleClose}>
+                <View style={styles.backdropTouchable} />
+              </TouchableWithoutFeedback>
+            </Animated.View>
+
+            <Animated.View style={[styles.modal, modalStyle]}>
+              <View className="py-4 px-6 border-b border-gray-100 bg-white">
+                <View className="flex-row justify-between items-center">
+                  <Text style={{ fontWeight: 600, fontSize: 18 }} className="text-gray-800">
+                    {label}
+                  </Text>
+                  <View className="flex-row items-center gap-4">
+                    {value.length > 0 && (
+                      <TouchableOpacity onPress={() => setValue([])}>
+                        <Text style={{ fontSize: 14, color: "#ef4444", fontWeight: "500" }}>
+                          Temizle
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity onPress={handleClose} className="px-2 py-2">
+                      <Text style={{ fontSize: 15, color: "#007AFF", fontWeight: "500" }}>
+                        Tamam
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                {value.length > 0 && (
+                  <Text style={{ fontSize: 12 }} className="text-gray-500 mt-1">
+                    {value.length} seçili
+                  </Text>
+                )}
+              </View>
+
+              <ScrollView
+                className="flex-1"
+                showsVerticalScrollIndicator={options.length > 5}
+                bounces={options.length > 3}
+                keyboardShouldPersistTaps="handled"
+              >
+                {options.map((option, index) => {
+                  const isSelected = value.includes(option);
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      className={`py-4 px-7 flex-row items-center justify-between ${
+                        index !== options.length - 1 ? "border-b border-gray-50" : ""
+                      } ${isSelected ? "bg-gray-100" : "bg-white"}`}
+                      onPress={() => handleToggle(option)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        className={`text-lg flex-1 mr-3 ${isSelected ? "text-gray-900 font-medium" : "text-gray-600"}`}
+                        numberOfLines={2}
+                      >
+                        {option}
+                      </Text>
+                      {isSelected && <Check size={16} color="#16a34a" />}
+                    </TouchableOpacity>
+                  );
+                })}
+                {options.length > 7 && <View className="h-2" />}
+              </ScrollView>
+            </Animated.View>
+          </GestureHandlerRootView>
+        </Modal>
+      )}
+    </View>
+  );
+};
+
 const CustomDatePicker = ({ label, value, setValue, required = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(value || new Date());
@@ -640,11 +806,43 @@ const ProfileExpectationScreen = ({ navigation }) => {
     if (city) {
       loadDistrictsForCity(city);
       setDistrict("");
+      setAlternativeDistrictsList([]);
     } else {
       setDistrictOptions([]);
       setDistrict("");
+      setAlternativeDistrictsList([]);
     }
   }, [city]);
+
+  // İlçe veya alternatif ilçeler değiştiğinde mahalleleri yükle
+  useEffect(() => {
+    if (!city || !cityCodeMap[city]) {
+      setNeighbourhoodOptions([]);
+      setPreferredNeighborhoodsList([]);
+      return;
+    }
+    const cityCode = cityCodeMap[city];
+    const districtsData = getDistrictsAndNeighbourhoodsByCityCode(cityCode);
+    const selectedDistricts = [
+      ...(district ? [district] : []),
+      ...alternativeDistrictsList,
+    ];
+    if (selectedDistricts.length === 0) {
+      setNeighbourhoodOptions([]);
+      setPreferredNeighborhoodsList([]);
+      return;
+    }
+    const allNeighbourhoods = new Set();
+    selectedDistricts.forEach((d) => {
+      const hoods = districtsData?.[d] || [];
+      hoods.forEach((h) => allNeighbourhoods.add(h));
+    });
+    const sorted = [...allNeighbourhoods].sort((a, b) => a.localeCompare(b, "tr"));
+    setNeighbourhoodOptions(sorted);
+    setPreferredNeighborhoodsList((prev) =>
+      prev.filter((n) => allNeighbourhoods.has(n))
+    );
+  }, [district, alternativeDistrictsList, city, cityCodeMap]);
 
   // Tüm Türkiye şehirlerini yükle
   const loadAllTurkeyCities = () => {
@@ -900,8 +1098,16 @@ const ProfileExpectationScreen = ({ navigation }) => {
         // Location preferences
         setCity(expectation.city || "");
         // İlçe setlemesini şehir yüklendikten sonra yapmak için ayrı useEffect kullanacağız
-        setAlternativeDistricts(expectation.alternativeDistricts || "");
-        setPreferredNeighborhoods(expectation.preferredNeighborhoods || "");
+        setAlternativeDistrictsList(
+          expectation.alternativeDistricts
+            ? expectation.alternativeDistricts.split(", ").filter((d) => d.trim())
+            : []
+        );
+        setPreferredNeighborhoodsList(
+          expectation.preferredNeighborhoods
+            ? expectation.preferredNeighborhoods.split(", ").filter((n) => n.trim())
+            : []
+        );
 
         // Budget and payment
         setMinRentBudget(expectation.minRentBudget?.toString() || "3000");
@@ -1020,8 +1226,9 @@ const ProfileExpectationScreen = ({ navigation }) => {
   const [buildingApprovalPolicy, setBuildingApprovalPolicy] = useState(1);
 
   // State for Tenant Expectations (KIRACI)
-  const [alternativeDistricts, setAlternativeDistricts] = useState("");
-  const [preferredNeighborhoods, setPreferredNeighborhoods] = useState("");
+  const [alternativeDistrictsList, setAlternativeDistrictsList] = useState([]);
+  const [preferredNeighborhoodsList, setPreferredNeighborhoodsList] = useState([]);
+  const [neighbourhoodOptions, setNeighbourhoodOptions] = useState([]);
   const [minRentBudget, setMinRentBudget] = useState("3000");
   const [maxRentBudget, setMaxRentBudget] = useState("8000");
   const [tenantMaintenancePreference, setTenantMaintenancePreference] =
@@ -1427,18 +1634,26 @@ const ProfileExpectationScreen = ({ navigation }) => {
           disabled={!city || districtOptions.length === 0}
         />
 
-        <CustomTextInput
+        <MultiSelectDropdown
           label="Alternatif İlçeler"
-          value={alternativeDistricts}
-          onChangeText={setAlternativeDistricts}
-          placeholder="Örn: Beşiktaş, Şişli"
+          value={alternativeDistrictsList}
+          setValue={setAlternativeDistrictsList}
+          options={districtOptions}
+          placeholder={city ? "İlçe seçiniz" : "Önce şehir seçiniz"}
+          disabled={!city || districtOptions.length === 0}
         />
 
-        <CustomTextInput
+        <MultiSelectDropdown
           label="Tercih Edilen Mahalleler"
-          value={preferredNeighborhoods}
-          onChangeText={setPreferredNeighborhoods}
-          placeholder="Örn: Caferağa, Moda"
+          value={preferredNeighborhoodsList}
+          setValue={setPreferredNeighborhoodsList}
+          options={neighbourhoodOptions}
+          placeholder={
+            alternativeDistrictsList.length > 0 || district
+              ? "Mahalle seçiniz"
+              : "Önce ilçe seçiniz"
+          }
+          disabled={neighbourhoodOptions.length === 0}
         />
       </FormSection>
 
@@ -1873,8 +2088,8 @@ const ProfileExpectationScreen = ({ navigation }) => {
           userId: currentUser.id, // Use the current user ID explicitly
           city,
           district,
-          alternativeDistricts,
-          preferredNeighborhoods,
+          alternativeDistricts: alternativeDistrictsList.join(", "),
+          preferredNeighborhoods: preferredNeighborhoodsList.join(", "),
           minRentBudget: parseFloat(minRentBudget) || 0,
           maxRentBudget: parseFloat(maxRentBudget) || 0,
           maintenanceFeePreference: tenantMaintenancePreference,
@@ -2002,8 +2217,8 @@ const ProfileExpectationScreen = ({ navigation }) => {
           userId: currentUser.id,
           city,
           district,
-          alternativeDistricts,
-          preferredNeighborhoods,
+          alternativeDistricts: alternativeDistrictsList.join(", "),
+          preferredNeighborhoods: preferredNeighborhoodsList.join(", "),
           minRentBudget: parseFloat(minRentBudget) || 0,
           maxRentBudget: parseFloat(maxRentBudget) || 0,
           maintenanceFeePreference: tenantMaintenancePreference,

@@ -352,9 +352,7 @@ const ProfileScreen = ({ navigation }) => {
             <TouchableOpacity
               className="py-4 rounded-lg flex flex-row justify-between items-center"
               onPress={() => {
-                navigation.navigate(
-                  userRole === "EVSAHIBI" ? "MyProperties" : "FindProperties"
-                );
+                navigation.navigate("Properties");
               }}
             >
               <View className="flex-row items-center gap-4">
@@ -371,9 +369,7 @@ const ProfileScreen = ({ navigation }) => {
             <TouchableOpacity
               className="py-4 rounded-lg flex flex-row justify-between items-center"
               onPress={() => {
-                navigation.navigate(
-                  userRole === "EVSAHIBI" ? "ReceivedOffers" : "MySentOffers"
-                );
+                navigation.navigate("Offers");
               }}
             >
               <View className="flex-row items-center gap-4">

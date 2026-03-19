@@ -5,7 +5,6 @@ import {
   Dimensions,
   StatusBar,
   Platform,
-  RefreshControl,
   ScrollView,
   ActivityIndicator,
 } from "react-native";
