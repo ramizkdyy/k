@@ -432,8 +432,8 @@ const MessagesScreen = ({ navigation }) => {
                 <Text
                   style={{ fontSize: 14 }}
                   className={` ${isUnread
-                      ? "text-gray-900 font-bold"
-                      : "text-gray-500 font-normal"
+                    ? "text-gray-900 font-bold"
+                    : "text-gray-500 font-normal"
                     }`}
                 >
                   {messageTime}
@@ -633,7 +633,7 @@ const MessagesScreen = ({ navigation }) => {
           <View className="flex-1 justify-center items-center py-20">
             {isSearching ? (
               <>
-                <ActivityIndicator size="large" color="#0ea5e9" />
+                <ActivityIndicator size="large" color="#303030" />
                 <Text className="text-gray-500 mt-4 text-base text-center">
                   Searching...
                 </Text>

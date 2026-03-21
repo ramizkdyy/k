@@ -681,6 +681,7 @@ const AllMatchingUsers = ({ navigation, route }) => {
   // State management
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("compatibility");
+  const [sortDirection, setSortDirection] = useState(0); // 0 = desc, 1 = asc
   const [isMapView, setIsMapView] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -863,12 +864,14 @@ const AllMatchingUsers = ({ navigation, route }) => {
       });
     }
 
+    const dir = sortDirection === 0 ? -1 : 1;
+
     switch (sortBy) {
       case "compatibility":
         filteredUsers.sort((a, b) => {
           const scoreA = a.matchScore || 0;
           const scoreB = b.matchScore || 0;
-          return scoreB - scoreA;
+          return (scoreB - scoreA) * dir;
         });
         break;
       case "budget":
@@ -876,13 +879,13 @@ const AllMatchingUsers = ({ navigation, route }) => {
           filteredUsers.sort((a, b) => {
             const budgetA = a.details?.budget || 0;
             const budgetB = b.details?.budget || 0;
-            return budgetB - budgetA;
+            return (budgetB - budgetA) * dir;
           });
         } else {
           filteredUsers.sort((a, b) => {
             const rentA = a.rent || 0;
             const rentB = b.rent || 0;
-            return rentB - rentA;
+            return (rentB - rentA) * dir;
           });
         }
         break;
@@ -890,7 +893,7 @@ const AllMatchingUsers = ({ navigation, route }) => {
         filteredUsers.sort((a, b) => {
           const dateA = new Date(a.createdDate || 0);
           const dateB = new Date(b.createdDate || 0);
-          return dateB - dateA;
+          return (dateB - dateA) * dir;
         });
         break;
       default:
@@ -898,7 +901,7 @@ const AllMatchingUsers = ({ navigation, route }) => {
     }
 
     return filteredUsers;
-  }, [allUsers, searchQuery, sortBy, isLandlord]);
+  }, [allUsers, searchQuery, sortBy, sortDirection, isLandlord]);
 
   const filteredUsers = getFilteredAndSortedUsers();
 
@@ -1074,6 +1077,15 @@ const AllMatchingUsers = ({ navigation, route }) => {
     : "Size uygun ev sahipleri";
 
   // Dynamic sort options based on user role
+  const handleSortChange = (key) => {
+    if (sortBy === key) {
+      setSortDirection((prev) => (prev === 0 ? 1 : 0));
+    } else {
+      setSortBy(key);
+      setSortDirection(0);
+    }
+  };
+
   const sortOptions = isLandlord
     ? [
       { key: "compatibility", label: "Uyumluluk" },
@@ -1145,7 +1157,7 @@ const AllMatchingUsers = ({ navigation, route }) => {
               }}
               style={{ width: "100%" }}
             > */}
-            <View className="flex-row items-center">
+            <View className="flex-row items-center justify-center w-full">
               {sortOptions.map((option) => (
                 <TouchableOpacity
                   key={option.key}
@@ -1153,13 +1165,13 @@ const AllMatchingUsers = ({ navigation, route }) => {
                     ? "bg-gray-900"
                     : "bg-white border-white"
                     }`}
-                  onPress={() => setSortBy(option.key)}
+                  onPress={() => handleSortChange(option.key)}
                 >
                   <Text
                     className={`text-sm font-medium ${sortBy === option.key ? "text-white" : "text-gray-700"
                       }`}
                   >
-                    {option.label}
+                    {option.label}{sortBy === option.key ? (sortDirection === 0 ? " ↓" : " ↑") : ""}
                   </Text>
                 </TouchableOpacity>
               ))}

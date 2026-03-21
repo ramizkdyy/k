@@ -1017,25 +1017,6 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
             {/* Location Section - PostDetailScreen'deki gibi */}
             {renderLocationSection(post)}
 
-            {/* İlan Açıklaması */}
-            {post.postDescription && (
-              <View
-                style={{
-                  borderBottomWidth: 0.4,
-                  borderBottomColor: "#dee0ea",
-                }}
-                className="px-6 py-4"
-              >
-                {renderSectionHeader("İlan Açıklaması")}
-                <Text
-                  style={{ fontSize: 14 }}
-                  className="text-gray-500 leading-6"
-                >
-                  {post.postDescription}
-                </Text>
-              </View>
-            )}
-
             {/* İlan Detayları */}
             <View className="px-6 py-4">
               {renderSectionHeader("İlan Detayları")}
@@ -1065,6 +1046,25 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
                 )}
               </View>
             </View>
+
+            {/* İlan Açıklaması */}
+            {post.postDescription && (
+              <View
+                style={{
+                  borderBottomWidth: 0.4,
+                  borderBottomColor: "#dee0ea",
+                }}
+                className="px-6 py-4"
+              >
+                {renderSectionHeader("İlan Açıklaması")}
+                <Text
+                  style={{ fontSize: 14 }}
+                  className="text-gray-500 leading-6"
+                >
+                  {post.postDescription}
+                </Text>
+              </View>
+            )}
 
             {/* Ev içi */}
             <View

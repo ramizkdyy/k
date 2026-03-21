@@ -1110,8 +1110,6 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
       { key: 0, label: "Uzaklık" },
       { key: 2, label: "Fiyat" },
       { key: 1, label: "Tarih" },
-      { key: 3, label: "Görüntülenme" },
-      { key: 4, label: "Güncellenme" },
     ],
     []
   );
@@ -1301,58 +1299,31 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
               transform: [{ translateY: filterTranslateY }],
             }}
           >
-            <ScrollView
-              horizontal={true}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{
-                alignItems: "center",
-                paddingHorizontal: 0,
-              }}
-              style={{ width: "100%" }}
-            >
-              <View className="flex-row items-center">
-                {sortBy !== 0 && (
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => { setSortBy(0); setSortDirection(0); }}
-                    style={{
-                      paddingHorizontal: 10,
-                      paddingVertical: 5,
-                      borderRadius: 16,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginRight: 6,
-                    }}
-                    className="bg-gray-900"
-                  >
-                    <MaterialIcons name="close" size={16} color="white" />
-                  </TouchableOpacity>
-                )}
-                {sortOptions.map((option) => (
-                  <TouchableOpacity
-                    activeOpacity={1}
-                    key={option.key}
-                    className={`mr-3 px-4 py-2 rounded-full border ${sortBy === option.key
-                      ? "bg-gray-900"
-                      : "bg-white border-white"
+            <View className="flex-row items-center justify-center w-full">
+              {sortOptions.map((option) => (
+                <TouchableOpacity
+                  activeOpacity={1}
+                  key={option.key}
+                  className={`mr-3 px-4 py-2 rounded-full border ${sortBy === option.key
+                    ? "bg-gray-900"
+                    : "bg-white border-white"
+                    }`}
+                  onPress={() => handleSortChange(option.key)}
+                >
+                  <Text
+                    className={`text-sm font-medium ${sortBy === option.key ? "text-white" : "text-gray-700"
                       }`}
-                    onPress={() => handleSortChange(option.key)}
                   >
-                    <Text
-                      className={`text-sm font-medium ${sortBy === option.key ? "text-white" : "text-gray-700"
-                        }`}
-                    >
-                      {option.label}
-                      {sortBy === option.key && (
-                        <Text className="ml-1">
-                          {sortDirection === 0 ? " ↑" : " ↓"}
-                        </Text>
-                      )}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
+                    {option.label}
+                    {sortBy === option.key && (
+                      <Text className="ml-1">
+                        {sortDirection === 0 ? " ↑" : " ↓"}
+                      </Text>
+                    )}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </Animated.View>
         </Animated.View>
       </View>

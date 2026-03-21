@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Dimensions,
-  Animated,
 } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -72,24 +71,6 @@ const UserProfileScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
 
   const { userId, userRole } = route.params;
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const headerTranslateY = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [0, -70],
-    extrapolate: "clamp",
-  });
-
-  const headerOpacity = scrollY.interpolate({
-    inputRange: [0, 50, 100],
-    outputRange: [1, 0.5, 0],
-    extrapolate: "clamp",
-  });
-
-  const headerContainerHeight = scrollY.interpolate({
-    inputRange: [0, 50],
-    outputRange: [50, 0],
-    extrapolate: "clamp",
-  });
   const [activeTab, setActiveTab] = useState("general");
   const [isFavorite, setIsFavorite] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
@@ -343,6 +324,7 @@ const UserProfileScreen = ({ navigation, route }) => {
     );
   };
 
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("tr-TR", {
       style: "currency",
@@ -475,59 +457,20 @@ const UserProfileScreen = ({ navigation, route }) => {
       className="flex-1 bg-white"
       style={{ paddingTop: insets.top }}
     >
-      {/* Header */}
-      {/* Animated Header - ProfileScreen'den eklendi */}
-      <View className="bg-white z-10">
-        <Animated.View
-          style={{
-            height: headerContainerHeight,
-            overflow: "hidden",
-          }}
-        >
-          <Animated.View
-            className="bg-white px-5 py-4 flex-row items-center justify-center relative"
-            style={{
-              height: 50,
-              opacity: headerOpacity,
-              transform: [{ translateY: headerTranslateY }],
-            }}
-          >
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              className="absolute left-5 w-10 h-10 rounded-full justify-center items-center"
-            >
-              <ChevronLeft size={20} color="#374151" />
-            </TouchableOpacity>
-
-            <Text
-              style={{ fontSize: 20, fontWeight: 600 }}
-              className="text-gray-900"
-            >
-              Profil
-            </Text>
-
-            <TouchableOpacity
-              onPress={handleReport}
-              className="absolute right-5 w-10 h-10 rounded-full justify-center items-center"
-            >
-              <ShieldUser size={20} color="#6b7280" />
-            </TouchableOpacity>
-          </Animated.View>
-        </Animated.View>
+      {/* Custom Header */}
+      <View className="flex-row items-center justify-between px-4 py-2" style={{ minHeight: 44 }}>
+        <TouchableOpacity onPress={() => navigation.goBack()} className="p-1">
+          <ChevronLeft size={24} color="black" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleReport} className="p-2">
+          <ShieldUser size={22} color="#6b7280" />
+        </TouchableOpacity>
       </View>
 
-      <Animated.ScrollView
+      <ScrollView
         className="flex-1 px-5"
         showsVerticalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          {
-            useNativeDriver: false,
-          }
-        )}
-        scrollEventThrottle={1}
       >
-        {" "}
         {/* Profile Header */}
         <View className="items-center py-6">
           <View
@@ -584,7 +527,7 @@ const UserProfileScreen = ({ navigation, route }) => {
           )}
 
           {/* Match Score */}
-          {route.params?.matchScore && (
+          {!!route.params?.matchScore && (
             <View className="mb-4">
               <View
                 className={`px-4 py-2 rounded-full ${getCompatibilityColor(
@@ -719,7 +662,7 @@ const UserProfileScreen = ({ navigation, route }) => {
         {activeTab === "general" && (
           <View className="gap-4" style={{ minHeight: 600 }}>
             {/* Kişisel Bilgiler */}
-            <View className="bg-white rounded-xl p-4 border border-gray-100">
+            <View className="py-2">
               <Text
                 style={{ fontSize: 18 }}
                 className="font-semibold text-gray-900 mb-4"
@@ -758,7 +701,7 @@ const UserProfileScreen = ({ navigation, route }) => {
 
             {/* İlan Sayısı (Ev Sahibi için) */}
             {userRole === "EVSAHIBI" && userProfile?.rentalPosts && (
-              <View className="bg-white rounded-xl p-4 border border-gray-100">
+              <View className="py-2">
                 <Text
                   style={{ fontSize: 18 }}
                   className="font-semibold text-gray-900 mb-4"
@@ -786,8 +729,8 @@ const UserProfileScreen = ({ navigation, route }) => {
             )}
 
             {/* Profil Açıklaması */}
-            {userProfile?.profileDescription && (
-              <View className="bg-white rounded-xl p-4 border border-gray-100">
+            {!!userProfile?.profileDescription && (
+              <View className="py-2">
                 <Text
                   style={{ fontSize: 18 }}
                   className="font-semibold text-gray-900 mb-3"
@@ -808,7 +751,7 @@ const UserProfileScreen = ({ navigation, route }) => {
               // EV SAHİBİ BEKLENTI PROFİLİ
               <>
                 {/* Kiracı Beklentileri */}
-                <View className="bg-white rounded-xl p-4 border border-gray-100">
+                <View className="py-2">
                   <Text
                     style={{ fontSize: 18 }}
                     className="font-semibold text-gray-900 mb-4"
@@ -869,7 +812,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                 </View>
 
                 {/* Finansal Koşullar */}
-                <View className="bg-white rounded-xl p-4 border border-gray-100">
+                <View className="py-2">
                   <Text
                     style={{ fontSize: 18 }}
                     className="font-semibold text-gray-900 mb-4"
@@ -949,7 +892,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                 </View>
 
                 {/* Politikalar */}
-                <View className="bg-white rounded-xl p-4 border border-gray-100">
+                <View className="py-2">
                   <Text
                     style={{ fontSize: 18 }}
                     className="font-semibold text-gray-900 mb-4"
@@ -1066,7 +1009,7 @@ const UserProfileScreen = ({ navigation, route }) => {
               // KİRACI TERCİH PROFİLİ
               <>
                 {/* Konum Tercihleri */}
-                <View className="bg-white rounded-xl p-4 border border-gray-100">
+                <View className="py-2">
                   <Text
                     style={{ fontSize: 18 }}
                     className="font-semibold text-gray-900 mb-4"
@@ -1085,7 +1028,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                       </Text>
                     </View>
 
-                    {expectation.alternativeDistricts && (
+                    {!!expectation.alternativeDistricts && (
                       <View className="py-2">
                         <Text className="text-gray-500 text-sm mb-1">
                           Alternatif bölgeler:
@@ -1096,7 +1039,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                       </View>
                     )}
 
-                    {expectation.preferredNeighborhoods && (
+                    {!!expectation.preferredNeighborhoods && (
                       <View className="py-2">
                         <Text className="text-gray-500 text-sm mb-1">
                           Tercih edilen mahalleler:
@@ -1110,7 +1053,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                 </View>
 
                 {/* Ev Özellikleri */}
-                <View className="bg-white rounded-xl p-4 border border-gray-100">
+                <View className="py-2">
                   <Text
                     style={{ fontSize: 18 }}
                     className="font-semibold text-gray-900 mb-4"
@@ -1185,7 +1128,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                 </View>
 
                 {/* Bütçe Detayları */}
-                <View className="bg-white rounded-xl p-4 border border-gray-100">
+                <View className="py-2">
                   <Text
                     style={{ fontSize: 18 }}
                     className="font-semibold text-gray-900 mb-4"
@@ -1260,7 +1203,7 @@ const UserProfileScreen = ({ navigation, route }) => {
               // EV SAHİBİ GEREKSİNİMLERİ
               <>
                 {/* Kiracıdan Beklenenler */}
-                <View className="bg-white rounded-xl p-4 border border-gray-100">
+                <View className="py-2">
                   <Text
                     style={{ fontSize: 18 }}
                     className="font-semibold text-gray-900 mb-4"
@@ -1340,8 +1283,8 @@ const UserProfileScreen = ({ navigation, route }) => {
                 </View>
 
                 {/* Kabul Edilen Evcil Hayvan Türleri */}
-                {expectation.acceptedPetTypes && (
-                  <View className="bg-white rounded-xl p-4 border border-gray-100">
+                {!!expectation.acceptedPetTypes && (
+                  <View className="py-2">
                     <Text
                       style={{ fontSize: 18 }}
                       className="font-semibold text-gray-900 mb-3"
@@ -1358,7 +1301,7 @@ const UserProfileScreen = ({ navigation, route }) => {
               // KİRACI GEREKSİNİMLERİ
               <>
                 {/* Gerekli Özellikler */}
-                <View className="bg-white rounded-xl p-4 border border-gray-100">
+                <View className="py-2">
                   <Text
                     style={{ fontSize: 18 }}
                     className="font-semibold text-gray-900 mb-4"
@@ -1408,7 +1351,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                 </View>
 
                 {/* Erişim Gereksinimleri */}
-                <View className="bg-white rounded-xl p-4 border border-gray-100">
+                <View className="py-2">
                   <Text
                     style={{ fontSize: 18 }}
                     className="font-semibold text-gray-900 mb-4"
@@ -1461,7 +1404,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                 </View>
 
                 {/* Kişisel Bilgiler */}
-                <View className="bg-white rounded-xl p-4 border border-gray-100">
+                <View className="py-2">
                   <Text
                     style={{ fontSize: 18 }}
                     className="font-semibold text-gray-900 mb-4"
@@ -1537,7 +1480,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                       </View>
                     )}
 
-                    {expectation.hasPets && expectation.petTypes && (
+                    {expectation.hasPets && !!expectation.petTypes && (
                       <View className="bg-gray-100 px-3 py-1 rounded-full">
                         <Text className="text-gray-700 text-sm font-medium">
                           Evcil Hayvan: {expectation.petTypes}
@@ -1548,7 +1491,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                 </View>
 
                 {/* Ödeme ve Garanti */}
-                <View className="bg-white rounded-xl p-4 border border-gray-100">
+                <View className="py-2">
                   <Text
                     style={{ fontSize: 18 }}
                     className="font-semibold text-gray-900 mb-4"
@@ -1611,7 +1554,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                 </View>
 
                 {/* Kiralama Tercihleri */}
-                <View className="bg-white rounded-xl p-4 border border-gray-100">
+                <View className="py-2">
                   <Text
                     style={{ fontSize: 18 }}
                     className="font-semibold text-gray-900 mb-4"
@@ -1658,7 +1601,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                 </View>
 
                 {/* Yaşam Tarzı Tercihleri */}
-                <View className="bg-white rounded-xl p-4 border border-gray-100">
+                <View className="py-2">
                   <Text
                     style={{ fontSize: 18 }}
                     className="font-semibold text-gray-900 mb-4"
@@ -1694,8 +1637,8 @@ const UserProfileScreen = ({ navigation, route }) => {
                 </View>
 
                 {/* Güvenlik Tercihleri */}
-                {expectation.securityPreferences && (
-                  <View className="bg-white rounded-xl p-4 border border-gray-100">
+                {!!expectation.securityPreferences && (
+                  <View className="py-2">
                     <Text
                       style={{ fontSize: 18 }}
                       className="font-semibold text-gray-900 mb-3"
@@ -1709,8 +1652,8 @@ const UserProfileScreen = ({ navigation, route }) => {
                 )}
 
                 {/* Ek Notlar */}
-                {expectation.additionalNotes && (
-                  <View className="bg-white rounded-xl p-4 border border-gray-100">
+                {!!expectation.additionalNotes && (
+                  <View className="py-2">
                     <Text
                       style={{ fontSize: 18 }}
                       className="font-semibold text-gray-900 mb-3"
@@ -1730,7 +1673,7 @@ const UserProfileScreen = ({ navigation, route }) => {
         {activeTab === "reviews" && (
           <View className="gap-4">
             {/* Rating Özeti */}
-            <View className="bg-white rounded-xl p-4 items-center">
+            <View className="py-2 items-center">
               <Text
                 style={{ fontSize: 22 }}
                 className="font-semibold text-gray-900 mb-4"
@@ -1758,7 +1701,7 @@ const UserProfileScreen = ({ navigation, route }) => {
 
             {/* Son Değerlendirmeler - DÜZELTİLMİŞ */}
             {userProfile?.profileMessages?.length > 0 ? (
-              <View className="bg-white rounded-xl py-4 px-2">
+              <View className="py-2">
                 <View className="items-center">
                   <Text
                     style={{ fontSize: 22 }}
@@ -1814,7 +1757,7 @@ const UserProfileScreen = ({ navigation, route }) => {
               </View>
             ) : (
               /* Değerlendirme Yoksa */
-              <View className="bg-white rounded-xl p-6 border border-gray-100">
+              <View className="py-4">
                 <View className="items-center">
                   <Star size={48} color="#d1d5db" />
                   <Text
@@ -1834,7 +1777,7 @@ const UserProfileScreen = ({ navigation, route }) => {
         {/* Expectation yoksa gösterilecek mesaj */}
         {(activeTab === "preferences" || activeTab === "requirements") &&
           !expectation && (
-            <View className="bg-white rounded-xl p-6 border border-gray-100">
+            <View className="py-4">
               <View className="items-center">
                 <FileCheck
                   size={48}
@@ -1858,7 +1801,7 @@ const UserProfileScreen = ({ navigation, route }) => {
           )}
         {/* Alt Boşluk */}
         <View className="h-8"></View>
-      </Animated.ScrollView>
+      </ScrollView>
       <ProfileRateModal
         visible={showRatingModal}
         onClose={() => setShowRatingModal(false)}

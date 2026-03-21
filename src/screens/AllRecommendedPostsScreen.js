@@ -795,10 +795,10 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
 
   // Match score filter options
   const matchScoreOptions = [
-    { key: 0.1, label: "Tümü (10%+)" },
-    { key: 0.3, label: "İyi (30%+)" },
-    { key: 0.5, label: "Çok İyi (50%+)" },
-    { key: 0.7, label: "Mükemmel (70%+)" },
+    { key: 0.1, label: "Tümü" },
+    { key: 0.3, label: "İyi" },
+    { key: 0.5, label: "Çok İyi" },
+    { key: 0.7, label: "Mükemmel" },
   ];
 
   // Render functions
@@ -981,55 +981,28 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
               transform: [{ translateY: filterTranslateY }],
             }}
           >
-            <ScrollView
-              horizontal={true}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{
-                alignItems: "center",
-                paddingHorizontal: 0,
-              }}
-              style={{ width: "100%" }}
-            >
-              <View className="flex-row items-center">
-                {minMatchScore !== 0.1 && (
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => handleMatchScoreChange(0.1)}
-                    style={{
-                      paddingHorizontal: 10,
-                      paddingVertical: 5,
-                      borderRadius: 16,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginRight: 6,
-                    }}
-                    className="bg-gray-900"
-                  >
-                    <X size={16} color="white" />
-                  </TouchableOpacity>
-                )}
-                {matchScoreOptions.map((option) => (
-                  <TouchableOpacity
-                    activeOpacity={1}
-                    key={option.key}
-                    className={`mr-3 px-4 py-2 rounded-full border ${minMatchScore === option.key
-                      ? "bg-gray-900"
-                      : "bg-white border-white"
+            <View className="flex-row items-center justify-center w-full">
+              {matchScoreOptions.map((option) => (
+                <TouchableOpacity
+                  activeOpacity={1}
+                  key={option.key}
+                  className={`mr-3 px-4 py-2 rounded-full border ${minMatchScore === option.key
+                    ? "bg-gray-900"
+                    : "bg-white border-white"
+                    }`}
+                  onPress={() => handleMatchScoreChange(option.key)}
+                >
+                  <Text
+                    className={`text-sm font-medium ${minMatchScore === option.key
+                      ? "text-white"
+                      : "text-gray-700"
                       }`}
-                    onPress={() => handleMatchScoreChange(option.key)}
                   >
-                    <Text
-                      className={`text-sm font-medium ${minMatchScore === option.key
-                        ? "text-white"
-                        : "text-gray-700"
-                        }`}
-                    >
-                      {option.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </Animated.View>
         </Animated.View>
       </View>

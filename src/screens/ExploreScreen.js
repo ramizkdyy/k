@@ -333,7 +333,7 @@ const RefreshablePagerView = memo(({ children, onRefresh, refreshing }) => {
               alignItems: "center",
             }}
           >
-            <ActivityIndicator color="#606060" size="small" />
+            <ActivityIndicator color="#909090" size="small" />
             <Text style={{ color: "white", marginLeft: 8, fontSize: 14 }}>
               Yenileniyor...
             </Text>
