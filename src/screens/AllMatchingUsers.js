@@ -1146,23 +1146,6 @@ const AllMatchingUsers = ({ navigation, route }) => {
               style={{ width: "100%" }}
             > */}
             <View className="flex-row items-center">
-              {sortBy !== "compatibility" && (
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => setSortBy("compatibility")}
-                  style={{
-                    paddingHorizontal: 10,
-                    paddingVertical: 5,
-                    borderRadius: 16,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    marginRight: 6,
-                  }}
-                  className="bg-gray-900"
-                >
-                  <X size={16} color="white" />
-                </TouchableOpacity>
-              )}
               {sortOptions.map((option) => (
                 <TouchableOpacity
                   key={option.key}

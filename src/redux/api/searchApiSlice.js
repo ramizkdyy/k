@@ -64,44 +64,6 @@ export const searchApiSlice = apiSlice.injectEndpoints({
             keepUnusedDataFor: 0,
         }),
 
-
-
-        // YENİ: Şehir önerileri
-        getCitySuggestions: builder.query({
-            query: (keyword) => ({
-                url: `/api/PostSearch/suggestions/il?keyword=${encodeURIComponent(keyword)}`,
-                method: "GET",
-            }),
-            keepUnusedDataFor: 0, // Cache'lemiyoruz, her aramada yeni sonuç
-        }),
-
-        // YENİ: İlçe önerileri
-        getDistrictSuggestions: builder.query({
-            query: (keyword) => ({
-                url: `/api/PostSearch/suggestions/ilce?keyword=${encodeURIComponent(keyword)}`,
-                method: "GET",
-            }),
-            keepUnusedDataFor: 0,
-        }),
-
-        // YENİ: Mahalle önerileri
-        getNeighborhoodSuggestions: builder.query({
-            query: (keyword) => ({
-                url: `/api/PostSearch/suggestions/mahalle?keyword=${encodeURIComponent(keyword)}`,
-                method: "GET",
-            }),
-            keepUnusedDataFor: 0,
-        }),
-
-        // YENİ: Genel öneri endpoint'i (type parametreli)
-        getSuggestions: builder.query({
-            query: ({ type, keyword }) => ({
-                url: `/api/PostSearch/suggestions/${type}?keyword=${encodeURIComponent(keyword)}`,
-                method: "GET",
-            }),
-            keepUnusedDataFor: 0,
-        }),
-
         // Popüler aramalar (eğer varsa)
         getPopularSearches: builder.query({
             query: () => ({

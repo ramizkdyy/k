@@ -730,41 +730,6 @@ const profileSlice = createSlice({
         // Error handling is done in the component, but you can add state updates here if needed
       }
     );
-    // Profile Action API handlers - basit versiyon
-    builder.addMatcher(
-      apiSlice.endpoints.profileAction.matchFulfilled,
-      (state, { payload, meta }) => {
-        state.profileActionLoading = false;
-        state.profileActionError = null;
-
-        if (payload && payload.isSuccess) {
-          const actionData = meta.arg;
-
-
-          // Rating işlemi ise profil rating'ini güncelle (opsiyonel)
-          if (actionData.profileAction === 2 && payload.result?.newRating) {
-            // Current landlord profile güncelle
-            if (state.currentLandlordProfile &&
-              state.currentLandlordProfile.userId === actionData.ReceiverUserId) {
-              state.currentLandlordProfile.profileRating = payload.result.newRating;
-              if (payload.result.ratingCount) {
-                state.currentLandlordProfile.ratingCount = payload.result.ratingCount;
-              }
-            }
-
-            // Current tenant profile güncelle  
-            if (state.currentTenantProfile &&
-              state.currentTenantProfile.userId === actionData.ReceiverUserId) {
-              state.currentTenantProfile.profileRating = payload.result.newRating;
-              if (payload.result.ratingCount) {
-                state.currentTenantProfile.ratingCount = payload.result.ratingCount;
-              }
-            }
-          }
-        }
-      }
-    );
-
     builder.addMatcher(
       apiSlice.endpoints.profileAction.matchPending,
       (state) => {

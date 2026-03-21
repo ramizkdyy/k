@@ -35,7 +35,7 @@ const normalizeTurkishText = (text) => {
         .replace(/ç/g, 'c')
         .replace(/ğ/g, 'g')
         .replace(/ı/g, 'i')
-        .replace(/İ/g, 'i')  // ÖNEMLİ: Büyük İ'yi küçük i'ye çevir
+        .replace(/İ/g, 'i')
         .replace(/ö/g, 'o')
         .replace(/ş/g, 's')
         .replace(/ü/g, 'u')

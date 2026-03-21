@@ -73,8 +73,8 @@ const initialState = {
     error: null,
     currentSearchFilters: {
       il: "",
-      ilce: [],
-      mahalle: [],
+      ilceler: [],
+      mahalleler: [],
       latitude: null,
       longitude: null,
       maxDistance: null,
