@@ -79,6 +79,8 @@ import {
   SafeAreaView,
 } from "react-native";
 import AllOffersScreen from "../screens/AllOffersScreen";
+import SettingsScreen from "../screens/SettingsScreen";
+import HelpSupportScreen from "../screens/HelpSupportScreen";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -829,6 +831,18 @@ const MainStackNavigator = () => {
       <RootStack.Screen
         name="FavoriteProfiles"
         component={FavoriteProfilesScreen}
+        options={{ headerShown: false }}
+      />
+
+      <RootStack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ headerShown: false }}
+      />
+
+      <RootStack.Screen
+        name="HelpSupport"
+        component={HelpSupportScreen}
         options={{ headerShown: false }}
       />
       {/* <RootStack.Screen

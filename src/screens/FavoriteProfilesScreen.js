@@ -21,7 +21,7 @@ import {
     useGetOwnLandlordProfileQuery,
     apiSlice,
 } from "../redux/api/apiSlice";
-import { ArrowLeft, Heart, Search } from "lucide-react-native";
+import { ChevronLeft, Heart, Search } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 
@@ -280,9 +280,9 @@ const FavoriteProfilesScreen = ({ navigation }) => {
                         <View className="flex-row items-center">
                             <TouchableOpacity
                                 onPress={() => navigation.goBack()}
-                                className="mr-4"
+                                className="p-1 mr-3"
                             >
-                                <ArrowLeft size={20} color="#1f2937" />
+                                <ChevronLeft size={24} color="black" />
                             </TouchableOpacity>
                             <Text className="text-xl font-semibold text-gray-900 flex-1">
                                 Favori {profileType}
