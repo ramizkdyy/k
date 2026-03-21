@@ -17,7 +17,7 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "buildNumber": "16",
+      "buildNumber": "17",
       "bundleIdentifier": "com.uygarcapar.kiraX",
       "supportsTablet": true,
       "googleServicesFile": "./GoogleService-Info.plist",
@@ -30,7 +30,7 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
-        "aps-environment": "development"
+        "aps-environment": "production"
       },
       "config": {
         "googleMapsApiKey": "AIzaSyBmN5yPYOrGCGaIzp8hcoWNkKFX0sqmI7g"
