@@ -120,15 +120,6 @@ const mapPaymentMethodToEnum = (value) => {
   return mapping[value] || 1;
 };
 
-const mapCurrencyTypeToEnum = (value) => {
-  const mapping = {
-    TL: 1,
-    USD: 2,
-    EUR: 3,
-    GBP: 4,
-  };
-  return mapping[value] || 1;
-};
 
 // NEW: MaintenanceFeeResponsibility enum mapping
 const mapMaintenanceFeeResponsibilityToEnum = (value) => {
@@ -1304,7 +1295,7 @@ const CreatePostScreen = ({ navigation, route }) => {
 
       // Enum mappings
       formData.append("RentalPeriod", mapRentalPeriodToEnum(RentalPeriod));
-      formData.append("ParaBirimi", mapCurrencyTypeToEnum(paraBirimi));
+      formData.append("ParaBirimi", paraBirimi);
       formData.append("IsitmaTipi", mapHeatingTypeToEnum(isitmaTipi));
 
       // NEW: Add MaintenanceFeeResponsibility if selected
@@ -1390,6 +1381,7 @@ const CreatePostScreen = ({ navigation, route }) => {
       if (response && response.isSuccess) {
         setUploadStatus("success");
         dispatch(clearPostFormData());
+        const newPostId = response.result?.postId ?? response.result;
         Alert.alert(
           "Başarılı",
           propertyData
@@ -1398,7 +1390,12 @@ const CreatePostScreen = ({ navigation, route }) => {
           [
             {
               text: "Tamam",
-              onPress: () => navigation.navigate("MyPropertiesList"),
+              onPress: () => {
+                navigation.navigate("Properties");
+                if (newPostId) {
+                  navigation.navigate("PostDetail", { postId: newPostId });
+                }
+              },
             },
           ]
         );

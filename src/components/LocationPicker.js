@@ -270,23 +270,24 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
         }}
       >
         {/* Search Bar - Floating */}
-        <View style={{ width: "80%" }}>
-          <BlurView className="overflow-hidden rounded-2xl">
+        <View style={{ width: "80%", paddingTop: 10 }}>
+          <BlurView intensity={70} tint="dark" className="overflow-hidden rounded-full">
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
                 paddingHorizontal: 16,
+                paddingVertical: 10,
               }}
             >
               <TextInput
                 style={{
-                  height: 20,
-                  fontSize: 16,
+                  flex: 1,
+                  fontSize: 15,
                   color: "#fff",
                 }}
                 placeholder="Konum ara (örn: Kadıköy, İstanbul)"
-                placeholderTextColor="#ccc"
+                placeholderTextColor="rgba(255,255,255,0.6)"
                 value={searchText}
                 onChangeText={setSearchText}
                 onSubmitEditing={searchLocation}
@@ -294,23 +295,25 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
               <TouchableOpacity
                 onPress={searchLocation}
                 disabled={isLoadingLocation}
-                style={{ marginLeft: "75%", padding: 8 }}
+                style={{ padding: 4 }}
               >
                 {isLoadingLocation ? (
-                  <ActivityIndicator size={24} color="#fff" />
+                  <ActivityIndicator size={22} color="#fff" />
                 ) : (
-                  <MaterialIcons name="search" size={24} color="#fff" />
+                  <MaterialIcons name="search" size={22} color="#fff" />
                 )}
               </TouchableOpacity>
             </View>
           </BlurView>
         </View>
 
-        <TouchableOpacity onPress={onClose}>
+        <TouchableOpacity onPress={onClose} style={{ paddingTop: 10 }}>
           <BlurView
+            intensity={70}
+            tint="dark"
             className="overflow-hidden"
             style={{
-              padding: 8,
+              padding: 10,
               borderRadius: 20,
             }}
           >
@@ -383,7 +386,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
           zIndex: 5,
         }}
       >
-        <BlurView className="overflow-hidden rounded-2xl">
+        <BlurView intensity={80} tint="dark" className="overflow-hidden rounded-2xl">
           <View style={{ padding: 16 }}>
             {/* Selected Location Info */}
             {centerLocation && (
@@ -401,7 +404,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
                 <Text
                   style={{
                     fontSize: 14,
-                    color: "#ccc",
+                    color: "rgba(255,255,255,0.8)",
                     marginBottom: 4,
                     minHeight: 20,
                   }}

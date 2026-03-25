@@ -41,6 +41,11 @@ import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
 
+const getCurrencyText = (value) => {
+  const mapping = { 1: "₺", 2: "$", 3: "€", 4: "£", "1": "₺", "2": "$", "3": "€", "4": "£", TRY: "₺", TL: "₺", USD: "$", EUR: "€", GBP: "£" };
+  return mapping[value] || "₺";
+};
+
 // Memoized Skeleton Components
 const ShimmerPlaceholder = memo(
   ({ width, height, borderRadius = 8, style }) => {
@@ -550,7 +555,7 @@ const PropertyItem = memo(
               className="text-gray-900 underline"
             >
               {item.rent
-                ? `${item.rent.toLocaleString()} ${item.currency || "TL"}`
+                ? `${item.rent.toLocaleString()} ${getCurrencyText(item.currency)}`
                 : "Fiyat belirtilmemiş"}
             </Text>
             <Text className="text-sm text-gray-400 ml-1">/ay</Text>
@@ -771,7 +776,6 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     setCurrentPage(1);
-    setAllProperties([]);
     setHasNextPage(true);
     setIsFilterChanging(false);
     try {
@@ -950,8 +954,7 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
             >
               <TextInput
                 className="w-full px-2 placeholder:text-gray-400 placeholder:text-[14px] py-4 text-normal"
-                placeholder={`Sizin için önerilen ${allProperties.length > 0 ? `(${allProperties.length})` : ""
-                  }`}
+                placeholder="Sizin için önerilenler..."
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />

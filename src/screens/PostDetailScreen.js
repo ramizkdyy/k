@@ -93,12 +93,7 @@ const getHeatingTypeText = (value) => {
 
 
 const getCurrencyText = (value) => {
-  const mapping = {
-    1: "₺",
-    2: "$",
-    3: "€",
-    4: "£",
-  };
+  const mapping = { 1: "₺", 2: "$", 3: "€", 4: "£", "1": "₺", "2": "$", "3": "€", "4": "£", TRY: "₺", TL: "₺", USD: "$", EUR: "€", GBP: "£" };
   return mapping[value] || "₺";
 };
 

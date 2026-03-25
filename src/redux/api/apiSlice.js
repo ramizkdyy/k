@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { logout } from "../slices/authSlice";
 
-const BASE_URL = "https://kiraxapiyeni.justkey.online";
+const BASE_URL = "https://kiraxproject-production.up.railway.app";
 
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
@@ -192,8 +192,8 @@ export const apiSlice = createApi({
     getOffersByPostId: builder.query({
       query: (postId) => `/api/post/GetOffersByPostId/${postId}`,
       providesTags: (result, error, postId) => [
-        { type: "post", id: postId },
-        { type: "post", id: "LIST" }
+        { type: "Post", id: postId },
+        { type: "Post", id: "LIST" }
       ],
     }),
 

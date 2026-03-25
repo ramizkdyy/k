@@ -1,6 +1,3 @@
-// ExploreDetailModal.js içindeki location kısmını PostDetailScreen'deki gibi güncellemek için
-// Bu kod parçasını ExploreDetailModal.js'in uygun yerine ekleyin
-
 import React, {
   useEffect,
   useRef,

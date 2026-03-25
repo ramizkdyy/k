@@ -69,14 +69,22 @@ import {
 // Logger utility
 const Logger = {
   info: (component, action, data = {}) => {
+    console.log(`[INFO][${component}] ${action}`, data);
   },
   error: (component, action, error) => {
+    console.error(`[ERROR][${component}] ${action}`, error);
   },
   event: (eventName, properties = {}) => {
+    console.log(`[EVENT] ${eventName}`, properties);
   },
 };
 
 const { width: screenWidth } = Dimensions.get("window");
+
+const getCurrencyText = (value) => {
+  const mapping = { 1: "₺", 2: "$", 3: "€", 4: "£", "1": "₺", "2": "$", "3": "€", "4": "£", TRY: "₺", TL: "₺", USD: "$", EUR: "€", GBP: "£" };
+  return mapping[value] || "₺";
+};
 
 // Image with Fallback Component (AllNearbyPropertiesScreen'den)
 const ImageWithFallback = React.memo(
@@ -499,7 +507,6 @@ const PropertyImageSlider = React.memo(
           </BlurView>
         )}
 
-        {/* Status badge - sadece ev sahibi için */}
         {userRole === "EVSAHIBI" && (
           <BlurView
             intensity={50}
@@ -513,7 +520,6 @@ const PropertyImageSlider = React.memo(
           </BlurView>
         )}
 
-        {/* Ev sahibi action buttons */}
         {userRole === "EVSAHIBI" && item.userId === currentUser?.id && (
           <View className="flex-row absolute gap-2 bottom-3 right-3">
             <BlurView
@@ -1224,7 +1230,10 @@ const PostsScreen = ({ navigation }) => {
             } catch (error) {
               Logger.error(COMPONENT_NAME, "Delete post error", {
                 postId,
-                errorMessage: error.data?.message || "Unknown error",
+                errorMessage: error.data?.message || error.message || "Unknown error",
+                errorStatus: error.status,
+                errorData: error.data,
+                errorName: error.name,
               });
 
               Alert.alert(
@@ -1407,8 +1416,7 @@ const PostsScreen = ({ navigation }) => {
                 className="text-gray-900 underline"
               >
                 {item.kiraFiyati || item.rent
-                  ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
-                  }`
+                  ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${getCurrencyText(item.paraBirimi || item.currency)}`
                   : "Fiyat belirtilmemiş"}
               </Text>
               <Text className="text-sm text-gray-400 ml-1">/ay</Text>
@@ -1584,8 +1592,7 @@ const PostsScreen = ({ navigation }) => {
               ellipsizeMode="tail"
             >
               {item.kiraFiyati || item.rent
-                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${item.paraBirimi || item.currency || "₺"
-                }/ay`
+                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${getCurrencyText(item.paraBirimi || item.currency)}/ay`
                 : "Fiyat belirtilmemiş"}
             </Text>
 
@@ -1928,9 +1935,9 @@ const PostsScreen = ({ navigation }) => {
                   elevation: 5,
                 }}
                 className={`rounded-full flex justify-center items-center ${isFilterVisible ||
-                    Object.values(filters).some((val) => val !== null)
-                    ? "bg-gray-900/90"
-                    : "bg-white/90"
+                  Object.values(filters).some((val) => val !== null)
+                  ? "bg-gray-900/90"
+                  : "bg-white/90"
                   }`}
                 onPress={handleFilterPress}
               >

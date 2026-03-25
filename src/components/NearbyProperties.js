@@ -766,6 +766,21 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
     }
   }, [nearbyData, getCacheValueForQuery, recordApiCall]);
 
+  useEffect(() => {
+    if (nearbyData?.result) {
+      const allPosts = [
+        ...(nearbyData.result.nearFromYou || []),
+        ...(nearbyData.result.bestLandlordMatch || []),
+        ...(nearbyData.result.bestTenantMatch || []),
+        ...(nearbyData.result.similarPost || []),
+        ...(nearbyData.result.bestForYou || []),
+      ];
+      console.log("[DEBUG][NearbyProperties] İlk 10 post paraBirimi:",
+        allPosts.slice(0, 10).map(p => ({ postId: p.postId, paraBirimi: p.paraBirimi, kiraFiyati: p.kiraFiyati }))
+      );
+    }
+  }, [nearbyData]);
+
   // ✅ ULTRA OPTIMIZED: Computed Values
   const hasExistingData =
     nearFromYouProperties.length > 0 ||

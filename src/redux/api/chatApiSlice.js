@@ -1,7 +1,7 @@
 // redux/api/chatApiSlice.js - Backend Response Format'ına Uygun Güncellemeler
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-const CHAT_BASE_URL = "https://chatapi.justkey.online/";
+const CHAT_BASE_URL = "https://brilliant-vitality-production.up.railway.app";
 
 export const chatApiSlice = createApi({
   reducerPath: "chatApi",
@@ -404,7 +404,7 @@ export const chatApiSlice = createApi({
       providesTags: ["UnreadCount"],
       keepUnusedDataFor: 30,
       transformResponse: (response) => {
-        
+
 
         // Backend format: { totalUnreadMessages: number, totalUnreadChats: number, unreadChats: [] }
         if (response && typeof response === "object") {
@@ -837,13 +837,13 @@ export const chatApiHelpers = {
 
   // ✅ Partner listesini manuel güncelle
   updatePartnersList: (dispatch) => {
-    
+
     dispatch(chatApiSlice.util.invalidateTags(["ChatPartner"]));
   },
 
   // ✅ Unread count'u manuel güncelle
   updateUnreadCount: (dispatch) => {
-    
+
     dispatch(chatApiSlice.util.invalidateTags(["UnreadCount"]));
   },
 
@@ -878,7 +878,7 @@ export const chatApiHelpers = {
     const state = getState();
     const chatCache =
       state.chatApi.queries[
-        `getChatHistory({"partnerId":"${partnerId}","page":1})`
+      `getChatHistory({"partnerId":"${partnerId}","page":1})`
       ];
     const partnersCache = state.chatApi.queries["getChatPartners(undefined)"];
     const unreadCache = state.chatApi.queries["getUnreadCount(undefined)"];
@@ -892,8 +892,8 @@ export const chatApiHelpers = {
         format: chatCache?.data?.messages
           ? "new"
           : Array.isArray(chatCache?.data)
-          ? "legacy"
-          : "unknown",
+            ? "legacy"
+            : "unknown",
       },
       partners: {
         exists: !!partnersCache,
