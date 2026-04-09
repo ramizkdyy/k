@@ -5,7 +5,6 @@ import {
     Text,
     ScrollView,
     TouchableOpacity,
-    ActivityIndicator,
     RefreshControl,
     Alert,
     Dimensions,
@@ -13,6 +12,13 @@ import {
     Animated,
     StatusBar as RNStatusBar,
 } from "react-native";
+import Reanimated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withRepeat,
+    withTiming,
+    interpolate,
+} from "react-native-reanimated";
 import { Image } from "expo-image";
 import { StatusBar } from "expo-status-bar";
 
@@ -44,9 +50,93 @@ import {
     Search,
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
+import PlatformBlurView from "../components/PlatformBlurView";
 // OfferModal import
 import OfferModal from "../modals/OfferModal";
+
+// Skeleton pulse animasyonu
+const SkeletonBox = ({ width, height, borderRadius = 8, style }) => {
+    const opacity = useSharedValue(1);
+
+    React.useEffect(() => {
+        opacity.value = withRepeat(
+            withTiming(0.4, { duration: 800 }),
+            -1,
+            true
+        );
+    }, []);
+
+    const animStyle = useAnimatedStyle(() => ({
+        opacity: opacity.value,
+    }));
+
+    return (
+        <Reanimated.View
+            style={[
+                {
+                    width,
+                    height,
+                    borderRadius,
+                    backgroundColor: "#e5e7eb",
+                },
+                animStyle,
+                style,
+            ]}
+        />
+    );
+};
+
+// Kart skeleton — FavoritePropertyCard layout'uyla birebir eşleşiyor
+const FavoritePropertyCardSkeleton = () => (
+    <View
+        className="bg-white rounded-3xl mb-6 overflow-hidden"
+        style={{
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.1,
+            shadowRadius: 12,
+            elevation: 8,
+        }}
+    >
+        {/* Image area */}
+        <SkeletonBox width={screenWidth - 32} height={280} borderRadius={0} />
+
+        <View className="py-6 px-4">
+            {/* Fiyat */}
+            <SkeletonBox width={140} height={28} borderRadius={6} style={{ marginBottom: 16 }} />
+
+            {/* Başlık */}
+            <SkeletonBox width="90%" height={22} borderRadius={6} style={{ marginBottom: 8 }} />
+            <SkeletonBox width="60%" height={16} borderRadius={6} style={{ marginBottom: 24 }} />
+
+            {/* Property details row */}
+            <View className="flex-row gap-8 mb-6">
+                {[0, 1, 2, 3].map((i) => (
+                    <View key={i} className="items-center">
+                        <SkeletonBox width={24} height={24} borderRadius={4} />
+                        <SkeletonBox width={36} height={14} borderRadius={4} style={{ marginTop: 8 }} />
+                        <SkeletonBox width={28} height={12} borderRadius={4} style={{ marginTop: 4 }} />
+                    </View>
+                ))}
+            </View>
+
+            {/* Finansal detaylar */}
+            <SkeletonBox width={140} height={18} borderRadius={6} style={{ marginBottom: 10 }} />
+            <SkeletonBox width={180} height={14} borderRadius={6} style={{ marginBottom: 6 }} />
+            <SkeletonBox width={140} height={14} borderRadius={6} style={{ marginBottom: 20 }} />
+
+            {/* Teklif durumu */}
+            <SkeletonBox width={120} height={18} borderRadius={6} style={{ marginBottom: 10 }} />
+            <SkeletonBox width="70%" height={16} borderRadius={6} style={{ marginBottom: 20 }} />
+
+            {/* Butonlar */}
+            <View className="flex-row gap-3">
+                <SkeletonBox height={52} borderRadius={26} style={{ flex: 1 }} />
+                <SkeletonBox height={52} borderRadius={26} style={{ flex: 1 }} />
+            </View>
+        </View>
+    </View>
+);
 
 // Favori İlan Kartı Komponenti - Modern Tasarım
 const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onNavigateToDetail, removingFavorite, userOffers, onOpenOfferModal, navigation, matchingScore }) => {
@@ -147,20 +237,7 @@ const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onN
     const offerStatus = getOfferStatus();
 
     if (isLoading) {
-        return (
-            <View className="bg-white rounded-3xl mb-6 overflow-hidden" style={{
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.1,
-                shadowRadius: 12,
-                elevation: 8
-            }}>
-                <View className="flex-row items-center justify-center py-20">
-                    <ActivityIndicator size="large" color="#6b7280" />
-                    <Text className="ml-3 text-gray-500">İlan yükleniyor...</Text>
-                </View>
-            </View>
-        );
+        return <FavoritePropertyCardSkeleton />;
     }
 
     if (error || !post) {
@@ -236,7 +313,7 @@ const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onN
                 <View className="absolute top-4 left-0 right-4 flex-row justify-between items-start">
                     {/* Matching Score Badge - Sol üst */}
                     {matchingScore && (
-                        <BlurView
+                        <PlatformBlurView
                             intensity={90}
                             tint="dark"
                             style={{
@@ -250,7 +327,7 @@ const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onN
                                     %{Math.round(matchingScore)} Eşleşme
                                 </Text>
                             </View>
-                        </BlurView>
+                        </PlatformBlurView>
                     )}
 
                     {/* Favori Tarihi Badge - Sağ üst */}
@@ -261,7 +338,7 @@ const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onN
                         }}
                         disabled={removingFavorite}
                     >
-                        <BlurView
+                        <PlatformBlurView
                             intensity={90}
                             tint="dark"
                             style={{
@@ -275,7 +352,7 @@ const FavoritePropertyCard = ({ favoriteItem, currentUser, onRemoveFavorite, onN
                                     {new Date(favoriteItem.dateAdded).toLocaleDateString('tr-TR')}
                                 </Text>
                             </View>
-                        </BlurView>
+                        </PlatformBlurView>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -621,7 +698,7 @@ const FavoritePropertiesScreen = ({ navigation }) => {
                 }}
             >
                 {/* BlurView Background */}
-                <BlurView
+                <PlatformBlurView
                     intensity={80}
                     tint="light"
                     style={{
@@ -684,7 +761,7 @@ const FavoritePropertiesScreen = ({ navigation }) => {
                             marginRight: searchBarMarginRight,
                         }}
                     >
-                        <BlurView
+                        <PlatformBlurView
                             intensity={60}
                             tint="light"
                             style={{
@@ -719,7 +796,7 @@ const FavoritePropertiesScreen = ({ navigation }) => {
                                     onChangeText={setSearchQuery}
                                 />
                             </View>
-                        </BlurView>
+                        </PlatformBlurView>
                     </Animated.View>
                 </View>
 
@@ -732,7 +809,7 @@ const FavoritePropertiesScreen = ({ navigation }) => {
                         zIndex: 20,
                     }}
                 >
-                    <BlurView
+                    <PlatformBlurView
                         intensity={60}
                         tint="light"
                         style={{
@@ -761,7 +838,7 @@ const FavoritePropertiesScreen = ({ navigation }) => {
                                 {favoriteProperties.length}
                             </Text>
                         </View>
-                    </BlurView>
+                    </PlatformBlurView>
                 </View>
             </Animated.View>
         );
@@ -769,9 +846,20 @@ const FavoritePropertiesScreen = ({ navigation }) => {
 
     if (profileLoading) {
         return (
-            <View className="flex-1 justify-center items-center bg-white">
-                <ActivityIndicator size="large" color="#6b7280" />
-                <Text className="mt-3 text-base text-gray-500">Yükleniyor...</Text>
+            <View className="flex-1 bg-gray-50">
+                <RNStatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+                {renderAnimatedHeader()}
+                <ScrollView
+                    contentContainerStyle={{
+                        paddingTop: getDynamicPaddingTop(),
+                        paddingHorizontal: 16,
+                        paddingBottom: 30,
+                    }}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <FavoritePropertyCardSkeleton />
+                    <FavoritePropertyCardSkeleton />
+                </ScrollView>
             </View>
         );
     }
@@ -800,8 +888,8 @@ const FavoritePropertiesScreen = ({ navigation }) => {
                     <RefreshControl
                         refreshing={refreshing}
                         onRefresh={onRefresh}
-                        tintColor="#A0E79E"
-                        colors={["#A0E79E"]}
+                        tintColor="#808080"
+                        colors={["#808080"]}
                         progressBackgroundColor="#fff"
                         progressViewOffset={getDynamicPaddingTop()}
                         title="Yenileniyor..."

@@ -56,7 +56,7 @@ import {
   BedSingle,
   Shower,
 } from "lucide-react-native";
-import { BlurView } from "expo-blur";
+import PlatformBlurView from "../components/PlatformBlurView";
 import PropertiesFilterModal from "../modals/PropertiesFilterModal";
 import { PostsScreenSkeleton } from "../components/PostsScreenSkeleton";
 import { useSearchPostsMutation } from "../redux/api/searchApiSlice";
@@ -320,35 +320,35 @@ const LandlordActionsModal = React.memo(
 // Property Details Slider Component (AllNearbyPropertiesScreen'den)
 const PropertyDetailsSlider = React.memo(({ item }) => {
   const propertyDetails = [
-    { id: "rooms", icon: BedDouble, value: item.odaSayisi || "N/A", label: "Oda" },
+    { id: "rooms", icon: BedDouble, value: item.odaSayisi || "Belirtilmemiş", label: "Oda" },
     {
       id: "bedrooms",
       icon: BedSingle,
-      value: item.yatakOdasiSayisi || "N/A",
+      value: item.yatakOdasiSayisi || "Belirtilmemiş",
       label: "Y.Odası",
     },
     {
       id: "bathrooms",
       icon: Bath,
-      value: item.banyoSayisi || "N/A",
+      value: item.banyoSayisi || "Belirtilmemiş",
       label: "Banyo",
     },
     {
       id: "area",
       icon: Ruler,
-      value: item.brutMetreKare ? `${item.brutMetreKare} m²` : "N/A",
+      value: item.brutMetreKare ? `${item.brutMetreKare} m²` : "Belirtilmemiş",
       label: "Alan",
     },
     {
       id: "floor",
       icon: Building2,
-      value: item.bulunduguKat || "N/A",
+      value: item.bulunduguKat || "Belirtilmemiş",
       label: "Kat",
     },
     {
       id: "age",
       icon: Calendar,
-      value: item.binaYasi ? `${item.binaYasi}` : "N/A",
+      value: item.binaYasi ? `${item.binaYasi}` : "Belirtilmemiş",
       label: "Bina yaşı",
     },
     {
@@ -492,7 +492,7 @@ const PropertyImageSlider = React.memo(
 
         {/* Distance badge */}
         {distance && (
-          <BlurView
+          <PlatformBlurView
             style={{ boxShadow: "0px 0px 12px #00000012" }}
             intensity={50}
             tint="dark"
@@ -504,11 +504,11 @@ const PropertyImageSlider = React.memo(
                 {distance}
               </Text>
             </View>
-          </BlurView>
+          </PlatformBlurView>
         )}
 
         {userRole === "EVSAHIBI" && (
-          <BlurView
+          <PlatformBlurView
             intensity={50}
             tint="dark"
             style={{ overflow: "hidden", borderRadius: 100 }}
@@ -517,12 +517,12 @@ const PropertyImageSlider = React.memo(
             <Text className="text-white text-xs font-semibold">
               {status === 0 ? "Aktif" : status === 1 ? "Kiralandı" : "Kapalı"}
             </Text>
-          </BlurView>
+          </PlatformBlurView>
         )}
 
         {userRole === "EVSAHIBI" && item.userId === currentUser?.id && (
           <View className="flex-row absolute gap-2 bottom-3 right-3">
-            <BlurView
+            <PlatformBlurView
               style={{ boxShadow: "0px 0px 12px #00000014" }}
               tint="dark"
               intensity={50}
@@ -539,9 +539,9 @@ const PropertyImageSlider = React.memo(
                   </Text>
                 </View>
               </TouchableOpacity>
-            </BlurView>
+            </PlatformBlurView>
 
-            <BlurView
+            <PlatformBlurView
               style={{ boxShadow: "0px 0px 12px #00000014" }}
               intensity={50}
               tint="dark"
@@ -556,9 +556,9 @@ const PropertyImageSlider = React.memo(
                   <Edit color="white" size={20} />
                 </View>
               </TouchableOpacity>
-            </BlurView>
+            </PlatformBlurView>
 
-            <BlurView
+            <PlatformBlurView
               style={{ boxShadow: "0px 0px 12px #00000014" }}
               intensity={50}
               tint="dark"
@@ -574,7 +574,7 @@ const PropertyImageSlider = React.memo(
                   <Trash2 color="#ff0040" size={20} />
                 </View>
               </TouchableOpacity>
-            </BlurView>
+            </PlatformBlurView>
           </View>
         )}
 
@@ -1543,7 +1543,7 @@ const PostsScreen = ({ navigation }) => {
 
             {/* Status badge - Sol üst köşe */}
             <View className="absolute top-2 left-2">
-              <BlurView
+              <PlatformBlurView
                 intensity={60}
                 tint="dark"
                 style={{
@@ -1560,7 +1560,7 @@ const PostsScreen = ({ navigation }) => {
                       ? "Kiralandı"
                       : "Kapalı"}
                 </Text>
-              </BlurView>
+              </PlatformBlurView>
             </View>
           </View>
 
@@ -1739,23 +1739,6 @@ const PostsScreen = ({ navigation }) => {
       extrapolate: "clamp",
     });
 
-    const sortOptionsOpacity = scrollY.interpolate({
-      inputRange: [0, SCROLL_DISTANCE],
-      outputRange: [1, 0.8],
-      extrapolate: "clamp",
-    });
-
-    const sortOptionsHeight = scrollY.interpolate({
-      inputRange: [0, SCROLL_DISTANCE],
-      outputRange: [50, 42],
-      extrapolate: "clamp",
-    });
-
-    const sortOptionsTranslateY = scrollY.interpolate({
-      inputRange: [0, SCROLL_DISTANCE],
-      outputRange: [0, -8],
-      extrapolate: "clamp",
-    });
 
     return (
       <Animated.View
@@ -1768,7 +1751,7 @@ const PostsScreen = ({ navigation }) => {
           height: headerContainerHeight,
         }}
       >
-        <BlurView
+        <PlatformBlurView
           intensity={80}
           tint="light"
           style={{
@@ -1853,7 +1836,7 @@ const PostsScreen = ({ navigation }) => {
                 flex: 1, // ✅ Responsive için flex kullan
               }}
             >
-              <BlurView
+              <PlatformBlurView
                 intensity={60}
                 tint="light"
                 style={{
@@ -1892,7 +1875,7 @@ const PostsScreen = ({ navigation }) => {
                     onChangeText={setSearchQuery}
                   />
                 </View>
-              </BlurView>
+              </PlatformBlurView>
             </Animated.View>
 
             {/* ✅ DÜZELTİLMİŞ: Action Buttons Container */}
@@ -1954,125 +1937,6 @@ const PostsScreen = ({ navigation }) => {
             </Animated.View>
           </View>
 
-          {/* Sort Options */}
-          <Animated.View
-            style={{
-              marginTop: 0,
-              height: sortOptionsHeight,
-              transform: [{ translateY: searchBarTranslateY }],
-              overflow: "hidden",
-            }}
-          >
-            <View className="flex-1 items-center justify-center">
-              <ScrollView
-                horizontal={true}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingHorizontal: 0,
-                }}
-                style={{ width: "100%" }}
-              >
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 4,
-                    justifyContent: "center",
-                  }}
-                >
-                  {sortBy && (
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      style={{
-                        paddingHorizontal: 10,
-                        paddingVertical: 5,
-                        borderRadius: 16,
-                        flexDirection: "row",
-                        alignItems: "center",
-                        elevation: 2,
-                      }}
-                      onPress={resetSortOptions}
-                      className="bg-gray-900"
-                    >
-                      <MaterialIcons name="close" size={20} color="white" />
-                    </TouchableOpacity>
-                  )}
-
-                  {hasActiveFilters && (
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      style={{
-                        paddingHorizontal: 14,
-                        paddingVertical: 7,
-                        borderRadius: 18,
-                        backgroundColor: "#111827",
-                        elevation: 2,
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 4,
-                      }}
-                      onPress={resetFilters}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          fontWeight: "500",
-                          color: "white",
-                        }}
-                      >
-                        Tümünü Temizle
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {[
-                    { key: "price", label: "Fiyat" },
-                    { key: "date", label: "Tarih" },
-                  ].map((option) => (
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      key={option.key}
-                      style={{
-                        paddingHorizontal: 14,
-                        paddingVertical: 7,
-                        borderRadius: 18,
-                        backgroundColor:
-                          sortBy === option.key
-                            ? "#111827"
-                            : "rgba(255, 255, 255, 0.9)",
-                        borderWidth: sortBy === option.key ? 1 : 0,
-                        borderColor:
-                          sortBy === option.key
-                            ? "#111827"
-                            : "rgba(209, 213, 219, 0.8)",
-                        elevation: 2,
-                        width: screenWidth * 0.2,
-                        alignItems: "center",
-                      }}
-                      onPress={() => handleSortChange(option.key)}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          fontWeight: sortBy === option.key ? "500" : "400",
-                          color: sortBy === option.key ? "white" : "#a5a5a5",
-                        }}
-                      >
-                        {option.label}
-                        {sortBy === option.key && (
-                          <Text style={{ marginLeft: 4 }}>
-                            {sortDirection === 0 ? " ↑" : " ↓"}
-                          </Text>
-                        )}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
-          </Animated.View>
         </View>
       </Animated.View>
     );
@@ -2161,6 +2025,11 @@ const PostsScreen = ({ navigation }) => {
         onApply={handleFilterModalApply}
         initialFilters={filters}
         userRole={userRole}
+        sortBy={sortBy}
+        sortDirection={sortDirection}
+        onSortChange={handleSortChange}
+        onResetSort={resetSortOptions}
+        onResetFilters={resetFilters}
       />
 
       {/* Landlord Actions Modal */}

@@ -24,6 +24,7 @@ import {
   useToggleFavoritePropertyMutation,
   useGetSimilarPostsByPostIdPaginatedQuery,
   useGetLandlordTenantsPaginatedQuery,
+  useGetOffersByPostIdQuery,
 } from "../redux/api/apiSlice";
 import { setCurrentPost } from "../redux/slices/postSlice";
 import {
@@ -31,7 +32,7 @@ import {
   addFavoriteProperty,
   removeFavoriteProperty,
 } from "../redux/slices/profileSlice";
-import { BlurView } from "expo-blur";
+import PlatformBlurView from "../components/PlatformBlurView";
 import {
   Flame,
   Grid2X2,
@@ -314,6 +315,14 @@ const PostDetailScreen = ({ route, navigation }) => {
     );
 
   const matchingTenants = matchingTenantsData?.data || [];
+
+  // Mevcut teklifler (sadece KIRACI için)
+  const { data: offersData } = useGetOffersByPostIdQuery(postId, {
+    skip: !postId || userRole !== "KIRACI",
+  });
+  const existingOffer = offersData?.result?.find(
+    (o) => o.userId === currentUser?.id
+  ) ?? null;
 
   // Mutations
   const [createOffer, { isLoading: isCreatingOffer }] =
@@ -804,7 +813,7 @@ const PostDetailScreen = ({ route, navigation }) => {
           zIndex: 1000,
         }}
       >
-        <BlurView
+        <PlatformBlurView
           intensity={80}
           tint="light"
           style={{
@@ -812,7 +821,7 @@ const PostDetailScreen = ({ route, navigation }) => {
           }}
         >
           {/* Safe Area Top Blur */}
-          <BlurView
+          <PlatformBlurView
             intensity={0}
             tint="light"
             style={{
@@ -882,7 +891,7 @@ const PostDetailScreen = ({ route, navigation }) => {
               </TouchableOpacity>
             )}
           </View>
-        </BlurView>
+        </PlatformBlurView>
       </Animated.View>
 
       {/* Floating Back Button (for when header is not visible) */}
@@ -1005,7 +1014,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                     opacity: imageOpacity,
                   }}
                 >
-                  <BlurView
+                  <PlatformBlurView
                     intensity={60}
                     tint="dark"
                     className="rounded-full overflow-hidden"
@@ -1022,7 +1031,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                         />
                       ))}
                     </View>
-                  </BlurView>
+                  </PlatformBlurView>
                 </Animated.View>
               )}
             </View>
@@ -1767,7 +1776,7 @@ const PostDetailScreen = ({ route, navigation }) => {
       {/* Sticky Bottom Action Bar */}
 
       {userRole === "KIRACI" && (
-        <BlurView
+        <PlatformBlurView
           intensity={70}
           tint="light"
           style={{
@@ -1844,7 +1853,7 @@ const PostDetailScreen = ({ route, navigation }) => {
               </>
             )}
           </View>
-        </BlurView>
+        </PlatformBlurView>
       )}
 
       {/* Fullscreen Image Modal */}
@@ -1856,7 +1865,7 @@ const PostDetailScreen = ({ route, navigation }) => {
         statusBarTranslucent={true}
       >
         <StatusBar hidden={true} />
-        <BlurView
+        <PlatformBlurView
           intensity={80}
           style={{
             flex: 1,
@@ -1877,7 +1886,7 @@ const PostDetailScreen = ({ route, navigation }) => {
               overflow: "hidden",
             }}
           >
-            <BlurView
+            <PlatformBlurView
               intensity={80}
               style={{
                 flex: 1,
@@ -1890,12 +1899,12 @@ const PostDetailScreen = ({ route, navigation }) => {
               >
                 ✕
               </Text>
-            </BlurView>
+            </PlatformBlurView>
           </TouchableOpacity>
 
           {/* Image Counter */}
           {images.length > 1 && (
-            <BlurView
+            <PlatformBlurView
               intensity={80}
               style={{
                 position: "absolute",
@@ -1911,7 +1920,7 @@ const PostDetailScreen = ({ route, navigation }) => {
               <Text style={{ color: "white", fontSize: 14, fontWeight: "400" }}>
                 {fullscreenImageIndex + 1} / {images.length}
               </Text>
-            </BlurView>
+            </PlatformBlurView>
           )}
 
           {/* Fullscreen Carousel */}
@@ -1945,7 +1954,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                 justifyContent: "center",
               }}
             >
-              <BlurView
+              <PlatformBlurView
                 intensity={80}
                 style={{
                   paddingHorizontal: 8,
@@ -1977,10 +1986,10 @@ const PostDetailScreen = ({ route, navigation }) => {
                     }}
                   />
                 ))}
-              </BlurView>
+              </PlatformBlurView>
             </View>
           )}
-        </BlurView>
+        </PlatformBlurView>
       </Modal>
 
       {/* Offer Modal */}
@@ -1990,6 +1999,7 @@ const PostDetailScreen = ({ route, navigation }) => {
         onSubmit={handleCreateOffer}
         isLoading={isCreatingOffer}
         postData={post}
+        existingOffer={existingOffer}
       />
     </View>
   );

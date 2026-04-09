@@ -1,193 +1,88 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
     View,
     Text,
-    TextInput,
     TouchableOpacity,
-    Modal,
-    KeyboardAvoidingView,
-    Platform,
-    ActivityIndicator,
-    TouchableWithoutFeedback,
-    Dimensions,
-    FlatList,
     StyleSheet,
     Alert,
     Keyboard,
-    ScrollView,
+    ActivityIndicator,
 } from "react-native";
-import { ChevronDown, ChevronLeft, X } from "lucide-react-native";
-import Animated, {
-    useSharedValue,
-    useAnimatedStyle,
-    withSpring,
-    withTiming,
-} from "react-native-reanimated";
+import { ChevronDown, ChevronLeft, X, Check } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+    BottomSheetModal,
+    BottomSheetScrollView,
+    BottomSheetTextInput,
+    BottomSheetBackdrop,
+    BottomSheetFlatList,
+} from "@gorhom/bottom-sheet";
 
-const { height: SCREEN_HEIGHT } = Dimensions.get("screen");
-
-// Currency options similar to ProfileExpectation dropdown options
 const currencyOptions = [
-    { label: "Türk Lirası (₺)", value: 1, symbol: "₺" },  // ✅ Sayısal value
+    { label: "Türk Lirası (₺)", value: 1, symbol: "₺" },
     { label: "Amerikan Doları ($)", value: 2, symbol: "$" },
     { label: "Euro (€)", value: 3, symbol: "€" },
     { label: "İngiliz Sterlini (£)", value: 4, symbol: "£" },
 ];
 
-// Custom Dropdown Component (same as ProfileExpectation)
-const CustomDropdown = ({
-    label,
-    value,
-    setValue,
-    options,
-    placeholder,
-    required = false,
-}) => {
-    const [isOpen, setIsOpen] = useState(false);
+// Para birimi seçici — ayrı BottomSheetModal
+const CurrencyPickerModal = ({ sheetRef, value, onSelect }) => {
+    const insets = useSafeAreaInsets();
 
-    const getModalHeight = () => {
-        const headerHeight = 80;
-        const itemHeight = 50;
-        const bottomPadding = 40;
-        const calculatedHeight = headerHeight + options.length * itemHeight + bottomPadding;
-
-        if (options.length <= 3) {
-            return Math.min(calculatedHeight, SCREEN_HEIGHT * 0.35);
-        }
-
-        if (options.length <= 7) {
-            return Math.min(calculatedHeight, SCREEN_HEIGHT * 0.55);
-        }
-
-        return SCREEN_HEIGHT * 0.6;
-    };
-
-    const SNAP_POINTS = {
-        CLOSED: SCREEN_HEIGHT,
-        OPEN: SCREEN_HEIGHT - getModalHeight(),
-    };
-
-    const translateY = useSharedValue(SCREEN_HEIGHT);
-    const backdropOpacity = useSharedValue(0);
-
-    useEffect(() => {
-        if (isOpen) {
-            translateY.value = withSpring(SNAP_POINTS.OPEN, {
-                damping: 80,
-                stiffness: 400,
-            });
-            backdropOpacity.value = withTiming(0.5, { duration: 300 });
-        } else if (isOpen === false && translateY.value !== SCREEN_HEIGHT) {
-            translateY.value = withSpring(SCREEN_HEIGHT, {
-                damping: 80,
-                stiffness: 400,
-            });
-            backdropOpacity.value = withTiming(0, { duration: 250 });
-        }
-    }, [isOpen]);
-
-    const handleClose = () => {
-        translateY.value = withSpring(SCREEN_HEIGHT, {
-            damping: 80,
-            stiffness: 400,
-        });
-        backdropOpacity.value = withTiming(0, { duration: 250 });
-        setTimeout(() => setIsOpen(false), 300);
-    };
-
-    const handleOptionSelect = (option) => {
-        setValue(option);
-        handleClose();
-    };
-
-    const handleBackdropPress = () => {
-        handleClose();
-    };
-
-    const backdropStyle = useAnimatedStyle(() => ({
-        opacity: backdropOpacity.value,
-    }));
-
-    const modalStyle = useAnimatedStyle(() => ({
-        transform: [{ translateY: translateY.value }],
-    }));
+    const renderBackdrop = useCallback(
+        (props) => (
+            <BottomSheetBackdrop
+                {...props}
+                disappearsOnIndex={-1}
+                appearsOnIndex={0}
+                opacity={0.4}
+                pressBehavior="close"
+            />
+        ),
+        []
+    );
 
     return (
-        <View className="mb-6">
-            <Text
-                className="text-sm font-semibold text-gray-900 mb-3"
-            >
-                {label} {required && <Text className="text-red-500">*</Text>}
-            </Text>
+        <BottomSheetModal
+            ref={sheetRef}
+            snapPoints={["35%"]}
+            backdropComponent={renderBackdrop}
+            enablePanDownToClose
+            handleIndicatorStyle={styles.handleIndicator}
+            backgroundStyle={styles.background}
+            stackBehavior="push"
+        >
+            <View className="flex-row items-center px-6 pb-4 border-b border-gray-100">
+                <TouchableOpacity onPress={() => sheetRef.current?.dismiss()} className="mr-3">
+                    <ChevronLeft size={20} color="#6b7280" />
+                </TouchableOpacity>
+                <Text className="text-lg font-semibold text-gray-800">Para Birimi</Text>
+            </View>
 
-            <TouchableOpacity
-                className="border border-gray-900 rounded-xl px-4 py-4 flex-row justify-between items-center"
-                onPress={() => setIsOpen(true)}
-            >
-                <Text
-                    className={value ? "text-gray-900 text-base" : "text-gray-400 text-base"}
-                >
-                    {value ? value.label : placeholder}
-                </Text>
-                <ChevronDown
-                    size={16}
-                    color={value ? "#111827" : "#9ca3af"}
-                />
-            </TouchableOpacity>
-
-            {/* Dropdown Modal */}
-            {isOpen && (
-                <Modal transparent={true} visible={isOpen}>
-                    <TouchableWithoutFeedback onPress={handleBackdropPress}>
-                        <View className="flex-1">
-                            {/* Backdrop */}
-                            <Animated.View style={[styles.backdrop, backdropStyle]}>
-                                <TouchableWithoutFeedback onPress={handleBackdropPress}>
-                                    <View className="flex-1" />
-                                </TouchableWithoutFeedback>
-                            </Animated.View>
-
-                            {/* Modal Content */}
-                            <Animated.View style={[styles.modal, modalStyle]}>
-                                {/* Handle */}
-                                <View className="items-center py-3">
-                                    <View className="w-12 h-1 bg-gray-300 rounded-full" />
-                                </View>
-
-                                {/* Header */}
-                                <View className="flex-row justify-between items-center px-6 pb-4">
-                                    <TouchableOpacity onPress={handleClose}>
-                                        <ChevronLeft size={20} color="#6b7280" />
-                                    </TouchableOpacity>
-                                    <Text className="text-lg font-semibold text-gray-800">{label}</Text>
-                                    <View className="w-5" />
-                                </View>
-
-                                {/* Options List */}
-                                <FlatList
-                                    data={options}
-                                    keyExtractor={(item, index) => index.toString()}
-                                    renderItem={({ item }) => (
-                                        <TouchableOpacity
-                                            className="px-6 py-4 border-b border-gray-100"
-                                            onPress={() => handleOptionSelect(item)}
-                                        >
-                                            <Text className="text-base text-gray-800">{item.label}</Text>
-                                        </TouchableOpacity>
-                                    )}
-                                    showsVerticalScrollIndicator={false}
-                                />
-                            </Animated.View>
-                        </View>
-                    </TouchableWithoutFeedback>
-                </Modal>
-            )}
-        </View>
+            <BottomSheetFlatList
+                data={currencyOptions}
+                keyExtractor={(item) => item.value.toString()}
+                contentContainerStyle={{ paddingBottom: insets.bottom + 8 }}
+                renderItem={({ item }) => (
+                    <TouchableOpacity
+                        className="flex-row items-center justify-between px-6 py-4 border-b border-gray-50"
+                        onPress={() => {
+                            onSelect(item);
+                            sheetRef.current?.dismiss();
+                        }}
+                    >
+                        <Text className="text-base text-gray-800">{item.label}</Text>
+                        {value?.value === item.value && (
+                            <Check size={18} color="#111827" />
+                        )}
+                    </TouchableOpacity>
+                )}
+            />
+        </BottomSheetModal>
     );
 };
 
-// Custom TextInput Component (same as ProfileExpectation)
+// TextInput
 const CustomTextInput = ({
     label,
     value,
@@ -204,22 +99,23 @@ const CustomTextInput = ({
         <Text className="text-sm font-semibold text-gray-900 mb-3">
             {label} {required && <Text className="text-red-500">*</Text>}
         </Text>
-        <View className="border border-gray-900 rounded-xl px-4 py-4 flex-row items-center">
+        <View className="border border-gray-300 rounded-xl px-4 py-4 flex-row items-center">
             {prefix && (
                 <Text className="text-gray-900 text-base font-medium mr-2">{prefix}</Text>
             )}
-            <TextInput
-                className="text-gray-900 text-base flex-1"
+            <BottomSheetTextInput
+                style={[
+                    styles.textInput,
+                    multiline && { textAlignVertical: "top", minHeight: numberOfLines * 24 },
+                ]}
                 placeholder={placeholder}
                 placeholderTextColor="#b0b0b0"
                 value={value}
                 onChangeText={onChangeText}
                 keyboardType={keyboardType}
                 multiline={multiline}
-                numberOfLines={numberOfLines}
+                numberOfLines={multiline ? numberOfLines : undefined}
                 maxLength={maxLength}
-                style={{ fontSize: 16 }}
-                textAlignVertical={multiline ? "top" : "center"}
                 blurOnSubmit={!multiline}
                 returnKeyType={multiline ? "default" : "done"}
             />
@@ -227,115 +123,59 @@ const CustomTextInput = ({
     </View>
 );
 
-// Main OfferModal Component
+// Ana OfferModal
 const OfferModal = ({
     visible,
     onClose,
     onSubmit,
     isLoading = false,
     postData = {},
+    existingOffer = null,
 }) => {
     const insets = useSafeAreaInsets();
+    const bottomSheetRef = useRef(null);
+    const currencySheetRef = useRef(null);
     const [offerAmount, setOfferAmount] = useState("");
     const [selectedCurrency, setSelectedCurrency] = useState(null);
     const [offerMessage, setOfferMessage] = useState("");
-    const [isInitialized, setIsInitialized] = useState(false); // Yeni state
 
+    const snapPoints = useMemo(() => ["80%"], []);
 
-    // Modal animation values
-    const translateY = useSharedValue(SCREEN_HEIGHT);
-    const backdropOpacity = useSharedValue(0);
-
-    // ✅ Klavye animasyonu için yeni değer - CommentsBottomSheet'teki gibi
-    const keyboardHeight = useSharedValue(0);
-
-    // ✅ Klavye listeners - CommentsBottomSheet'teki smooth animasyon
-    useEffect(() => {
-        const showListener = Keyboard.addListener(
-            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-            (e) => {
-                keyboardHeight.value = withSpring(e.endCoordinates.height, {
-                    damping: 80,
-                    stiffness: 300,
-                });
-            }
-        );
-
-        const hideListener = Keyboard.addListener(
-            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-            () => {
-                keyboardHeight.value = withSpring(0, {
-                    damping: 80,
-                    stiffness: 300,
-                });
-            }
-        );
-
-        return () => {
-            showListener?.remove();
-            hideListener?.remove();
-        };
-    }, []);
-
-    // Initialize currency based on post data
-    useEffect(() => {
-        if (postData?.paraBirimi && !selectedCurrency) {
-            const currency = currencyOptions.find(
-                (option) => option.value === postData.paraBirimi
-            );
-            if (currency) {
-                setSelectedCurrency(currency);
-            }
-        }
-    }, [postData, selectedCurrency]);
-
-    // Modal open/close animation with smoother transitions
     useEffect(() => {
         if (visible) {
-            translateY.value = withSpring(0, {
-                damping: 85,
-                stiffness: 300,
-                mass: 0.8,
-            });
-            backdropOpacity.value = withTiming(0.5, { duration: 300 });
+            bottomSheetRef.current?.present();
         } else {
-            translateY.value = withSpring(SCREEN_HEIGHT, {
-                damping: 85,
-                stiffness: 300,
-                mass: 0.8,
-            });
-            backdropOpacity.value = withTiming(0, { duration: 250 });
+            bottomSheetRef.current?.dismiss();
         }
     }, [visible]);
 
-    // Reset form when modal closes
     useEffect(() => {
-        if (!visible) {
-            setTimeout(() => {
-                setOfferAmount("");
-                setOfferMessage("");
-                // Don't reset currency as it should remember user's last selection
-            }, 300);
+        if (postData?.paraBirimi && !selectedCurrency) {
+            const currency = currencyOptions.find((opt) => opt.value === postData.paraBirimi);
+            if (currency) setSelectedCurrency(currency);
         }
-    }, [visible]);
+    }, [postData]);
+
+    const handleDismiss = useCallback(() => {
+        setOfferAmount("");
+        setOfferMessage("");
+        onClose();
+    }, [onClose]);
 
     const handleSubmit = () => {
         if (!offerAmount.trim()) {
             Alert.alert("Hata", "Lütfen bir teklif tutarı giriniz.");
             return;
         }
-
         if (!selectedCurrency) {
             Alert.alert("Hata", "Lütfen para birimi seçiniz.");
             return;
         }
-
         const amount = parseFloat(offerAmount.replace(/[^0-9.]/g, ""));
         if (isNaN(amount) || amount <= 0) {
             Alert.alert("Hata", "Geçerli bir tutar giriniz.");
             return;
         }
-
         onSubmit({
             amount,
             currency: selectedCurrency.value,
@@ -345,220 +185,206 @@ const OfferModal = ({
 
     const handleClose = () => {
         Keyboard.dismiss();
-        translateY.value = withSpring(SCREEN_HEIGHT, {
-            damping: 85,
-            stiffness: 300,
-            mass: 0.8,
-        });
-        backdropOpacity.value = withTiming(0, { duration: 250 });
-        setTimeout(() => onClose(), 300);
+        bottomSheetRef.current?.dismiss();
     };
-
-    const handleBackdropPress = () => {
-        Keyboard.dismiss();
-        handleClose();
-    };
-
-    const backdropStyle = useAnimatedStyle(() => ({
-        opacity: backdropOpacity.value,
-    }));
-
-    // ✅ Modal style - klavye yüksekliğini de hesaba katıyor (CommentsBottomSheet'teki gibi)
-    const modalStyle = useAnimatedStyle(() => ({
-        transform: [{
-            translateY: translateY.value - keyboardHeight.value
-        }],
-    }));
 
     const formatNumber = (text) => {
-        // Remove non-numeric characters except decimal point
         const numericText = text.replace(/[^0-9.]/g, "");
-
-        // Handle decimal point
         const parts = numericText.split(".");
-        if (parts.length > 2) {
-            return parts[0] + "." + parts.slice(1).join("");
-        }
-
-        // Format with thousands separator
-        if (parts[0]) {
-            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        }
-
+        if (parts.length > 2) return parts[0] + "." + parts.slice(1).join("");
+        if (parts[0]) parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         return parts.join(".");
     };
 
     const handleAmountChange = (text) => {
-        const formatted = formatNumber(text);
-        setOfferAmount(formatted);
+        setOfferAmount(formatNumber(text));
     };
 
+    const renderBackdrop = useCallback(
+        (props) => (
+            <BottomSheetBackdrop
+                {...props}
+                disappearsOnIndex={-1}
+                appearsOnIndex={0}
+                opacity={0.5}
+                pressBehavior="close"
+            />
+        ),
+        []
+    );
+
     return (
-        <Modal
-            transparent={true}
-            visible={visible}
-            onRequestClose={handleClose}
-            statusBarTranslucent={true}
-        >
-            {/* ✅ KeyboardAvoidingView'ı kaldırdık - artık gerekli değil çünkü manuel animasyon yapıyoruz */}
-            <View className="flex-1">
-                {/* Backdrop - Only this should close modal */}
-                <TouchableWithoutFeedback onPress={handleBackdropPress}>
-                    <Animated.View style={[styles.backdrop, backdropStyle]} />
-                </TouchableWithoutFeedback>
+        <>
+            <BottomSheetModal
+                ref={bottomSheetRef}
+                snapPoints={snapPoints}
+                onDismiss={handleDismiss}
+                backdropComponent={renderBackdrop}
+                enablePanDownToClose
+                keyboardBehavior="extend"
+                keyboardBlursBehavior="restore"
+                android_keyboardInputMode="adjustResize"
+                handleIndicatorStyle={styles.handleIndicator}
+                backgroundStyle={styles.background}
+                stackBehavior="push"
+            >
+                {/* Header */}
+                <View className="flex-row justify-between items-center px-6 pb-4 border-b border-gray-100">
+                    <View className="w-5" />
+                    <Text className="text-xl font-bold text-gray-800">Teklif Ver</Text>
+                    <TouchableOpacity onPress={handleClose} className="p-1">
+                        <X size={20} color="#6b7280" />
+                    </TouchableOpacity>
+                </View>
 
-                {/* Modal Content - This should NOT close modal */}
-                {/* ✅ modalStyle artık klavye yüksekliğini de hesaplıyor */}
-                <Animated.View style={[styles.offerModal, modalStyle]}>
-                    {/* Handle */}
-                    <View className="items-center py-3">
-                        <View className="w-12 h-1 bg-gray-300 rounded-full" />
-                    </View>
+                <BottomSheetScrollView
+                    style={{ flex: 1 }}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    contentContainerStyle={{ paddingBottom: 16 }}
+                >
+                    <View className="px-6 pt-4">
+                        {/* İlan Bilgisi */}
+                        <View className="mb-6 p-4 bg-gray-50 rounded-xl">
+                            <Text className="text-base font-semibold text-gray-800 mb-1">
+                                {postData?.ilanBasligi || "İlan"}
+                            </Text>
+                            <Text className="text-sm text-gray-600">
+                                Mevcut Fiyat: {postData?.kiraFiyati?.toLocaleString() || "0"}{" "}
+                                {selectedCurrency?.symbol || "₺"}/ay
+                            </Text>
+                        </View>
 
-                    {/* Header */}
-                    <View className="flex-row justify-between items-center px-6 pb-4 border-b border-gray-100">
-                        <View className="w-5" />
-                        <Text className="text-xl font-bold text-gray-800">Teklif Ver</Text>
-                        <TouchableOpacity onPress={handleClose} className="p-1">
-                            <X size={20} color="#6b7280" />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Scrollable Content */}
-                    <ScrollView
-                        className="flex-1"
-                        showsVerticalScrollIndicator={false}
-                        keyboardShouldPersistTaps="handled"
-                        contentContainerStyle={{ flexGrow: 1 }}
-                    >
-                        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                            <View className="px-6 pt-4">
-                                {/* Property Info */}
-                                <View className="mb-6 p-4 bg-gray-50 rounded-xl">
-                                    <Text className="text-base font-semibold text-gray-800 mb-1">
-                                        {postData?.ilanBasligi || "İlan"}
-                                    </Text>
-                                    <Text className="text-sm text-gray-600">
-                                        Mevcut Fiyat: {postData?.kiraFiyati?.toLocaleString() || "0"}{" "}
-                                        {selectedCurrency?.symbol || "₺"}/ay
-                                    </Text>
-                                </View>
-
-                                {/* Currency Selection */}
-                                <CustomDropdown
-                                    label="Para Birimi"
-                                    value={selectedCurrency}
-                                    setValue={setSelectedCurrency}
-                                    options={currencyOptions}
-                                    placeholder="Para birimi seçin"
-                                    required={true}
-                                />
-
-                                {/* Offer Amount */}
-                                <CustomTextInput
-                                    label="Teklif Tutarı"
-                                    value={offerAmount}
-                                    onChangeText={handleAmountChange}
-                                    placeholder="Teklif tutarınızı girin"
-                                    keyboardType="numeric"
-                                    required={true}
-                                    prefix={selectedCurrency?.symbol}
-                                />
-
-                                {/* Offer Message */}
-                                <CustomTextInput
-                                    label="Mesajınız"
-                                    value={offerMessage}
-                                    onChangeText={setOfferMessage}
-                                    placeholder="Ev sahibine iletmek istediğiniz mesaj (opsiyonel)"
-                                    multiline={true}
-                                    numberOfLines={4}
-                                    maxLength={500}
-                                />
-
-                                {/* Character Counter */}
-                                <Text className="text-xs text-gray-500 text-right -mt-4 mb-6">
-                                    {offerMessage.length}/500
+                        {/* Mevcut Teklif */}
+                        {existingOffer && (
+                            <View className="mb-6 p-4 rounded-xl border border-gray-100" style={{
+                                backgroundColor: existingOffer.status === 1 ? "#f0fdf4"
+                                    : existingOffer.status === 2 ? "#fef2f2"
+                                    : "#fffbeb"
+                            }}>
+                                <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
+                                    Mevcut Teklifiniz
                                 </Text>
-
-                                {/* ✅ Extra bottom padding kaldırıldı - artık klavye animasyonu var */}
+                                <Text className="text-xl font-bold text-gray-900 mb-1">
+                                    {new Intl.NumberFormat("tr-TR").format(existingOffer.offerAmount)}{" "}
+                                    {currencyOptions.find(c => c.value === existingOffer.currency)?.symbol || "₺"}
+                                </Text>
+                                <Text className="text-sm font-medium" style={{
+                                    color: existingOffer.status === 1 ? "#16a34a"
+                                        : existingOffer.status === 2 ? "#dc2626"
+                                        : "#d97706"
+                                }}>
+                                    {existingOffer.status === 0 ? "Beklemede"
+                                        : existingOffer.status === 1 ? "Kabul Edildi"
+                                        : "Reddedildi"}
+                                </Text>
+                                {existingOffer.description ? (
+                                    <Text className="text-xs text-gray-500 mt-2" numberOfLines={2}>
+                                        "{existingOffer.description}"
+                                    </Text>
+                                ) : null}
                             </View>
-                        </TouchableWithoutFeedback>
-                    </ScrollView>
+                        )}
 
-                    {/* Submit Button - Fixed at bottom */}
-                    <View
-                        className="border-t border-gray-100 bg-white"
-                        style={{
-                            paddingBottom: insets.bottom,
-                            paddingTop: 16,
-                            paddingHorizontal: 24,
-                        }}
-                    >
-                        <TouchableOpacity
-                            className={`py-3 rounded-xl ${isLoading || !offerAmount.trim() || !selectedCurrency
+                        {/* Para Birimi */}
+                        <View className="mb-6">
+                            <Text className="text-sm font-semibold text-gray-900 mb-3">
+                                Para Birimi <Text className="text-red-500">*</Text>
+                            </Text>
+                            <TouchableOpacity
+                                className="border border-gray-300 rounded-xl px-4 py-4 flex-row justify-between items-center"
+                                onPress={() => currencySheetRef.current?.present()}
+                            >
+                                <Text className={selectedCurrency ? "text-gray-900 text-base" : "text-gray-400 text-base"}>
+                                    {selectedCurrency ? selectedCurrency.label : "Para birimi seçin"}
+                                </Text>
+                                <ChevronDown size={16} color={selectedCurrency ? "#111827" : "#9ca3af"} />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Teklif Tutarı */}
+                        <CustomTextInput
+                            label="Teklif Tutarı"
+                            value={offerAmount}
+                            onChangeText={handleAmountChange}
+                            placeholder="Teklif tutarınızı girin"
+                            keyboardType="numeric"
+                            required={true}
+                            prefix={selectedCurrency?.symbol}
+                        />
+
+                        {/* Mesaj */}
+                        <CustomTextInput
+                            label="Mesajınız"
+                            value={offerMessage}
+                            onChangeText={setOfferMessage}
+                            placeholder="Ev sahibine iletmek istediğiniz mesaj (opsiyonel)"
+                            multiline={true}
+                            numberOfLines={4}
+                            maxLength={500}
+                        />
+
+                        {/* Karakter sayacı */}
+                        <Text className="text-xs text-gray-500 text-right -mt-4 mb-6">
+                            {offerMessage.length}/500
+                        </Text>
+                    </View>
+                </BottomSheetScrollView>
+
+                {/* Gönder Butonu */}
+                <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+                    <TouchableOpacity
+                        className={`py-3 rounded-xl ${
+                            isLoading || !offerAmount.trim() || !selectedCurrency
                                 ? "bg-gray-300"
                                 : "bg-gray-900"
-                                }`}
-                            onPress={handleSubmit}
-                            disabled={isLoading || !offerAmount.trim() || !selectedCurrency}
-                        >
-                            {isLoading ? (
-                                <ActivityIndicator color="#ffffff" />
-                            ) : (
-                                <Text className="text-white font-semibold text-center text-lg">
-                                    Teklifi Gönder
-                                </Text>
-                            )}
-                        </TouchableOpacity>
-                    </View>
-                </Animated.View>
-            </View>
-        </Modal>
+                        }`}
+                        onPress={handleSubmit}
+                        disabled={isLoading || !offerAmount.trim() || !selectedCurrency}
+                    >
+                        {isLoading ? (
+                            <ActivityIndicator color="#ffffff" />
+                        ) : (
+                            <Text className="text-white font-semibold text-center text-lg">
+                                Teklifi Gönder
+                            </Text>
+                        )}
+                    </TouchableOpacity>
+                </View>
+            </BottomSheetModal>
+
+            {/* Para Birimi Seçici */}
+            <CurrencyPickerModal
+                sheetRef={currencySheetRef}
+                value={selectedCurrency}
+                onSelect={setSelectedCurrency}
+            />
+        </>
     );
 };
 
-// Styles
 const styles = StyleSheet.create({
-    backdrop: {
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-    },
-    modal: {
-        position: "absolute",
-        left: 0,
-        right: 0,
-        top: 0,
-        bottom: 0,
-        backgroundColor: "#ffffff",
-        elevation: 20,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: -3 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        borderTopLeftRadius: 16,
-        borderTopRightRadius: 16,
-        overflow: "hidden",
-    },
-    offerModal: {
-        position: "absolute",
-        left: 0,
-        right: 0,
-        bottom: 0,
-        height: SCREEN_HEIGHT * 0.72,
-        backgroundColor: "#ffffff",
-        elevation: 20,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: -3 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
+    background: {
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
-        overflow: "hidden",
+        backgroundColor: "#ffffff",
+    },
+    handleIndicator: {
+        backgroundColor: "#d1d5db",
+        width: 48,
+        height: 4,
+    },
+    textInput: {
+        flex: 1,
+        fontSize: 16,
+        color: "#111827",
+    },
+    footer: {
+        paddingTop: 16,
+        paddingHorizontal: 24,
+        backgroundColor: "#ffffff",
+        borderTopWidth: 1,
+        borderTopColor: "#f3f4f6",
     },
 });
 

@@ -13,7 +13,7 @@ import MapView from "react-native-maps";
 import * as Location from "expo-location";
 import { MaterialIcons } from "@expo/vector-icons";
 import { MapPin, X } from "lucide-react-native";
-import { BlurView } from "expo-blur";
+import PlatformBlurView from "./PlatformBlurView";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -271,7 +271,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
       >
         {/* Search Bar - Floating */}
         <View style={{ width: "80%", paddingTop: 10 }}>
-          <BlurView intensity={70} tint="dark" className="overflow-hidden rounded-full">
+          <PlatformBlurView intensity={70} tint="dark" className="overflow-hidden rounded-full">
             <View
               style={{
                 flexDirection: "row",
@@ -304,11 +304,11 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
                 )}
               </TouchableOpacity>
             </View>
-          </BlurView>
+          </PlatformBlurView>
         </View>
 
         <TouchableOpacity onPress={onClose} style={{ paddingTop: 10 }}>
-          <BlurView
+          <PlatformBlurView
             intensity={70}
             tint="dark"
             className="overflow-hidden"
@@ -318,7 +318,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
             }}
           >
             <X size={20} color="#fff" />
-          </BlurView>
+          </PlatformBlurView>
         </TouchableOpacity>
       </View>
 
@@ -386,7 +386,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
           zIndex: 5,
         }}
       >
-        <BlurView intensity={80} tint="dark" className="overflow-hidden rounded-2xl">
+        <PlatformBlurView intensity={80} tint="dark" className="overflow-hidden rounded-2xl">
           <View style={{ padding: 16 }}>
             {/* Selected Location Info */}
             {centerLocation && (
@@ -440,7 +440,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
               </Text>
             </TouchableOpacity>
           </View>
-        </BlurView>
+        </PlatformBlurView>
       </View>
     </View>
   );

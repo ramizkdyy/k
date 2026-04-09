@@ -28,7 +28,7 @@ import {
 import { useGetUnreadSummaryQuery } from "../redux/api/chatApiSlice";
 import { useSignalR } from "../contexts/SignalRContext";
 import { useFocusEffect } from "@react-navigation/native";
-import { BlurView } from "expo-blur";
+import PlatformBlurView from "../components/PlatformBlurView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -199,7 +199,7 @@ const HomeScreen = ({ navigation }) => {
         }}
       >
         {/* BlurView Background */}
-        <BlurView
+        <PlatformBlurView
           intensity={80}
           tint="light"
           style={{
@@ -262,7 +262,7 @@ const HomeScreen = ({ navigation }) => {
               marginRight: searchBarMarginRight,
             }}
           >
-            <BlurView
+            <PlatformBlurView
               intensity={60}
               tint="light"
               style={{
@@ -301,7 +301,7 @@ const HomeScreen = ({ navigation }) => {
                   onChangeText={setSearchQuery}
                 />
               </View>
-            </BlurView>
+            </PlatformBlurView>
           </Animated.View>
         </View>
 

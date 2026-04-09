@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity, Dimensions } from "react-native";
 import { Image } from "expo-image";
-import { BlurView } from "expo-blur";
+import PlatformBlurView from "./PlatformBlurView";
 import { X } from "lucide-react-native";
 import Animated, {
   useSharedValue,
@@ -264,7 +264,7 @@ const AnimatedNotification = ({
       ]}
     >
       <GestureDetector gesture={panGesture}>
-        <BlurView
+        <PlatformBlurView
           intensity={80}
           tint="regular"
           style={{
@@ -377,7 +377,7 @@ const AnimatedNotification = ({
               <X size={16} color="#000" />
             </TouchableOpacity>
           </TouchableOpacity>
-        </BlurView>
+        </PlatformBlurView>
       </GestureDetector>
     </Animated.View>
   );

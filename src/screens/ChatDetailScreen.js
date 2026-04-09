@@ -39,7 +39,7 @@ import { useSignalR } from "../contexts/SignalRContext";
 import { useNotification } from "../contexts/NotificationContext";
 import { useSelector, useDispatch } from "react-redux";
 import { selectUserRole } from "../redux/slices/authSlice";
-import { BlurView } from "expo-blur";
+import PlatformBlurView from "../components/PlatformBlurView";
 import { useHeaderHeight } from "@react-navigation/elements";
 import {
   SafeAreaView,
@@ -1031,7 +1031,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
         </View>
 
         {/* BlurView Header for error state */}
-        <BlurView
+        <PlatformBlurView
           intensity={90}
           tint="light"
           style={{
@@ -1056,7 +1056,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
                 : partnerName || partnerId}
             </Text>
           </View>
-        </BlurView>
+        </PlatformBlurView>
       </View>
     );
   }
@@ -1065,7 +1065,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
       <StatusBar style="dark" backgroundColor="transparent" translucent />
 
       {/* ✅ Enhanced BlurView Header - Backend partner data ile uyumlu */}
-      <BlurView
+      <PlatformBlurView
         intensity={70}
         tint="light"
         style={{
@@ -1155,7 +1155,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
             </TouchableOpacity>
           </View>
         </View>
-      </BlurView>
+      </PlatformBlurView>
 
       {/* ✅ Enhanced Keyboard Sticky Input Area */}
       <KeyboardStickyView
@@ -1216,7 +1216,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
         />
 
         {/* ✅ Enhanced Input Area with BlurView */}
-        <BlurView
+        <PlatformBlurView
           style={{ paddingBottom: insets.bottom, borderTopWidth: 0.5 }}
           className="py-1.5 border-gray-200 absolute bottom-0 w-full"
           intensity={70}
@@ -1234,7 +1234,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
               </TouchableOpacity>
 
               {/* Text Input Container */}
-              <BlurView
+              <PlatformBlurView
                 style={{ borderWidth: 0.5 }}
                 intensity={10}
                 tint="systemUltraThinMaterialDark"
@@ -1268,7 +1268,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
                   }}
                   textAlignVertical="center"
                 />
-              </BlurView>
+              </PlatformBlurView>
 
               {/* Send Button */}
               <TouchableOpacity
@@ -1287,7 +1287,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
               </TouchableOpacity>
             </View>
           </View>
-        </BlurView>
+        </PlatformBlurView>
       </KeyboardStickyView>
     </View>
   );

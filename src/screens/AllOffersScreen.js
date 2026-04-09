@@ -23,7 +23,7 @@ import {
     useRentOfferMutation
 } from "../redux/api/apiSlice";
 import Icon from "react-native-vector-icons/MaterialIcons";
-import { BlurView } from "expo-blur";
+import PlatformBlurView from "../components/PlatformBlurView";
 import { ChevronLeft, Mail, Check, X, Clock, Star } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 

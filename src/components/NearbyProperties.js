@@ -12,7 +12,7 @@ import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
 import { useGetForYouPageQuery } from "../redux/api/apiSlice";
 import * as Location from "expo-location";
 import { ChevronRight, List, Route, User, Bath, BedDouble, Heart, Home } from "lucide-react-native";
-import { BlurView } from "expo-blur";
+import PlatformBlurView from "./PlatformBlurView";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import { useFypCacheTracker } from "../hooks/useFypCacheTracker";
 
@@ -439,7 +439,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
           />
 
           {(item.distanceInKM !== undefined || item.distance !== undefined) && (
-            <BlurView
+            <PlatformBlurView
               intensity={50}
               tint="dark"
               className="absolute top-3 left-3 rounded-full overflow-hidden"
@@ -450,11 +450,11 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
                   {(item.distanceInKM || item.distance || 0).toFixed(1)} km
                 </Text>
               </View>
-            </BlurView>
+            </PlatformBlurView>
           )}
 
           {item.matchScore && (
-            <BlurView
+            <PlatformBlurView
               intensity={60}
               tint="dark"
               className="absolute top-3 right-3 rounded-full overflow-hidden"
@@ -465,7 +465,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
                   {item.matchScore}%
                 </Text>
               </View>
-            </BlurView>
+            </PlatformBlurView>
           )}
         </View>
 

@@ -32,7 +32,7 @@ import {
 
   CircleAlert,
 } from "lucide-react-native";
-import { BlurView } from "expo-blur";
+import PlatformBlurView from "../components/PlatformBlurView";
 import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
@@ -509,7 +509,7 @@ const PropertyImageSlider = memo(({ images, status, postId, onPress }) => {
 
       {/* Status badge */}
       <View className="absolute top-3 right-3">
-        <BlurView
+        <PlatformBlurView
           intensity={50}
           tint="dark"
           style={{ overflow: "hidden", borderRadius: 100 }}
@@ -518,7 +518,7 @@ const PropertyImageSlider = memo(({ images, status, postId, onPress }) => {
           <Text className="text-white text-xs font-semibold">
             {status === 0 ? "Aktif" : status === 1 ? "Kiralandı" : "Kapalı"}
           </Text>
-        </BlurView>
+        </PlatformBlurView>
       </View>
 
       {/* Pagination dots */}
@@ -622,7 +622,7 @@ const PropertyItem = memo(
 
         {/* Similarity Score Bar */}
         {item.similarityScore && (
-          <BlurView
+          <PlatformBlurView
             tint="dark"
             style={{ top: 32, left: 20 }}
             className="absolute overflow-hidden px-4 py-1.5 rounded-full"
@@ -630,7 +630,7 @@ const PropertyItem = memo(
             <Text style={{ fontSize: 12 }} className="text-white font-medium">
               {item.similarityScore}% Benzer
             </Text>
-          </BlurView>
+          </PlatformBlurView>
         )}
 
         <View className="flex flex-col">

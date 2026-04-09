@@ -24,7 +24,7 @@ import {
   useRentOfferMutation, // YENI EKLEME
 } from "../redux/api/apiSlice";
 import Icon from "react-native-vector-icons/MaterialIcons";
-import { BlurView } from "expo-blur";
+import PlatformBlurView from "../components/PlatformBlurView";
 import { Mail, AlertCircle, Star } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -582,7 +582,7 @@ const OffersScreen = () => {
 
                   {/* Full Image Blur Overlay */}
                   {Platform.OS === "ios" ? (
-                    <BlurView
+                    <PlatformBlurView
                       intensity={30}
                       tint="dark"
                       style={{
@@ -625,7 +625,7 @@ const OffersScreen = () => {
               )}
 
               {Platform.OS === "ios" ? (
-                <BlurView
+                <PlatformBlurView
                   intensity={50}
                   tint="dark"
                   style={{
@@ -653,7 +653,7 @@ const OffersScreen = () => {
                       {statusInfo.text}
                     </Text>
                   </View>
-                </BlurView>
+                </PlatformBlurView>
               ) : (
                 <View
                   style={{
@@ -680,7 +680,7 @@ const OffersScreen = () => {
               )}
 
               {Platform.OS === "ios" ? (
-                <BlurView
+                <PlatformBlurView
                   intensity={0}
                   tint="dark"
                   style={{
@@ -733,7 +733,7 @@ const OffersScreen = () => {
                       }
                       activeOpacity={0.8}
                     >
-                      <BlurView
+                      <PlatformBlurView
                         tint="dark"
                         className="py-2 px-4 rounded-full overflow-hidden"
                       >
@@ -743,10 +743,10 @@ const OffersScreen = () => {
                         >
                           Kiraya Ver
                         </Text>
-                      </BlurView>
+                      </PlatformBlurView>
                     </TouchableOpacity>
                   )}
-                </BlurView>
+                </PlatformBlurView>
               ) : (
                 <View
                   style={{
@@ -784,7 +784,7 @@ const OffersScreen = () => {
 
               {/* Date Badge */}
               {Platform.OS === "ios" ? (
-                <BlurView
+                <PlatformBlurView
                   intensity={50}
                   tint="dark"
                   style={{
@@ -815,7 +815,7 @@ const OffersScreen = () => {
                         : ""}
                     </Text>
                   </View>
-                </BlurView>
+                </PlatformBlurView>
               ) : (
                 <View
                   style={{
@@ -1021,7 +1021,7 @@ const OffersScreen = () => {
         }}
       >
         {/* BlurView Background */}
-        <BlurView
+        <PlatformBlurView
           intensity={80}
           tint="light"
           style={{

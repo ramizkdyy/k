@@ -18,7 +18,8 @@ import {
     Coins,
     Search,
     Filter,
-    MapPin
+    MapPin,
+    ArrowUpDown,
 } from "lucide-react-native";
 import {
     BottomSheetModal,
@@ -167,7 +168,12 @@ const loadNeighborhoodsForDistricts = async (cityCode, selectedDistricts, setNei
 const PropertiesFilterModal = ({
     visible,
     onClose,
-    onApply
+    onApply,
+    sortBy,
+    sortDirection,
+    onSortChange,
+    onResetSort,
+    onResetFilters,
 }) => {
     const insets = useSafeAreaInsets();
     const dispatch = useDispatch();
@@ -633,6 +639,43 @@ const PropertiesFilterModal = ({
                 }}
                 showsVerticalScrollIndicator={false}
             >
+                {/* Sıralama */}
+                <View className="bg-white mt-4 rounded-xl p-4">
+                    <View className="flex-row items-center mb-4">
+                        <ArrowUpDown size={18} color="#374151" />
+                        <Text className="text-lg font-semibold text-gray-900 ml-2">
+                            Sıralama
+                        </Text>
+                    </View>
+                    <View className="flex-row flex-wrap gap-2">
+                        {[
+                            { key: "price", label: "Fiyat" },
+                            { key: "date", label: "Tarih" },
+                        ].map((option) => {
+                            const isSelected = sortBy === option.key;
+                            return (
+                                <TouchableOpacity
+                                    key={option.key}
+                                    onPress={() => onSortChange && onSortChange(option.key)}
+                                    className={`px-4 py-2 rounded-full border ${isSelected ? "bg-gray-900 border-gray-900" : "bg-white border-gray-300"}`}
+                                >
+                                    <Text className={`font-medium ${isSelected ? "text-white" : "text-gray-700"}`}>
+                                        {option.label}{isSelected ? (sortDirection === 0 ? " ↑" : " ↓") : ""}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                        {sortBy && (
+                            <TouchableOpacity
+                                onPress={() => onResetSort && onResetSort()}
+                                className="px-4 py-2 rounded-full border border-gray-300 bg-white"
+                            >
+                                <Text className="font-medium text-gray-500">Temizle</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
+
                 {/* Konum Filtresi */}
                 <View className="bg-white mt-4 rounded-xl p-4">
                     <View className="flex-row items-center mb-4">

@@ -5,7 +5,6 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
-  ActivityIndicator,
   RefreshControl,
   Alert,
   SafeAreaView,
@@ -36,7 +35,7 @@ import {
   Home,
   X,
 } from "lucide-react-native";
-import { BlurView } from "expo-blur";
+import PlatformBlurView from "../components/PlatformBlurView";
 import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
@@ -266,7 +265,7 @@ const MatchScoreBadge = memo(({ matchScore }) => {
   const scoreInfo = getMatchScoreInfo(matchScore);
 
   return (
-    <BlurView
+    <PlatformBlurView
       intensity={60}
       tint="dark"
       className="absolute top-3 left-3 rounded-full overflow-hidden"
@@ -277,7 +276,7 @@ const MatchScoreBadge = memo(({ matchScore }) => {
           {Math.round(matchScore)}%
         </Text>
       </View>
-    </BlurView>
+    </PlatformBlurView>
   );
 });
 
@@ -441,7 +440,7 @@ const PropertyImageSlider = memo(
 
         {/* Status badge */}
         <View className="absolute top-3 right-3">
-          <BlurView
+          <PlatformBlurView
             intensity={50}
             tint="dark"
             style={{ overflow: "hidden", borderRadius: 100 }}
@@ -450,7 +449,7 @@ const PropertyImageSlider = memo(
             <Text className="text-white text-xs font-semibold">
               {status === 0 ? "Aktif" : status === 1 ? "Kiralandı" : "Kapalı"}
             </Text>
-          </BlurView>
+          </PlatformBlurView>
         </View>
 
         {/* Pagination dots */}
@@ -905,12 +904,27 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
   ) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#4A90E2" />
-          <Text className="mt-3 text-base text-gray-500">
-            Size özel öneriler yükleniyor...
-          </Text>
+        {/* Header skeleton */}
+        <View className="bg-white border-b border-gray-200 z-10">
+          <View className="flex flex-row items-center px-5">
+            <TouchableOpacity onPress={goBack} style={{ width: "8%" }}>
+              <ChevronLeft color="black" size={25} />
+            </TouchableOpacity>
+            <View className="px-4 py-4" style={{ flex: 1 }}>
+              <View
+                style={{ boxShadow: "0px 0px 12px #00000014" }}
+                className="bg-white rounded-3xl gap-2 px-4 flex-row items-center"
+              >
+                <TextInput
+                  className="w-full px-2 placeholder:text-gray-400 placeholder:text-[14px] py-4 text-normal"
+                  placeholder="Sizin için önerilenler..."
+                  editable={false}
+                />
+              </View>
+            </View>
+          </View>
         </View>
+        <PropertyListLoadingSkeleton count={3} />
       </SafeAreaView>
     );
   }

@@ -279,7 +279,11 @@ const LoginScreen = ({ navigation }) => {
               {/* Form Alanları - Boşluklar minimize edilmiş */}
               <View className="w-full gap-4">
                 <View className="flex flex-col border rounded-xl">
-                  <View className="flex gap-4 flex-row items-center px-4 py-4 w-full border-b">
+                  <View
+                    className={`flex gap-4 flex-row items-center px-4 ${
+                      Platform.OS === "android" ? "py-2" : "py-4"
+                    } w-full border-b`}
+                  >
                     <User size={20} color="#000" />
                     <TextInput
                       placeholder="Kullanıcı Adı"
@@ -294,7 +298,11 @@ const LoginScreen = ({ navigation }) => {
                     />
                   </View>
 
-                  <View className="flex gap-4 flex-row items-center px-4 py-4 w-full">
+                  <View
+                    className={`flex gap-4 flex-row items-center px-4 ${
+                      Platform.OS === "android" ? "py-2" : "py-4"
+                    } w-full`}
+                  >
                     <View className="items-center flex flex-row gap-4 flex-1">
                       <Lock size={20} color="#000" />
                       <TextInput

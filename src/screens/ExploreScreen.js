@@ -6,7 +6,7 @@ import {
   StatusBar,
   Platform,
   ScrollView,
-  ActivityIndicator,
+  Animated,
 } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -390,6 +390,73 @@ const RefreshablePagerView = memo(({ children, onRefresh, refreshing }) => {
   );
 });
 
+// Skeleton Loading Component
+const ExploreSkeleton = memo(() => {
+  const shimmer = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, {
+          toValue: 1,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmer, {
+          toValue: 0,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [shimmer]);
+
+  const opacity = shimmer.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 0.65],
+  });
+
+  const SkeletonBlock = ({ style }) => (
+    <Animated.View style={[{ backgroundColor: "#4B5563", borderRadius: 8, opacity }, style]} />
+  );
+
+  return (
+    <View style={{ flex: 1, backgroundColor: "#111" }}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+
+      {/* Main image area */}
+      <SkeletonBlock style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, borderRadius: 0 }} />
+
+      {/* Top bar - title area */}
+      <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
+        {/* Bottom info section */}
+        <View style={{ position: "absolute", bottom: 100, left: 20, right: 80 }}>
+          {/* Location */}
+          <SkeletonBlock style={{ height: 14, width: "45%", marginBottom: 10 }} />
+          {/* Title */}
+          <SkeletonBlock style={{ height: 22, width: "80%", marginBottom: 8 }} />
+          <SkeletonBlock style={{ height: 22, width: "60%", marginBottom: 14 }} />
+          {/* Price */}
+          <SkeletonBlock style={{ height: 18, width: "35%" }} />
+        </View>
+
+        {/* Right action buttons - top right like real component */}
+        <View style={{ position: "absolute", top: 60, right: 4, alignItems: "center", paddingVertical: 24 }}>
+          {/* More button */}
+          <SkeletonBlock style={{ width: 50, height: 50, borderRadius: 25, marginBottom: 16 }} />
+          {/* Detail items */}
+          {[0, 1, 2, 3].map((i) => (
+            <View key={i} style={{ alignItems: "center", marginBottom: 12 }}>
+              <SkeletonBlock style={{ width: 22, height: 22, borderRadius: 4 }} />
+              <SkeletonBlock style={{ width: 36, height: 10, marginTop: 8 }} />
+            </View>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+});
+
 // Main ExploreScreen Component with PagerView
 const ExploreScreen = ({ navigation }) => {
   const insets = useSafeAreaInsets();
@@ -458,23 +525,7 @@ const ExploreScreen = ({ navigation }) => {
 
   // Loading state
   if (feedLoading || !currentUser?.id) {
-    return (
-      <View style={{ flex: 1, backgroundColor: "black" }}>
-        <StatusBar
-          barStyle="light-content"
-          translucent
-          backgroundColor="transparent"
-        />
-        <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        >
-          <ActivityIndicator size="large" color="#606060c" />
-          <Text style={{ marginTop: 16, fontSize: 18, color: "white" }}>
-            Yükleniyor...
-          </Text>
-        </View>
-      </View>
-    );
+    return <ExploreSkeleton />;
   }
 
   // Empty state

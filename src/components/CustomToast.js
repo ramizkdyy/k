@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Dimensions } from "react-native";
 import { Image } from "expo-image";
-import { BlurView } from "expo-blur";
+import PlatformBlurView from "./PlatformBlurView";
 import { X } from "lucide-react-native";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -14,7 +14,7 @@ const CustomToast = ({ text1, text2, hide, onPress, props }) => {
 
   return (
     <View className="w-full items-center" style={{ paddingHorizontal: "2%" }}>
-      <BlurView
+      <PlatformBlurView
         intensity={80}
         tint="regular"
         style={{
@@ -106,7 +106,7 @@ const CustomToast = ({ text1, text2, hide, onPress, props }) => {
             <X size={16} color="#000" />
           </TouchableOpacity>
         </TouchableOpacity>
-      </BlurView>
+      </PlatformBlurView>
     </View>
   );
 };

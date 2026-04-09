@@ -43,7 +43,7 @@ import {
   House,
   Heart,
 } from "lucide-react-native";
-import { BlurView } from "expo-blur";
+import PlatformBlurView from "../components/PlatformBlurView";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect } from "@react-navigation/native";
 
@@ -584,7 +584,7 @@ const PropertyImageSlider = memo(
 
         {/* Distance badge */}
         {hasDistance && (
-          <BlurView
+          <PlatformBlurView
             style={{ boxShadow: "0px 0px 12px #00000012" }}
             intensity={50}
             tint="dark"
@@ -596,12 +596,12 @@ const PropertyImageSlider = memo(
                 {distance.toFixed(1)} km
               </Text>
             </View>
-          </BlurView>
+          </PlatformBlurView>
         )}
 
         {/* Status badge */}
         <View className="absolute top-3 right-3">
-          <BlurView
+          <PlatformBlurView
             intensity={50}
             tint="dark"
             style={{ overflow: "hidden", borderRadius: 100 }}
@@ -610,7 +610,7 @@ const PropertyImageSlider = memo(
             <Text className="text-white text-xs font-semibold">
               {statusText}
             </Text>
-          </BlurView>
+          </PlatformBlurView>
         </View>
 
         {/* Pagination dots */}
@@ -1010,27 +1010,33 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
 
   // ✅ OPTIMIZED: Update properties with better deduplication
   useEffect(() => {
-    if (nearbyData?.data) {
-      const newProperties = nearbyData.data;
-      const pagination = nearbyData.pagination;
+    // 🔍 Case 1: nearbyData is available
+    if (nearbyData) {
+      // API may return data directly or wrapped in result
+      const newProperties = nearbyData.result?.data || nearbyData.data;
+      const pagination = nearbyData.result?.pagination || nearbyData.pagination;
 
-      if (currentPage === 1) {
-        setAllProperties(newProperties);
-        setIsFilterChanging(false);
-        setHasInitialDataLoaded(true); // ✅ Mark initial data as loaded
-      } else {
-        setAllProperties((prev) => {
-          const existingIds = new Set(prev.map((item) => item.postId));
-          const uniqueNewItems = newProperties.filter(
-            (item) => !existingIds.has(item.postId)
-          );
-          return [...prev, ...uniqueNewItems];
-        });
+      if (newProperties) {
+        if (currentPage === 1) {
+          setAllProperties(newProperties);
+          setIsFilterChanging(false);
+          setHasInitialDataLoaded(true); // ✅ NEW: First data set is here
+        } else {
+          setAllProperties((prev) => {
+            const existingIds = new Set(prev.map((item) => item.postId));
+            const uniqueNewItems = newProperties.filter(
+              (item) => !existingIds.has(item.postId)
+            );
+            return [...prev, ...uniqueNewItems];
+          });
+        }
+        setHasNextPage(pagination?.hasNextPage || false);
+      } else if (nearbyData.isSuccess || (currentPage === 1 && !isLoadingNearby)) {
+        // If query succeeded but no data field was found, or it's empty
+        setHasInitialDataLoaded(true);
       }
-
-      setHasNextPage(pagination?.hasNextPage || false);
     }
-  }, [nearbyData, currentPage]);
+  }, [nearbyData, currentPage, isLoadingNearby]);
 
   // ✅ OPTIMIZED: Memoized filtered properties with better search
   const filteredProperties = useMemo(() => {
@@ -1152,8 +1158,16 @@ const AllNearbyPropertiesScreen = ({ navigation, route }) => {
       !isFilterChanging &&
       hasInitialDataLoaded;
 
-    if (!hasNoData || !isLoadingComplete) {
-      return null; // Henüz loading bitmemiş veya veri var
+    if (isAnyLoading || !isLoadingComplete) {
+      return (
+        <View className="p-4">
+          <PropertyListLoadingSkeleton count={3} />
+        </View>
+      );
+    }
+
+    if (!hasNoData) {
+      return null;
     }
 
     return (

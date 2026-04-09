@@ -5,7 +5,6 @@ import {
     Text,
     ScrollView,
     TouchableOpacity,
-    ActivityIndicator,
     RefreshControl,
     Alert,
     Dimensions,
@@ -13,6 +12,12 @@ import {
     Animated,
     StatusBar as RNStatusBar,
 } from "react-native";
+import Reanimated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withRepeat,
+    withTiming,
+} from "react-native-reanimated";
 import { StatusBar } from "expo-status-bar";
 import { useSelector } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
@@ -23,13 +28,76 @@ import {
 } from "../redux/api/apiSlice";
 import { ChevronLeft, Heart, Search } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
+import PlatformBlurView from "../components/PlatformBlurView";
 
 // ✅ Component import'ları
 import FavoriteLandlordCard from "../components/FavoriteLandlordCard";
 import FavoriteTenantCard from "../components/FavoriteTenantCard";
 
 const { width: screenWidth } = Dimensions.get("window");
+
+const SkeletonBox = ({ width, height, borderRadius = 8, style }) => {
+    const opacity = useSharedValue(1);
+    React.useEffect(() => {
+        opacity.value = withRepeat(withTiming(0.4, { duration: 800 }), -1, true);
+    }, []);
+    const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+    return (
+        <Reanimated.View
+            style={[{ width, height, borderRadius, backgroundColor: "#e5e7eb" }, animStyle, style]}
+        />
+    );
+};
+
+const FavoriteProfileCardSkeleton = () => (
+    <View style={{ marginHorizontal: 10 }} className="mb-4 pt-4">
+        <View
+            className="bg-white p-6"
+            style={{
+                borderRadius: 30,
+                borderWidth: 0.5,
+                borderColor: "#e5e7eb",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                elevation: 4,
+            }}
+        >
+            {/* Avatar + isim merkezi */}
+            <View className="items-center mb-4">
+                <SkeletonBox width={80} height={80} borderRadius={40} />
+                <SkeletonBox width={140} height={18} borderRadius={6} style={{ marginTop: 12 }} />
+                <SkeletonBox width={70} height={14} borderRadius={10} style={{ marginTop: 8 }} />
+                {/* Yıldızlar */}
+                <SkeletonBox width={100} height={12} borderRadius={6} style={{ marginTop: 10 }} />
+                {/* Match bar */}
+                <SkeletonBox width={screenWidth * 0.5} height={6} borderRadius={3} style={{ marginTop: 12 }} />
+                <View className="flex-row justify-between w-full" style={{ width: screenWidth * 0.5, marginTop: 4 }}>
+                    <SkeletonBox width={80} height={10} borderRadius={4} />
+                    <SkeletonBox width={30} height={10} borderRadius={4} />
+                </View>
+            </View>
+
+            {/* Detay satırları */}
+            {[0, 1, 2, 3].map((i) => (
+                <View key={i} className="flex-row justify-between items-center mb-3">
+                    <SkeletonBox width={90} height={13} borderRadius={4} />
+                    <SkeletonBox width={70} height={13} borderRadius={4} />
+                </View>
+            ))}
+
+            {/* Açıklama */}
+            <SkeletonBox width="100%" height={48} borderRadius={12} style={{ marginBottom: 16, marginTop: 4 }} />
+
+            {/* Butonlar */}
+            <View className="flex-row gap-3">
+                <SkeletonBox height={52} borderRadius={26} style={{ flex: 1 }} />
+                <SkeletonBox height={52} borderRadius={26} style={{ flex: 1 }} />
+            </View>
+        </View>
+    </View>
+);
 
 const FavoriteProfilesScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
@@ -236,7 +304,7 @@ const FavoriteProfilesScreen = ({ navigation }) => {
                 }}
             >
                 {/* BlurView Background */}
-                <BlurView
+                <PlatformBlurView
                     intensity={80}
                     tint="light"
                     style={{
@@ -299,7 +367,7 @@ const FavoriteProfilesScreen = ({ navigation }) => {
                             marginRight: searchBarMarginRight,
                         }}
                     >
-                        <BlurView
+                        <PlatformBlurView
                             intensity={60}
                             tint="light"
                             style={{
@@ -334,7 +402,7 @@ const FavoriteProfilesScreen = ({ navigation }) => {
                                     onChangeText={setSearchQuery}
                                 />
                             </View>
-                        </BlurView>
+                        </PlatformBlurView>
                     </Animated.View>
                 </View>
 
@@ -347,7 +415,7 @@ const FavoriteProfilesScreen = ({ navigation }) => {
                         zIndex: 20,
                     }}
                 >
-                    <BlurView
+                    <PlatformBlurView
                         intensity={60}
                         tint="light"
                         style={{
@@ -376,7 +444,7 @@ const FavoriteProfilesScreen = ({ navigation }) => {
                                 {favoriteProfiles.length}
                             </Text>
                         </View>
-                    </BlurView>
+                    </PlatformBlurView>
                 </View>
             </Animated.View>
         );
@@ -384,9 +452,20 @@ const FavoriteProfilesScreen = ({ navigation }) => {
 
     if (profileLoading) {
         return (
-            <View className="flex-1 justify-center items-center bg-white">
-                <ActivityIndicator size="large" color="#6b7280" />
-                <Text className="mt-3 text-base text-gray-500">Yükleniyor...</Text>
+            <View className="flex-1 bg-gray-50">
+                <RNStatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+                {renderAnimatedHeader()}
+                <ScrollView
+                    contentContainerStyle={{
+                        paddingTop: getDynamicPaddingTop(),
+                        paddingHorizontal: 0,
+                        paddingBottom: 30,
+                    }}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <FavoriteProfileCardSkeleton />
+                    <FavoriteProfileCardSkeleton />
+                </ScrollView>
             </View>
         );
     }

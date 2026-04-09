@@ -77,7 +77,7 @@ import {
   ExternalLink
 } from "lucide-react-native";
 import MapView, { Marker } from "react-native-maps";
-import { BlurView } from "expo-blur";
+import PlatformBlurView from "../components/PlatformBlurView";
 import * as Location from "expo-location";
 
 const { height: SCREEN_HEIGHT, width } = Dimensions.get("window");
@@ -667,7 +667,7 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
             </MapView>
 
             {/* Bottom Action Bar */}
-            <BlurView
+            <PlatformBlurView
               intensity={70}
               tint="light"
               style={{
@@ -731,7 +731,7 @@ const ExploreDetailModal = ({ visible, onClose, listing }) => {
                   </Text>
                 </TouchableOpacity>
               </View>
-            </BlurView>
+            </PlatformBlurView>
           </View>
         </Modal>
       </View>

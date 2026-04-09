@@ -31,7 +31,7 @@ import { ChevronLeft, ChevronDown, Check, X, MapPin } from "lucide-react-native"
 
 import LocationPicker from "../components/LocationPicker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
+import PlatformBlurView from "../components/PlatformBlurView";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -214,7 +214,10 @@ const CustomTextInput = ({
     <Text style={{ fontSize: 14 }} className="font-semibold text-gray-900 mb-3">
       {label} {required && <Text className="text-red-500">*</Text>}
     </Text>
-    <View className="border border-gray-900 rounded-xl px-4 py-4">
+    <View
+      className="border border-gray-900 rounded-xl px-4"
+      style={{ paddingVertical: Platform.OS === "ios" ? 16 : 10 }}
+    >
       <TextInput
         className="text-gray-900 text-base"
         placeholder={placeholder}
@@ -1114,7 +1117,7 @@ const CreatePostScreen = ({ navigation, route }) => {
 
                     {/* Silme butonu */}
                     <View className="absolute top-1 right-1">
-                      <BlurView
+                      <PlatformBlurView
                         intensity={50}
                         tint="dark"
                         className="overflow-hidden rounded-full"
@@ -1125,7 +1128,7 @@ const CreatePostScreen = ({ navigation, route }) => {
                         >
                           <X color="white" />
                         </TouchableOpacity>
-                      </BlurView>
+                      </PlatformBlurView>
                     </View>
                   </View>
                 ))}

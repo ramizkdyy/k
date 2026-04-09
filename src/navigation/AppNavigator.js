@@ -52,7 +52,7 @@ import ExploreScreen from "../screens/ExploreScreen";
 import FavoritePropertiesScreen from "../screens/FavoritePropertiesScreen";
 import FavoriteProfilesScreen from "../screens/FavoriteProfilesScreen";
 // Import icons
-import { BlurView } from "expo-blur";
+import PlatformBlurView from "../components/PlatformBlurView";
 import {
   Home,
   Building2,

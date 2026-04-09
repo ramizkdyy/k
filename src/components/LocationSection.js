@@ -12,7 +12,7 @@ import {
 import MapView, { Marker } from "react-native-maps";
 import { ExternalLink, MapPin, X } from "lucide-react-native";
 import * as Location from "expo-location";
-import { BlurView } from "expo-blur";
+import PlatformBlurView from "./PlatformBlurView";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -366,7 +366,7 @@ const LocationSection = ({ post }) => {
               zIndex: 10,
             }}
           >
-            <BlurView
+            <PlatformBlurView
               intensity={50}
               tint="dark"
               className="px-4 py-1.5 rounded-full overflow-hidden"
@@ -374,9 +374,9 @@ const LocationSection = ({ post }) => {
               <Text style={{ fontSize: 14, color: "#dee0ea", marginTop: 2 }}>
                 {post.mahalle}, {post.ilce}, {post.il}
               </Text>
-            </BlurView>
+            </PlatformBlurView>
             <TouchableOpacity onPress={() => setIsModalVisible(false)}>
-              <BlurView
+              <PlatformBlurView
                 intensity={50}
                 tint="dark"
                 className="overflow-hidden"
@@ -387,7 +387,7 @@ const LocationSection = ({ post }) => {
               >
                 {" "}
                 <X size={20} color="#dee0ea" />
-              </BlurView>
+              </PlatformBlurView>
             </TouchableOpacity>
           </View>
 
@@ -440,7 +440,7 @@ const LocationSection = ({ post }) => {
                 showMapOptions();
               }}
             >
-              <BlurView
+              <PlatformBlurView
                 intensity={50}
                 tint="dark"
                 className="flex flex-row px-5 py-3 overflow-hidden rounded-full items-center bg-black bg-opacity-50"
@@ -460,7 +460,7 @@ const LocationSection = ({ post }) => {
                     ? `Yol tarifi al (~${formatTravelTime(travelTime)})`
                     : "Yol tarifi al"}
                 </Text>
-              </BlurView>
+              </PlatformBlurView>
             </TouchableOpacity>
           </View>
         </View>

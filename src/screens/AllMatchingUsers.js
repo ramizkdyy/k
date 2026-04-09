@@ -5,7 +5,6 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
-  ActivityIndicator,
   Alert,
   SafeAreaView,
   Dimensions,
@@ -44,7 +43,7 @@ import {
   Home,
   X,
 } from "lucide-react-native";
-import { BlurView } from "expo-blur";
+import PlatformBlurView from "../components/PlatformBlurView";
 import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -1027,16 +1026,28 @@ const AllMatchingUsers = ({ navigation, route }) => {
 
   // Show loading state
   if (isLoading && currentPage === 1 && !isFilterChanging) {
-    const loadingText = isLandlord
-      ? "Uygun kiracılar yükleniyor..."
-      : "Uygun ev sahipleri yükleniyor...";
-
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#303030" />
-          <Text className="text-gray-600 mt-4 text-center">{loadingText}</Text>
+        <View className="bg-white border-b border-gray-200 z-10">
+          <View className="flex flex-row items-center px-5">
+            <TouchableOpacity onPress={goBack} style={{ width: "8%" }}>
+              <ChevronLeft color="black" size={25} />
+            </TouchableOpacity>
+            <View className="px-4 py-4" style={{ flex: 1 }}>
+              <View
+                style={{ boxShadow: "0px 0px 12px #00000014" }}
+                className="bg-white rounded-3xl gap-2 px-4 flex-row items-center"
+              >
+                <TextInput
+                  className="w-full px-2 placeholder:text-gray-400 placeholder:text-[14px] py-4 text-normal"
+                  placeholder={isLandlord ? "Size uygun kiracılar" : "Size uygun ev sahipleri"}
+                  editable={false}
+                />
+              </View>
+            </View>
+          </View>
         </View>
+        <UserListLoadingSkeleton count={4} />
       </SafeAreaView>
     );
   }
