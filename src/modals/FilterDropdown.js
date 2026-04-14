@@ -339,7 +339,7 @@ const FilterDropdown = ({
             </Text>
 
             <TouchableOpacity
-                className={`border rounded-xl px-4 py-4 flex-row justify-between items-center ${disabled ? 'bg-gray-100 border-gray-200' : 'bg-white border-gray-900'
+                className={`border rounded-xl px-4 py-4 flex-row justify-between items-center ${disabled ? 'bg-gray-100 border-gray-200' : 'bg-white border-gray-400'
                     }`}
                 onPress={() => !disabled && setIsOpen(true)}
                 disabled={disabled}
@@ -397,7 +397,7 @@ const FilterDropdown = ({
                             {/* Search Bar */}
                             {searchable && (
                                 <View className="px-4 py-3 bg-white border-b border-gray-100">
-                                    <View className="flex-row items-center border bg-white border-gray-900 rounded-xl px-4 py-2">
+                                    <View className="flex-row items-center border bg-white border-gray-400 rounded-xl px-4 py-2">
                                         <Search
                                             size={16}
                                             color="#111827"

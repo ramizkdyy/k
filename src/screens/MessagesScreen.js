@@ -16,11 +16,9 @@ import { ArrowLeft, Search, Circle, Wifi, WifiOff, Edit } from "lucide-react-nat
 import { StatusBar } from "expo-status-bar";
 import {
   useGetChatPartnersQuery,
-  useGetUnreadCountQuery,
   useLazySearchChatPartnersQuery,
-  useGetUnreadCountForChatQuery,
-  chatApiHelpers,
 } from "../redux/api/chatApiSlice";
+import { selectTotalUnreadMessages } from "../redux/slices/chatSlice";
 import { useSignalR } from "../contexts/SignalRContext";
 import { useNotification } from "../contexts/NotificationContext";
 import { useSelector, useDispatch } from "react-redux";
@@ -52,29 +50,6 @@ const MessagesScreen = ({ navigation }) => {
     },
   });
 
-  const {
-    data: unreadData,
-    isLoading: unreadLoading,
-    error: unreadError,
-    refetch: refetchUnread,
-  } = useGetUnreadCountQuery(undefined, {
-    refetchOnFocus: true,
-    refetchOnMountOrArgChange: true,
-    onError: (error) => {
-    },
-  });
-
-  const {
-    data: unreadEachChatData,
-    isLoading: unreadEachChatLoading,
-    error: unreadEachChatError,
-    refetch: refetchEachChat,
-  } = useGetUnreadCountForChatQuery(undefined, {
-    refetchOnFocus: true,
-    refetchOnMountOrArgChange: true,
-    onError: (error) => {
-    },
-  });
 
   // ✅ Search functionality
   const [
@@ -107,35 +82,8 @@ const MessagesScreen = ({ navigation }) => {
   }, [chatPartnersResponse]);
 
   // ✅ Unread count handling with backend format compatibility
-  const totalUnreadCount = React.useMemo(() => {
-
-    if (typeof unreadData === "number") {
-      return unreadData;
-    }
-
-    if (unreadData?.count !== undefined) {
-      return Number(unreadData.count);
-    }
-
-    if (unreadData?.result?.count !== undefined) {
-      return Number(unreadData.result.count);
-    }
-
-    if (unreadData?.data?.count !== undefined) {
-      return Number(unreadData.data.count);
-    }
-
-    if (typeof unreadData === "object" && unreadData !== null) {
-      const numericValue = Object.values(unreadData).find(
-        (val) => typeof val === "number"
-      );
-      if (numericValue !== undefined) {
-        return numericValue;
-      }
-    }
-
-    return 0;
-  }, [unreadData]);
+  // Unread count — chatSlice'tan okunur, poll yok
+  const totalUnreadCount = useSelector(selectTotalUnreadMessages);
 
   // ✅ Search handling
   const handleSearch = useCallback(
@@ -195,34 +143,28 @@ const MessagesScreen = ({ navigation }) => {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, handleSearch]);
 
-  // Focus effect - Sadece refetch yapıyoruz, SignalR listener'lar global olarak yönetiliyor
+  // Focus effect - partner listesini yenile; unread count SignalR'dan otomatik gelir
   useFocusEffect(
     useCallback(() => {
       refetchPartners();
-      refetchUnread();
-    }, [refetchPartners, refetchUnread])
+    }, [refetchPartners])
   );
 
   // ✅ REMOVED: SignalR message listeners - Artık global olarak yönetiliyorlar
   // Global SignalR handler'lar SignalRContext'te aktif olduğu için burada listener'lara gerek yok
 
-  // ✅ Refresh handler with better error handling
   const onRefresh = useCallback(() => {
-
-    Promise.all([refetchPartners(), refetchUnread()])
-      .then(() => {
-      })
-      .catch((error) => {
-        Alert.alert(
-          "Refresh Failed",
-          "Unable to refresh chat data. Please check your connection and try again.",
-          [
-            { text: "OK", style: "default" },
-            { text: "Retry", onPress: onRefresh, style: "default" },
-          ]
-        );
-      });
-  }, [refetchPartners, refetchUnread]);
+    refetchPartners().catch(() => {
+      Alert.alert(
+        "Refresh Failed",
+        "Unable to refresh chat data. Please check your connection and try again.",
+        [
+          { text: "OK", style: "default" },
+          { text: "Retry", onPress: onRefresh, style: "default" },
+        ]
+      );
+    });
+  }, [refetchPartners]);
 
   // ✅ Helper functions with backend field names compatibility
   const getPartnerId = (partner) => {
@@ -623,7 +565,7 @@ const MessagesScreen = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={partnersLoading || unreadLoading}
+            refreshing={partnersLoading}
             onRefresh={onRefresh}
             colors={["#303030"]}
             tintColor="#303030"

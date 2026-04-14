@@ -1,6 +1,6 @@
 // src/redux/slices/searchSlice.js
 import { createSlice } from "@reduxjs/toolkit";
-import { apiSlice } from "../api/apiSlice";
+
 import { searchApiSlice } from "../api/searchApiSlice";
 
 
@@ -214,47 +214,6 @@ const searchSlice = createSlice({
 
         builder.addMatcher(
             searchApiSlice.endpoints.searchPosts.matchRejected,
-            (state, { payload }) => {
-                state.isLoading = false;
-                state.error = payload?.data?.message || "Arama sırasında hata oluştu";
-            }
-        );
-        // Handle search API responses
-        builder.addMatcher(
-            apiSlice.endpoints.searchPosts?.matchPending,
-            (state) => {
-                state.isLoading = true;
-                state.error = null;
-            }
-        );
-
-        builder.addMatcher(
-            apiSlice.endpoints.searchPosts?.matchFulfilled,
-            (state, { payload, meta }) => {
-                state.isLoading = false;
-
-                if (payload && payload.isSuccess) {
-                    const { result } = payload;
-                    const isFirstPage = meta.arg.originalArgs?.page === 1;
-
-                    if (isFirstPage) {
-                        // First page - replace results
-                        state.searchResults = result.data || [];
-                    } else {
-                        // Subsequent pages - append results
-                        state.searchResults = [...state.searchResults, ...(result.data || [])];
-                    }
-
-                    // Update pagination info
-                    state.totalResults = result.totalCount || 0;
-                    state.totalPages = result.totalPages || 0;
-                    state.hasNextPage = result.hasNextPage || false;
-                }
-            }
-        );
-
-        builder.addMatcher(
-            apiSlice.endpoints.searchPosts?.matchRejected,
             (state, { payload }) => {
                 state.isLoading = false;
                 state.error = payload?.data?.message || "Arama sırasında hata oluştu";

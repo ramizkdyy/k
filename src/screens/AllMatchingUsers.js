@@ -6,11 +6,12 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  SafeAreaView,
   Dimensions,
   ScrollView,
   Animated,
+  RefreshControl,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { useSelector } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
@@ -474,9 +475,16 @@ const TenantItem = ({ item, navigation }) => {
               }
             }}
             activeOpacity={1}
-            className="py-3 mt-4 border border-black rounded-full"
+            style={{ borderRadius: 999, overflow: 'hidden', marginTop: 16 }}
           >
-            <Text className="text-center font-medium">Göz at</Text>
+            <LinearGradient
+              colors={['#0C9870', '#0A6650']}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={{ paddingVertical: 12 }}
+            >
+              <Text className="text-center font-medium text-white">Göz at</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -663,9 +671,16 @@ const LandlordItem = ({ item, navigation }) => {
           <TouchableOpacity
             onPress={handleLandlordPress}
             activeOpacity={1}
-            className="py-3 mt-4 border border-black rounded-full"
+            style={{ borderRadius: 999, overflow: 'hidden', marginTop: 16 }}
           >
-            <Text className="text-center font-medium">Göz at</Text>
+            <LinearGradient
+              colors={['#0C9870', '#0A6650']}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={{ paddingVertical: 12 }}
+            >
+              <Text className="text-center font-medium text-white">Göz at</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -904,17 +919,19 @@ const AllMatchingUsers = ({ navigation, route }) => {
 
   const filteredUsers = getFilteredAndSortedUsers();
 
+  // Sync refreshing with isFetching after refetch is triggered
+  useEffect(() => {
+    if (!isFetching && refreshing) {
+      setRefreshing(false);
+    }
+  }, [isFetching, refreshing]);
+
   // Handlers
-  const onRefresh = useCallback(async () => {
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
     setCurrentPage(1);
     setIsFilterChanging(false);
-    try {
-      await refetch();
-    } catch (error) {
-    } finally {
-      setRefreshing(false);
-    }
+    refetch();
   }, [refetch]);
 
   const handleLoadMore = useCallback(() => {
@@ -1027,7 +1044,7 @@ const AllMatchingUsers = ({ navigation, route }) => {
   // Show loading state
   if (isLoading && currentPage === 1 && !isFilterChanging) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView edges={['top']} className="flex-1 bg-white">
         <View className="bg-white border-b border-gray-200 z-10">
           <View className="flex flex-row items-center px-5">
             <TouchableOpacity onPress={goBack} style={{ width: "8%" }}>
@@ -1059,7 +1076,7 @@ const AllMatchingUsers = ({ navigation, route }) => {
       : "Uygun ev sahipleri yüklenirken bir sorun oluştu.";
 
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView edges={['top']} className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center p-8">
           <CircleAlert size={50} color="black" />
           <Text className="text-xl font-semibold text-gray-900 mt-2 mb-2 text-center">
@@ -1069,10 +1086,11 @@ const AllMatchingUsers = ({ navigation, route }) => {
             {errorTitle}
           </Text>
           <TouchableOpacity
-            className="border border-gray-900 px-6 py-3 rounded-full"
+            className="border px-6 py-3 rounded-full"
+            style={{ borderColor: '#015941' }}
             onPress={onRefresh}
           >
-            <Text className="text-gray-900 font-medium">Tekrar Dene</Text>
+            <Text className="font-medium" style={{ color: '#015941' }}>Tekrar Dene</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -1110,7 +1128,7 @@ const AllMatchingUsers = ({ navigation, route }) => {
     ];
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView edges={['top']} className="flex-1 bg-white">
       {/* Fixed search bar */}
       <View className="bg-white border-b border-gray-200 z-10">
         <View className="flex flex-row items-center px-5">
@@ -1172,9 +1190,9 @@ const AllMatchingUsers = ({ navigation, route }) => {
               {sortOptions.map((option) => (
                 <TouchableOpacity
                   key={option.key}
-                  className={`mr-3 px-4 py-2 rounded-full border ${sortBy === option.key
-                    ? "bg-gray-900"
-                    : "bg-white border-white"
+                  className={`mr-3 px-4 py-2 rounded-full ${sortBy === option.key
+                    ? "bg-green-brand-darker"
+                    : "bg-white border border-gray-400"
                     }`}
                   onPress={() => handleSortChange(option.key)}
                 >
@@ -1202,6 +1220,15 @@ const AllMatchingUsers = ({ navigation, route }) => {
         ListFooterComponent={renderLoadingFooter}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.1}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#303030"]}
+            tintColor="#303030"
+            progressViewOffset={10}
+          />
+        }
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: false }

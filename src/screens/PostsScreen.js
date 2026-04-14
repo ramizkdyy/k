@@ -20,6 +20,7 @@ import {
   Animated,
   Dimensions,
   Modal,
+  Platform,
 } from "react-native";
 import { Image } from "expo-image";
 import { useSelector, useDispatch } from "react-redux";
@@ -36,6 +37,7 @@ import {
   useDeletePostMutation,
 } from "../redux/api/apiSlice";
 import { useFocusEffect } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons } from "@expo/vector-icons";
 import {
   Search,
@@ -320,35 +322,35 @@ const LandlordActionsModal = React.memo(
 // Property Details Slider Component (AllNearbyPropertiesScreen'den)
 const PropertyDetailsSlider = React.memo(({ item }) => {
   const propertyDetails = [
-    { id: "rooms", icon: BedDouble, value: item.odaSayisi || "Belirtilmemiş", label: "Oda" },
+    { id: "rooms", icon: BedDouble, value: item.odaSayisi || "-", label: "Oda" },
     {
       id: "bedrooms",
       icon: BedSingle,
-      value: item.yatakOdasiSayisi || "Belirtilmemiş",
+      value: item.yatakOdasiSayisi || "-",
       label: "Y.Odası",
     },
     {
       id: "bathrooms",
       icon: Bath,
-      value: item.banyoSayisi || "Belirtilmemiş",
+      value: item.banyoSayisi || "-",
       label: "Banyo",
     },
     {
       id: "area",
       icon: Ruler,
-      value: item.brutMetreKare ? `${item.brutMetreKare} m²` : "Belirtilmemiş",
+      value: item.brutMetreKare ? `${item.brutMetreKare} m²` : "-",
       label: "Alan",
     },
     {
       id: "floor",
       icon: Building2,
-      value: item.bulunduguKat || "Belirtilmemiş",
+      value: item.bulunduguKat || "-",
       label: "Kat",
     },
     {
       id: "age",
       icon: Calendar,
-      value: item.binaYasi ? `${item.binaYasi}` : "Belirtilmemiş",
+      value: item.binaYasi ? `${item.binaYasi}` : "-",
       label: "Bina yaşı",
     },
     {
@@ -1030,20 +1032,18 @@ const PostsScreen = ({ navigation }) => {
     useCallback(() => {
       Logger.info(COMPONENT_NAME, "Screen focused", { userRole });
 
-      setCurrentPage(1);
-      setHasNextPage(true);
-
       if (!hasActiveFilters) {
-        setAllPostsData([]);
-        setFilterMetadata(null);
-
         if (userRole === "EVSAHIBI") {
+          // Landlord: her zaman taze tut (ilan ekleyip/silebilirler)
           refetchLandlordListings();
-        } else {
+        } else if (allPostsData.length === 0) {
+          // Tenant: sadece hiç data yoksa fetch yap (back navigation'da gereksiz yeniden yüklemeyi engeller)
+          setCurrentPage(1);
+          setHasNextPage(true);
           refetchAllPosts();
         }
       }
-    }, [userRole, hasActiveFilters, refetchLandlordListings, refetchAllPosts])
+    }, [userRole, hasActiveFilters, allPostsData.length, refetchLandlordListings, refetchAllPosts])
   );
 
   const handleSortChange = useCallback(
@@ -1449,7 +1449,7 @@ const PostsScreen = ({ navigation }) => {
                       });
                     }}
                   >
-                    <View className="w-12 h-12 rounded-full justify-center items-center mr-3 border-gray-900 border">
+                    <View className="w-12 h-12 rounded-full justify-center items-center mr-3 border" style={{ borderColor: '#015941' }}>
                       {item.user?.profilePictureUrl ? (
                         <ImageWithFallback
                           source={{ uri: item.user.profilePictureUrl }}
@@ -1682,11 +1682,17 @@ const PostsScreen = ({ navigation }) => {
         </Text>
         {userRole === "EVSAHIBI" && (
           <TouchableOpacity
-            style={{ marginTop: 10 }}
-            className="bg-gray-900 px-6 py-3 rounded-full "
+            style={{ marginTop: 10, borderRadius: 999, overflow: 'hidden' }}
             onPress={handleCreatePostNavigation}
           >
-            <Text className="text-white font-semibold">Yeni ilan oluştur</Text>
+            <LinearGradient
+              colors={['#0C9870', '#015941']}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={{ paddingHorizontal: 24, paddingVertical: 12 }}
+            >
+              <Text className="text-white font-semibold">Yeni ilan oluştur</Text>
+            </LinearGradient>
           </TouchableOpacity>
         )}
       </View>
@@ -1713,7 +1719,7 @@ const PostsScreen = ({ navigation }) => {
   const renderAnimatedHeader = () => {
     const headerContainerHeight = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
-      outputRange: [insets.top + 40 + 50 + 40 + 12, insets.top + 50 + 40 + 6],
+      outputRange: [insets.top + 40 + 50 + 12, insets.top + 50 + 6],
       extrapolate: "clamp",
     });
 
@@ -1754,6 +1760,7 @@ const PostsScreen = ({ navigation }) => {
         <PlatformBlurView
           intensity={80}
           tint="light"
+          androidColor="rgba(255, 255, 255, 0.95)"
           style={{
             position: "absolute",
             top: 0,
@@ -1763,16 +1770,18 @@ const PostsScreen = ({ navigation }) => {
           }}
         />
 
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(255, 255, 255, 0.7)",
-          }}
-        />
+        {Platform.OS === "ios" && (
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(255, 255, 255, 0.7)",
+            }}
+          />
+        )}
 
         <View
           style={{
@@ -1943,7 +1952,7 @@ const PostsScreen = ({ navigation }) => {
   };
 
   const getDynamicPaddingTop = () => {
-    const normalPadding = insets.top + 50 + 60 + 32;
+    const normalPadding = insets.top + 40 + 50 + 12;
     return normalPadding;
   };
 

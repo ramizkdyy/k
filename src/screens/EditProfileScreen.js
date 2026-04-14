@@ -257,7 +257,7 @@ const CustomTextInput = ({
       {label}
     </Text>
     <View
-      className="border border-gray-900 rounded-xl px-4 py-4"
+      className="border border-gray-400 rounded-xl px-4 py-4"
       style={{ height: SCREEN_HEIGHT * 0.2 }}
     >
       <TextInput

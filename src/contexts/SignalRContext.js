@@ -13,11 +13,16 @@ import {
   HubConnectionState,
 } from "@microsoft/signalr";
 import { useSelector, useDispatch } from "react-redux";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import notificationService from "../services/notificationService";
 import { chatApiHelpers } from "../redux/api/chatApiSlice";
+import {
+  setUnreadSummary,
+  incrementUnreadMessages,
+  resetChatState,
+} from "../redux/slices/chatSlice";
 import customNotificationService from "../services/customNotificationService";
 import { AppState } from "react-native";
+import { SIGNALR_URL } from "../constants/api";
 
 const SignalRContext = createContext();
 
@@ -52,7 +57,7 @@ export const SignalRProvider = ({ children }) => {
   const isUserSwitchingRef = useRef(false);
 
   // ✅ Güncel ngrok URL'ini dinamik olarak al veya manuel güncelle
-  const SIGNALR_BASE_URL = "https://chatapi.justkey.online";
+  const SIGNALR_BASE_URL = SIGNALR_URL;
 
   // ✅ UTILITY: Throttle function for preventing spam
   const throttle = (func, limit) => {
@@ -165,7 +170,8 @@ export const SignalRProvider = ({ children }) => {
           // ✅ Cache'e ekle
           chatApiHelpers.addMessageToCache(dispatch, partnerId, messageData);
           chatApiHelpers.updatePartnersList(dispatch);
-          chatApiHelpers.updateUnreadCount(dispatch);
+          // Unread count'u local state'de artır — API isteği atmaz
+          dispatch(incrementUnreadMessages());
 
           // ✅ Notification gönder (sadece alınan mesajlar için)
           const senderName = messageData.SenderName || messageData.senderName;
@@ -246,7 +252,8 @@ export const SignalRProvider = ({ children }) => {
           );
         }
 
-        chatApiHelpers.updateUnreadCount(dispatch);
+        // Okundu bildirimi gelince backend'den taze özet iste; o event UnreadSummaryUpdate
+        // olarak geri döner ve setUnreadSummary ile state'i günceller. API isteği atmaz.
       };
 
       // ✅ Global mesaj hatası handler'ı
@@ -255,17 +262,21 @@ export const SignalRProvider = ({ children }) => {
         const details = errorData.Details || errorData.details;
       };
 
-      // ✅ Global unread count update handler'ı
+      // ✅ Global unread count update handler'ı — backend'den gelen sayıyı direkt kullan
       const handleGlobalUnreadCountUpdate = (updateData) => {
-        chatApiHelpers.updateUnreadCount(dispatch);
-
         const totalUnreadCount =
           updateData.TotalUnreadCount || updateData.totalUnreadCount;
         const totalUnreadChats =
           updateData.TotalUnreadChats || updateData.totalUnreadChats;
-        const fromUserId = updateData.FromUserId || updateData.fromUserId;
 
-
+        if (totalUnreadCount !== undefined || totalUnreadChats !== undefined) {
+          dispatch(
+            setUnreadSummary({
+              totalUnreadMessages: totalUnreadCount,
+              totalUnreadChats: totalUnreadChats,
+            })
+          );
+        }
       };
 
       // ✅ Global partner list update handler'ı
@@ -312,7 +323,8 @@ export const SignalRProvider = ({ children }) => {
 
           chatApiHelpers.addMessageToCache(dispatch, senderId, fullMessageData);
           chatApiHelpers.updatePartnersList(dispatch);
-          chatApiHelpers.updateUnreadCount(dispatch);
+          // Unread count'u local state'de artır — API isteği atmaz
+          dispatch(incrementUnreadMessages());
 
           // ✅ Show notification only if app is in background (Firebase handles foreground)
           if (AppState.currentState !== "active") {
@@ -335,16 +347,21 @@ export const SignalRProvider = ({ children }) => {
         }
       };
 
-      // ✅ Global unread summary update handler'ı
+      // ✅ Global unread summary update handler'ı — backend'den gelen veriyi direkt kullan
       const handleGlobalUnreadSummaryUpdate = (summaryData) => {
-        chatApiHelpers.updateUnreadCount(dispatch);
-
         const totalUnreadMessages =
-          summaryData.TotalUnreadMessages || summaryData.totalUnreadMessages;
+          summaryData.TotalUnreadMessages ?? summaryData.totalUnreadMessages;
         const totalUnreadChats =
-          summaryData.TotalUnreadChats || summaryData.totalUnreadChats;
-        const unreadChats = summaryData.UnreadChats || summaryData.unreadChats;
+          summaryData.TotalUnreadChats ?? summaryData.totalUnreadChats;
 
+        if (totalUnreadMessages !== undefined || totalUnreadChats !== undefined) {
+          dispatch(
+            setUnreadSummary({
+              totalUnreadMessages,
+              totalUnreadChats,
+            })
+          );
+        }
       };
 
       // ✅ FIXED: Global user status handler'ı - Infinite loop prevention
@@ -459,6 +476,7 @@ export const SignalRProvider = ({ children }) => {
           try {
             conn.off(eventName, handler);
           } catch (error) {
+            console.warn("SignalR handler cleanup:", error?.message || error);
           }
         });
         currentHandlersRef.current.clear();
@@ -482,6 +500,7 @@ export const SignalRProvider = ({ children }) => {
         try {
           await connectionRef.current.invoke("Heartbeat");
         } catch (error) {
+          console.warn("SignalR heartbeat:", error?.message || error);
         }
       }
     }, 60000); // ✅ OPTIMIZED: 25s → 60s (battery ve network optimizasyonu)
@@ -522,6 +541,7 @@ export const SignalRProvider = ({ children }) => {
           }
           await connectionRef.current.stop();
         } catch (error) {
+          console.warn("SignalR stop:", error?.message || error);
         }
         connectionRef.current = null;
       }
@@ -568,7 +588,7 @@ export const SignalRProvider = ({ children }) => {
         setConnectionError("Reconnecting...");
       });
 
-      newConnection.onreconnected((connectionId) => {
+      newConnection.onreconnected(async () => {
         setIsConnected(true);
         setConnectionError(null);
         reconnectAttempts.current = 0;
@@ -580,6 +600,13 @@ export const SignalRProvider = ({ children }) => {
 
         // Heartbeat'i yeniden başlat
         startHeartbeat();
+
+        // Reconnect sonrası unread özeti senkronize et (tek bir istek, poll değil)
+        try {
+          await newConnection.invoke("GetUnreadSummary");
+        } catch (e) {
+          console.warn("SignalR GetUnreadSummary (reconnect):", e?.message);
+        }
       });
 
       // Bağlantıyı başlat
@@ -599,6 +626,7 @@ export const SignalRProvider = ({ children }) => {
       try {
         cleanup = setupGlobalMessageHandlers(newConnection);
       } catch (handlerError) {
+        console.warn("SignalR message handlers:", handlerError?.message || handlerError);
       }
 
       // ✅ FIXED: Cleanup function'ı connection'a güvenli şekilde ekle
@@ -613,16 +641,19 @@ export const SignalRProvider = ({ children }) => {
       // ✅ Heartbeat'i başlat
       startHeartbeat();
 
-      // ✅ ENHANCED: İlk bağlantıda unread count'u al
+      // İlk bağlantıda unread özeti al — backend UnreadSummaryUpdate event'i döner,
+      // handler setUnreadSummary dispatch eder. Tek seferlik, poll değil.
       try {
-        await newConnection.invoke("GetUnreadCount");
+        await newConnection.invoke("GetUnreadSummary");
       } catch (unreadError) {
+        console.warn("SignalR GetUnreadSummary:", unreadError?.message || unreadError);
       }
 
       // Test mesajı gönder
       try {
         await newConnection.invoke("TestMethod");
       } catch (testError) {
+        console.warn("SignalR TestMethod:", testError?.message || testError);
       }
 
       return newConnection;
@@ -880,6 +911,7 @@ export const SignalRProvider = ({ children }) => {
 
           // ✅ Cache'i temizle user switch durumunda
           chatApiHelpers.clearChatCache(dispatch);
+          dispatch(resetChatState());
           customNotificationService.clearCache();
           processedMessages.clear();
 

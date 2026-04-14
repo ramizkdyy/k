@@ -13,6 +13,7 @@ import { useGetForYouPageQuery } from "../redux/api/apiSlice";
 import * as Location from "expo-location";
 import { ChevronRight, List, Route, User, Bath, BedDouble, Heart, Home } from "lucide-react-native";
 import PlatformBlurView from "./PlatformBlurView";
+import { LinearGradient } from "expo-linear-gradient";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import { useFypCacheTracker } from "../hooks/useFypCacheTracker";
 
@@ -225,11 +226,22 @@ const MatchScoreBar = React.memo(
   }
 );
 
+const FALLBACK_LOCATION = { latitude: 41.0082, longitude: 28.9784 };
+
+const CURRENCY_SYMBOLS = {
+  1: "₺", TRY: "₺", TL: "₺",
+  2: "$", USD: "$",
+  3: "€", EUR: "€",
+  4: "£", GBP: "£",
+};
+const getCurrencySymbol = (val) => CURRENCY_SYMBOLS[val] || "₺";
+
 const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   // ✅ ULTRA OPTIMIZED: State Management
   const currentUser = useSelector(selectCurrentUser);
   const userRole = useSelector(selectUserRole);
-  const [userLocation, setUserLocation] = useState(null);
+  // Fallback ile başlat — query hemen çalışsın, gerçek konum gelince güncellenir
+  const [userLocation, setUserLocation] = useState(FALLBACK_LOCATION);
   const [locationLoading, setLocationLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dataLoadingStates, setDataLoadingStates] = useState({
@@ -250,16 +262,34 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
         const { status } = await Location.requestForegroundPermissionsAsync();
 
         if (status !== "granted") {
-          if (isMounted) {
-            setUserLocation({ latitude: 41.0082, longitude: 28.9784 });
-            setLocationLoading(false);
-          }
+          // Fallback zaten set, sadece loading'i kapat
+          if (isMounted) setLocationLoading(false);
           return;
         }
 
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
+        // Önce cache'teki son konumu dene — hem iOS hem Android'de anlık
+        const lastKnown = await Location.getLastKnownPositionAsync({
+          maxAge: 5 * 60 * 1000,
         });
+
+        if (lastKnown && isMounted) {
+          setUserLocation({
+            latitude: lastKnown.coords.latitude,
+            longitude: lastKnown.coords.longitude,
+          });
+          setLocationLoading(false);
+          return;
+        }
+
+        // Android'de getCurrentPositionAsync bazen sonsuza kadar askıda kalabiliyor.
+        // 8 saniyelik timeout sonrası fallback (zaten set) ile devam et.
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("location_timeout")), 8000)
+        );
+        const location = await Promise.race([
+          Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+          timeoutPromise,
+        ]);
 
         if (isMounted) {
           setUserLocation({
@@ -268,9 +298,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
           });
         }
       } catch (error) {
-        if (isMounted) {
-          setUserLocation({ latitude: 41.0082, longitude: 28.9784 });
-        }
+        // Fallback zaten set, bir şey yapmaya gerek yok
       } finally {
         if (isMounted) setLocationLoading(false);
       }
@@ -296,7 +324,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
       isCached: getCacheValueForQuery(),
     },
     {
-      skip: !userLocation || !currentUser?.id,
+      skip: !currentUser?.id,
       refetchOnMountOrArgChange: false,
       refetchOnFocus: false,
     }
@@ -487,9 +515,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
                 className="text-gray-500"
               >
                 {item.kiraFiyati || item.rent
-                  ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-                      item.paraBirimi || item.currency || "₺"
-                    }`
+                  ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${getCurrencySymbol(item.paraBirimi || item.currency)}`
                   : "Fiyat belirtilmemiş"}
               </Text>
               <Text className="text-sm text-gray-400 ml-1">/ay</Text>
@@ -554,9 +580,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
             ellipsizeMode="tail"
           >
             {item.kiraFiyati || item.rent
-              ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${
-                  item.paraBirimi || item.currency || "₺"
-                }`
+              ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${getCurrencySymbol(item.paraBirimi || item.currency)}`
               : "Fiyat belirtilmemiş"}
           </Text>
 
@@ -568,21 +592,6 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
               </Text>
             </View>
           )}
-
-          <View className="flex flex-row gap-4 items-center mt-1">
-            <View className="flex flex-row gap-2 items-center">
-              <Bath color="#6B7280" size={12} />
-              <Text style={{ fontSize: 12 }} className="text-gray-500">
-                {item.banyoSayisi || "N/A"} Banyo
-              </Text>
-            </View>
-            <View className="flex flex-row gap-2 items-center">
-              <BedDouble color="#6B7280" size={12} />
-              <Text style={{ fontSize: 12 }} className="text-gray-500">
-                {item.odaSayisi || "N/A"} Yatak odası
-              </Text>
-            </View>
-          </View>
         </View>
       </TouchableOpacity>
     ),
@@ -682,10 +691,17 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
 
           <TouchableOpacity
             onPress={() => handlePersonPress(item)}
-            activeOpacity={1}
-            className="py-3 mt-4 border border-black rounded-full"
+            activeOpacity={0.85}
+            style={{ borderRadius: 999, overflow: 'hidden', marginTop: 16 }}
           >
-            <Text className="text-center font-medium">Göz at</Text>
+            <LinearGradient
+              colors={['#0C9870', '#026B4D']}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={{ paddingVertical: 12 }}
+            >
+              <Text className="text-center font-medium text-white">Göz at</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </TouchableOpacity>
       );
@@ -775,9 +791,6 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
         ...(nearbyData.result.similarPost || []),
         ...(nearbyData.result.bestForYou || []),
       ];
-      console.log("[DEBUG][NearbyProperties] İlk 10 post paraBirimi:",
-        allPosts.slice(0, 10).map(p => ({ postId: p.postId, paraBirimi: p.paraBirimi, kiraFiyati: p.kiraFiyati }))
-      );
     }
   }, [nearbyData]);
 
@@ -793,14 +806,6 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
     !isLoadingNearby || secondSectionData.length > 0;
 
   // ✅ ULTRA OPTIMIZED: Early Returns
-  if (locationLoading) {
-    return (
-      <View className="mb-6">
-        <LoadingSkeleton count={3} />
-      </View>
-    );
-  }
-
   if (error) {
     return (
       <View className="flex flex-col">

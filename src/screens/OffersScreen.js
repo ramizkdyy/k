@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  ActivityIndicator,
   Alert,
   SafeAreaView,
   Platform,
@@ -26,6 +25,7 @@ import {
 import Icon from "react-native-vector-icons/MaterialIcons";
 import PlatformBlurView from "../components/PlatformBlurView";
 import { Mail, AlertCircle, Star } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
@@ -927,27 +927,34 @@ const OffersScreen = () => {
                 {item.status === 0 && (
                   <View className="flex-row gap-3">
                     <TouchableOpacity
-                      className="flex-1 bg-black rounded-2xl justify-center items-center"
+                      className="flex-1 rounded-2xl overflow-hidden"
                       style={{ height: 40 }}
                       onPress={() => handleAcceptOffer(item.offerId)}
                       activeOpacity={0.8}
                     >
-                      <Text
-                        className="text-white text-center font-semibold"
-                        style={{ fontSize: 16, lineHeight: 20 }}
+                      <LinearGradient
+                        colors={['#026B4D', '#0A6650']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
                       >
-                        Kabul Et
-                      </Text>
+                        <Text
+                          className="text-white text-center font-semibold"
+                          style={{ fontSize: 16, lineHeight: 20 }}
+                        >
+                          Kabul Et
+                        </Text>
+                      </LinearGradient>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      className="flex-1 bg-white border-gray-900 border rounded-2xl justify-center items-center"
-                      style={{ height: 40 }}
+                      className="flex-1 bg-white rounded-2xl justify-center items-center border"
+                      style={{ height: 40, borderColor: '#015941' }}
                       onPress={() => handleRejectOffer(item.offerId)}
                       activeOpacity={0.8}
                     >
                       <Text
-                        className="text-gray-900 text-center"
-                        style={{ fontSize: 16, lineHeight: 20 }}
+                        className="text-center"
+                        style={{ fontSize: 16, lineHeight: 20, color: '#015941' }}
                       >
                         Reddet
                       </Text>
@@ -1024,6 +1031,7 @@ const OffersScreen = () => {
         <PlatformBlurView
           intensity={80}
           tint="light"
+          androidColor="rgba(255, 255, 255, 0.95)"
           style={{
             position: "absolute",
             top: 0,
@@ -1033,17 +1041,19 @@ const OffersScreen = () => {
           }}
         />
 
-        {/* Semi-transparent overlay */}
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(255, 255, 255, 0.7)",
-          }}
-        />
+        {/* Semi-transparent overlay — only on iOS; Android PlatformBlurView fallback is already opaque enough */}
+        {Platform.OS === "ios" && (
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(255, 255, 255, 0.7)",
+            }}
+          />
+        )}
 
         {/* Content Container */}
         <View
@@ -1146,11 +1156,44 @@ const OffersScreen = () => {
     </View>
   );
 
+  const OfferSkeletonCard = () => {
+    const shimmer = useRef(new Animated.Value(0)).current;
+    useEffect(() => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(shimmer, { toValue: 1, duration: 900, useNativeDriver: true }),
+          Animated.timing(shimmer, { toValue: 0, duration: 900, useNativeDriver: true }),
+        ])
+      ).start();
+    }, []);
+    const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.9] });
+    return (
+      <View className="px-4 mb-4">
+        <Animated.View style={{ opacity, backgroundColor: "#e5e7eb", borderRadius: 24, height: 280 }} />
+        <View className="mt-3 px-1 gap-2">
+          <Animated.View style={{ opacity, backgroundColor: "#e5e7eb", borderRadius: 8, height: 18, width: "70%" }} />
+          <Animated.View style={{ opacity, backgroundColor: "#e5e7eb", borderRadius: 8, height: 14, width: "45%" }} />
+          <View className="flex-row gap-2 mt-1">
+            <Animated.View style={{ opacity, backgroundColor: "#e5e7eb", borderRadius: 6, height: 12, width: 60 }} />
+            <Animated.View style={{ opacity, backgroundColor: "#e5e7eb", borderRadius: 6, height: 12, width: 60 }} />
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   if (isLoading) {
     return (
-      <View className="flex-1 justify-center items-center bg-gray-50">
-        <ActivityIndicator size="large" color="#4A90E2" />
-        <Text className="mt-3 text-gray-500">Teklifler yükleniyor...</Text>
+      <View className="flex-1 bg-white">
+        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
+        {renderAnimatedHeader()}
+        <ScrollView
+          className="flex-1"
+          scrollEnabled={false}
+          contentContainerStyle={{ paddingTop: getDynamicPaddingTop(), paddingBottom: 100 }}
+        >
+          {[1, 2, 3].map((i) => <OfferSkeletonCard key={i} />)}
+        </ScrollView>
       </View>
     );
   }
@@ -1168,10 +1211,11 @@ const OffersScreen = () => {
             deneyin.
           </Text>
           <TouchableOpacity
-            className="border border-gray-900 px-6 py-3 rounded-full"
+            className="border px-6 py-3 rounded-full"
+            style={{ borderColor: '#015941' }}
             onPress={handleRefresh}
           >
-            <Text className="text-gray-900 font-medium">Tekrar Dene</Text>
+            <Text className="font-medium" style={{ color: '#015941' }}>Tekrar Dene</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

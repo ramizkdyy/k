@@ -14,6 +14,7 @@ import { useAssignRoleMutation, apiSlice } from "../redux/api/apiSlice";
 import { selectCurrentUser } from "../redux/slices/authSlice";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Home, Key } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
 
@@ -179,22 +180,44 @@ const RoleSelectionScreen = ({ navigation }) => {
         </View>
 
         <TouchableOpacity
-          className={`h-14 rounded-lg justify-center items-center ${
-            !selectedRole || isLoading ? "bg-[#dee0ea]" : "bg-green-300"
-          }`}
+          activeOpacity={0.8}
           onPress={handleRoleSelection}
           disabled={!selectedRole || isLoading}
         >
-          {isLoading ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <Text
-              style={{ fontSize: 16, fontWeight: 500 }}
-              className="text-white"
+          <LinearGradient
+            colors={
+              !selectedRole || isLoading
+                ? ["#d1d5db", "#d1d5db"]
+                : ["#015941", "#0A6650"]
+            }
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={{ borderRadius: 999, padding: 2 }}
+          >
+            <View
+              style={{
+                backgroundColor: "white",
+                borderRadius: 999,
+                height: 50,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
             >
-              Devam Et
-            </Text>
-          )}
+              {isLoading ? (
+                <ActivityIndicator color="#015941" />
+              ) : (
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "600",
+                    color: !selectedRole ? "#d1d5db" : "#015941",
+                  }}
+                >
+                  Devam Et
+                </Text>
+              )}
+            </View>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

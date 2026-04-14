@@ -6,11 +6,12 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  SafeAreaView,
   Dimensions,
   ScrollView,
   Animated,
+  Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Image } from "expo-image";
 import { useSelector } from "react-redux";
@@ -352,35 +353,35 @@ const SimilarityScoreBar = memo(
 // Memoized Property Details Slider
 const PropertyDetailsSlider = memo(({ item }) => {
   const propertyDetails = [
-    { id: "rooms", Icon: BedDouble, value: item.odaSayisi || "Belirtilmemiş", label: "Oda" },
+    { id: "rooms", Icon: BedDouble, value: item.odaSayisi || "-", label: "Oda" },
     {
       id: "bedrooms",
       Icon: BedDouble,
-      value: item.yatakOdasiSayisi || "Belirtilmemiş",
+      value: item.yatakOdasiSayisi || "-",
       label: "Y.Odası",
     },
     {
       id: "bathrooms",
       Icon: ShowerHead,
-      value: item.banyoSayisi || "Belirtilmemiş",
+      value: item.banyoSayisi || "-",
       label: "Banyo",
     },
     {
       id: "area",
       Icon: Ruler,
-      value: item.brutMetreKare ? `${item.brutMetreKare} m²` : "Belirtilmemiş",
+      value: item.brutMetreKare ? `${item.brutMetreKare} m²` : "-",
       label: "Alan",
     },
     {
       id: "floor",
       Icon: Building,
-      value: item.bulunduguKat || "Belirtilmemiş",
+      value: item.bulunduguKat || "-",
       label: "Kat",
     },
     {
       id: "age",
       Icon: Calendar,
-      value: item.binaYasi ? `${item.binaYasi}` : "Belirtilmemiş",
+      value: item.binaYasi ? `${item.binaYasi}` : "-",
       label: "Bina yaşı",
     },
     {
@@ -644,7 +645,7 @@ const PropertyItem = memo(
                   className="flex-row items-center"
                   onPress={handleProfilePress}
                 >
-                  <View className="w-12 h-12 rounded-full justify-center items-center mr-3 border-gray-900 border">
+                  <View className="w-12 h-12 rounded-full justify-center items-center mr-3 border" style={{ borderColor: '#015941' }}>
                     {!!item.user?.profilePictureUrl ? (
                       <Image
                         style={{ width: 48, height: 48, borderRadius: 100 }}
@@ -704,6 +705,8 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
   // State
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("similarity");
+  const [sortDirection, setSortDirection] = useState(0); // 0 = desc, 1 = asc
   const [currentPage, setCurrentPage] = useState(1);
   const [allProperties, setAllProperties] = useState([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -832,6 +835,21 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
     }
   }, [similarData, currentPage]);
 
+  const sortOptions = [
+    { key: "similarity", label: "Benzerlik" },
+    { key: "price", label: "Fiyat" },
+    { key: "date", label: "Tarih" },
+  ];
+
+  const handleSortChange = useCallback((key) => {
+    if (sortBy === key) {
+      setSortDirection((prev) => (prev === 0 ? 1 : 0));
+    } else {
+      setSortBy(key);
+      setSortDirection(0);
+    }
+  }, [sortBy]);
+
   // Filter properties
   const getFilteredProperties = useCallback(() => {
     let filteredProperties = [...allProperties];
@@ -849,8 +867,21 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
       );
     }
 
+    const dir = sortDirection === 0 ? -1 : 1;
+    switch (sortBy) {
+      case "similarity":
+        filteredProperties.sort((a, b) => dir * ((b.similarityScore || b.matchScore || 0) - (a.similarityScore || a.matchScore || 0)));
+        break;
+      case "price":
+        filteredProperties.sort((a, b) => dir * ((a.kiraFiyati || a.rent || 0) - (b.kiraFiyati || b.rent || 0)));
+        break;
+      case "date":
+        filteredProperties.sort((a, b) => dir * (new Date(b.createdAt || b.postTime || 0) - new Date(a.createdAt || a.postTime || 0)));
+        break;
+    }
+
     return filteredProperties;
-  }, [allProperties, searchQuery]);
+  }, [allProperties, searchQuery, sortBy, sortDirection]);
 
   const filteredProperties = getFilteredProperties();
 
@@ -960,7 +991,7 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
   // Error checks
   if (!landlordUserId) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView edges={['top']} className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center p-8">
           <MaterialIcons name="error" size={64} color="#EF4444" />
           <Text className="text-xl font-semibold text-gray-700 mt-4 mb-2 text-center">
@@ -983,7 +1014,7 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
   // Loading state
   if (!allProperties.length && isLoadingSimilar) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView edges={['top']} className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#303030" />
           <Text className="text-gray-600 mt-4">
@@ -997,7 +1028,7 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
   // Error state
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView edges={['top']} className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center p-8">
           <CircleAlert size={50} color="#000" />
           <Text className="text-xl font-semibold text-gray-900 mt-2 mb-2 text-center">
@@ -1007,10 +1038,11 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
             Benzer ilanlar yüklenirken bir sorun oluştu.
           </Text>
           <TouchableOpacity
-            className="border border-gray-900 px-6 py-3 rounded-full"
+            className="border px-6 py-3 rounded-full"
+            style={{ borderColor: '#015941' }}
             onPress={onRefresh}
           >
-            <Text className="text-gray-900 font-medium">Tekrar Dene</Text>
+            <Text className="font-medium" style={{ color: '#015941' }}>Tekrar Dene</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -1018,7 +1050,7 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView edges={['top']} className="flex-1 bg-white">
       {/* Fixed search bar */}
       <View className="bg-white border-b border-gray-200 z-10">
         <View className="flex flex-row items-center px-5">
@@ -1068,20 +1100,29 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{
                 alignItems: "center",
-                paddingHorizontal: 0,
+                flexGrow: 1,
+                justifyContent: "center",
               }}
               style={{ width: "100%" }}
             >
-              {/* <View className="flex-row">
+              {sortOptions.map((option) => (
                 <TouchableOpacity
-                  activeOpacity={1}
-                  className="mr-3 px-4 py-2 rounded-full border bg-white border-white"
+                  key={option.key}
+                  className={`mr-3 px-4 py-2 rounded-full ${sortBy === option.key ? "bg-green-brand-darker" : "bg-white border border-gray-400"}`}
+                  onPress={() => handleSortChange(option.key)}
                 >
-                  <Text className="text-sm font-medium text-gray-700">
-                    Benzerlik Sırası
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Text className={`text-sm font-medium ${sortBy === option.key ? "text-white" : "text-gray-700"}`}>
+                      {option.label}
+                    </Text>
+                    {sortBy === option.key && (
+                      <Text style={{ color: "white", fontSize: Platform.OS === "android" ? 19 : 12, marginLeft: 2, lineHeight: Platform.OS === "android" ? 23 : 16, includeFontPadding: false, textAlignVertical: "center" }}>
+                        {sortDirection === 0 ? "↓" : "↑"}
+                      </Text>
+                    )}
+                  </View>
                 </TouchableOpacity>
-              </View> */}
+              ))}
             </ScrollView>
           </Animated.View>
         </Animated.View>

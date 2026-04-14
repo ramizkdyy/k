@@ -20,7 +20,7 @@ import {
   setFcmToken,
   setFcmTokenRegistered,
 } from "./src/redux/slices/authSlice";
-import { SignalRProvider } from "./src/contexts/SignalRContext";
+
 import notificationService from "./src/services/notificationService";
 import {
   useRegisterNotificationTokenMutation,
@@ -56,7 +56,7 @@ const LoadingScreen = () => (
         backgroundColor: "#ffffff",
       }}
     >
-      <ActivityIndicator size="large" color="#86efac" />
+      <ActivityIndicator size="large" color="#404040" />
       <Text style={{ marginTop: 10, fontSize: 16, color: "#666" }}>
         Yükleniyor...
       </Text>
@@ -279,10 +279,8 @@ const App = () => {
                   navigationBarTranslucent={false}
                 >
                   <NotificationProvider>
-                    <SignalRProvider>
                       <NotificationManager />
                       <AppNavigator />
-                    </SignalRProvider>
                     <NotificationContainer />
                   </NotificationProvider>
                 </KeyboardProvider>

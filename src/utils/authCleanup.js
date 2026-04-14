@@ -44,7 +44,7 @@ export const authCleanupHelper = {
       
     } catch (error) {
       // Try to clear individual keys if multiRemove fails
-      await this.clearUserStorageFallback();
+      await authCleanupHelper.clearUserStorageFallback();
     }
   },
 
@@ -69,9 +69,10 @@ export const authCleanupHelper = {
       for (const key of userKeys) {
         await AsyncStorage.removeItem(key);
       }
-      
-      
+
+
     } catch (error) {
+      console.warn("authCleanup clearUserStorageFallback:", error?.message || error);
     }
   },
 
@@ -84,6 +85,7 @@ export const authCleanupHelper = {
     try {
       await AsyncStorage.clear();
     } catch (error) {
+      console.warn("authCleanup emergencyCleanup:", error?.message || error);
     }
   },
 
@@ -119,7 +121,7 @@ export const authCleanupHelper = {
       
     } catch (error) {
       // Fallback to full cleanup
-      await this.clearUserStorage();
+      await authCleanupHelper.clearUserStorage();
     }
   },
 

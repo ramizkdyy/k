@@ -28,6 +28,8 @@ import {
   useCreateTenantExpectationMutation,
   useUpdateLandlordExpectationMutation,
   useUpdateTenantExpectationMutation,
+  useGetOwnLandlordProfileQuery,
+  useGetOwnTenantProfileQuery,
 } from "../redux/api/apiSlice";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { ChevronLeft, ChevronDown, Calendar, Check } from "lucide-react-native";
@@ -99,10 +101,10 @@ const ProfileExpectationHeader = ({
     {/* Ortalanmış başlık - Absolute positioning ile */}
     <View className="absolute inset-0 justify-center items-center pointer-events-none">
       <Text
-        className="text-gray-500"
+        className="text-gray-700"
         style={{
           fontWeight: 500,
-          fontSize: 14,
+          fontSize: 16,
         }}
       >
         Beklenti Profili
@@ -143,7 +145,7 @@ const CustomTextInput = ({
     >
       {label} {required && <Text className="text-red-500">*</Text>}
     </Text>
-    <View className="border border-gray-900 rounded-xl px-4 py-4">
+    <View className="border border-gray-400 rounded-xl px-4 py-4">
       <TextInput
         className="text-gray-900 text-base"
         placeholder={placeholder}
@@ -285,7 +287,7 @@ const CustomDropdown = ({
       </Text>
 
       <TouchableOpacity
-        className="border border-gray-900 rounded-xl px-4 py-4 flex-row justify-between items-center"
+        className="border border-gray-400 rounded-xl px-4 py-4 flex-row justify-between items-center"
         onPress={() => setIsOpen(true)}
       >
         <Text
@@ -363,20 +365,18 @@ const CustomDropdown = ({
                 {options.map((option, index) => (
                   <TouchableOpacity
                     key={index}
-                    className={`py-4 px-7 flex-row items-center justify-between ${
-                      index !== options.length - 1
-                        ? "border-b border-gray-50"
-                        : ""
-                    } ${value === option ? "bg-gray-100" : "bg-white"}`}
+                    className={`py-4 px-7 flex-row items-center justify-between ${index !== options.length - 1
+                      ? "border-b border-gray-50"
+                      : ""
+                      } ${value === option ? "bg-gray-100" : "bg-white"}`}
                     onPress={() => handleOptionSelect(option)}
                     activeOpacity={0.7}
                   >
                     <Text
-                      className={`text-lg flex-1 mr-3 ${
-                        value === option
-                          ? "text-gray-900 font-medium"
-                          : "text-gray-600"
-                      }`}
+                      className={`text-lg flex-1 mr-3 ${value === option
+                        ? "text-gray-900 font-medium"
+                        : "text-gray-600"
+                        }`}
                       numberOfLines={2}
                       ellipsizeMode="tail"
                     >
@@ -465,7 +465,7 @@ const MultiSelectDropdown = ({
       </Text>
 
       <TouchableOpacity
-        className="border border-gray-900 rounded-xl px-4 py-4"
+        className="border border-gray-400 rounded-xl px-4 py-4"
         onPress={() => !disabled && setIsOpen(true)}
         disabled={disabled}
         style={disabled ? { opacity: 0.4 } : {}}
@@ -542,9 +542,8 @@ const MultiSelectDropdown = ({
                   return (
                     <TouchableOpacity
                       key={index}
-                      className={`py-4 px-7 flex-row items-center justify-between ${
-                        index !== options.length - 1 ? "border-b border-gray-50" : ""
-                      } ${isSelected ? "bg-gray-100" : "bg-white"}`}
+                      className={`py-4 px-7 flex-row items-center justify-between ${index !== options.length - 1 ? "border-b border-gray-50" : ""
+                        } ${isSelected ? "bg-gray-100" : "bg-white"}`}
                       onPress={() => handleToggle(option)}
                       activeOpacity={0.7}
                     >
@@ -664,7 +663,7 @@ const CustomDatePicker = ({ label, value, setValue, required = false }) => {
 
       {/* Date picker trigger button */}
       <TouchableOpacity
-        className="border border-gray-900 rounded-xl px-4 py-4 flex-row justify-between items-center"
+        className="border border-gray-400 rounded-xl px-4 py-4 flex-row justify-between items-center"
         onPress={() => setIsOpen(true)}
       >
         <View className="flex-row items-center">
@@ -1033,11 +1032,17 @@ const ProfileExpectationScreen = ({ navigation }) => {
 
   const userProfile = useSelector(selectUserProfile);
 
-  // Check if expectation is completed based on user role
+  // Profil sorgusunu refetch için tutuyoruz; veri zaten Redux'ta mevcut
+  const { refetch: refetchProfile } = userRole === "EVSAHIBI"
+    ? useGetOwnLandlordProfileQuery(currentUser?.id, { skip: !currentUser?.id })
+    : useGetOwnTenantProfileQuery(currentUser?.id, { skip: !currentUser?.id });
+
+  // Backend artık flag'i object varlığına göre kendisi set ediyor (self-heal).
+  // Hem currentUser flag hem de profile nesnesi varlığını kontrol et.
   const isExpectationCompleted =
     userRole === "KIRACI"
-      ? userProfile.isLandLordExpectationCompleted // Fixed: was isTenantExpectationCompleted
-      : userProfile.isTenantExpectationCompleted;
+      ? !!(userProfile?.landLordExpectation || currentUser?.isLandlordExpectationCompleted)
+      : !!(userProfile?.tenantExpectation || currentUser?.isTenantExpectationCompleted);
 
   // Populate form data when expectation is completed
   useEffect(() => {
@@ -1091,9 +1096,9 @@ const ProfileExpectationScreen = ({ navigation }) => {
         setIsReferenceRequired(expectation.isReferenceRequired || false);
         setIsInsuredJobRequired(expectation.isInsuredJobRequired || false);
         setBuildingApprovalPolicy(expectation.buildingApprovalPolicy || 1);
-      } else if (userRole === "KIRACI" && userProfile.landlordExpectation) {
+      } else if (userRole === "KIRACI" && userProfile.landLordExpectation) {
         // Populate tenant form with landlord expectation data
-        const expectation = userProfile.landlordExpectation;
+        const expectation = userProfile.landLordExpectation;
 
         // Location preferences
         setCity(expectation.city || "");
@@ -1183,8 +1188,8 @@ const ProfileExpectationScreen = ({ navigation }) => {
       if (userRole === "EVSAHIBI" && userProfile.tenantExpectation) {
         const expectation = userProfile.tenantExpectation;
         setDistrict(expectation.district || "");
-      } else if (userRole === "KIRACI" && userProfile.landlordExpectation) {
-        const expectation = userProfile.landlordExpectation;
+      } else if (userRole === "KIRACI" && userProfile.landLordExpectation) {
+        const expectation = userProfile.landLordExpectation;
         setDistrict(expectation.district || "");
       }
     }
@@ -1423,7 +1428,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
           label="Aidat Sorumluluğu"
           value={
             maintenanceFeeResponsibilityOptions[
-              maintenanceFeeResponsibility - 1
+            maintenanceFeeResponsibility - 1
             ]
           }
           setValue={(value) => {
@@ -2073,6 +2078,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
 
 
         if (response && response.isSuccess) {
+          await refetchProfile();
           Alert.alert("Başarılı", "Beklenti profili başarıyla oluşturuldu", [
             { text: "Tamam", onPress: () => navigation.goBack() },
           ]);
@@ -2141,6 +2147,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
 
 
         if (response && response.isSuccess) {
+          await refetchProfile();
           Alert.alert("Başarılı", "Beklenti profili başarıyla oluşturuldu", [
             { text: "Tamam", onPress: () => navigation.goBack() },
           ]);
@@ -2152,12 +2159,11 @@ const ProfileExpectationScreen = ({ navigation }) => {
         }
       }
     } catch (error) {
-
       Alert.alert(
         "Hata",
         error?.data?.message ||
-          error?.message ||
-          "Beklenti profili oluşturulurken bir hata oluştu"
+        error?.message ||
+        "Beklenti profili oluşturulurken bir hata oluştu"
       );
     }
   };
@@ -2282,7 +2288,7 @@ const ProfileExpectationScreen = ({ navigation }) => {
       Alert.alert(
         "Hata",
         error?.data?.message ||
-          "Beklenti profili güncellenirken bir hata oluştu"
+        "Beklenti profili güncellenirken bir hata oluştu"
       );
     }
   };

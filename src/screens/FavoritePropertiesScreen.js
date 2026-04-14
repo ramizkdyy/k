@@ -11,6 +11,7 @@ import {
     TextInput,
     Animated,
     StatusBar as RNStatusBar,
+    Platform,
 } from "react-native";
 import Reanimated, {
     useSharedValue,
@@ -701,6 +702,7 @@ const FavoritePropertiesScreen = ({ navigation }) => {
                 <PlatformBlurView
                     intensity={80}
                     tint="light"
+                    androidColor="rgba(255, 255, 255, 0.95)"
                     style={{
                         position: 'absolute',
                         top: 0,
@@ -710,17 +712,19 @@ const FavoritePropertiesScreen = ({ navigation }) => {
                     }}
                 />
 
-                {/* Semi-transparent overlay */}
-                <View
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: 'rgba(255, 255, 255, 0.7)',
-                    }}
-                />
+                {/* Semi-transparent overlay — only on iOS; Android PlatformBlurView fallback is already opaque enough */}
+                {Platform.OS === "ios" && (
+                    <View
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                        }}
+                    />
+                )}
 
                 {/* Content Container */}
                 <View style={{
@@ -892,7 +896,6 @@ const FavoritePropertiesScreen = ({ navigation }) => {
                         colors={["#808080"]}
                         progressBackgroundColor="#fff"
                         progressViewOffset={getDynamicPaddingTop()}
-                        title="Yenileniyor..."
                         titleColor="#666"
                     />
                 }

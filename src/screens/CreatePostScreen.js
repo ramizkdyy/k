@@ -32,6 +32,7 @@ import { ChevronLeft, ChevronDown, Check, X, MapPin } from "lucide-react-native"
 import LocationPicker from "../components/LocationPicker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PlatformBlurView from "../components/PlatformBlurView";
+import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -215,7 +216,7 @@ const CustomTextInput = ({
       {label} {required && <Text className="text-red-500">*</Text>}
     </Text>
     <View
-      className="border border-gray-900 rounded-xl px-4"
+      className="border border-gray-400 rounded-xl px-4"
       style={{ paddingVertical: Platform.OS === "ios" ? 16 : 10 }}
     >
       <TextInput
@@ -360,7 +361,7 @@ const CustomDropdown = ({
       </Text>
 
       <TouchableOpacity
-        className="border border-gray-900 rounded-xl px-4 py-4 flex-row justify-between items-center"
+        className="border border-gray-400 rounded-xl px-4 py-4 flex-row justify-between items-center"
         onPress={() => setIsOpen(true)}
       >
         <Text
@@ -1047,7 +1048,8 @@ const CreatePostScreen = ({ navigation, route }) => {
       const newImages = response.assets.map((asset, index) => ({
         uri: asset.uri,
         id: `${Date.now()}_${index}`,
-        type: asset.type,
+        type: asset.type || 'image/jpeg',
+        fileName: asset.fileName,
         width: asset.width,
         height: asset.height,
         fileSize: asset.fileSize,
@@ -1109,7 +1111,7 @@ const CreatePostScreen = ({ navigation, route }) => {
                   >
                     <Image
                       source={{ uri: img.uri }}
-                      className="w-24 h-24 rounded-2xl"
+                      style={{ width: 96, height: 96, borderRadius: 16 }}
                       contentFit="cover"
                       cachePolicy="memory-disk"
                       transition={200}
@@ -1140,7 +1142,7 @@ const CreatePostScreen = ({ navigation, route }) => {
           <View className="flex-row justify-center mb-4">
             <TouchableOpacity
               style={{ paddingVertical: 30 }}
-              className="flex-1 border border-gray-900 rounded-3xl mr-2 justify-center items-center"
+              className="flex-1 border border-gray-400 rounded-3xl mr-2 justify-center items-center"
               onPress={() => pickImage(false)}
               disabled={images.length >= 15}
             >
@@ -1149,7 +1151,7 @@ const CreatePostScreen = ({ navigation, route }) => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              className="flex-1 border border-gray-900 rounded-3xl py-4 ml-2 justify-center items-center"
+              className="flex-1 border border-gray-400 rounded-3xl py-4 ml-2 justify-center items-center"
               onPress={() => pickImage(true)}
               disabled={images.length >= 15}
             >
@@ -1207,10 +1209,6 @@ const CreatePostScreen = ({ navigation, route }) => {
       Alert.alert("Hata", "Lütfen mutfak bilgisi giriniz.");
       return false;
     }
-    if (!siteAdi.trim()) {
-      Alert.alert("Hata", "Lütfen site adı giriniz.");
-      return false;
-    }
     if (!odaSayisi.trim()) {
       Alert.alert("Hata", "Lütfen oda sayısı giriniz.");
       return false;
@@ -1261,7 +1259,19 @@ const CreatePostScreen = ({ navigation, route }) => {
 
   // Submit form
   const handleSubmit = async () => {
-    if (!validateForm()) return;
+    console.log('🚀 [CreatePost] handleSubmit called');
+    console.log('🔍 [CreatePost] Form state:', {
+      ilanBasligi, kiraFiyati, location, il, ilce, mahalle,
+      odaSayisi, images: images.length, postDescription,
+      RentalPeriod, isitmaTipi, mutfak, kullanimDurumu,
+    });
+
+    if (!validateForm()) {
+      console.log('⛔ [CreatePost] validateForm failed');
+      return;
+    }
+
+    console.log('✅ [CreatePost] validateForm passed, submitting...');
 
     try {
       setUploadStatus("uploading");
@@ -1289,7 +1299,7 @@ const CreatePostScreen = ({ navigation, route }) => {
       // Required fields
       formData.append("Il", il);
       formData.append("Ilce", ilce);
-      formData.append("Kimden", kimden);
+      formData.append("Kimden", "Sahibinden");
       formData.append("Mutfak", mutfak);
       formData.append("Mahalle", mahalle);
       formData.append("SiteAdi", siteAdi);
@@ -1356,18 +1366,16 @@ const CreatePostScreen = ({ navigation, route }) => {
       // Add only new images (not existing ones)
       const newImages = images.filter((img) => !img.id.startsWith("existing_"));
       newImages.forEach((image, index) => {
-        // Get file name from URI
-        const uriParts = image.uri.split("/");
-        const fileName = uriParts[uriParts.length - 1];
+        const mimeType = image.type || 'image/jpeg';
+        // Normalize heic/heif to jpeg for backend compatibility
+        const normalizedMime = (mimeType === 'image/heic' || mimeType === 'image/heif') ? 'image/jpeg' : mimeType;
+        const ext = normalizedMime.split('/')[1] || 'jpg';
+        const name = image.fileName || `photo_${index}.${ext}`;
 
-        // Get file extension
-        const fileExt = fileName.split(".").pop();
-
-        // Prepare file object for form data
         formData.append("Files", {
           uri: image.uri,
-          name: `photo_${index}.${fileExt}`,
-          type: `image/${fileExt}`,
+          name,
+          type: normalizedMime,
         });
 
         // Add image status
@@ -1375,11 +1383,25 @@ const CreatePostScreen = ({ navigation, route }) => {
       });
 
       // Log the form data being sent
+      const formDataLog = {};
+      for (const [key, value] of formData._parts || []) {
+        const serialized = typeof value === 'object' ? `[File: ${value.name}]` : value;
+        if (key in formDataLog) {
+          formDataLog[key] = Array.isArray(formDataLog[key])
+            ? [...formDataLog[key], serialized]
+            : [formDataLog[key], serialized];
+        } else {
+          formDataLog[key] = serialized;
+        }
+      }
+      console.log('📤 [CreatePost] FormData:', JSON.stringify(formDataLog, null, 2));
+      console.log('📤 [CreatePost] Images count:', newImages.length);
 
       // Submit post
       const response = await createPost(formData).unwrap();
 
       // Log the response
+      console.log('✅ [CreatePost] Response:', JSON.stringify(response, null, 2));
 
       if (response && response.isSuccess) {
         setUploadStatus("success");
@@ -1394,9 +1416,10 @@ const CreatePostScreen = ({ navigation, route }) => {
             {
               text: "Tamam",
               onPress: () => {
-                navigation.navigate("Properties");
                 if (newPostId) {
                   navigation.navigate("PostDetail", { postId: newPostId });
+                } else {
+                  navigation.navigate("MainTabs", { screen: "Properties" });
                 }
               },
             },
@@ -1411,10 +1434,17 @@ const CreatePostScreen = ({ navigation, route }) => {
       }
     } catch (error) {
       setUploadStatus("error");
+      console.error('❌ [CreatePost] Error object:', error);
+      console.error('❌ [CreatePost] error.status:', error?.status);
+      console.error('❌ [CreatePost] error.data:', JSON.stringify(error?.data, null, 2));
+      console.error('❌ [CreatePost] error.message:', error?.message);
+      console.error('❌ [CreatePost] error.error:', error?.error);
 
       Alert.alert(
         "Hata",
         error.data?.message ||
+        error.data?.title ||
+        error.message ||
         "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin."
       );
     }
@@ -1548,7 +1578,7 @@ const CreatePostScreen = ({ navigation, route }) => {
                   Konum <Text className="text-red-500">*</Text>
                 </Text>
                 <View className="flex-row items-center mb-3">
-                  <View className="flex-1 border border-gray-900 rounded-xl px-4 py-4 mr-2">
+                  <View className="flex-1 border border-gray-400 rounded-xl px-4 py-4 mr-2">
                     <TextInput
                       className="text-gray-900 text-base"
                       placeholder="Haritadan konum seçin"
@@ -1560,23 +1590,20 @@ const CreatePostScreen = ({ navigation, route }) => {
                     />
                   </View>
                   <TouchableOpacity
-                    style={{ padding: 16 }}
-                    className="bg-gray-900 rounded-2xl"
+                    style={{ borderRadius: 16, overflow: 'hidden' }}
                     onPress={() => setShowLocationPicker(true)}
                   >
-                    <MapPin color="white" fill="white" />
+                    <LinearGradient
+                      colors={['#0C9870', '#015941']}
+                      start={{ x: 0.5, y: 0 }}
+                      end={{ x: 0.5, y: 1 }}
+                      style={{ padding: 16 }}
+                    >
+                      <MapPin color="white" fill="white" />
+                    </LinearGradient>
                   </TouchableOpacity>
                 </View>
 
-                {/* Show coordinates if selected */}
-                {selectedCoordinates && (
-                  <View className=" mb-3">
-                    <Text className="text-sm text-gray-600">
-                      Koordinatlar: {selectedCoordinates.latitude.toFixed(6)},{" "}
-                      {selectedCoordinates.longitude.toFixed(6)}
-                    </Text>
-                  </View>
-                )}
               </View>
 
               <View className="flex-row justify-between mb-2">
@@ -1648,7 +1675,7 @@ const CreatePostScreen = ({ navigation, route }) => {
                     label="Oda Sayısı"
                     value={odaSayisi}
                     setValue={setOdaSayisi}
-                    placeholder="2+1"
+                    placeholder="0+0"
                     required
                     options={flatSizes}
                   />
@@ -1658,7 +1685,7 @@ const CreatePostScreen = ({ navigation, route }) => {
                     label="Banyo"
                     value={banyoSayisi}
                     onChangeText={setBanyoSayisi}
-                    placeholder="1"
+                    placeholder="0"
                     keyboardType="numeric"
                   />
                 </View>
@@ -1667,7 +1694,7 @@ const CreatePostScreen = ({ navigation, route }) => {
                     label="Yatak Odası"
                     value={yatakOdasiSayisi}
                     onChangeText={setYatakOdasiSayisi}
-                    placeholder="2"
+                    placeholder="0"
                     keyboardType="numeric"
                   />
                 </View>
@@ -1679,7 +1706,7 @@ const CreatePostScreen = ({ navigation, route }) => {
                     label="Brüt Alan (m²)"
                     value={brutMetreKare}
                     onChangeText={setBrutMetreKare}
-                    placeholder="90"
+                    placeholder="0"
                     keyboardType="numeric"
                   />
                 </View>
@@ -1688,7 +1715,7 @@ const CreatePostScreen = ({ navigation, route }) => {
                     label="Net Alan (m²)"
                     value={netMetreKare}
                     onChangeText={setNetMetreKare}
-                    placeholder="85"
+                    placeholder="0"
                     keyboardType="numeric"
                   />
                 </View>
@@ -1726,15 +1753,6 @@ const CreatePostScreen = ({ navigation, route }) => {
                 setValue={setKullanimDurumu}
                 options={usageStatusOptions}
                 placeholder="Kullanım durumu seçin"
-                required
-              />
-
-              <CustomDropdown
-                label="Kimden"
-                value={kimden}
-                setValue={setKimden}
-                options={["Sahibinden", "Emlakçıdan"]}
-                placeholder="Kimden seçin"
                 required
               />
 

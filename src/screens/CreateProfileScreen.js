@@ -32,6 +32,7 @@ import {
 } from "../redux/slices/profileSlice";
 import * as ImagePicker from "expo-image-picker";
 import { Plus } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
 
 const CustomDropdown = ({
   label,
@@ -524,6 +525,8 @@ const CreateProfileScreen = (props) => {
         response = await createTenantProfile(formData).unwrap();
       }
 
+      console.log("[CreateProfile] Response:", JSON.stringify(response, null, 2));
+
       if (response && response.isSuccess) {
         // Save profile information to Redux
         if (response.result) {
@@ -549,6 +552,7 @@ const CreateProfileScreen = (props) => {
       dispatch(updateProfileImageStatus(null));
       dispatch(updateCoverImageStatus(null));
     } catch (error) {
+      console.log("[CreateProfile] Error:", JSON.stringify(error, null, 2));
 
       // Show detailed error messages
       if (error && error.data && error.data.errors) {
@@ -613,76 +617,36 @@ const CreateProfileScreen = (props) => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Profile image and cover photo section */}
-          <View className="relative mb-6 mt-4 px-5">
-            {/* Cover photo */}
-            <TouchableOpacity
-              activeOpacity={1}
-              style={{ boxShadow: "0px 0px 12px #00000014" }}
-              className="w-full h-40 bg-white rounded-3xl overflow-hidden"
-              onPress={() => handleImageSelection("cover")}
-            >
-              {previewCoverImage ? (
-                <View className="w-full h-full relative">
+          {/* Profile image section */}
+          <View className="mb-6 mt-4 items-center">
+            <TouchableOpacity onPress={() => handleImageSelection("profile")}>
+              <View className="w-24 h-24 rounded-full bg-white border-4 border-white shadow-md overflow-hidden">
+                {previewProfileImage ? (
                   <Image
-                    source={{ uri: previewCoverImage }}
+                    source={{ uri: previewProfileImage }}
                     className="w-full h-full"
                     contentFit="cover"
                     cachePolicy="memory-disk"
                     transition={200}
                   />
-                  {/* Cover photo edit button */}
-                  <View
-                    style={{ boxShadow: "0px 0px 12px #00000014" }}
-                    className="absolute right-4 bottom-4 bg-white p-2 rounded-full"
-                  >
-                    <Plus size={16} color="#000" />
+                ) : (
+                  <View className="w-full h-full bg-gray-100 justify-center items-center">
+                    <Text
+                      style={{ fontSize: 40 }}
+                      className="text-gray-900 font-bold"
+                    >
+                      {currentUser?.name?.charAt(0) || "P"}
+                    </Text>
                   </View>
-                </View>
-              ) : (
-                <View className="w-full h-full justify-center items-center bg-white">
-                  {/* Add cover photo placeholder */}
-                  <View
-                    style={{ boxShadow: "0px 0px 12px #00000014" }}
-                    className="absolute right-4 bottom-4 bg-white p-2 rounded-full"
-                  >
-                    <Plus size={16} color="#000" />
-                  </View>
-                </View>
-              )}
+                )}
+              </View>
+              <View
+                style={{ boxShadow: "0px 0px 12px #00000014" }}
+                className="absolute right-0 bottom-0 bg-white w-8 h-8 rounded-full justify-center items-center"
+              >
+                <Plus size={16} color="#000" />
+              </View>
             </TouchableOpacity>
-
-            {/* Profile picture - positioned over cover photo */}
-            <View className="absolute inset-0 justify-center items-center">
-              <TouchableOpacity onPress={() => handleImageSelection("profile")}>
-                <View className="w-24 h-24 rounded-full bg-white border-4 border-white shadow-md overflow-hidden">
-                  {previewProfileImage ? (
-                    <Image
-                      source={{ uri: previewProfileImage }}
-                      className="w-full h-full"
-                      contentFit="cover"
-                    cachePolicy="memory-disk"
-                    transition={200}
-                    />
-                  ) : (
-                    <View className="w-full h-full bg-gray-100 justify-center items-center">
-                      <Text
-                        style={{ fontSize: 40 }}
-                        className="text-gray-900 font-bold"
-                      >
-                        {currentUser?.name?.charAt(0) || "P"}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-                <View
-                  style={{ boxShadow: "0px 0px 12px #00000014" }}
-                  className="absolute right-0 bottom-0 bg-white w-8 h-8 rounded-full justify-center items-center"
-                >
-                  <Plus size={16} color="#000" />
-                </View>
-              </TouchableOpacity>
-            </View>
           </View>
 
           {/* Form fields */}
@@ -707,7 +671,7 @@ const CreateProfileScreen = (props) => {
                 </Text>
                 <TextInput
                   style={{ fontSize: 16 }}
-                  className=" p-3 rounded-lg border border-gray-900 min-h-[100px]"
+                  className="bg-white p-3 rounded-lg border border-gray-400 min-h-[100px]"
                   value={
                     userRole === "EVSAHIBI" ? description : profileDescription
                   }
@@ -729,22 +693,34 @@ const CreateProfileScreen = (props) => {
 
             {/* Create button */}
             <TouchableOpacity
-              activeOpacity={0.7}
-              className={`rounded-lg h-12 justify-center items-center
-bg-green-300`}
+              activeOpacity={0.8}
               onPress={handleCreateProfile}
               disabled={isLoading}
             >
-              {isLoading ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text
-                  style={{ fontSize: 16 }}
-                  className="text-white font-semibold"
+              <LinearGradient
+                colors={isLoading ? ["#d1d5db", "#d1d5db"] : ["#015941", "#0A6650"]}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={{ borderRadius: 999, padding: 2 }}
+              >
+                <View
+                  style={{
+                    backgroundColor: "white",
+                    borderRadius: 999,
+                    height: 50,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
                 >
-                  Devam et
-                </Text>
-              )}
+                  {isLoading ? (
+                    <ActivityIndicator color="#015941" />
+                  ) : (
+                    <Text style={{ fontSize: 16, fontWeight: "600", color: "#015941" }}>
+                      Devam Et
+                    </Text>
+                  )}
+                </View>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         </ScrollView>

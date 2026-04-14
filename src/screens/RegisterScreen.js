@@ -54,6 +54,22 @@ const RegisterScreen = ({ navigation }) => {
   const datePickerSnapPoints = ["40%"];
   const genderPickerSnapPoints = ["35%"];
 
+  // State for form inputs
+  const [name, setName] = useState("");
+  const [surname, setSurname] = useState("");
+  const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [gender, setGender] = useState(""); // Optional
+  const [tempGenderValue, setTempGenderValue] = useState("");
+  // Date picker states
+  const [birthDate, setBirthDate] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [dateValue, setDateValue] = useState(new Date(2000, 0, 1));
+
   // Bottom Sheet callbacks
   const renderDatePickerBackdrop = useCallback(
     (props) => (
@@ -106,22 +122,6 @@ const RegisterScreen = ({ navigation }) => {
     setGender(tempGenderValue);
     genderPickerModalRef.current?.dismiss();
   }, [tempGenderValue]);
-
-  // State for form inputs
-  const [name, setName] = useState("");
-  const [surname, setSurname] = useState("");
-  const [email, setEmail] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [gender, setGender] = useState(""); // Optional
-  const [tempGenderValue, setTempGenderValue] = useState(gender || "");
-  // Date picker states
-  const [birthDate, setBirthDate] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [dateValue, setDateValue] = useState(new Date(2000, 0, 1));
 
   // Step handling
   const [currentStep, setCurrentStep] = useState(0);
@@ -241,93 +241,8 @@ const RegisterScreen = ({ navigation }) => {
     );
   };
 
-  // Gender Selector Modal Component
-  const GenderModal = ({
-    visible,
-    onClose,
-    onGenderSelect,
-    selectedGender,
-  }) => {
-    const slideAnim = useRef(new Animated.Value(300)).current;
 
-    const genderOptions = [
-      { value: "female", label: "Kadın", icon: "♀" },
-      { value: "male", label: "Erkek", icon: "♂" },
-      { value: "other", label: "Diğer", icon: "⚥" },
-    ];
 
-    useEffect(() => {
-      if (visible) {
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          useNativeDriver: true,
-          tension: 100,
-          friction: 8,
-        }).start();
-      } else {
-        Animated.timing(slideAnim, {
-          toValue: 300,
-          duration: 250,
-          useNativeDriver: true,
-        }).start();
-      }
-    }, [visible]);
-
-    const handleGenderSelect = (gender) => {
-      onGenderSelect(gender);
-      onClose();
-    };
-
-    return (
-      <Modal visible={visible} transparent animationType="fade">
-        <View className="flex-1 bg-black/50 justify-end">
-          <Animated.View
-            className="bg-white rounded-t-3xl p-6"
-            style={{
-              transform: [{ translateY: slideAnim }],
-            }}
-          >
-            {/* Header */}
-            <View className="flex-row justify-between items-center mb-6">
-              <Text className="text-xl font-semibold text-gray-800">
-                Cinsiyet Seçin
-              </Text>
-              <TouchableOpacity onPress={onClose}>
-                <X size={20} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Gender Options */}
-            <View className="space-y-2">
-              {genderOptions.map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  className="flex-row items-center p-4"
-                  onPress={() => handleGenderSelect(option.value)}
-                >
-                  <Text className="text-2xl mr-4">{option.icon}</Text>
-                  <Text className="flex-1 text-lg text-gray-700 font-medium">
-                    {option.label}
-                  </Text>
-                  {selectedGender === option.value && (
-                    <Check size={20} color="#2C8700" />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Cancel Button */}
-            <TouchableOpacity
-              onPress={onClose}
-              className="mt-6 p-4 rounded-xl items-center"
-            >
-              <Text className="text-green-600 font-medium text-lg">İptal</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
-      </Modal>
-    );
-  };
 
   // Validate current step
   const validateCurrentStep = () => {
@@ -891,7 +806,7 @@ const RegisterScreen = ({ navigation }) => {
                 >
                   E-mail
                 </Text>
-                <View className="flex gap-4 flex-row items-center py-1  px-4 w-full border border-gray-900 rounded-xl">
+                <View className="flex gap-4 flex-row items-center py-1  px-4 w-full border border-gray-400 rounded-xl">
                   <TextInput
                     style={{
                       fontSize: 16,
@@ -925,7 +840,7 @@ const RegisterScreen = ({ navigation }) => {
                   Doğum tarihi
                 </Text>
                 <TouchableOpacity
-                  className="shadow-custom bg-white flex-row items-center rounded-xl border-[1px] border-gray-900 px-4 py-4 w-full"
+                  className="shadow-custom bg-white flex-row items-center rounded-xl border-[1px] border-gray-400 px-4 py-4 w-full"
                   onPress={
                     Platform.OS === "ios"
                       ? handlePresentDatePicker
@@ -973,7 +888,7 @@ const RegisterScreen = ({ navigation }) => {
                 >
                   Kullanıcı adı
                 </Text>
-                <View className="flex gap-4 flex-row items-center py-1  px-4 w-full border border-gray-900 rounded-xl">
+                <View className="flex gap-4 flex-row items-center py-1  px-4 w-full border border-gray-400 rounded-xl">
                   <TextInput
                     style={{
                       fontSize: 16,
@@ -1006,7 +921,7 @@ const RegisterScreen = ({ navigation }) => {
                 >
                   Telefon numarası
                 </Text>
-                <View className="flex gap-4 flex-row items-center py-1 px-4 w-full border border-gray-900 rounded-xl">
+                <View className="flex gap-4 flex-row items-center py-1 px-4 w-full border border-gray-400 rounded-xl">
                   <Text style={{ fontSize: 16, color: "#b0b0b0" }}>+90</Text>
                   <TextInput
                     style={{
@@ -1041,7 +956,7 @@ const RegisterScreen = ({ navigation }) => {
                   Cinsiyet
                 </Text>
                 <TouchableOpacity
-                  className="shadow-custom bg-white flex-row items-center rounded-xl border-[1px] border-gray-900 px-4 py-4 w-full"
+                  className="shadow-custom bg-white flex-row items-center rounded-xl border-[1px] border-gray-400 px-4 py-4 w-full"
                   onPress={() => {
                     setTempGenderValue(gender);
                     handlePresentGenderPicker();
@@ -1088,7 +1003,7 @@ const RegisterScreen = ({ navigation }) => {
                 >
                   Şifre
                 </Text>
-                <View className="flex gap-4 flex-row items-center py-1 px-4 w-full border border-gray-900 rounded-xl">
+                <View className="flex gap-4 flex-row items-center py-1 px-4 w-full border border-gray-400 rounded-xl">
                   <TextInput
                     className="text-gray-900 flex-1 py-3 font-normal"
                     placeholderTextColor="#4b5563"
@@ -1126,7 +1041,7 @@ const RegisterScreen = ({ navigation }) => {
                 >
                   Şifre tekrarı
                 </Text>
-                <View className="flex gap-4 flex-row items-center py-1 px-4 w-full border border-gray-900 rounded-xl">
+                <View className="flex gap-4 flex-row items-center py-1 px-4 w-full border border-gray-400 rounded-xl">
                   <TextInput
                     className="text-gray-900 flex-1 py-3 font-normal"
                     placeholderTextColor="#4b5563"

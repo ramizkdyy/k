@@ -428,7 +428,7 @@ export default authSlice.reducer;
 export const selectCurrentUser = (state) => state.auth.user;
 export const selectCurrentUserId = (state) => state.auth.user?.id;
 export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
-export const selectUserRole = (state) => state.auth.userRole || state.auth.role;
+export const selectUserRole = (state) => state.auth.userRole;
 export const selectAuthError = (state) => state.auth.error;
 export const selectAuthToken = (state) => state.auth.token;
 export const selectHasUserProfile = (state) => state.auth.hasUserProfile;
@@ -445,7 +445,7 @@ export const selectIsFullyAuthenticated = (state) =>
 
 export const selectUserInfo = (state) => ({
   user: state.auth.user,
-  role: state.auth.userRole || state.auth.role,
+  role: state.auth.userRole,
   hasProfile: state.auth.hasUserProfile,
   isAuthenticated: state.auth.isAuthenticated,
 });

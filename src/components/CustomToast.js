@@ -46,7 +46,8 @@ const CustomToast = ({ text1, text2, hide, onPress, props }) => {
           <View className="mr-3">
             <View
               style={{ width: 45, height: 45 }}
-              className="justify-center items-center rounded-full border border-gray-900"
+              className="justify-center items-center rounded-full border"
+              style={{ borderColor: '#015941' }}
             >
               {profileImage && profileImage !== "default_profile_image_url" ? (
                 <Image

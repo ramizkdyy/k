@@ -9,8 +9,9 @@ import postReducer from "./slices/postSlice";
 import offerReducer from "./slices/offerSlice";
 import profileReducer from "./slices/profileSlice";
 import expectationReducer from "./slices/expectationSlice";
+import chatReducer from "./slices/chatSlice";
 import { apiSlice } from "./api/apiSlice";
-import { chatApiSlice } from "./api/chatApiSlice"; // Chat API slice eklendi
+import { chatApiSlice } from "./api/chatApiSlice";
 import searchReducer from "./slices/searchSlice";
 
 // Initialize empty initial state for development
@@ -141,8 +142,9 @@ const rootReducer = combineReducers({
   profiles: profileReducer,
   expectations: expectationReducer,
   search: searchReducer,
+  chat: chatReducer,
   [apiSlice.reducerPath]: apiSlice.reducer,
-  [chatApiSlice.reducerPath]: chatApiSlice.reducer, // Chat API reducer eklendi
+  [chatApiSlice.reducerPath]: chatApiSlice.reducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

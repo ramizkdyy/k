@@ -1,7 +1,8 @@
 // redux/api/chatApiSlice.js - Backend Response Format'ına Uygun Güncellemeler
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { CHAT_API_URL } from "../../constants/api";
 
-const CHAT_BASE_URL = "https://brilliant-vitality-production.up.railway.app";
+const CHAT_BASE_URL = CHAT_API_URL;
 
 export const chatApiSlice = createApi({
   reducerPath: "chatApi",
@@ -185,13 +186,13 @@ export const chatApiSlice = createApi({
       },
     }),
 
-    // ✅ ENHANCED: Okunmamış mesaj sayısını getir - Backend response format'ına uyumlu
+    // ✅ Okunmamış mesaj sayısı — sadece ilk yükleme için, SignalR sonrası local state yeterli
     getUnreadCount: builder.query({
       query: () => "/api/chat/unread-count",
       providesTags: ["UnreadCount"],
-      keepUnusedDataFor: 15, // 15 seconds cache for unread count
-      refetchOnMountOrArgChange: true,
-      refetchOnFocus: true,
+      keepUnusedDataFor: 300,
+      refetchOnMountOrArgChange: false,
+      refetchOnFocus: false,
       transformResponse: (response) => {
 
         // Response direkt number ise
@@ -262,12 +263,10 @@ export const chatApiSlice = createApi({
           message: "Message sent successfully",
         };
       },
-      // ✅ Invalidate relevant tags to trigger refetch
       invalidatesTags: (result, error, { receiverUserId }) => [
-        "ChatPartner", // Partner listesini güncelle
-        "UnreadCount", // Unread count'u güncelle
-        { type: "ChatMessage", id: receiverUserId }, // Specific chat'i güncelle
-        { type: "ChatMessage", id: `${receiverUserId}-page-1` }, // İlk sayfayı güncelle
+        "ChatPartner",
+        { type: "ChatMessage", id: receiverUserId },
+        { type: "ChatMessage", id: `${receiverUserId}-page-1` },
       ],
     }),
 
@@ -281,10 +280,9 @@ export const chatApiSlice = createApi({
         return response;
       },
       invalidatesTags: (result, error, partnerId) => [
-        "UnreadCount", // Unread count'u güncelle
-        "ChatPartner", // Partner listesini güncelle (last message read status)
-        { type: "ChatMessage", id: partnerId }, // Specific chat'i güncelle
-        { type: "ChatMessage", id: `${partnerId}-page-1` }, // İlk sayfayı güncelle
+        "ChatPartner",
+        { type: "ChatMessage", id: partnerId },
+        { type: "ChatMessage", id: `${partnerId}-page-1` },
       ],
     }),
 
@@ -398,11 +396,11 @@ export const chatApiSlice = createApi({
       },
     }),
 
-    // ✅ ENHANCED: Unread summary getir - Backend response format'ına uyumlu
+    // ✅ Unread summary — sadece ilk yükleme / manuel refetch için
     getUnreadSummary: builder.query({
       query: () => "/api/chat/unread-summary",
       providesTags: ["UnreadCount"],
-      keepUnusedDataFor: 30,
+      keepUnusedDataFor: 300,
       transformResponse: (response) => {
 
 
@@ -841,10 +839,10 @@ export const chatApiHelpers = {
     dispatch(chatApiSlice.util.invalidateTags(["ChatPartner"]));
   },
 
-  // ✅ Unread count'u manuel güncelle
-  updateUnreadCount: (dispatch) => {
-
-    dispatch(chatApiSlice.util.invalidateTags(["UnreadCount"]));
+  // Artık kullanılmıyor — unread count SignalR event'larından chatSlice üzerinden güncellenir.
+  // Eski çağrı noktaları için tutuldu; API isteği tetiklemez.
+  updateUnreadCount: (_dispatch) => {
+    // no-op: setUnreadSummary / incrementUnreadMessages dispatch edin
   },
 
   // ✅ Specific chat'i yenile

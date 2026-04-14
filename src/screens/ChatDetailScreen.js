@@ -282,7 +282,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
                   (m.content === message.content &&
                     m.senderUserId === message.senderUserId &&
                     Math.abs(new Date(m.sentAt) - new Date(message.sentAt)) <
-                      2000)
+                    2000)
               )
           );
 
@@ -415,7 +415,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
                 (m.content === message.content &&
                   m.senderUserId === message.senderUserId &&
                   Math.abs(new Date(m.sentAt) - new Date(message.sentAt)) <
-                    2000)
+                  2000)
             )
         );
 
@@ -489,7 +489,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
                 (m.content === message.content &&
                   m.senderUserId === message.senderUserId &&
                   Math.abs(new Date(m.sentAt) - new Date(message.sentAt)) <
-                    2000)
+                  2000)
             )
         );
 
@@ -615,7 +615,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
               (msg.content === newMessage.content &&
                 msg.senderUserId === newMessage.senderUserId &&
                 Math.abs(new Date(msg.sentAt) - new Date(newMessage.sentAt)) <
-                  2000)
+                2000)
           );
 
           if (!exists) {
@@ -651,8 +651,8 @@ const ChatDetailScreen = ({ navigation, route }) => {
                 msg.sentAt,
               id: msg.id.startsWith("temp-")
                 ? confirmationData.MessageId ||
-                  confirmationData.messageId ||
-                  `msg-${Date.now()}`
+                confirmationData.messageId ||
+                `msg-${Date.now()}`
                 : msg.id,
             };
             return updatedMessage;
@@ -724,7 +724,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
   useEffect(() => {
     return () => {
       chatApiHelpers.updatePartnersList(dispatch);
-      chatApiHelpers.updateUnreadCount(dispatch);
+      // unread count SignalR event'larından chatSlice üzerinden güncellenir
     };
   }, [dispatch]);
 
@@ -842,8 +842,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
 
       Alert.alert(
         "Message Failed",
-        `Failed to send message${
-          !isConnected ? " (chat disconnected)" : ""
+        `Failed to send message${!isConnected ? " (chat disconnected)" : ""
         }. Please try again.`,
         [
           { text: "Cancel", style: "cancel" },
@@ -941,9 +940,8 @@ const ChatDetailScreen = ({ navigation, route }) => {
         )}
 
         <View
-          className={`flex-row mb-1 ${
-            isSent ? "justify-end" : "justify-start"
-          }`}
+          className={`flex-row mb-1 ${isSent ? "justify-end" : "justify-start"
+            }`}
         >
           <View
             style={{
@@ -968,9 +966,8 @@ const ChatDetailScreen = ({ navigation, route }) => {
               className="absolute flex flex-row items-center"
             >
               <Text
-                className={`text-xs ${
-                  isSent ? "text-blue-100" : "text-gray-500"
-                }`}
+                className={`text-xs ${isSent ? "text-blue-100" : "text-gray-500"
+                  }`}
               >
                 {formatMessageTimestamp(item.sentAt)}
               </Text>
@@ -997,8 +994,8 @@ const ChatDetailScreen = ({ navigation, route }) => {
   if (isInitialLoading || (isLoadingFirstPage && !hasLoadedInitialMessages)) {
     return (
       <View className="flex-1 bg-white justify-center items-center">
-        <ActivityIndicator size="large" color="#0ea5e9" />
-        <Text className="mt-2 text-gray-600">Loading messages...</Text>
+        <ActivityIndicator size="large" color="#404040 " />
+        <Text className="mt-2 text-gray-600">Mesajlar yükleniyor...</Text>
         {isBackgroundLoading && (
           <Text className="mt-1 text-gray-500 text-sm">
             Preparing more messages in background...
@@ -1104,7 +1101,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
                 className="rounded-full bg-white justify-center items-center overflow-hidden mr-3"
               >
                 {partner?.profileImageUrl &&
-                partner?.profileImageUrl !== "default_profile_image_url" ? (
+                  partner?.profileImageUrl !== "default_profile_image_url" ? (
                   <Image
                     style={{ width: 48, height: 48 }}
                     source={{ uri: partner.profileImageUrl }}
@@ -1128,6 +1125,8 @@ const ChatDetailScreen = ({ navigation, route }) => {
                 <Text
                   style={{ fontSize: 18 }}
                   className="font-semibold text-gray-900"
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
                 >
                   {/* ✅ Backend'den gelen partner data'sını kullan */}
                   {partner?.name && partner?.surname
@@ -1140,8 +1139,8 @@ const ChatDetailScreen = ({ navigation, route }) => {
                       {isPartnerTyping
                         ? "Yazıyor..."
                         : isPartnerOnline
-                        ? "Çevrimiçi"
-                        : ""}
+                          ? "Çevrimiçi"
+                          : ""}
                     </Text>
                   ) : null}
                 </View>

@@ -27,6 +27,7 @@ import {
     BottomSheetBackdrop,
     BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
     getCities,
     getDistrictsAndNeighbourhoodsByCityCode,
@@ -344,7 +345,7 @@ const PropertiesFilterModal = ({
                         <TouchableOpacity
                             key={index}
                             className={`px-4 py-2 rounded-full border ${isSelected
-                                ? "bg-gray-900 border-gray-900"
+                                ? "bg-green-brand-darker border-green-brand-darker"
                                 : "bg-white border-gray-300"
                                 }`}
                             onPress={() => {
@@ -619,14 +620,18 @@ const PropertiesFilterModal = ({
                         <TouchableOpacity
                             onPress={handleApplyFilters}
                             disabled={isSearching}
-                            className="items-center justify-center bg-gray-900 rounded-full px-4 py-2"
+                            style={{ borderRadius: 999, overflow: 'hidden' }}
                         >
-                            <Text
-                                style={{ fontSize: 13 }}
-                                className="font-medium text-white"
+                            <LinearGradient
+                                colors={['#026B4D', '#015941']}
+                                start={{ x: 0, y: 0.5 }}
+                                end={{ x: 1, y: 0.5 }}
+                                style={{ paddingHorizontal: 16, paddingVertical: 8, alignItems: 'center' }}
                             >
-                                {isSearching ? '...' : 'Uygula'}
-                            </Text>
+                                <Text style={{ fontSize: 13 }} className="font-medium text-white">
+                                    {isSearching ? '...' : 'Uygula'}
+                                </Text>
+                            </LinearGradient>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -657,7 +662,7 @@ const PropertiesFilterModal = ({
                                 <TouchableOpacity
                                     key={option.key}
                                     onPress={() => onSortChange && onSortChange(option.key)}
-                                    className={`px-4 py-2 rounded-full border ${isSelected ? "bg-gray-900 border-gray-900" : "bg-white border-gray-300"}`}
+                                    className={`px-4 py-2 rounded-full border ${isSelected ? "bg-green-brand-darker border-green-brand-darker" : "bg-white border-gray-300"}`}
                                 >
                                     <Text className={`font-medium ${isSelected ? "text-white" : "text-gray-700"}`}>
                                         {option.label}{isSelected ? (sortDirection === 0 ? " ↑" : " ↓") : ""}

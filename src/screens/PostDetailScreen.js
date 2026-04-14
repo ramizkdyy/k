@@ -55,6 +55,8 @@ import Carousel from "react-native-reanimated-carousel";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import LocationSection from "../components/LocationSection";
 import OfferModal from "../modals/OfferModal";
+import PostDetailScreenSkeleton from "../components/PostDetailScreenSkeleton";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width, height } = Dimensions.get("window");
 
@@ -294,6 +296,7 @@ const PostDetailScreen = ({ route, navigation }) => {
   // Extract post and images safely
   const post = data?.result.post;
   const images = Array.isArray(post?.postImages) ? post.postImages : [];
+  console.log('🖼️ [PostDetail] postImages from API:', JSON.stringify(post?.postImages));
   const similarPosts = similarPostsData?.data || [];
   const matchDetails = data?.result.matchDetails; // Match details from API
 
@@ -774,14 +777,8 @@ const PostDetailScreen = ({ route, navigation }) => {
     extrapolate: "clamp",
   });
 
-  // Render loading state
   if (isLoading) {
-    return (
-      <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" color="#4A90E2" />
-        <Text className="mt-3 text-base text-gray-500">İlan yükleniyor...</Text>
-      </View>
-    );
+    return <PostDetailScreenSkeleton />;
   }
 
   // If post data is not available
@@ -1804,27 +1801,40 @@ const PostDetailScreen = ({ route, navigation }) => {
                 <View className="flex-row items-center ">
                   <Text style={{ fontSize: 14 }} className="text-gray-500">
                     <Text
-                      className="underline text-gray-900 font-medium"
+                      className="text-gray-900 font-medium"
                       style={{ fontSize: 24 }}
                     >
-                      {post.kiraFiyati
-                        ? post.kiraFiyati.toLocaleString("tr-TR")
-                        : "0"}{" "}
-                      <Text>{getCurrencyText(post.paraBirimi)}</Text>
+                      <Text className="underline">
+                        {post.kiraFiyati
+                          ? post.kiraFiyati.toLocaleString("tr-TR")
+                          : "0"}
+                      </Text>
+                      {" "}{getCurrencyText(post.paraBirimi)}
                     </Text>{" "}
                     /ay
                   </Text>
                 </View>
-                <TouchableOpacity
-                  style={{ borderRadius: 20, paddingHorizontal: 60 }}
-                  className=" bg-gray-900 py-4 "
-                  onPress={() => setIsOfferModalVisible(true)}
-                  disabled={post.status !== 0}
-                >
-                  <Text className="text-white font-semibold text-center">
-                    {post.status === 0 ? "Teklif Ver" : "Bu ilan kapalı"}
+                {post.status === 0 ? (
+                  <TouchableOpacity
+                    style={{ borderRadius: 20, overflow: 'hidden', paddingHorizontal: 0 }}
+                    onPress={() => setIsOfferModalVisible(true)}
+                  >
+                    <LinearGradient
+                      colors={['#015941', '#0A6650']}
+                      start={{ x: 0, y: 0.5 }}
+                      end={{ x: 1, y: 0.5 }}
+                      style={{ paddingVertical: 16, paddingHorizontal: 60 }}
+                    >
+                      <Text className="text-white font-semibold text-center">
+                        {existingOffer ? "Teklifi Güncelle" : "Teklif Ver"}
+                      </Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                ) : (
+                  <Text style={{ fontSize: 14 }} className="text-gray-400 font-medium">
+                    Bu ilan kapalı
                   </Text>
-                </TouchableOpacity>
+                )}
               </>
             )}
             {userRole === "EVSAHIBI" && post.userId === currentUser?.id && (
@@ -1841,14 +1851,21 @@ const PostDetailScreen = ({ route, navigation }) => {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  className="flex-1 bg-gray-900 py-3 rounded-full"
+                  className="flex-1 rounded-full overflow-hidden"
                   onPress={() =>
                     navigation.navigate("Offers", { postId: post.postId })
                   }
                 >
-                  <Text className="text-white font-semibold text-center text-lg">
-                    Teklifleri Gör
-                  </Text>
+                  <LinearGradient
+                    colors={['#015941', '#0A6650']}
+                    start={{ x: 0, y: 0.5 }}
+                    end={{ x: 1, y: 0.5 }}
+                    style={{ paddingVertical: 12 }}
+                  >
+                    <Text className="text-white font-semibold text-center text-lg">
+                      Teklifleri Gör
+                    </Text>
+                  </LinearGradient>
                 </TouchableOpacity>
               </>
             )}

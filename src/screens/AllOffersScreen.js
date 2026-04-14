@@ -26,6 +26,7 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import PlatformBlurView from "../components/PlatformBlurView";
 import { ChevronLeft, Mail, Check, X, Clock, Star } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
 
@@ -368,20 +369,28 @@ const AllOffersScreen = () => {
                         {item.status === 0 && (
                             <View className="flex-row gap-3">
                                 <TouchableOpacity
-                                    className="flex-1 bg-gray-900 rounded-full justify-center items-center py-3"
+                                    className="flex-1 rounded-full overflow-hidden"
                                     onPress={() => handleAcceptOffer(item.offerId)}
                                     activeOpacity={0.8}
                                 >
-                                    <Text className="text-white font-semibold text-base">
-                                        Kabul Et
-                                    </Text>
+                                    <LinearGradient
+                                        colors={['#026B4D', '#0A6650']}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 1 }}
+                                        style={{ paddingVertical: 12, alignItems: 'center' }}
+                                    >
+                                        <Text className="text-white font-semibold text-base">
+                                            Kabul Et
+                                        </Text>
+                                    </LinearGradient>
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    className="flex-1 bg-white border border-gray-900 rounded-full justify-center items-center py-3"
+                                    className="flex-1 bg-white rounded-full justify-center items-center py-3 border"
+                                    style={{ borderColor: '#015941' }}
                                     onPress={() => handleRejectOffer(item.offerId)}
                                     activeOpacity={0.8}
                                 >
-                                    <Text className="text-gray-900 font-semibold text-base">
+                                    <Text className="font-semibold text-base" style={{ color: '#015941' }}>
                                         Reddet
                                     </Text>
                                 </TouchableOpacity>
@@ -451,10 +460,11 @@ const AllOffersScreen = () => {
                         deneyin.
                     </Text>
                     <TouchableOpacity
-                        className="border border-gray-900 px-6 py-3 rounded-full"
+                        className="border px-6 py-3 rounded-full"
+                        style={{ borderColor: '#015941' }}
                         onPress={handleRefresh}
                     >
-                        <Text className="text-gray-900 font-medium">Tekrar Dene</Text>
+                        <Text className="font-medium" style={{ color: '#015941' }}>Tekrar Dene</Text>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>

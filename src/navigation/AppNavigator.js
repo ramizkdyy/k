@@ -51,24 +51,15 @@ import UserProfileScreen from "../screens/UserProfileScreen";
 import ExploreScreen from "../screens/ExploreScreen";
 import FavoritePropertiesScreen from "../screens/FavoritePropertiesScreen";
 import FavoriteProfilesScreen from "../screens/FavoriteProfilesScreen";
+import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 // Import icons
 import PlatformBlurView from "../components/PlatformBlurView";
 import {
   Home,
-  Building2,
   Mail,
   User,
   Search,
   Fingerprint,
-  Menu,
-  MapPin,
-  Gavel,
-  Bell,
-  MessageCircle,
-  Settings,
-  HelpCircle,
-  LogOut,
-  ChevronLeft
 } from "lucide-react-native";
 
 import {
@@ -95,192 +86,10 @@ const LoadingScreen = () => (
 // Create navigation stacks
 const AuthStack = createStackNavigator();
 const MainStack = createStackNavigator();
-const RootStack = createStackNavigator(); // Yeni: Ana stack
+const RootStack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Custom Drawer Content
-const CustomDrawerContent = (props) => {
-  const userProfile = useSelector(selectUserProfile);
-  const dispatch = useDispatch();
 
-  const handleLogout = () => {
-    dispatch(logout());
-  };
-
-  return (
-    <View style={{ flex: 1, backgroundColor: "#A0E79E" }}>
-      {/* Header section */}
-      <View
-        style={{
-          backgroundColor: "#A0E79E",
-          padding: 20,
-          paddingTop: 50,
-        }}
-      >
-        <Text
-          style={{
-            color: "white",
-            fontSize: 18,
-            fontWeight: "bold",
-          }}
-        >
-          Merhaba, {userProfile?.firstName || "Kullanıcı"}
-        </Text>
-      </View>
-
-      {/* Drawer menu items */}
-      <DrawerContentScrollView
-        {...props}
-        style={{ backgroundColor: "#A0E79E" }}
-        contentContainerStyle={{ backgroundColor: "#A0E79E", flex: 1 }}
-      >
-        <DrawerItem
-          label="Home"
-          onPress={() => props.navigation.navigate("MainTabs")}
-          labelStyle={{ color: "white", fontSize: 16 }}
-          icon={({ focused, size }) => (
-            <Home size={20} color="white" />
-          )}
-        />
-
-        <DrawerItem
-          label="Profile"
-          onPress={() =>
-            props.navigation.navigate("MainTabs", {
-              screen: "Profile",
-            })
-          }
-          labelStyle={{ color: "white", fontSize: 16 }}
-          icon={({ focused, size }) => (
-            <User size={20} color="white" />
-          )}
-        />
-
-        <View
-          style={{
-            borderTopWidth: 1,
-            borderTopColor: "rgba(255,255,255,0.3)",
-            marginTop: 10,
-            paddingTop: 10,
-          }}
-        >
-          <DrawerItem
-            label="Get law support"
-            onPress={() => {
-              /* Navigate to legal support page */
-            }}
-            labelStyle={{ color: "white", fontSize: 16 }}
-            icon={({ focused, size}) => (
-              <Gavel size={20} color="white" />
-            )}
-          />
-
-          <DrawerItem
-            label="Notification"
-            onPress={() => {
-              /* Navigate to notifications page */
-            }}
-            labelStyle={{ color: "white", fontSize: 16 }}
-            icon={({ focused, size }) => (
-              <Bell size={20} color="white" />
-            )}
-          />
-
-          <DrawerItem
-            label="Message"
-            onPress={() => {
-              props.navigation.navigate("Messages");
-            }}
-            labelStyle={{ color: "white", fontSize: 16 }}
-            icon={({ focused, size }) => (
-              <MessageCircle
-                size={20}
-                color="white"
-              />
-            )}
-          />
-        </View>
-
-        <View
-          style={{
-            borderTopWidth: 1,
-            borderTopColor: "rgba(255,255,255,0.3)",
-            marginTop: 10,
-            paddingTop: 10,
-          }}
-        >
-          <DrawerItem
-            label="Setting"
-            onPress={() => {
-              /* Navigate to settings page */
-            }}
-            labelStyle={{ color: "white", fontSize: 16 }}
-            icon={({ focused, size }) => (
-              <Settings size={20} color="white" />
-            )}
-          />
-
-          <DrawerItem
-            label="Help"
-            onPress={() => {
-              /* Navigate to help page */
-            }}
-            labelStyle={{ color: "white", fontSize: 16 }}
-            icon={({ focused, size }) => (
-              <HelpCircle
-                size={20}
-                color="white"
-              />
-            )}
-          />
-
-          <DrawerItem
-            label="Logout"
-            onPress={handleLogout}
-            labelStyle={{ color: "white", fontSize: 16 }}
-            icon={({ focused, size }) => (
-              <LogOut
-                size={20}
-                color="white"
-              />
-            )}
-          />
-        </View>
-      </DrawerContentScrollView>
-
-      {/* Bottom spacer */}
-      <View style={{ backgroundColor: "#A0E79E", height: 50 }} />
-    </View>
-  );
-};
-
-// Animated screen wrapper for main content
-const AnimatedScreen = ({ children }) => {
-  const progress = useDrawerProgress();
-
-  const animatedStyle = useAnimatedStyle(() => {
-    const scale = interpolate(progress.value, [0, 1], [1, 1]);
-    const translateX = interpolate(progress.value, [0, 1], [0, 20]);
-    const borderRadius = interpolate(progress.value, [0, 1], [0, 15]);
-
-    return {
-      transform: [{ scale }, { translateX }],
-      borderRadius,
-      overflow: "hidden",
-      backgroundColor: "#A0E79E",
-    };
-  });
-
-  return (
-    <View style={{ flex: 1, backgroundColor: "#A0E79E" }}>
-      <Animated.View
-        style={[{ flex: 1, backgroundColor: "#A0E79E" }, animatedStyle]}
-      >
-        {children}
-      </Animated.View>
-    </View>
-  );
-};
 
 // Auth navigator for non-authenticated users
 const AuthNavigator = () => {
@@ -325,6 +134,14 @@ const AuthNavigator = () => {
         component={CreateProfileScreen}
         options={{
           title: "Profil Oluştur",
+          headerShown: false,
+        }}
+      />
+      <AuthStack.Screen
+        name="ForgotPassword"
+        component={ForgotPasswordScreen}
+        options={{
+          title: "Şifremi Unuttum",
           headerShown: false,
         }}
       />
@@ -394,7 +211,7 @@ const LandlordTabNavigator = () => {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: currentRoute === "#000",
+        tabBarActiveTintColor: "#000",
         tabBarInactiveTintColor: "#999999",
         tabBarStyle: getTabBarStyle(currentRoute),
         tabBarBackground: getTabBarBackground(currentRoute),
@@ -484,8 +301,8 @@ const LandlordTabNavigator = () => {
           title: "Profil",
           tabBarLabel: "",
           tabBarIcon: ({ focused }) => {
-            return userProfile?.profileImageUrl !==
-              "default_profile_image_url" ? (
+            return userProfile?.profileImageUrl &&
+              userProfile.profileImageUrl !== "default_profile_image_url" ? (
               <View style={{ width: 28, height: 28 }}>
                 <Image
                   source={{ uri: userProfile.profileImageUrl }}
@@ -676,8 +493,8 @@ const TenantTabNavigator = () => {
           title: "Profil",
           tabBarLabel: "",
           tabBarIcon: ({ focused }) => {
-            return userProfile?.profileImageUrl !==
-              "default_profile_image_url" ? (
+            return userProfile?.profileImageUrl &&
+              userProfile.profileImageUrl !== "default_profile_image_url" ? (
               <View
                 style={{
                   width: 28,
@@ -858,97 +675,7 @@ const MainStackNavigator = () => {
   );
 };
 
-// Wrapped Tab Navigators with Animation
-const MainStackNavigatorWrapped = () => {
-  return (
-    <AnimatedScreen>
-      <MainStackNavigator />
-    </AnimatedScreen>
-  );
-};
 
-// Drawer Navigators
-const LandlordDrawerNavigator = () => {
-  return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: "#A0E79E",
-      }}
-    >
-      <Drawer.Navigator
-        drawerContent={(props) => <CustomDrawerContent {...props} />}
-        screenOptions={{
-          headerShown: false,
-          drawerStyle: {
-            backgroundColor: "#A0E79E",
-            width: 250,
-          },
-          drawerActiveTintColor: "white",
-          drawerInactiveTintColor: "rgba(255,255,255,0.8)",
-          swipeEnabled: false,
-          swipeEdgeWidth: screenWidth,
-          drawerType: "slide",
-          overlayColor: "transparent",
-          sceneContainerStyle: {
-            backgroundColor: "#A0E79E",
-          },
-        }}
-      >
-        <Drawer.Screen
-          name="MainStack"
-          component={MainStackNavigatorWrapped}
-          options={{
-            title: "Ana Sayfa",
-          }}
-        />
-      </Drawer.Navigator>
-    </View>
-  );
-};
-
-const TenantDrawerNavigator = () => {
-  return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: "#A0E79E",
-      }}
-    >
-      <Drawer.Navigator
-        drawerContent={(props) => <CustomDrawerContent {...props} />}
-        screenOptions={{
-          headerShown: false,
-          drawerStyle: {
-            backgroundColor: "#A0E79E",
-            width: 250,
-          },
-          drawerActiveTintColor: "white",
-          drawerInactiveTintColor: "rgba(255,255,255,0.8)",
-          swipeEnabled: false,
-          swipeEdgeWidth: screenWidth,
-          swipeMinDistance: 10,
-          drawerType: "slide",
-          overlayColor: "transparent",
-          sceneContainerStyle: {
-            backgroundColor: "#A0E79E",
-          },
-          gestureHandlerProps: {
-            enableTrackpadTwoFingerGesture: true,
-          },
-        }}
-      >
-        <Drawer.Screen
-          name="MainStack"
-          component={MainStackNavigatorWrapped}
-          options={{
-            title: "Ana Sayfa",
-          }}
-        />
-      </Drawer.Navigator>
-    </View>
-  );
-};
 
 // ProfileLoader component - Loads profile when app starts
 const ProfileLoader = ({ children }) => {
@@ -959,18 +686,22 @@ const ProfileLoader = ({ children }) => {
   const hasUserProfile = useSelector(selectHasUserProfile);
   const userProfile = useSelector(selectUserProfile);
 
-  // Use correct profile query based on role
-  const {
-    data: profileData,
-    isLoading,
-    error,
-  } = userRole === "EVSAHIBI"
-      ? useGetLandlordProfileQuery(currentUser?.id, {
-        skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
-      })
-      : useGetTenantProfileQuery(currentUser?.id, {
-        skip: !isAuthenticated || !currentUser?.id || !hasUserProfile,
-      });
+  const baseSkip = !isAuthenticated || !currentUser?.id || !hasUserProfile;
+
+  const { data: landlordProfileData, isLoading: landlordLoading } =
+    useGetLandlordProfileQuery(currentUser?.id, {
+      skip: baseSkip || userRole !== "EVSAHIBI",
+    });
+
+  const { data: tenantProfileData, isLoading: tenantLoading } =
+    useGetTenantProfileQuery(currentUser?.id, {
+      skip: baseSkip || userRole !== "KIRACI",
+    });
+
+  const profileData =
+    userRole === "EVSAHIBI" ? landlordProfileData : tenantProfileData;
+  const isLoading =
+    userRole === "EVSAHIBI" ? landlordLoading : tenantLoading;
 
   // Save profile info to Redux when loaded
   useEffect(() => {

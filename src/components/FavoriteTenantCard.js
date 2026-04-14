@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Star, Heart } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser, selectUserRole } from '../redux/slices/authSlice';
 
@@ -389,7 +390,7 @@ const FavoriteTenantCard = ({
                 {/* Action Buttons */}
                 <View className="flex-row gap-3">
                     <TouchableOpacity
-                        className="flex-1 bg-gray-900 py-4 px-6 rounded-full flex-row items-center justify-center"
+                        className="flex-1 rounded-full overflow-hidden"
                         onPress={(e) => {
                             e.stopPropagation();
                             navigation.navigate("ChatDetail", {
@@ -408,7 +409,14 @@ const FavoriteTenantCard = ({
                             });
                         }}
                     >
-                        <Text className="text-white font-semibold ml-2">Mesaj Gönder</Text>
+                        <LinearGradient
+                            colors={['#026B4D', '#0A6650']}
+                            start={{ x: 0, y: 0.5 }}
+                            end={{ x: 1, y: 0.5 }}
+                            style={{ paddingVertical: 16, paddingHorizontal: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                            <Text className="text-white font-semibold ml-2">Mesaj Gönder</Text>
+                        </LinearGradient>
                     </TouchableOpacity>
 
                     <TouchableOpacity

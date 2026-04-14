@@ -10,13 +10,6 @@ export const searchApiSlice = apiSlice.injectEndpoints({
                 method: "POST",
                 body: searchFilters,
             }),
-            providesTags: (result) => [
-                { type: "Post", id: "SEARCH" },
-                ...(result?.result?.data || []).map(({ id }) => ({
-                    type: "Post",
-                    id
-                })),
-            ],
         }),
 
         // GET /api/PostSearch/search - Filtreleri almak için (eğer gerekirse)

@@ -7,11 +7,12 @@ import {
   TextInput,
   RefreshControl,
   Alert,
-  SafeAreaView,
   Dimensions,
   ScrollView,
   Animated,
+  Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { useSelector } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
@@ -283,35 +284,35 @@ const MatchScoreBadge = memo(({ matchScore }) => {
 // Memoized Property Details Slider
 const PropertyDetailsSlider = memo(({ item }) => {
   const propertyDetails = [
-    { id: "rooms", Icon: BedDouble, value: item.odaSayisi || "N/A", label: "Oda" },
+    { id: "rooms", Icon: BedDouble, value: item.odaSayisi || "-", label: "Oda" },
     {
       id: "bedrooms",
       Icon: BedDouble,
-      value: item.yatakOdasiSayisi || "N/A",
+      value: item.yatakOdasiSayisi || "-",
       label: "Y.Odası",
     },
     {
       id: "bathrooms",
       Icon: ShowerHead,
-      value: item.banyoSayisi || "N/A",
+      value: item.banyoSayisi || "-",
       label: "Banyo",
     },
     {
       id: "area",
       Icon: Ruler,
-      value: item.brutMetreKare ? `${item.brutMetreKare} m²` : "N/A",
+      value: item.brutMetreKare ? `${item.brutMetreKare} m²` : "-",
       label: "Alan",
     },
     {
       id: "floor",
       Icon: Building,
-      value: item.bulunduguKat || "N/A",
+      value: item.bulunduguKat || "-",
       label: "Kat",
     },
     {
       id: "age",
       Icon: Calendar,
-      value: item.binaYasi ? `${item.binaYasi}` : "N/A",
+      value: item.binaYasi ? `${item.binaYasi}` : "-",
       label: "Bina yaşı",
     },
     {
@@ -497,8 +498,12 @@ const PropertyItem = memo(
     }, [item.postId, navigation]);
 
     const handleProfilePress = useCallback(() => {
-      // API'den gelen veride landlord ID'si yok, bu yüzden navigation disable
-    }, [item.landlordName, navigation]);
+      navigation.navigate("UserProfile", {
+        userId: item.userId,
+        userRole: "EVSAHIBI",
+        matchScore: item.matchScore,
+      });
+    }, [item, navigation]);
 
     // Dummy image array oluştur (API'den firstPostİmageURL boş geliyor)
     const dummyImages = item.firstPostİmageURL
@@ -507,11 +512,11 @@ const PropertyItem = memo(
 
     // Property details - API response'a göre adapte edildi
     const adaptedItem = {
-      odaSayisi: item.propertyDetails?.rooms || "N/A",
-      yatakOdasiSayisi: item.propertyDetails?.bedrooms || "N/A",
-      banyoSayisi: item.propertyDetails?.bathrooms || "N/A",
+      odaSayisi: item.propertyDetails?.rooms || "-",
+      yatakOdasiSayisi: item.propertyDetails?.bedrooms || "-",
+      banyoSayisi: item.propertyDetails?.bathrooms || "-",
       brutMetreKare: item.propertyDetails?.size || null,
-      bulunduguKat: item.propertyDetails?.floor || "N/A",
+      bulunduguKat: item.propertyDetails?.floor || "-",
       binaYasi: item.propertyDetails?.buildingAge || null,
       aidat: item.propertyDetails?.dues || null,
       depozito: item.propertyDetails?.deposit || null,
@@ -595,7 +600,7 @@ const PropertyItem = memo(
                   className="flex-row items-center"
                   onPress={handleProfilePress}
                 >
-                  <View className="w-12 h-12 rounded-full justify-center items-center mr-3 border-gray-900 border">
+                  <View className="w-12 h-12 rounded-full justify-center items-center mr-3 border" style={{ borderColor: '#015941' }}>
                     {item?.landlordProfileURL ? (
                       <Image
                         source={{ uri: item?.landlordProfileURL }}
@@ -648,7 +653,8 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
   // State
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [minMatchScore, setMinMatchScore] = useState(0.1); // API response'a göre default 0.1
+  const [sortBy, setSortBy] = useState("compatibility");
+  const [sortDirection, setSortDirection] = useState(0); // 0 = desc, 1 = asc
   const [currentPage, setCurrentPage] = useState(1);
   const [allProperties, setAllProperties] = useState([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -685,16 +691,14 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
     extrapolate: "clamp",
   });
 
-  // Reset pagination when filters change
+  // Reset pagination when search changes
   useEffect(() => {
     setIsFilterChanging(true);
     setCurrentPage(1);
-    setAllProperties([]);
-    setHasNextPage(true);
 
     const timer = setTimeout(() => setIsFilterChanging(false), 300);
     return () => clearTimeout(timer);
-  }, [minMatchScore]);
+  }, [searchQuery]);
 
   // API Query
   const {
@@ -707,7 +711,7 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
       tenantUserId: currentUser?.id,
       page: currentPage,
       pageSize: 10,
-      minMatchScore: minMatchScore,
+      minMatchScore: 0.1,
     },
     {
       skip: !currentUser?.id || userRole !== "KIRACI",
@@ -738,7 +742,7 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
     }
   }, [recommendedData, currentPage]);
 
-  // Filter properties
+  // Filter and sort properties
   const getFilteredProperties = useCallback(() => {
     let filteredProperties = [...allProperties];
 
@@ -754,8 +758,21 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
       );
     }
 
+    const dir = sortDirection === 0 ? -1 : 1;
+    switch (sortBy) {
+      case "compatibility":
+        filteredProperties.sort((a, b) => dir * ((b.matchScore || 0) - (a.matchScore || 0)));
+        break;
+      case "price":
+        filteredProperties.sort((a, b) => dir * ((a.rent || 0) - (b.rent || 0)));
+        break;
+      case "date":
+        filteredProperties.sort((a, b) => dir * (new Date(a.createdDate || 0) - new Date(b.createdDate || 0)));
+        break;
+    }
+
     return filteredProperties;
-  }, [allProperties, searchQuery]);
+  }, [allProperties, searchQuery, sortBy, sortDirection]);
 
   const filteredProperties = getFilteredProperties();
 
@@ -785,9 +802,14 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
     }
   }, [refetch]);
 
-  const handleMatchScoreChange = useCallback((newScore) => {
-    setMinMatchScore(newScore);
-  }, []);
+  const handleSortChange = (key) => {
+    if (sortBy === key) {
+      setSortDirection((prev) => (prev === 0 ? 1 : 0));
+    } else {
+      setSortBy(key);
+      setSortDirection(0);
+    }
+  };
 
   // Loading state effect
   useEffect(() => {
@@ -796,12 +818,10 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
     }
   }, [recommendedData]);
 
-  // Match score filter options
-  const matchScoreOptions = [
-    { key: 0.1, label: "Tümü" },
-    { key: 0.3, label: "İyi" },
-    { key: 0.5, label: "Çok İyi" },
-    { key: 0.7, label: "Mükemmel" },
+  const sortOptions = [
+    { key: "compatibility", label: "Uyumluluk" },
+    { key: "price", label: "Fiyat" },
+    { key: "date", label: "Tarih" },
   ];
 
   // Render functions
@@ -877,7 +897,7 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
   // Redirect if not tenant
   if (userRole !== "KIRACI") {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView edges={['top']} className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center p-8">
           <CircleAlert size={64} color="#EF4444" />
           <Text className="text-xl font-semibold text-gray-700 mt-4 mb-2 text-center">
@@ -903,7 +923,7 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
     (isLoadingRecommended && currentPage === 1 && !isFilterChanging)
   ) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView edges={['top']} className="flex-1 bg-white">
         {/* Header skeleton */}
         <View className="bg-white border-b border-gray-200 z-10">
           <View className="flex flex-row items-center px-5">
@@ -932,7 +952,7 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
   // Show error state
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView edges={['top']} className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center p-8">
           <CircleAlert size={50} color="#000" />
           <Text className="text-xl font-semibold text-gray-900 mt-2 mb-2 text-center">
@@ -942,10 +962,11 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
             Önerilen ilanlar yüklenirken bir sorun oluştu.
           </Text>
           <TouchableOpacity
-            className="border border-gray-900 px-6 py-3 rounded-full"
+            className="border px-6 py-3 rounded-full"
+            style={{ borderColor: '#015941' }}
             onPress={onRefresh}
           >
-            <Text className="text-gray-900 font-medium">Tekrar Dene</Text>
+            <Text className="font-medium" style={{ color: '#015941' }}>Tekrar Dene</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -953,7 +974,7 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView edges={['top']} className="flex-1 bg-white">
       {/* Fixed search bar */}
       <View className="bg-white border-b border-gray-200 z-10">
         <View className="flex flex-row items-center px-5">
@@ -999,24 +1020,27 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
             }}
           >
             <View className="flex-row items-center justify-center w-full">
-              {matchScoreOptions.map((option) => (
+              {sortOptions.map((option) => (
                 <TouchableOpacity
-                  activeOpacity={1}
                   key={option.key}
-                  className={`mr-3 px-4 py-2 rounded-full border ${minMatchScore === option.key
-                    ? "bg-gray-900"
-                    : "bg-white border-white"
+                  className={`mr-3 px-4 py-2 rounded-full ${sortBy === option.key
+                    ? "bg-green-brand-darker"
+                    : "bg-white border border-gray-400"
                     }`}
-                  onPress={() => handleMatchScoreChange(option.key)}
+                  onPress={() => handleSortChange(option.key)}
                 >
-                  <Text
-                    className={`text-sm font-medium ${minMatchScore === option.key
-                      ? "text-white"
-                      : "text-gray-700"
-                      }`}
-                  >
-                    {option.label}
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Text
+                      className={`text-sm font-medium ${sortBy === option.key ? "text-white" : "text-gray-700"}`}
+                    >
+                      {option.label}
+                    </Text>
+                    {sortBy === option.key && (
+                      <Text style={{ color: "white", fontSize: Platform.OS === "android" ? 19 : 12, marginLeft: 2, lineHeight: Platform.OS === "android" ? 23 : 16, includeFontPadding: false, textAlignVertical: "center" }}>
+                        {sortDirection === 0 ? "↓" : "↑"}
+                      </Text>
+                    )}
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>

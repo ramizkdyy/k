@@ -1,7 +1,8 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { logout } from "../slices/authSlice";
+import { API_BASE_URL } from "../../constants/api";
 
-const BASE_URL = "https://kiraxproject-production.up.railway.app";
+const BASE_URL = API_BASE_URL;
 
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
@@ -710,7 +711,7 @@ export const apiSlice = createApi({
       invalidatesTags: ["Expectation", "User", "Profile"],
     }),
     getLandlordExpectationById: builder.query({
-      query: (userId) => `/api/profile/GetLandlordExpectationById/${userId}`,
+      query: (userId) => `/api/profile/GetLandLordExpectationByID/${userId}`,
       providesTags: (result, error, userId) => [
         { type: "Expectation", id: userId },
       ],
@@ -723,7 +724,7 @@ export const apiSlice = createApi({
     }),
     updateLandlordExpectation: builder.mutation({
       query: (expectationData) => ({
-        url: "/api/profile/UpdateLandlordExpectation",
+        url: "/api/profile/UpdateLandLordExpectation",
         method: "PUT",
         body: expectationData,
       }),

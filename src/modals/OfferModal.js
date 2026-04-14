@@ -17,6 +17,7 @@ import {
     BottomSheetBackdrop,
     BottomSheetFlatList,
 } from "@gorhom/bottom-sheet";
+import { LinearGradient } from "expo-linear-gradient";
 
 const currencyOptions = [
     { label: "Türk Lirası (₺)", value: 1, symbol: "₺" },
@@ -334,20 +335,31 @@ const OfferModal = ({
                 {/* Gönder Butonu */}
                 <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
                     <TouchableOpacity
-                        className={`py-3 rounded-xl ${
-                            isLoading || !offerAmount.trim() || !selectedCurrency
-                                ? "bg-gray-300"
-                                : "bg-gray-900"
-                        }`}
+                        style={{ borderRadius: 12, overflow: 'hidden' }}
                         onPress={handleSubmit}
                         disabled={isLoading || !offerAmount.trim() || !selectedCurrency}
                     >
-                        {isLoading ? (
-                            <ActivityIndicator color="#ffffff" />
+                        {(isLoading || !offerAmount.trim() || !selectedCurrency) ? (
+                            <View className="py-3 items-center bg-gray-300">
+                                {isLoading ? (
+                                    <ActivityIndicator color="#ffffff" />
+                                ) : (
+                                    <Text className="text-white font-semibold text-center text-lg">
+                                        Teklifi Gönder
+                                    </Text>
+                                )}
+                            </View>
                         ) : (
-                            <Text className="text-white font-semibold text-center text-lg">
-                                Teklifi Gönder
-                            </Text>
+                            <LinearGradient
+                                colors={['#0C9870', '#0A6650']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={{ paddingVertical: 12, alignItems: 'center' }}
+                            >
+                                <Text className="text-white font-semibold text-center text-lg">
+                                    Teklifi Gönder
+                                </Text>
+                            </LinearGradient>
                         )}
                     </TouchableOpacity>
                 </View>

@@ -23,6 +23,7 @@ import Animated, {
     withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("screen");
 
@@ -42,7 +43,7 @@ const CustomTextInput = ({
         <Text className="text-sm font-semibold text-gray-900 mb-3">
             {label} {required && <Text className="text-red-500">*</Text>}
         </Text>
-        <View className="border border-gray-900 rounded-xl px-4 py-4">
+        <View className="border border-gray-400 rounded-xl px-4 py-4">
             <TextInput
                 className="text-gray-900 text-base"
                 placeholder={placeholder}
@@ -311,19 +312,31 @@ const ProfileRateModal = ({
                         style={{ paddingBottom: Math.max(insets.bottom, 16) }}
                     >
                         <TouchableOpacity
-                            className={`py-4 rounded-xl items-center ${isLoading || selectedRating === 0
-                                    ? "bg-gray-300"
-                                    : "bg-gray-900"
-                                }`}
+                            style={{ borderRadius: 12, overflow: 'hidden' }}
                             onPress={handleSubmit}
                             disabled={isLoading || selectedRating === 0}
                         >
-                            {isLoading ? (
-                                <ActivityIndicator color="#ffffff" />
-                            ) : (
-                                <Text className="text-white font-semibold text-center text-lg">
+                            {(isLoading || selectedRating === 0) ? (
+                              <View className="py-4 items-center bg-gray-300">
+                                {isLoading ? (
+                                  <ActivityIndicator color="#ffffff" />
+                                ) : (
+                                  <Text className="text-white font-semibold text-center text-lg">
                                     Değerlendirmeyi Gönder
+                                  </Text>
+                                )}
+                              </View>
+                            ) : (
+                              <LinearGradient
+                                colors={['#0C9870', '#026B4D']}
+                                start={{ x: 0, y: 0.5 }}
+                                end={{ x: 1, y: 0.5 }}
+                                style={{ paddingVertical: 16, alignItems: 'center' }}
+                              >
+                                <Text className="text-white font-semibold text-center text-lg">
+                                  Değerlendirmeyi Gönder
                                 </Text>
+                              </LinearGradient>
                             )}
                         </TouchableOpacity>
                     </View>

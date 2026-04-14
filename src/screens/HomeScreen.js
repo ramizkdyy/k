@@ -1,11 +1,10 @@
 // HomeScreen.js - Animated Header ile güncellenmiş
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useRef } from "react";
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
-  Image,
   TextInput,
   RefreshControl,
   Alert,
@@ -14,6 +13,7 @@ import {
   Animated,
   Dimensions,
   StatusBar as RNStatusBar,
+  Platform,
 } from "react-native";
 import { useSelector } from "react-redux";
 import { selectUserRole, selectCurrentUser } from "../redux/slices/authSlice";
@@ -25,11 +25,10 @@ import {
   MessageCircle,
   Fingerprint,
 } from "lucide-react-native";
-import { useGetUnreadSummaryQuery } from "../redux/api/chatApiSlice";
-import { useSignalR } from "../contexts/SignalRContext";
-import { useFocusEffect } from "@react-navigation/native";
+import { selectTotalUnreadChats } from "../redux/slices/chatSlice";
 import PlatformBlurView from "../components/PlatformBlurView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import KiraxLogo from "../../assets/kirax-logo-svg.svg";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -92,56 +91,11 @@ const HomeScreen = ({ navigation }) => {
     extrapolate: "clamp",
   });
 
-  // SignalR context'den connection ve status al
-  const { isConnected, connection } = useSignalR();
+  // Unread count — SignalR event'larından chatSlice üzerinden anlık güncellenir, poll yok
+  const totalUnreadCount = useSelector(selectTotalUnreadChats);
 
-  const {
-    data: unreadData,
-    isLoading: unreadLoading,
-    refetch: refetchUnread,
-  } = useGetUnreadSummaryQuery(undefined, {
-    refetchOnFocus: true,
-    refetchOnMountOrArgChange: true,
-  });
-
-  const totalUnreadCount = React.useMemo(() => {
-    return unreadData?.totalUnreadChats || 0;
-  }, [unreadData?.totalUnreadChats]);
-
-  // Focus effect - Ekrana gelince unread count'u yenile
-  useFocusEffect(
-    useCallback(() => {
-      refetchUnread();
-    }, [refetchUnread])
-  );
-
-  // SignalR event listener'larını ekle
-  useEffect(() => {
-    if (!connection || !isConnected) return;
-
-
-    const handleReceiveMessage = (messageData) => {
-      refetchUnread();
-    };
-
-    const handleMessageSent = (confirmationData) => {
-      refetchUnread();
-    };
-
-    const handleMessagesRead = (readData) => {
-      refetchUnread();
-    };
-
-    connection.on("ReceiveMessage", handleReceiveMessage);
-    connection.on("MessageSent", handleMessageSent);
-    connection.on("MessagesRead", handleMessagesRead);
-
-    return () => {
-      connection.off("ReceiveMessage", handleReceiveMessage);
-      connection.off("MessageSent", handleMessageSent);
-      connection.off("MessagesRead", handleMessagesRead);
-    };
-  }, [connection, isConnected, refetchUnread]);
+  // Unread count SignalRContext global handler'larından chatSlice üzerinden güncelleniyor.
+  // Bu ekranda ayrıca SignalR dinlemeye gerek yok.
 
   // Check if profile needs to be completed
   const needsProfileCompletion =
@@ -152,10 +106,7 @@ const HomeScreen = ({ navigation }) => {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([
-        refetchUnread(),
-        new Promise((resolve) => setTimeout(resolve, 800)), // ✅ OPTIMIZED: 1500ms → 800ms
-      ]);
+      await new Promise((resolve) => setTimeout(resolve, 800));
     } catch (error) {
     } finally {
       setRefreshing(false);
@@ -211,17 +162,19 @@ const HomeScreen = ({ navigation }) => {
           }}
         />
 
-        {/* Semi-transparent overlay */}
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(255, 255, 255, 0.7)",
-          }}
-        />
+        {/* Semi-transparent overlay — only on iOS; Android PlatformBlurView fallback is already opaque enough */}
+        {Platform.OS === "ios" && (
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(255, 255, 255, 0.7)",
+            }}
+          />
+        )}
 
         {/* Content Container */}
         <View
@@ -242,14 +195,10 @@ const HomeScreen = ({ navigation }) => {
             }}
           >
             <View className="flex-row justify-between items-center">
-              <View className="flex-col flex-1">
-                <Text
-                  style={{ fontSize: 30 }}
-                  className="text-gray-900 font-semibold"
-                >
-                  kiraX
-                </Text>
-              </View>
+              <KiraxLogo
+                width={120}
+                height={40}
+              />
             </View>
           </Animated.View>
 
@@ -299,6 +248,13 @@ const HomeScreen = ({ navigation }) => {
                   }
                   value={searchQuery}
                   onChangeText={setSearchQuery}
+                  returnKeyType="search"
+                  onSubmitEditing={() => {
+                    if (searchQuery.trim()) {
+                      navigation.navigate("AllNearbyProperties", { searchQuery: searchQuery.trim() });
+                      setSearchQuery("");
+                    }
+                  }}
                 />
               </View>
             </PlatformBlurView>
@@ -388,7 +344,6 @@ const HomeScreen = ({ navigation }) => {
             colors={["#303030"]}
             progressBackgroundColor="#fff"
             progressViewOffset={getDynamicPaddingTop()}
-            title="Yenileniyor..."
             titleColor="#666"
           />
         }

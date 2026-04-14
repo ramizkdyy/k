@@ -33,11 +33,22 @@ const profileSlice = createSlice({
   reducers: {
     // Set profile data
     setUserProfile: (state, action) => {
-      state.userProfile = action.payload;
-      // Clear any existing error when setting new profile
-      if (action.payload) {
-        state.error = null;
+      if (!action.payload) {
+        state.userProfile = null;
+        return;
       }
+      // API bazen profileImageUrl döndürmeyebilir (null/undefined).
+      // Mevcut geçerli URL varsa koru — refresh sonrası resmin kaybolmasını engeller.
+      const existingImageUrl = state.userProfile?.profileImageUrl;
+      const newImageUrl = action.payload.profileImageUrl;
+      state.userProfile = {
+        ...action.payload,
+        profileImageUrl:
+          newImageUrl && newImageUrl !== "default_profile_image_url"
+            ? newImageUrl
+            : existingImageUrl ?? newImageUrl,
+      };
+      state.error = null;
     },
 
     // Set current profiles
@@ -771,9 +782,9 @@ const profileSlice = createSlice({
       apiSlice.endpoints.createTenantExpectation.matchFulfilled,
       (state, { payload }) => {
         if (payload && payload.isSuccess && payload.result) {
-          // Update userProfile with the new expectation data
           if (state.userProfile) {
-            state.userProfile.landlordExpectation = payload.result;
+            // API'da field adı "landLordExpectation" (capital L) — aynı isim kullanılıyor
+            state.userProfile.landLordExpectation = payload.result;
             state.userProfile.isLandlordExpectationCompleted = true;
           }
         }
@@ -799,9 +810,8 @@ const profileSlice = createSlice({
       apiSlice.endpoints.updateTenantExpectation.matchFulfilled,
       (state, { payload }) => {
         if (payload && payload.isSuccess && payload.result) {
-          // Update userProfile with the updated expectation data
           if (state.userProfile) {
-            state.userProfile.landlordExpectation = payload.result;
+            state.userProfile.landLordExpectation = payload.result;
             state.userProfile.isLandlordExpectationCompleted = true;
           }
         }

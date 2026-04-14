@@ -29,6 +29,7 @@ import {
 } from "../redux/slices/authSlice";
 import { setUserProfile } from "../redux/slices/profileSlice";
 import { authCleanupHelper } from "../utils/authCleanup";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { chatApiHelpers } from "../redux/api/chatApiSlice";
 import notificationService from "../services/notificationService";
 
@@ -64,6 +65,15 @@ const LoginScreen = ({ navigation }) => {
       showSubscription.remove();
       hideSubscription.remove();
     };
+  }, []);
+
+  useEffect(() => {
+    AsyncStorage.getItem("remembered_username").then((saved) => {
+      if (saved) {
+        setUsername(saved);
+        setChecked(true);
+      }
+    });
   }, []);
 
   // ✅ Enhanced FCM token registration function
@@ -184,6 +194,13 @@ const LoginScreen = ({ navigation }) => {
         // 3. ✅ Setup FCM token for new login
         await registerFcmTokenAfterLogin();
 
+
+        // Beni Hatırla
+        if (isChecked) {
+          await AsyncStorage.setItem("remembered_username", username.trim());
+        } else {
+          await AsyncStorage.removeItem("remembered_username");
+        }
 
         // Clear form
         setUsername("");
@@ -333,7 +350,10 @@ const LoginScreen = ({ navigation }) => {
                   <View className="items-center flex-row gap-2">
                     <Checkbox
                       value={isChecked}
-                      onValueChange={setChecked}
+                      onValueChange={(val) => {
+                        setChecked(val);
+                        if (!val) AsyncStorage.removeItem("remembered_username");
+                      }}
                       color={isChecked ? "#86efac" : undefined}
                       disabled={isLoading}
                       style={{
@@ -345,7 +365,11 @@ const LoginScreen = ({ navigation }) => {
                       }}
                     />
                     <TouchableOpacity
-                      onPress={() => setChecked(!isChecked)}
+                      onPress={() => {
+                        const next = !isChecked;
+                        setChecked(next);
+                        if (!next) AsyncStorage.removeItem("remembered_username");
+                      }}
                       disabled={isLoading}
                     >
                       <Text
@@ -416,9 +440,9 @@ const LoginScreen = ({ navigation }) => {
               <View className="flex justify-center items-center gap-4 w-full">
                 <Pressable
                   className={`rounded-xl bg-white flex-row items-center px-4 py-3 gap-2 w-full border ${
-                    isLoading ? "border-gray-300" : "border-gray-900"
+                    isLoading ? "border-gray-300" : "border-green-brand-dark"
                   }`}
-                  onPress={() => {}}
+                  onPress={() => Alert.alert("Bilgi", "Bu özellik yakında eklenecektir.")}
                   disabled={isLoading}
                 >
                   <AntDesign
@@ -443,9 +467,9 @@ const LoginScreen = ({ navigation }) => {
 
                 <Pressable
                   className={`rounded-xl bg-white flex-row items-center px-4 py-3 gap-2 w-full border ${
-                    isLoading ? "border-gray-300" : "border-gray-900"
+                    isLoading ? "border-gray-300" : "border-green-brand-dark"
                   }`}
-                  onPress={() => {}}
+                  onPress={() => Alert.alert("Bilgi", "Bu özellik yakında eklenecektir.")}
                   disabled={isLoading}
                 >
                   <AntDesign

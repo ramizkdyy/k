@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
   SafeAreaView,
   Dimensions,
 } from "react-native";
@@ -63,7 +62,9 @@ import {
   selectProfileActionError,
   clearProfileActionError,
 } from "../redux/slices/profileSlice";
+import { LinearGradient } from "expo-linear-gradient";
 import ProfileRateModal from "../modals/ProfileRateModal";
+import UserProfileSkeleton from "../components/UserProfileSkeleton";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -255,9 +256,14 @@ const UserProfileScreen = ({ navigation, route }) => {
   };
 
   const handleSendMessage = () => {
-    navigation.navigate("Messages", {
-      recipientId: userId,
-      recipientName: userProfile?.user?.name + " " + userProfile?.user?.surname,
+    navigation.navigate("ChatDetail", {
+      partnerId: userId,
+      partnerName: userProfile?.user?.name + " " + userProfile?.user?.surname,
+      partner: {
+        name: userProfile?.user?.name,
+        surname: userProfile?.user?.surname,
+        profileImageUrl: userProfile?.profileImageUrl,
+      },
     });
   };
 
@@ -419,14 +425,7 @@ const UserProfileScreen = ({ navigation, route }) => {
   };
 
   if (profileLoading || myProfileLoading) {
-    return (
-      <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" color="#6b7280" />
-        <Text className="mt-3 text-base text-gray-500">
-          Profil yükleniyor...
-        </Text>
-      </View>
-    );
+    return <UserProfileSkeleton />;
   }
 
   if (profileError || !userProfile) {
@@ -562,9 +561,16 @@ const UserProfileScreen = ({ navigation, route }) => {
               {/* Mesaj Butonu */}
               <TouchableOpacity
                 onPress={handleSendMessage}
-                className="bg-gray-900 px-6 py-3 rounded-xl flex-row items-center"
+                style={{ borderRadius: 12, overflow: 'hidden' }}
               >
-                <MessageCircle size={16} color="white" />
+                <LinearGradient
+                  colors={['#026B4D', '#0A6650']}
+                  start={{ x: 0, y: 0.5 }}
+                  end={{ x: 1, y: 0.5 }}
+                  style={{ paddingHorizontal: 24, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}
+                >
+                  <MessageCircle size={16} color="white" />
+                </LinearGradient>
               </TouchableOpacity>
 
               {/* YENİ: Değerlendir Butonu */}
