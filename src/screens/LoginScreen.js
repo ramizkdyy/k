@@ -15,7 +15,8 @@ import {
   Alert,
   StatusBar,
 } from "react-native";
-import { Image } from "expo-image";
+import KiraxLogo from "../../assets/kirax-logo-svg.svg";
+import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import { useLoginMutation } from "../redux/api/apiSlice";
@@ -281,15 +282,12 @@ const LoginScreen = ({ navigation }) => {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View className="flex-1 items-center gap-5 px-8">
+            <View className="flex-1 items-center px-8">
               {/* Logo - Boyutu küçültülmüş ve boşluklar azaltılmış */}
-              <View className="">
-                <Image
-                  source={require("../../assets/logo-kirax.png")}
-                  style={{ width: width * 1, height: width * 0.5 }}
-                  contentFit="contain"
-                  cachePolicy="memory-disk"
-                  transition={200}
+              <View className="pt-10 mb-16">
+                <KiraxLogo
+                  width={width * 0.6}
+                  height={width * 0.28}
                 />
               </View>
 
@@ -399,24 +397,30 @@ const LoginScreen = ({ navigation }) => {
 
               {/* ✅ Enhanced login button with better loading state */}
               <TouchableOpacity
-                className={`rounded-xl items-center justify-center py-3 w-full mt-3 ${
-                  isLoading ? "bg-gray-300" : "bg-green-300"
-                }`}
+                className="rounded-xl w-full mt-3 overflow-hidden"
                 onPress={handleLogin}
                 disabled={isLoading}
+                activeOpacity={0.85}
               >
-                {isLoading ? (
-                  <View className="flex-row items-center gap-2">
-                    <ActivityIndicator color="#006400" size="small" />
-                    <Text className="text-lg text-gray-600 font-semibold">
-                      Giriş yapılıyor...
+                <LinearGradient
+                  colors={isLoading ? ["#d1d5db", "#d1d5db"] : ["#25a244", "#155d27"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{ paddingVertical: 14, alignItems: "center", justifyContent: "center" }}
+                >
+                  {isLoading ? (
+                    <View className="flex-row items-center gap-2">
+                      <ActivityIndicator color="#6b7280" size="small" />
+                      <Text className="text-lg text-gray-600 font-semibold">
+                        Giriş yapılıyor...
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text className="text-xl text-white font-semibold">
+                      Giriş yap
                     </Text>
-                  </View>
-                ) : (
-                  <Text className="text-xl text-white font-semibold">
-                    Giriş yap
-                  </Text>
-                )}
+                  )}
+                </LinearGradient>
               </TouchableOpacity>
 
               {/* ✅ Enhanced error display */}

@@ -8,7 +8,7 @@ import {
     Keyboard,
     ActivityIndicator,
 } from "react-native";
-import { ChevronDown, ChevronLeft, X, Check } from "lucide-react-native";
+import { ChevronDown, ChevronLeft, X, Check, Clock, CheckCircle2, XCircle } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
     BottomSheetModal,
@@ -140,11 +140,11 @@ const OfferModal = ({
     const [selectedCurrency, setSelectedCurrency] = useState(null);
     const [offerMessage, setOfferMessage] = useState("");
 
-    const snapPoints = useMemo(() => ["80%"], []);
+    const snapPoints = useMemo(() => ["92%"], []);
 
     useEffect(() => {
         if (visible) {
-            bottomSheetRef.current?.present();
+            bottomSheetRef.current?.present(0);
         } else {
             bottomSheetRef.current?.dismiss();
         }
@@ -245,42 +245,31 @@ const OfferModal = ({
                     contentContainerStyle={{ paddingBottom: 16 }}
                 >
                     <View className="px-6 pt-4">
-                        {/* İlan Bilgisi */}
-                        <View className="mb-6 p-4 bg-gray-50 rounded-xl">
-                            <Text className="text-base font-semibold text-gray-800 mb-1">
-                                {postData?.ilanBasligi || "İlan"}
-                            </Text>
-                            <Text className="text-sm text-gray-600">
-                                Mevcut Fiyat: {postData?.kiraFiyati?.toLocaleString() || "0"}{" "}
-                                {selectedCurrency?.symbol || "₺"}/ay
-                            </Text>
-                        </View>
 
                         {/* Mevcut Teklif */}
                         {existingOffer && (
-                            <View className="mb-6 p-4 rounded-xl border border-gray-100" style={{
-                                backgroundColor: existingOffer.status === 1 ? "#f0fdf4"
-                                    : existingOffer.status === 2 ? "#fef2f2"
-                                    : "#fffbeb"
+                            <View className="mb-6 p-5 rounded-xl bg-white" style={{
+                                borderWidth: 2,
+                                borderColor: existingOffer.status === 2 ? "#dc2626" : "#208b3a",
                             }}>
-                                <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
+                                <Text className="text-sm font-bold text-gray-800 mb-2 uppercase tracking-wide">
                                     Mevcut Teklifiniz
                                 </Text>
-                                <Text className="text-xl font-bold text-gray-900 mb-1">
-                                    {new Intl.NumberFormat("tr-TR").format(existingOffer.offerAmount)}{" "}
-                                    {currencyOptions.find(c => c.value === existingOffer.currency)?.symbol || "₺"}
-                                </Text>
-                                <Text className="text-sm font-medium" style={{
-                                    color: existingOffer.status === 1 ? "#16a34a"
-                                        : existingOffer.status === 2 ? "#dc2626"
-                                        : "#d97706"
-                                }}>
-                                    {existingOffer.status === 0 ? "Beklemede"
-                                        : existingOffer.status === 1 ? "Kabul Edildi"
-                                        : "Reddedildi"}
-                                </Text>
+                                <View className="flex-row items-end">
+                                    {existingOffer.status === 0
+                                        ? <Clock size={22} color="#155d27" style={{ marginRight: 6, marginBottom: 6 }} />
+                                        : existingOffer.status === 1
+                                        ? <CheckCircle2 size={22} color="#155d27" style={{ marginRight: 6, marginBottom: 6 }} />
+                                        : <XCircle size={22} color="#dc2626" style={{ marginRight: 6, marginBottom: 6 }} />
+                                    }
+                                    <Text className="text-3xl font-bold" style={{ color: existingOffer.status === 2 ? "#dc2626" : "#155d27" }}>
+                                        {new Intl.NumberFormat("tr-TR").format(existingOffer.offerAmount)}
+                                        {currencyOptions.find(c => c.value === existingOffer.currency)?.symbol || "₺"}
+                                    </Text>
+                                    <Text className="text-sm text-gray-500 mb-1 ml-0.5">/ay</Text>
+                                </View>
                                 {existingOffer.description ? (
-                                    <Text className="text-xs text-gray-500 mt-2" numberOfLines={2}>
+                                    <Text className="text-sm text-gray-500 mt-2" numberOfLines={2}>
                                         "{existingOffer.description}"
                                     </Text>
                                 ) : null}
@@ -351,7 +340,7 @@ const OfferModal = ({
                             </View>
                         ) : (
                             <LinearGradient
-                                colors={['#0C9870', '#0A6650']}
+                                colors={['#25a244', '#155d27']}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 1 }}
                                 style={{ paddingVertical: 12, alignItems: 'center' }}

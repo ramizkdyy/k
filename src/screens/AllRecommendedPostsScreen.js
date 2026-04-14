@@ -600,7 +600,7 @@ const PropertyItem = memo(
                   className="flex-row items-center"
                   onPress={handleProfilePress}
                 >
-                  <View className="w-12 h-12 rounded-full justify-center items-center mr-3 border" style={{ borderColor: '#015941' }}>
+                  <View className="w-12 h-12 rounded-full justify-center items-center mr-3 border" style={{ borderColor: '#1a7431' }}>
                     {item?.landlordProfileURL ? (
                       <Image
                         source={{ uri: item?.landlordProfileURL }}
@@ -963,10 +963,10 @@ const AllRecommendedPostsScreen = ({ navigation, route }) => {
           </Text>
           <TouchableOpacity
             className="border px-6 py-3 rounded-full"
-            style={{ borderColor: '#015941' }}
+            style={{ borderColor: '#1a7431' }}
             onPress={onRefresh}
           >
-            <Text className="font-medium" style={{ color: '#015941' }}>Tekrar Dene</Text>
+            <Text className="font-medium" style={{ color: '#1a7431' }}>Tekrar Dene</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { View, Animated, Dimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -223,10 +223,7 @@ const PostsScreenSkeleton = ({ userRole, count = 5 }) => {
   return (
     <View className="flex-1">
       {Array.from({ length: count }).map((_, index) => (
-        <View
-          key={index}
-          style={{ paddingHorizontal: userRole === "KIRACI" ? 0 : 16 }}
-        >
+        <View key={index}>
           {userRole === "KIRACI" ? (
             <TenantPostSkeleton />
           ) : (

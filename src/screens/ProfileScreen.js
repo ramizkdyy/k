@@ -3,12 +3,12 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ActivityIndicator,
   Alert,
   RefreshControl,
   SafeAreaView,
   Animated,
 } from "react-native";
+import { ShimmerPlaceholder } from "../components/LoadingSkeleton";
 import { Image } from "expo-image";
 import { useSelector, useDispatch } from "react-redux";
 import {
@@ -127,15 +127,48 @@ const ProfileScreen = ({ navigation }) => {
 
   const isExpectationCompleted =
     userRole === "KIRACI"
-      ? !!(profile?.landLordExpectation || profile?.landlordExpectation)
-      : !!(profile?.tenantExpectation);
+      ? !!(currentUser?.isLandlordExpectationCompleted || profile?.landLordExpectation || profile?.landlordExpectation)
+      : !!(currentUser?.isTenantExpectationCompleted || profile?.tenantExpectation);
 
   if (isLoading && !profile) {
     return (
-      <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" color="#4A90E2" />
-        <Text className="mt-3 text-base text-gray-500">Profil yükleniyor...</Text>
-      </View>
+      <SafeAreaView className="flex-1 bg-white">
+        <View className="flex-1 px-5">
+          {/* Avatar + isim */}
+          <View className="items-center py-6 mt-4 gap-3">
+            <ShimmerPlaceholder width={96} height={96} borderRadius={48} />
+            <ShimmerPlaceholder width={180} height={20} borderRadius={10} />
+            <ShimmerPlaceholder width={80} height={14} borderRadius={7} />
+          </View>
+
+          {/* Hesap section */}
+          <ShimmerPlaceholder width={80} height={22} borderRadius={8} style={{ marginBottom: 16, marginTop: 8 }} />
+          {[1, 2, 3].map((i) => (
+            <View key={i} className="flex-row items-center gap-4 py-4">
+              <ShimmerPlaceholder width={25} height={25} borderRadius={6} />
+              <ShimmerPlaceholder width={160} height={16} borderRadius={8} />
+            </View>
+          ))}
+
+          {/* İlanlar section */}
+          <ShimmerPlaceholder width={60} height={22} borderRadius={8} style={{ marginBottom: 16, marginTop: 24 }} />
+          {[1, 2].map((i) => (
+            <View key={i} className="flex-row items-center gap-4 py-4">
+              <ShimmerPlaceholder width={25} height={25} borderRadius={6} />
+              <ShimmerPlaceholder width={130} height={16} borderRadius={8} />
+            </View>
+          ))}
+
+          {/* Favoriler section */}
+          <ShimmerPlaceholder width={80} height={22} borderRadius={8} style={{ marginBottom: 16, marginTop: 24 }} />
+          {[1, 2].map((i) => (
+            <View key={i} className="flex-row items-center gap-4 py-4">
+              <ShimmerPlaceholder width={25} height={25} borderRadius={6} />
+              <ShimmerPlaceholder width={150} height={16} borderRadius={8} />
+            </View>
+          ))}
+        </View>
+      </SafeAreaView>
     );
   }
 

@@ -54,6 +54,7 @@ import { selectCurrentUser } from "../redux/slices/authSlice";
 import {
   useGetLandlordProfileQuery,
   useGetTenantProfileQuery,
+  useGetLandlordPropertyListingsQuery,
   apiSlice,
 } from "../redux/api/apiSlice";
 import { useFocusEffect } from "@react-navigation/native";
@@ -108,6 +109,16 @@ const UserProfileScreen = ({ navigation, route }) => {
   const isOwnProfile = currentUserProfile?.id === userId;
   const userProfile = profileData?.isSuccess ? profileData.result : null;
   const myProfile = myProfileData?.isSuccess ? myProfileData.result : null;
+
+  // Ev sahibinin ilanlarını çek
+  const {
+    data: landlordListingsData,
+    isLoading: landlordListingsLoading,
+  } = useGetLandlordPropertyListingsQuery(userId, {
+    skip: userRole !== "EVSAHIBI",
+  });
+  const landlordListings = landlordListingsData?.isSuccess ? landlordListingsData.result : null;
+
 
   const [profileAction] = apiSlice.endpoints.profileAction.useMutation();
 
@@ -564,7 +575,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                 style={{ borderRadius: 12, overflow: 'hidden' }}
               >
                 <LinearGradient
-                  colors={['#026B4D', '#0A6650']}
+                  colors={['#208b3a', '#155d27']}
                   start={{ x: 0, y: 0.5 }}
                   end={{ x: 1, y: 0.5 }}
                   style={{ paddingHorizontal: 24, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}
@@ -596,6 +607,21 @@ const UserProfileScreen = ({ navigation, route }) => {
                   fill={hasUserRated ? "#9ca3af" : "white"}
                 />
               </TouchableOpacity>
+
+              {/* İlanlar Butonu - sadece ev sahibi için */}
+              {userRole === "EVSAHIBI" && (
+                <TouchableOpacity
+                  onPress={() => setActiveTab("listings")}
+                  className={`px-6 py-3 rounded-xl flex-row items-center ${
+                    activeTab === "listings" ? "bg-gray-900" : "bg-gray-100"
+                  }`}
+                >
+                  <Home
+                    size={16}
+                    color={activeTab === "listings" ? "white" : "#6b7280"}
+                  />
+                </TouchableOpacity>
+              )}
             </View>
           )}
         </View>
@@ -662,6 +688,24 @@ const UserProfileScreen = ({ navigation, route }) => {
                 Değerlen.
               </Text>
             </TouchableOpacity>
+
+            {/* İlanlar TAB - sadece ev sahibi için */}
+            {userRole === "EVSAHIBI" && (
+              <TouchableOpacity
+                onPress={() => setActiveTab("listings")}
+                className={`flex-1 py-3 px-3 rounded-full ${
+                  activeTab === "listings" ? "bg-gray-900" : "bg-gray-100"
+                }`}
+              >
+                <Text
+                  className={`text-center font-medium text-xs ${
+                    activeTab === "listings" ? "text-white" : "text-gray-700"
+                  }`}
+                >
+                  İlanlar
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
         {/* GENERAL TAB */}
@@ -706,7 +750,7 @@ const UserProfileScreen = ({ navigation, route }) => {
             </View>
 
             {/* İlan Sayısı (Ev Sahibi için) */}
-            {userRole === "EVSAHIBI" && userProfile?.rentalPosts && (
+            {userRole === "EVSAHIBI" && (landlordListings || userProfile?.rentalPosts) && (
               <View className="py-2">
                 <Text
                   style={{ fontSize: 18 }}
@@ -727,7 +771,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                   </View>
                   <View className=" px-3 py-1 rounded-full">
                     <Text className="text-gray-900 font-semibold">
-                      {userProfile.rentalPosts.length}
+                      {(landlordListings ?? userProfile?.rentalPosts)?.length ?? 0}
                     </Text>
                   </View>
                 </View>
@@ -1780,6 +1824,101 @@ const UserProfileScreen = ({ navigation, route }) => {
             )}
           </View>
         )}
+        {/* İLANLAR TAB */}
+        {activeTab === "listings" && userRole === "EVSAHIBI" && (
+          <View style={{ minHeight: 400 }}>
+            {landlordListingsLoading ? (
+              <View className="items-center py-16">
+                <Home size={48} color="#d1d5db" />
+                <Text className="text-gray-400 mt-4">İlanlar yükleniyor...</Text>
+              </View>
+            ) : landlordListings && landlordListings.length > 0 ? (
+              landlordListings.map((post) => (
+                <TouchableOpacity
+                  key={post.postId}
+                  activeOpacity={0.85}
+                  onPress={() => navigation.navigate("PostDetail", { postId: post.postId })}
+                  className="mb-4 border-b border-gray-100 pb-4"
+                >
+                  {/* Resim */}
+                  <View className="rounded-2xl overflow-hidden bg-gray-100 mb-3" style={{ height: 200 }}>
+                    {post.postImages && post.postImages.length > 0 ? (
+                      <Image
+                        source={{ uri: post.postImages[0].postImageUrl }}
+                        style={{ width: "100%", height: 200 }}
+                        contentFit="cover"
+                      />
+                    ) : (
+                      <View className="flex-1 justify-center items-center">
+                        <Home size={40} color="#cbd5e1" />
+                      </View>
+                    )}
+                    {/* Status badge */}
+                    <View className="absolute top-2 left-2 bg-black/60 px-2 py-1 rounded-lg">
+                      <Text className="text-white text-xs font-semibold">
+                        {post.status === 0 ? "Aktif" : post.status === 1 ? "Kiralandı" : "Kapalı"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Bilgiler */}
+                  <Text
+                    style={{ fontSize: 16, fontWeight: "600" }}
+                    className="text-gray-900 mb-1"
+                    numberOfLines={2}
+                  >
+                    {post.ilanBasligi || "İlan başlığı yok"}
+                  </Text>
+
+                  <View className="flex-row items-center mb-2">
+                    <MapPin size={12} color="#9ca3af" />
+                    <Text className="text-gray-500 text-xs ml-1">
+                      {post.mahalle ? `${post.mahalle}, ` : ""}{post.ilce}, {post.il}
+                    </Text>
+                  </View>
+
+                  <View className="flex-row items-center justify-between">
+                    <Text style={{ fontSize: 17, fontWeight: "700" }} className="text-gray-900">
+                      {post.kiraFiyati
+                        ? `${post.kiraFiyati.toLocaleString("tr-TR")} ${post.paraBirimi || "TRY"}`
+                        : "Fiyat belirtilmemiş"}
+                      <Text style={{ fontSize: 13, fontWeight: "400" }} className="text-gray-400"> /ay</Text>
+                    </Text>
+
+                    <View className="flex-row gap-3">
+                      {post.odaSayisi && (
+                        <View className="flex-row items-center gap-1">
+                          <BedDouble size={13} color="#6b7280" />
+                          <Text className="text-gray-500 text-xs">{post.odaSayisi}</Text>
+                        </View>
+                      )}
+                      {post.brutMetreKare && (
+                        <View className="flex-row items-center gap-1">
+                          <Ruler size={13} color="#6b7280" />
+                          <Text className="text-gray-500 text-xs">{post.brutMetreKare} m²</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View className="items-center py-16">
+                <Home size={48} color="#d1d5db" />
+                <Text
+                  style={{ fontSize: 18 }}
+                  className="font-semibold text-gray-900 mt-4 mb-2 text-center"
+                >
+                  Aktif İlan Yok
+                </Text>
+                <Text className="text-base text-gray-500 text-center">
+                  Bu ev sahibinin aktif ilanı bulunmuyor.
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Expectation yoksa gösterilecek mesaj */}
         {(activeTab === "preferences" || activeTab === "requirements") &&
           !expectation && (

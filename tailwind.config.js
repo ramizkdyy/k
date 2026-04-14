@@ -5,11 +5,11 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: "#026B4D",
-        "green-brand-light": "#0C9870",
-        "green-brand": "#026B4D",
-        "green-brand-dark": "#015941",
-        "green-brand-darker": "#0A6650",
+        primary: "#208b3a",
+        "green-brand-light": "#25a244",
+        "green-brand": "#208b3a",
+        "green-brand-dark": "#1a7431",
+        "green-brand-darker": "#155d27",
       },
     },
   },

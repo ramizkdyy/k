@@ -241,7 +241,7 @@ const FilterDropdown = ({
                     const optionValue = typeof opt === 'object' ? opt.value : opt;
                     return optionValue === value[0];
                 });
-                return typeof option === 'object' ? option.label : option || value[0];
+                return typeof option === 'object' ? (option.label || option.value || value[0]) : option || value[0];
             }
             return `${value.length} seçili`;
         } else {

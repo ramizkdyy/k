@@ -24,8 +24,7 @@ import {
 } from "../redux/api/apiSlice";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import PlatformBlurView from "../components/PlatformBlurView";
-import { Mail, AlertCircle, Star } from "lucide-react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { Mail, AlertCircle, Star, Check, X } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
@@ -687,7 +686,10 @@ const OffersScreen = () => {
                     position: "absolute",
                     top: "50%",
                     left: "50%",
-                    transform: [{ translateX: -100 }, { translateY: item.status === 1 ? -70 : -50 }],
+                    transform: [
+                      { translateX: -100 },
+                      { translateY: item.status === 0 && isLandlord ? -90 : item.status === 1 ? -70 : -50 },
+                    ],
                     borderRadius: 16,
                     overflow: "visible",
                     zIndex: 2,
@@ -724,7 +726,56 @@ const OffersScreen = () => {
                       ? "Gönderilen teklif"
                       : "Gelen teklif"}
                   </Text>
-                  {/* YENI: Kabul edilen teklifler için Kiraya Ver butonu */}
+                  {/* Bekleyen teklifler için Kabul Et/Reddet butonları */}
+                  {item.status === 0 && isLandlord && (
+                    <View className="flex-row gap-4 mt-3">
+                      <TouchableOpacity
+                        onPress={() => handleAcceptOffer(item.offerId)}
+                        activeOpacity={0.8}
+                        style={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: 28,
+                          overflow: "hidden",
+                        }}
+                      >
+                        <PlatformBlurView
+                          intensity={80}
+                          tint="light"
+                          style={{
+                            flex: 1,
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Check size={36} color="#4ade80" strokeWidth={2.5} />
+                        </PlatformBlurView>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleRejectOffer(item.offerId)}
+                        activeOpacity={0.8}
+                        style={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: 28,
+                          overflow: "hidden",
+                        }}
+                      >
+                        <PlatformBlurView
+                          intensity={80}
+                          tint="dark"
+                          style={{
+                            flex: 1,
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <X size={34} color="#ef4444" strokeWidth={2.5} />
+                        </PlatformBlurView>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  {/* Kabul edilen teklifler için Kiraya Ver butonu */}
                   {item.status === 1 && isLandlord && (
                     <TouchableOpacity
                       className="rounded-full mt-3 justify-center items-center"
@@ -753,14 +804,18 @@ const OffersScreen = () => {
                     position: "absolute",
                     top: "50%",
                     left: "50%",
-                    transform: [{ translateX: -75 }, { translateY: -25 }],
+                    transform: [
+                      { translateX: -90 },
+                      { translateY: item.status === 0 && isLandlord ? -60 : -35 },
+                    ],
                     backgroundColor: "rgba(0, 0, 0, 0.7)",
                     borderRadius: 16,
                     zIndex: 2,
-                    width: 150,
-                    height: 50,
+                    width: 180,
                     alignItems: "center",
                     justifyContent: "center",
+                    paddingVertical: 10,
+                    paddingHorizontal: 12,
                   }}
                 >
                   <Text
@@ -779,6 +834,41 @@ const OffersScreen = () => {
                     )}
                     {item.offerAmount?.toLocaleString() || "0"}
                   </Text>
+                  <Text style={{ color: "#d1d5db", fontSize: 11, marginTop: 2 }}>
+                    {userRole === "KIRACI" ? "Gönderilen teklif" : "Gelen teklif"}
+                  </Text>
+                  {item.status === 0 && isLandlord && (
+                    <View style={{ flexDirection: "row", gap: 16, marginTop: 10 }}>
+                      <TouchableOpacity
+                        onPress={() => handleAcceptOffer(item.offerId)}
+                        activeOpacity={0.8}
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 22,
+                          backgroundColor: "rgba(32,139,58,0.85)",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Check size={22} color="#fff" strokeWidth={3} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleRejectOffer(item.offerId)}
+                        activeOpacity={0.8}
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 22,
+                          backgroundColor: "rgba(140,0,0,0.85)",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <X size={20} color="#fff" strokeWidth={3} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
               )}
 
@@ -871,27 +961,27 @@ const OffersScreen = () => {
                   }}
                   activeOpacity={0.7}
                 >
-                  {!!item.offeringUser?.profileImageUrl ||
-                    post?.profilePictureUrl ? (
-                    <Image
-                      style={{ width: 40, height: 40, borderRadius: 100 }}
-                      source={{
-                        uri:
-                          userRole === "KIRACI"
-                            ? post?.profilePictureUrl
-                            : item?.offeringUser?.profileImageUrl,
-                      }}
-                      className="w-full h-full rounded-full"
-                    />
-                  ) : (
-                    <View>
-                      <Text className="text-xl font-bold text-gray-900">
-                        {item.offeringUser?.user?.name?.charAt(0) ||
-                          post?.userName?.charAt(0) ||
-                          "E"}
-                      </Text>
-                    </View>
-                  )}
+                  {(() => {
+                    const avatarUri = userRole === "KIRACI"
+                      ? post?.profilePictureUrl
+                      : item?.offeringUser?.profileImageUrl;
+                    const avatarName = userRole === "KIRACI"
+                      ? post?.userName
+                      : item?.offeringUser?.user?.name;
+                    return avatarUri ? (
+                      <Image
+                        style={{ width: 40, height: 40, borderRadius: 20 }}
+                        source={{ uri: avatarUri }}
+                        className="w-full h-full rounded-full"
+                      />
+                    ) : (
+                      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e5e7eb", alignItems: "center", justifyContent: "center" }}>
+                        <Text className="text-base font-bold text-gray-600">
+                          {avatarName?.charAt(0)?.toUpperCase() || "?"}
+                        </Text>
+                      </View>
+                    );
+                  })()}
                 </TouchableOpacity>
                 {/* Content Section */}
                 <View className="w-full">
@@ -920,49 +1010,6 @@ const OffersScreen = () => {
               </View>
             </View>
 
-            {/* Action Buttons for Landlords */}
-            {isLandlord && (
-              <View className="gap-3">
-                {/* Bekleyen teklifler için Kabul Et/Reddet butonları */}
-                {item.status === 0 && (
-                  <View className="flex-row gap-3">
-                    <TouchableOpacity
-                      className="flex-1 rounded-2xl overflow-hidden"
-                      style={{ height: 40 }}
-                      onPress={() => handleAcceptOffer(item.offerId)}
-                      activeOpacity={0.8}
-                    >
-                      <LinearGradient
-                        colors={['#026B4D', '#0A6650']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-                      >
-                        <Text
-                          className="text-white text-center font-semibold"
-                          style={{ fontSize: 16, lineHeight: 20 }}
-                        >
-                          Kabul Et
-                        </Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      className="flex-1 bg-white rounded-2xl justify-center items-center border"
-                      style={{ height: 40, borderColor: '#015941' }}
-                      onPress={() => handleRejectOffer(item.offerId)}
-                      activeOpacity={0.8}
-                    >
-                      <Text
-                        className="text-center"
-                        style={{ fontSize: 16, lineHeight: 20, color: '#015941' }}
-                      >
-                        Reddet
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -1212,10 +1259,10 @@ const OffersScreen = () => {
           </Text>
           <TouchableOpacity
             className="border px-6 py-3 rounded-full"
-            style={{ borderColor: '#015941' }}
+            style={{ borderColor: '#1a7431' }}
             onPress={handleRefresh}
           >
-            <Text className="font-medium" style={{ color: '#015941' }}>Tekrar Dene</Text>
+            <Text className="font-medium" style={{ color: '#1a7431' }}>Tekrar Dene</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -1237,7 +1284,7 @@ const OffersScreen = () => {
       <Animated.ScrollView
         className="flex-1 py-6"
         refreshControl={
-          <RefreshControl colors={["#303030"]} tintColor="#303030" refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl colors={["#303030"]} tintColor="#303030" refreshing={refreshing} onRefresh={handleRefresh} progressViewOffset={getDynamicPaddingTop()} />
         }
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{

@@ -623,7 +623,7 @@ const PropertiesFilterModal = ({
                             style={{ borderRadius: 999, overflow: 'hidden' }}
                         >
                             <LinearGradient
-                                colors={['#026B4D', '#015941']}
+                                colors={['#208b3a', '#1a7431']}
                                 start={{ x: 0, y: 0.5 }}
                                 end={{ x: 1, y: 0.5 }}
                                 style={{ paddingHorizontal: 16, paddingVertical: 8, alignItems: 'center' }}

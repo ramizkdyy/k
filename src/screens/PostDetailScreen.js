@@ -1820,7 +1820,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                     onPress={() => setIsOfferModalVisible(true)}
                   >
                     <LinearGradient
-                      colors={['#015941', '#0A6650']}
+                      colors={['#1a7431', '#155d27']}
                       start={{ x: 0, y: 0.5 }}
                       end={{ x: 1, y: 0.5 }}
                       style={{ paddingVertical: 16, paddingHorizontal: 60 }}
@@ -1857,7 +1857,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                   }
                 >
                   <LinearGradient
-                    colors={['#015941', '#0A6650']}
+                    colors={['#1a7431', '#155d27']}
                     start={{ x: 0, y: 0.5 }}
                     end={{ x: 1, y: 0.5 }}
                     style={{ paddingVertical: 12 }}

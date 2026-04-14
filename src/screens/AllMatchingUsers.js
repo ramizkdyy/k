@@ -478,7 +478,7 @@ const TenantItem = ({ item, navigation }) => {
             style={{ borderRadius: 999, overflow: 'hidden', marginTop: 16 }}
           >
             <LinearGradient
-              colors={['#0C9870', '#0A6650']}
+              colors={['#25a244', '#155d27']}
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
               style={{ paddingVertical: 12 }}
@@ -674,7 +674,7 @@ const LandlordItem = ({ item, navigation }) => {
             style={{ borderRadius: 999, overflow: 'hidden', marginTop: 16 }}
           >
             <LinearGradient
-              colors={['#0C9870', '#0A6650']}
+              colors={['#25a244', '#155d27']}
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
               style={{ paddingVertical: 12 }}
@@ -1087,10 +1087,10 @@ const AllMatchingUsers = ({ navigation, route }) => {
           </Text>
           <TouchableOpacity
             className="border px-6 py-3 rounded-full"
-            style={{ borderColor: '#015941' }}
+            style={{ borderColor: '#1a7431' }}
             onPress={onRefresh}
           >
-            <Text className="font-medium" style={{ color: '#015941' }}>Tekrar Dene</Text>
+            <Text className="font-medium" style={{ color: '#1a7431' }}>Tekrar Dene</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

@@ -842,6 +842,11 @@ export const {
   addFavoriteProperty,
   removeFavoriteProperty,
   clearProfileActionError,
+  setOwnProfileData,
+  setOwnProfileLoading,
+  setOwnProfileError,
+  clearOwnProfileData,
+  updateMatchingScores,
 } = profileSlice.actions;
 
 export default profileSlice.reducer;

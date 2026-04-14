@@ -188,7 +188,7 @@ const RoleSelectionScreen = ({ navigation }) => {
             colors={
               !selectedRole || isLoading
                 ? ["#d1d5db", "#d1d5db"]
-                : ["#015941", "#0A6650"]
+                : ["#1a7431", "#155d27"]
             }
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
@@ -204,13 +204,13 @@ const RoleSelectionScreen = ({ navigation }) => {
               }}
             >
               {isLoading ? (
-                <ActivityIndicator color="#015941" />
+                <ActivityIndicator color="#1a7431" />
               ) : (
                 <Text
                   style={{
                     fontSize: 16,
                     fontWeight: "600",
-                    color: !selectedRole ? "#d1d5db" : "#015941",
+                    color: !selectedRole ? "#d1d5db" : "#1a7431",
                   }}
                 >
                   Devam Et

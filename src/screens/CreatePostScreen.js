@@ -1594,7 +1594,7 @@ const CreatePostScreen = ({ navigation, route }) => {
                     onPress={() => setShowLocationPicker(true)}
                   >
                     <LinearGradient
-                      colors={['#0C9870', '#015941']}
+                      colors={['#25a244', '#1a7431']}
                       start={{ x: 0.5, y: 0 }}
                       end={{ x: 0.5, y: 1 }}
                       style={{ padding: 16 }}

@@ -39,6 +39,7 @@ const offerSlice = createSlice({
     builder.addMatcher(
       apiSlice.endpoints.getSentOffers.matchFulfilled,
       (state, { payload }) => {
+        state.isLoading = false;
         if (payload && payload.isSuccess) {
           // Handle tenant sent offers structure
           if (Array.isArray(payload.result)) {
@@ -76,6 +77,7 @@ const offerSlice = createSlice({
     builder.addMatcher(
       apiSlice.endpoints.getReceivedOffers.matchFulfilled,
       (state, { payload }) => {
+        state.isLoading = false;
         if (payload && payload.isSuccess) {
           // Handle both array and object responses
           if (Array.isArray(payload.result)) {

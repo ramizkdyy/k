@@ -374,7 +374,7 @@ const AllOffersScreen = () => {
                                     activeOpacity={0.8}
                                 >
                                     <LinearGradient
-                                        colors={['#026B4D', '#0A6650']}
+                                        colors={['#208b3a', '#155d27']}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 1 }}
                                         style={{ paddingVertical: 12, alignItems: 'center' }}
@@ -386,11 +386,11 @@ const AllOffersScreen = () => {
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     className="flex-1 bg-white rounded-full justify-center items-center py-3 border"
-                                    style={{ borderColor: '#015941' }}
+                                    style={{ borderColor: '#1a7431' }}
                                     onPress={() => handleRejectOffer(item.offerId)}
                                     activeOpacity={0.8}
                                 >
-                                    <Text className="font-semibold text-base" style={{ color: '#015941' }}>
+                                    <Text className="font-semibold text-base" style={{ color: '#1a7431' }}>
                                         Reddet
                                     </Text>
                                 </TouchableOpacity>
@@ -461,10 +461,10 @@ const AllOffersScreen = () => {
                     </Text>
                     <TouchableOpacity
                         className="border px-6 py-3 rounded-full"
-                        style={{ borderColor: '#015941' }}
+                        style={{ borderColor: '#1a7431' }}
                         onPress={handleRefresh}
                     >
-                        <Text className="font-medium" style={{ color: '#015941' }}>Tekrar Dene</Text>
+                        <Text className="font-medium" style={{ color: '#1a7431' }}>Tekrar Dene</Text>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>

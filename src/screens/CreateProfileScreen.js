@@ -698,7 +698,7 @@ const CreateProfileScreen = (props) => {
               disabled={isLoading}
             >
               <LinearGradient
-                colors={isLoading ? ["#d1d5db", "#d1d5db"] : ["#015941", "#0A6650"]}
+                colors={isLoading ? ["#d1d5db", "#d1d5db"] : ["#1a7431", "#155d27"]}
                 start={{ x: 0, y: 0.5 }}
                 end={{ x: 1, y: 0.5 }}
                 style={{ borderRadius: 999, padding: 2 }}
@@ -713,9 +713,9 @@ const CreateProfileScreen = (props) => {
                   }}
                 >
                   {isLoading ? (
-                    <ActivityIndicator color="#015941" />
+                    <ActivityIndicator color="#1a7431" />
                   ) : (
-                    <Text style={{ fontSize: 16, fontWeight: "600", color: "#015941" }}>
+                    <Text style={{ fontSize: 16, fontWeight: "600", color: "#1a7431" }}>
                       Devam Et
                     </Text>
                   )}

@@ -1449,7 +1449,7 @@ const PostsScreen = ({ navigation }) => {
                       });
                     }}
                   >
-                    <View className="w-12 h-12 rounded-full justify-center items-center mr-3 border" style={{ borderColor: '#015941' }}>
+                    <View className="w-12 h-12 rounded-full justify-center items-center mr-3 border" style={{ borderColor: '#1a7431' }}>
                       {item.user?.profilePictureUrl ? (
                         <ImageWithFallback
                           source={{ uri: item.user.profilePictureUrl }}
@@ -1686,7 +1686,7 @@ const PostsScreen = ({ navigation }) => {
             onPress={handleCreatePostNavigation}
           >
             <LinearGradient
-              colors={['#0C9870', '#015941']}
+              colors={['#25a244', '#1a7431']}
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
               style={{ paddingHorizontal: 24, paddingVertical: 12 }}
@@ -1726,9 +1726,10 @@ const PostsScreen = ({ navigation }) => {
     // ✅ DÜZELTİLMİŞ: Responsive button sayısı ve boyutu
     const filterButtonWidth = 45; // Filter butonu genişliği
     const createButtonWidth = userRole === "EVSAHIBI" ? 50 : 0; // Create butonu (sadece ev sahibi için)
-    const buttonGap = userRole === "EVSAHIBI" ? 8 : 0; // Butonlar arası gap
+    const showFilter = userRole !== "EVSAHIBI";
+    const buttonGap = userRole === "EVSAHIBI" ? 0 : 0; // Butonlar arası gap
     const totalButtonsWidth =
-      filterButtonWidth + createButtonWidth + buttonGap + 16; // 16 = padding right
+      (showFilter ? filterButtonWidth : 0) + createButtonWidth + buttonGap + 16; // 16 = padding right
 
     const searchBarWidth = scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
@@ -1915,34 +1916,36 @@ const PostsScreen = ({ navigation }) => {
                 </TouchableOpacity>
               )}
 
-              {/* Filter Button */}
-              <TouchableOpacity
-                style={{
-                  width: filterButtonWidth,
-                  height: filterButtonWidth,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 8,
-                  elevation: 5,
-                }}
-                className={`rounded-full flex justify-center items-center ${isFilterVisible ||
-                  Object.values(filters).some((val) => val !== null)
-                  ? "bg-gray-900/90"
-                  : "bg-white/90"
-                  }`}
-                onPress={handleFilterPress}
-              >
-                <SlidersHorizontal
-                  size={18}
-                  color={
-                    isFilterVisible ||
-                      Object.values(filters).some((val) => val !== null)
-                      ? "white"
-                      : "#111827"
-                  }
-                />
-              </TouchableOpacity>
+              {/* Filter Button - sadece kiracı için */}
+              {showFilter && (
+                <TouchableOpacity
+                  style={{
+                    width: filterButtonWidth,
+                    height: filterButtonWidth,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 8,
+                    elevation: 5,
+                  }}
+                  className={`rounded-full flex justify-center items-center ${isFilterVisible ||
+                    Object.values(filters).some((val) => val !== null)
+                    ? "bg-gray-900/90"
+                    : "bg-white/90"
+                    }`}
+                  onPress={handleFilterPress}
+                >
+                  <SlidersHorizontal
+                    size={18}
+                    color={
+                      isFilterVisible ||
+                        Object.values(filters).some((val) => val !== null)
+                        ? "white"
+                        : "#111827"
+                    }
+                  />
+                </TouchableOpacity>
+              )}
             </Animated.View>
           </View>
 
@@ -1985,7 +1988,7 @@ const PostsScreen = ({ navigation }) => {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{
               flexGrow: 1,
-              paddingBottom: 16,
+              paddingBottom: insets.bottom + 80,
               paddingTop: getDynamicPaddingTop() + 20,
               paddingHorizontal: userRole === "KIRACI" ? 0 : 16,
             }}

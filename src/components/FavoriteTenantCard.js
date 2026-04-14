@@ -410,7 +410,7 @@ const FavoriteTenantCard = ({
                         }}
                     >
                         <LinearGradient
-                            colors={['#026B4D', '#0A6650']}
+                            colors={['#208b3a', '#155d27']}
                             start={{ x: 0, y: 0.5 }}
                             end={{ x: 1, y: 0.5 }}
                             style={{ paddingVertical: 16, paddingHorizontal: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
