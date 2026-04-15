@@ -7,25 +7,24 @@ import {
   Platform,
   Alert,
   Modal,
-  Dimensions,
+  StatusBar,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
-import { ExternalLink, MapPin, X } from "lucide-react-native";
+import { ExternalLink, MapPin, ArrowLeft } from "lucide-react-native";
 import * as Location from "expo-location";
 import PlatformBlurView from "./PlatformBlurView";
-
-const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const LocationSection = ({ post }) => {
+  const insets = useSafeAreaInsets();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [distance, setDistance] = useState(null);
   const [travelTime, setTravelTime] = useState(null);
   const [isLoadingDistance, setIsLoadingDistance] = useState(false);
 
-  // Haversine formula ile iki nokta arasındaki mesafeyi hesapla
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Dünya'nın yarıçapı (km)
+    const R = 6371;
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
     const dLon = ((lon2 - lon1) * Math.PI) / 180;
     const a =
@@ -35,63 +34,38 @@ const LocationSection = ({ post }) => {
         Math.sin(dLon / 2) *
         Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c;
-    return distance;
+    return R * c;
   };
 
-  // Mesafeyi dakikaya çevir ve formatla (ortalama şehir içi hız 30 km/h)
   const calculateTravelTime = (distanceKm) => {
-    const avgSpeedKmh = 30; // Ortalama şehir içi hız
-    const timeHours = distanceKm / avgSpeedKmh;
-    const totalMinutes = Math.round(timeHours * 60);
-
-    return totalMinutes;
+    const avgSpeedKmh = 30;
+    return Math.round((distanceKm / avgSpeedKmh) * 60);
   };
 
-  // Süreyi formatla (dakika, saat, gün)
   const formatTravelTime = (minutes) => {
-    if (minutes < 60) {
-      return `${minutes} dk`;
-    } else if (minutes < 1440) {
-      // 24 saat = 1440 dakika
+    if (minutes < 60) return `${minutes} dk`;
+    if (minutes < 1440) {
       const hours = Math.floor(minutes / 60);
-      const remainingMinutes = minutes % 60;
-
-      if (remainingMinutes === 0) {
-        return `${hours} saat`;
-      } else {
-        return `${hours} saat ${remainingMinutes} dk`;
-      }
-    } else {
-      // 1 gün veya daha fazla
-      const days = Math.floor(minutes / 1440);
-      const remainingMinutes = minutes % 1440;
-      const hours = Math.floor(remainingMinutes / 60);
-      const mins = remainingMinutes % 60;
-
-      let result = `${days} gün`;
-
-      if (hours > 0) {
-        result += ` ${hours} saat`;
-      }
-
-      if (mins > 0) {
-        result += ` ${mins} dk`;
-      }
-
-      return result;
+      const remaining = minutes % 60;
+      return remaining === 0 ? `${hours} saat` : `${hours} saat ${remaining} dk`;
     }
+    const days = Math.floor(minutes / 1440);
+    const remaining = minutes % 1440;
+    const hours = Math.floor(remaining / 60);
+    const mins = remaining % 60;
+    let result = `${days} gün`;
+    if (hours > 0) result += ` ${hours} saat`;
+    if (mins > 0) result += ` ${mins} dk`;
+    return result;
   };
 
-  // Kullanıcının mevcut konumunu al
   const getCurrentLocation = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         Alert.alert("Hata", "Konum izni verilmedi.");
-        return;
+        return null;
       }
-
       const location = await Location.getCurrentPositionAsync({});
       setCurrentLocation(location.coords);
       return location.coords;
@@ -101,22 +75,14 @@ const LocationSection = ({ post }) => {
     }
   };
 
-  // Mesafe ve süre hesapla
   const calculateDistanceAndTime = async () => {
-    if (!post.postLatitude || !post.postLongitude) {
-      Alert.alert("Hata", "Hedef konum bilgisi bulunamadı.");
-      return;
-    }
-
+    if (!post.postLatitude || !post.postLongitude) return;
     setIsLoadingDistance(true);
-
     try {
       let userLocation = currentLocation;
-
       if (!userLocation) {
         userLocation = await getCurrentLocation();
       }
-
       if (userLocation) {
         const distanceKm = calculateDistance(
           userLocation.latitude,
@@ -124,95 +90,57 @@ const LocationSection = ({ post }) => {
           post.postLatitude,
           post.postLongitude
         );
-
-        const timeMinutes = calculateTravelTime(distanceKm);
-
         setDistance(distanceKm);
-        setTravelTime(timeMinutes);
+        setTravelTime(calculateTravelTime(distanceKm));
       }
     } catch (error) {
-      Alert.alert("Hata", "Mesafe hesaplanamadı.");
     } finally {
       setIsLoadingDistance(false);
     }
   };
 
-  // Komponent yüklendiğinde mesafe hesapla
   useEffect(() => {
     if (post.postLatitude && post.postLongitude) {
       calculateDistanceAndTime();
     }
   }, [post.postLatitude, post.postLongitude]);
 
-  // Handle opening specific maps app
   const openSpecificMap = (mapType) => {
-    const latitude = post.postLatitude;
-    const longitude = post.postLongitude;
-    const label = `${post.ilanBasligi} - ${post.mahalle}, ${post.ilce}`;
-
-    if (!latitude || !longitude) {
+    const { postLatitude: lat, postLongitude: lng, ilanBasligi, mahalle, ilce } = post;
+    if (!lat || !lng) {
       Alert.alert("Hata", "Konum bilgisi bulunamadı.");
       return;
     }
-
     let url;
-
     if (mapType === "apple") {
-      // Apple Maps
-      url = `maps:0,0?q=${label}@${latitude},${longitude}`;
+      url = `maps:0,0?q=${ilanBasligi}@${lat},${lng}`;
     } else if (mapType === "google") {
-      // Google Maps
-      if (Platform.OS === "ios") {
-        url = `comgooglemaps://?q=${latitude},${longitude}&center=${latitude},${longitude}&zoom=16`;
-      } else {
-        url = `google.navigation:q=${latitude},${longitude}`;
-      }
+      url = Platform.OS === "ios"
+        ? `comgooglemaps://?q=${lat},${lng}&center=${lat},${lng}&zoom=16`
+        : `google.navigation:q=${lat},${lng}`;
     }
-
     Linking.openURL(url).catch(() => {
-      // Fallback to Google Maps web
-      const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
-      Linking.openURL(googleMapsUrl).catch(() => {
-        Alert.alert("Hata", "Harita uygulaması açılamadı.");
-      });
+      Linking.openURL(
+        `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
+      ).catch(() => Alert.alert("Hata", "Harita uygulaması açılamadı."));
     });
   };
 
-  // Handle map selection dialog
   const showMapOptions = () => {
-    const options =
-      Platform.OS === "ios"
-        ? ["Apple Maps", "Google Maps", "İptal"]
-        : ["Google Maps", "İptal"];
-
     Alert.alert(
       "Harita Uygulaması Seç",
-      "Hangi harita uygulamasını kullanmak istiyorsun?",
+      "Hangi harita uygulamasını kullanmak istiyorsunuz?",
       [
         ...(Platform.OS === "ios"
-          ? [
-              {
-                text: "Apple Maps",
-                onPress: () => openSpecificMap("apple"),
-              },
-            ]
+          ? [{ text: "Apple Maps", onPress: () => openSpecificMap("apple") }]
           : []),
-        {
-          text: "Google Maps",
-          onPress: () => openSpecificMap("google"),
-        },
-        {
-          text: "İptal",
-          style: "cancel",
-        },
+        { text: "Google Maps", onPress: () => openSpecificMap("google") },
+        { text: "İptal", style: "cancel" },
       ]
     );
   };
 
-  // Don't render if no coordinates
-  if (!post.postLatitude || !post.postLongitude) {
-    return null;
-  }
+  if (!post.postLatitude || !post.postLongitude) return null;
 
   const region = {
     latitude: post.postLatitude,
@@ -224,10 +152,7 @@ const LocationSection = ({ post }) => {
   return (
     <>
       <View
-        style={{
-          borderBottomWidth: 0.4,
-          borderBottomColor: "#dee0ea",
-        }}
+        style={{ borderBottomWidth: 0.4, borderBottomColor: "#dee0ea" }}
         className="mb-5 pb-6"
       >
         <Text
@@ -237,12 +162,9 @@ const LocationSection = ({ post }) => {
           Konum
         </Text>
 
-        {/* Map Container */}
+        {/* Küçük harita - basılınca fullscreen açılıyor */}
         <TouchableOpacity
-          onPress={(e) => {
-            e.stopPropagation();
-            setIsModalVisible(true);
-          }}
+          onPress={() => setIsModalVisible(true)}
           activeOpacity={0.8}
           className="relative"
         >
@@ -271,31 +193,25 @@ const LocationSection = ({ post }) => {
               toolbarEnabled={false}
             >
               <Marker
-                coordinate={{
-                  latitude: post.postLatitude,
-                  longitude: post.postLongitude,
-                }}
+                coordinate={{ latitude: post.postLatitude, longitude: post.postLongitude }}
                 title={post.ilanBasligi}
                 description={`${post.mahalle}, ${post.ilce}`}
               >
-                <MapPin size={24} color="#000" />
+                <MapPin size={24} color="#000" fill="#000" />
               </Marker>
             </MapView>
 
-            {/* Overlay to capture touches */}
+            {/* Dokunuşu yakala */}
             <View
               style={{
                 position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
+                top: 0, left: 0, right: 0, bottom: 0,
                 backgroundColor: "transparent",
               }}
             />
           </View>
 
-          {/* Open Maps Button Overlay */}
+          {/* Haritada Aç butonu */}
           <TouchableOpacity
             onPress={showMapOptions}
             style={{
@@ -309,20 +225,14 @@ const LocationSection = ({ post }) => {
               flexDirection: "row",
               alignItems: "center",
               shadowColor: "#000",
-              shadowOffset: {
-                width: 0,
-                height: 2,
-              },
+              shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.1,
               shadowRadius: 4,
               elevation: 3,
             }}
           >
             <ExternalLink size={12} color="#4b5563" />
-            <Text
-              style={{ fontSize: 12 }}
-              className="ml-1 text-gray-600 font-medium"
-            >
+            <Text style={{ fontSize: 12 }} className="ml-1 text-gray-600 font-medium">
               Haritada Aç
             </Text>
           </TouchableOpacity>
@@ -330,68 +240,54 @@ const LocationSection = ({ post }) => {
 
         <View className="flex-row items-center mt-3">
           <Text style={{ fontSize: 12 }} className="text-gray-500 flex-1">
-            {post.mahalle}, {post.ilce}, {post.il}
+            {[post.il, post.ilce, post.mahalle].filter(Boolean).join(", ")}
           </Text>
           {travelTime && (
-            <Text
-              style={{ fontSize: 12 }}
-              className="text-blue-600 font-medium"
-            >
+            <Text style={{ fontSize: 12 }} className="text-blue-600 font-medium">
               ~{formatTravelTime(travelTime)}
             </Text>
           )}
         </View>
       </View>
 
-      {/* Full Screen Map Modal */}
+      {/* Fullscreen Harita Modal - ExploreDetailModal ile aynı yaklaşım */}
       <Modal
+        animationType="fade"
+        transparent={true}
         visible={isModalVisible}
-        animationType="slide"
-        presentationStyle="fullScreen"
         onRequestClose={() => setIsModalVisible(false)}
+        statusBarTranslucent={true}
       >
-        <View className="relative" style={{ flex: 1, backgroundColor: "#000" }}>
-          {/* Header */}
+        <StatusBar hidden={true} />
+        <View style={{ flex: 1, backgroundColor: "#000" }}>
+          {/* Floating geri butonu */}
           <View
-            className="absolute top-0"
             style={{
-              backgroundColor: "transparent",
-              paddingTop: Platform.OS === "ios" ? 50 : 20,
-              paddingHorizontal: 20,
-              paddingBottom: 15,
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              width: "100%",
-              zIndex: 10,
+              position: "absolute",
+              top: insets.top + 10,
+              left: 16,
+              zIndex: 999,
             }}
           >
-            <PlatformBlurView
-              intensity={50}
-              tint="dark"
-              className="px-4 py-1.5 rounded-full overflow-hidden"
-            >
-              <Text style={{ fontSize: 14, color: "#dee0ea", marginTop: 2 }}>
-                {post.mahalle}, {post.ilce}, {post.il}
-              </Text>
-            </PlatformBlurView>
             <TouchableOpacity onPress={() => setIsModalVisible(false)}>
-              <PlatformBlurView
-                intensity={50}
-                tint="dark"
-                className="overflow-hidden"
+              <View
+                className="bg-white"
                 style={{
-                  padding: 8,
-                  borderRadius: 20,
+                  width: 40,
+                  height: 40,
+                  borderRadius: 25,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  overflow: "hidden",
+                  boxShadow: "0px 0px 12px #00000020",
                 }}
               >
-                {" "}
-                <X size={20} color="#dee0ea" />
-              </PlatformBlurView>
+                <ArrowLeft size={18} color="black" />
+              </View>
             </TouchableOpacity>
           </View>
 
-          {/* Full Screen Map */}
+          {/* Fullscreen harita */}
           <MapView
             style={{ flex: 1 }}
             region={region}
@@ -404,65 +300,68 @@ const LocationSection = ({ post }) => {
             showsIndoors={true}
           >
             <Marker
-              coordinate={{
-                latitude: post.postLatitude,
-                longitude: post.postLongitude,
-              }}
+              coordinate={{ latitude: post.postLatitude, longitude: post.postLongitude }}
               title={post.ilanBasligi}
               description={`${post.mahalle}, ${post.ilce}`}
             >
-              <MapPin size={32} color="#fff" />
+              <MapPin size={32} color="#ef4444" fill="#ef4444" />
             </Marker>
           </MapView>
 
-          {/* Bottom Action Buttons */}
-          <View
-            className="bottom-0 w-full"
+          {/* Alt bilgi ve aksiyon barı */}
+          <PlatformBlurView
+            intensity={70}
+            tint="light"
             style={{
               position: "absolute",
-              backgroundColor: "transparent",
-              paddingHorizontal: 20,
-              paddingVertical: 15,
-              paddingBottom: Platform.OS === "ios" ? 35 : 20,
+              bottom: 0,
+              left: 0,
+              right: 0,
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              paddingBottom: insets.bottom + 12,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: -2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 8,
+              elevation: 10,
             }}
           >
-            <TouchableOpacity
-              activeOpacity={1}
-              style={{
-                paddingVertical: 12,
-                paddingHorizontal: 20,
-                borderRadius: 8,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-              onPress={() => {
-                showMapOptions();
-              }}
-            >
-              <PlatformBlurView
-                intensity={50}
-                tint="dark"
-                className="flex flex-row px-5 py-3 overflow-hidden rounded-full items-center bg-black bg-opacity-50"
-              >
-                <MapPin size={16} color="white" />
+            <View className="flex-col">
+              <View className="mb-3">
                 <Text
-                  style={{
-                    color: "#dee0ea",
-                    fontSize: 14,
-                    fontWeight: "400",
-                    marginLeft: 8,
-                  }}
+                  style={{ fontSize: 16, fontWeight: "600" }}
+                  className="text-gray-900 mb-1"
                 >
-                  {isLoadingDistance
-                    ? "Hesaplanıyor..."
-                    : travelTime
-                    ? `Yol tarifi al (~${formatTravelTime(travelTime)})`
-                    : "Yol tarifi al"}
+                  {post.ilanBasligi || "İlan"}
                 </Text>
-              </PlatformBlurView>
-            </TouchableOpacity>
-          </View>
+                <Text style={{ fontSize: 14 }} className="text-gray-500">
+                  {[post.il, post.ilce, post.mahalle].filter(Boolean).join(", ")}
+                </Text>
+                {travelTime && (
+                  <Text
+                    style={{ fontSize: 12 }}
+                    className="text-blue-600 font-medium mt-1"
+                  >
+                    Tahmini süre: {formatTravelTime(travelTime)}
+                  </Text>
+                )}
+              </View>
+
+              <TouchableOpacity
+                style={{ borderRadius: 20 }}
+                className="bg-gray-900 py-4"
+                onPress={() => {
+                  setIsModalVisible(false);
+                  showMapOptions();
+                }}
+              >
+                <Text className="text-white font-semibold text-center">
+                  {isLoadingDistance ? "Hesaplanıyor..." : "Yol Tarifi Al"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </PlatformBlurView>
         </View>
       </Modal>
     </>

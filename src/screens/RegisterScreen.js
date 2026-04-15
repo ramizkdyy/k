@@ -634,7 +634,7 @@ const RegisterScreen = ({ navigation }) => {
       Alert.alert(
         "Kayıt Hatası",
         error.data?.message ||
-          "Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin."
+        "Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin."
       );
     }
   };
@@ -845,8 +845,8 @@ const RegisterScreen = ({ navigation }) => {
                     Platform.OS === "ios"
                       ? handlePresentDatePicker
                       : () => {
-                          setShowCalendar(true);
-                        }
+                        setShowCalendar(true);
+                      }
                   }
                 >
                   <Calendar
@@ -897,7 +897,7 @@ const RegisterScreen = ({ navigation }) => {
                     placeholderTextColor="#b0b0b0"
                     placeholder="Kullanıcı adını gir"
                     value={username}
-                    onChangeText={setUsername}
+                    onChangeText={(text) => setUsername(text.toLowerCase())}
                     autoCapitalize="none"
                     ref={usernameInputRef}
                     returnKeyType="next"
@@ -1109,7 +1109,7 @@ const RegisterScreen = ({ navigation }) => {
   if (registerLoading || loginLoading) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color="#303030" />
         <Text className="mt-3 text-base text-gray-500">
           {registerLoading ? "Kayıt yapılıyor..." : "Giriş yapılıyor..."}
         </Text>
@@ -1150,7 +1150,7 @@ const RegisterScreen = ({ navigation }) => {
                 <View className="bg-white px-5 py-4 border-gray-200">
                   {/* Continue Button */}
                   <TouchableOpacity
-                    className="rounded-xl bg-green-300 items-center justify-center py-4 w-full"
+                    className="rounded-xl bg-primary items-center justify-center py-4 w-full"
                     onPress={handleNextStep}
                   >
                     <Text
@@ -1292,19 +1292,17 @@ const RegisterScreen = ({ navigation }) => {
                   <TouchableOpacity
                     key={index}
                     activeOpacity={1}
-                    className={`py-4 px-7 ${
-                      tempGenderValue === option.value
+                    className={`py-4 px-7 ${tempGenderValue === option.value
                         ? "bg-gray-50 rounded-full"
                         : ""
-                    }`}
+                      }`}
                     onPress={() => setTempGenderValue(option.value)}
                   >
                     <Text
-                      className={`text-lg ${
-                        tempGenderValue === option.value
+                      className={`text-lg ${tempGenderValue === option.value
                           ? "text-gray-900 font-semibold"
                           : "text-gray-500"
-                      }`}
+                        }`}
                     >
                       {option.label}
                     </Text>

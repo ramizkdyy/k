@@ -175,7 +175,7 @@ const PropertyCardFull = React.memo(
                 >
                   <View
                     className="w-12 h-12 rounded-full justify-center items-center mr-3 border"
-                    style={{ borderColor: "#1a7431" }}
+                    style={{ borderColor: "#20604C" }}
                   >
                     {item.user?.profilePictureUrl ? (
                       <ImageWithFallback

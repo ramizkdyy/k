@@ -428,7 +428,7 @@ const PostDetailScreen = ({ route, navigation }) => {
           style={{ borderRadius: 999, overflow: "hidden", marginTop: 16 }}
         >
           <LinearGradient
-            colors={["#25a244", "#208b3a"]}
+            colors={["#0A8C66", "#0A8C66"]}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
             style={{ paddingVertical: 12 }}
@@ -1643,7 +1643,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                     onPress={() => setIsOfferModalVisible(true)}
                   >
                     <LinearGradient
-                      colors={['#1a7431', '#155d27']}
+                      colors={['#20604C', '#20604C']}
                       start={{ x: 0, y: 0.5 }}
                       end={{ x: 1, y: 0.5 }}
                       style={{ paddingVertical: 16, paddingHorizontal: 60 }}
@@ -1680,7 +1680,7 @@ const PostDetailScreen = ({ route, navigation }) => {
                   }
                 >
                   <LinearGradient
-                    colors={['#1a7431', '#155d27']}
+                    colors={['#20604C', '#20604C']}
                     start={{ x: 0, y: 0.5 }}
                     end={{ x: 1, y: 0.5 }}
                     style={{ paddingVertical: 12 }}

@@ -206,7 +206,7 @@ const PropertiesFilterModal = ({
         // Fiyat
         minKiraFiyati: searchFilters.minKiraFiyati ? String(searchFilters.minKiraFiyati) : "",
         maxKiraFiyati: searchFilters.maxKiraFiyati ? String(searchFilters.maxKiraFiyati) : "",
-        paraBirimi: searchFilters.paraBirimi || "TRY",
+        paraBirimi: searchFilters.paraBirimi || null,
 
         quickPrice: null,
 
@@ -379,7 +379,9 @@ const PropertiesFilterModal = ({
                 : [];
 
             const mahalleArray = Array.isArray(filters.mahalle)
-                ? filters.mahalle.filter(item => typeof item === 'string' && item.length > 0)
+                ? filters.mahalle
+                    .filter(item => typeof item === 'string' && item.length > 0)
+                    .map(item => item.replace(/\s+(Mah\.|Mah|Mahallesi)$/i, '').trim())
                 : [];
 
             // API formatına göre filtre objesini oluştur
@@ -397,7 +399,7 @@ const PropertiesFilterModal = ({
                 maxKiraFiyati: filters.maxKiraFiyati ? parseInt(filters.maxKiraFiyati) : null,
                 minDepozito: null,
                 maxDepozito: null,
-                paraBirimi: filters.paraBirimi || "TRY",
+                paraBirimi: filters.paraBirimi || null,
 
                 // Metrekare
                 minBrutMetreKare: filters.minBrutMetreKare ? parseInt(filters.minBrutMetreKare) : null,
@@ -479,6 +481,7 @@ const PropertiesFilterModal = ({
 
 
             // API çağrısı yap
+            console.log('[Filter] Gönderilen payload:', JSON.stringify(cleanedPayload, null, 2));
             const result = await searchPosts(cleanedPayload).unwrap();
 
 
@@ -505,8 +508,9 @@ const PropertiesFilterModal = ({
 
     // Helper fonksiyonlar
     const getCurrencySymbol = (currency) => {
+        if (!currency) return "";
         const currencyOption = currencyOptions.find(option => option.value === currency);
-        return currencyOption ? currencyOption.symbol : "₺";
+        return currencyOption ? currencyOption.symbol : "";
     };
 
     const getQuickPriceOptions = (currency) => {
@@ -554,7 +558,7 @@ const PropertiesFilterModal = ({
             mahalle: [],
             minKiraFiyati: "",
             maxKiraFiyati: "",
-            paraBirimi: "TRY",
+            paraBirimi: null,
             quickPrice: null,
             minBrutMetreKare: "",
             maxBrutMetreKare: "",
@@ -623,7 +627,7 @@ const PropertiesFilterModal = ({
                             style={{ borderRadius: 999, overflow: 'hidden' }}
                         >
                             <LinearGradient
-                                colors={['#208b3a', '#1a7431']}
+                                colors={['#0A8C66', '#20604C']}
                                 start={{ x: 0, y: 0.5 }}
                                 end={{ x: 1, y: 0.5 }}
                                 style={{ paddingHorizontal: 16, paddingVertical: 8, alignItems: 'center' }}

@@ -352,7 +352,7 @@ const LoginScreen = ({ navigation }) => {
                         setChecked(val);
                         if (!val) AsyncStorage.removeItem("remembered_username");
                       }}
-                      color={isChecked ? "#25a244" : undefined}
+                      color={isChecked ? "#0A8C66" : undefined}
                       disabled={isLoading}
                       style={{
                         borderColor: isLoading ? "#ccc" : "#00000",
@@ -403,7 +403,7 @@ const LoginScreen = ({ navigation }) => {
                 activeOpacity={0.85}
               >
                 <LinearGradient
-                  colors={isLoading ? ["#d1d5db", "#d1d5db"] : ["#25a244", "#155d27"]}
+                  colors={isLoading ? ["#d1d5db", "#d1d5db"] : ["#0A8C66", "#20604C"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={{ paddingVertical: 14, alignItems: "center", justifyContent: "center" }}

@@ -7,6 +7,7 @@ import {
   Platform,
   ScrollView,
   Animated,
+  TouchableOpacity,
 } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -531,26 +532,66 @@ const ExploreScreen = ({ navigation }) => {
   // Empty state
   if (!feedData?.result?.posts || feedData.result.posts.length === 0) {
     return (
-      <View style={{ flex: 1, backgroundColor: "black" }}>
-        <StatusBar
-          barStyle="light-content"
-          translucent
-          backgroundColor="transparent"
+      <View style={{ flex: 1, backgroundColor: "#0d0d0d" }}>
+        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <LinearGradient
+          colors={["rgba(10,140,102,0.18)", "transparent"]}
+          style={{ position: "absolute", top: 0, left: 0, right: 0, height: SCREEN_HEIGHT * 0.55 }}
         />
-        <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        >
-          <Home size={80} color="#374151" />
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 40 }}>
+          <View
+            style={{
+              width: 104,
+              height: 104,
+              borderRadius: 52,
+              backgroundColor: "rgba(10,140,102,0.12)",
+              borderWidth: 1,
+              borderColor: "rgba(10,140,102,0.3)",
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: 28,
+            }}
+          >
+            <Home size={44} color="#0A8C66" />
+          </View>
+
           <Text
             style={{
               color: "white",
-              fontSize: 20,
-              fontWeight: "bold",
-              marginTop: 16,
+              fontSize: 22,
+              fontWeight: "700",
+              textAlign: "center",
+              marginBottom: 10,
+              letterSpacing: -0.3,
             }}
           >
-            Henüz ilan bulunamadı
+            İlan Bulunamadı
           </Text>
+          <Text
+            style={{
+              color: "rgba(255,255,255,0.4)",
+              fontSize: 15,
+              textAlign: "center",
+              lineHeight: 22,
+            }}
+          >
+            Yakın çevrenizde şu an aktif ilan bulunmuyor. Daha sonra tekrar kontrol edin.
+          </Text>
+
+          <TouchableOpacity
+            onPress={handleRefresh}
+            style={{
+              marginTop: 36,
+              backgroundColor: "#0A8C66",
+              paddingHorizontal: 32,
+              paddingVertical: 14,
+              borderRadius: 30,
+            }}
+          >
+            <Text style={{ color: "white", fontWeight: "600", fontSize: 15 }}>
+              Yenile
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
     );

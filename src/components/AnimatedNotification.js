@@ -316,7 +316,7 @@ const AnimatedNotification = ({
                 <View
                   style={{ width: 45, height: 45 }}
                   className="justify-center items-center rounded-full border"
-                  style={{ borderColor: '#1a7431' }}
+                  style={{ borderColor: '#20604C' }}
                 >
                   {profileImage &&
                   profileImage !== "default_profile_image_url" ? (

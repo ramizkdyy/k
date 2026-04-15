@@ -31,11 +31,17 @@ const normalizeTurkishText = (text) => {
     if (!text) return '';
 
     return text
+        .replace(/İ/g, 'i')
+        .replace(/I/g, 'i')
+        .replace(/Ç/g, 'c')
+        .replace(/Ğ/g, 'g')
+        .replace(/Ö/g, 'o')
+        .replace(/Ş/g, 's')
+        .replace(/Ü/g, 'u')
         .toLowerCase()
         .replace(/ç/g, 'c')
         .replace(/ğ/g, 'g')
         .replace(/ı/g, 'i')
-        .replace(/İ/g, 'i')
         .replace(/ö/g, 'o')
         .replace(/ş/g, 's')
         .replace(/ü/g, 'u')
@@ -147,12 +153,8 @@ const FilterDropdown = ({
 
             if (typeof option === 'string') {
                 searchText = option;
-            } else if (option?.value) {
-                searchText = option.value;
-                // Label varsa onu da kontrol et
-                if (option.label) {
-                    searchText += ' ' + option.label;
-                }
+            } else {
+                searchText = [option.label, option.value].filter(Boolean).join(' ');
             }
 
             const normalizedSearchText = normalizeTurkishText(searchText);

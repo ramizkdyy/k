@@ -4,17 +4,17 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Image,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
   Alert,
-  FlatList,
-  Switch,
-  SafeAreaView,
-  ActionSheetIOS,
+  Modal,
+  StyleSheet,
+  TouchableWithoutFeedback,
+  Dimensions,
 } from "react-native";
+import { Image } from "expo-image";
 import { useDispatch, useSelector } from "react-redux";
 import {
   selectCurrentUser,
@@ -31,246 +31,211 @@ import {
   updateCoverImageStatus,
 } from "../redux/slices/profileSlice";
 import * as ImagePicker from "expo-image-picker";
-import { Plus } from "lucide-react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { Pencil, ChevronLeft } from "lucide-react-native";
+import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-const CustomDropdown = ({
-  label,
-  value,
-  setValue,
-  options,
-  placeholder,
-  required = false,
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+
+// Image Picker Modal - EditProfileScreen ile aynı
+const ImagePickerModal = ({
+  isVisible,
+  onClose,
+  onGallery,
+  onCamera,
+  onRemove,
+  hasCurrentImage,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const translateY = useSharedValue(SCREEN_HEIGHT);
+  const backdropOpacity = useSharedValue(0);
+
+  const getModalHeight = () => {
+    const headerHeight = 80;
+    const itemHeight = 60;
+    const bottomPadding = 40;
+    const itemCount = hasCurrentImage ? 3 : 2;
+    return headerHeight + itemCount * itemHeight + bottomPadding;
+  };
+
+  const SNAP_POINTS = {
+    CLOSED: SCREEN_HEIGHT,
+    OPEN: SCREEN_HEIGHT - getModalHeight(),
+  };
+
+  useEffect(() => {
+    if (isVisible) {
+      translateY.value = withSpring(SNAP_POINTS.OPEN, {
+        damping: 80,
+        stiffness: 400,
+      });
+      backdropOpacity.value = withTiming(0.5, { duration: 300 });
+    } else if (isVisible === false && translateY.value !== SCREEN_HEIGHT) {
+      translateY.value = withSpring(SCREEN_HEIGHT, {
+        damping: 80,
+        stiffness: 400,
+      });
+      backdropOpacity.value = withTiming(0, { duration: 250 });
+    }
+  }, [isVisible]);
+
+  const handleClose = () => {
+    translateY.value = withSpring(SCREEN_HEIGHT, {
+      damping: 80,
+      stiffness: 400,
+    });
+    backdropOpacity.value = withTiming(0, { duration: 250 });
+    setTimeout(() => onClose(), 300);
+  };
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const modalStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  const handleOptionSelect = (action) => {
+    translateY.value = SCREEN_HEIGHT;
+    backdropOpacity.value = 0;
+    onClose();
+
+    if (action === "gallery") onGallery();
+    else if (action === "camera") onCamera();
+    else if (action === "remove") onRemove();
+  };
 
   return (
-    <View>
-      <Text className="text-gray-600 mb-2">
-        {label} {required && <Text className="text-red-500">*</Text>}
-      </Text>
-      <TouchableOpacity
-        className="bg-gray-100 p-3 rounded-lg text-base border border-gray-200 flex-row justify-between items-center"
-        onPress={() => setIsOpen(true)}
-      >
-        <Text className={value ? "text-black" : "text-gray-500"}>
-          {value || placeholder}
-        </Text>
-        <Text>▼</Text>
-      </TouchableOpacity>
+    <Modal
+      visible={isVisible}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={handleClose}
+    >
+      <GestureHandlerRootView style={styles.container}>
+        <Animated.View style={[styles.backdrop, backdropStyle]}>
+          <TouchableWithoutFeedback onPress={handleClose}>
+            <View style={styles.backdropTouchable} />
+          </TouchableWithoutFeedback>
+        </Animated.View>
 
-      <Modal
-        visible={isOpen}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setIsOpen(false)}
-      >
-        <View className="flex-1 justify-end bg-black bg-opacity-50">
-          <View className="bg-white rounded-t-lg max-h-1/2">
-            <View className="p-4 border-b border-gray-200 flex-row justify-between items-center">
-              <Text className="text-lg font-bold text-gray-800">{label}</Text>
-              <TouchableOpacity onPress={() => setIsOpen(false)}>
-                <Text className="text-green-500 font-bold">Kapat</Text>
+        <Animated.View style={[styles.modal, modalStyle]}>
+          <View className="py-4 px-6 border-b border-gray-100 bg-white">
+            <View className="flex-row justify-between items-center">
+              <Text style={{ fontWeight: 600, fontSize: 18 }} className="text-gray-800">
+                Profil Fotoğrafı
+              </Text>
+              <TouchableOpacity onPress={handleClose} className="px-2 py-2">
+                <Text style={{ fontSize: 15, color: "#007AFF", fontWeight: "500" }}>
+                  Kapat
+                </Text>
               </TouchableOpacity>
             </View>
-
-            <FlatList
-              data={options}
-              keyExtractor={(item) => item.toString()}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  className={`p-4 border-b border-gray-100 ${
-                    value === item ? "bg-green-50" : ""
-                  }`}
-                  onPress={() => {
-                    setValue(item);
-                    setIsOpen(false);
-                  }}
-                >
-                  <Text
-                    className={`text-base ${
-                      value === item
-                        ? "text-green-500 font-semibold"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    {item}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
           </View>
-        </View>
-      </Modal>
-    </View>
+
+          <View className="bg-white">
+            <TouchableOpacity
+              className="py-4 px-7 flex-row items-center"
+              onPress={() => handleOptionSelect("gallery")}
+              activeOpacity={0.7}
+            >
+              <Text className="text-lg text-gray-700 flex-1">Galeriden Seç</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="py-4 px-7 flex-row items-center"
+              onPress={() => handleOptionSelect("camera")}
+              activeOpacity={0.7}
+            >
+              <Text className="text-lg text-gray-700 flex-1">Fotoğraf Çek</Text>
+            </TouchableOpacity>
+
+            {hasCurrentImage && (
+              <TouchableOpacity
+                className="py-4 px-7 flex-row items-center"
+                onPress={() => handleOptionSelect("remove")}
+                activeOpacity={0.7}
+              >
+                <Text className="text-lg flex-1">Fotoğrafı Kaldır</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </Animated.View>
+      </GestureHandlerRootView>
+    </Modal>
   );
 };
 
-import { useNavigation } from "@react-navigation/native";
+// Header - EditProfileScreen ile aynı stil
+const CreateProfileHeader = ({ navigation, userRole }) => (
+  <View style={{ paddingVertical: 12 }} className="px-3 relative bg-white">
+    <View className="flex-row justify-between ml-2 items-center w-full">
+      <TouchableOpacity
+        onPress={() => navigation.navigate("RoleSelection")}
+        className="flex-row items-center"
+      >
+        <ChevronLeft size={22} color="#0d0d0d" />
+      </TouchableOpacity>
+
+      <Text className="text-gray-900 mr-2 font-medium">
+        {userRole === "EVSAHIBI" ? "Ev sahibi" : "Kiracı"}
+      </Text>
+    </View>
+
+    <View className="absolute inset-0 justify-center items-center pointer-events-none">
+      <Text className="text-gray-500" style={{ fontWeight: 500, fontSize: 14 }}>
+        Profil oluştur
+      </Text>
+    </View>
+  </View>
+);
+
+// Description Input - EditProfileScreen ile aynı stil
+const DescriptionInput = ({ value, onChangeText, placeholder }) => (
+  <View className="mb-6">
+    <Text style={{ fontSize: 16 }} className="font-semibold text-gray-900 mb-3">
+      Hakkımda
+    </Text>
+    <View
+      className="border border-gray-400 rounded-xl px-4 py-4"
+      style={{ height: SCREEN_HEIGHT * 0.2 }}
+    >
+      <TextInput
+        className="text-gray-900 text-base"
+        placeholder={placeholder}
+        placeholderTextColor="#b0b0b0"
+        value={value}
+        onChangeText={onChangeText}
+        multiline
+        numberOfLines={6}
+        maxLength={500}
+        style={{ fontSize: 16 }}
+        textAlignVertical="top"
+      />
+    </View>
+  </View>
+);
 
 const CreateProfileScreen = (props) => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const currentUser = useSelector(selectCurrentUser);
   const userRole = useSelector(selectUserRole);
+  const insets = useSafeAreaInsets();
 
-  // Ortak state değişkenleri
   const [profileImage, setProfileImage] = useState(null);
-  const [coverImage, setCoverImage] = useState(null);
   const [previewProfileImage, setPreviewProfileImage] = useState(null);
-  const [previewCoverImage, setPreviewCoverImage] = useState(null);
-  const [activeImageType, setActiveImageType] = useState(null); // 'profile' or 'cover'
-
-  // Ev Sahibi (Landlord) için state değişkenleri
-  const [rentalLocation, setRentalLocation] = useState("İstanbul"); // Zorunlu
-  const [rentalPriceExpectation, setRentalPriceExpectation] =
-    useState("0-5000"); // Zorunlu
-  const [numberOfOccupants, setNumberOfOccupants] = useState("1-2"); // Zorunlu
-  const [isNumberOfOccupantsImportant, setIsNumberOfOccupantsImportant] =
-    useState(false);
-  const [isTenantProfessionImportant, setIsTenantProfessionImportant] =
-    useState(false);
-  const [isTenantMaritalStatusImportant, setIsTenantMaritalStatusImportant] =
-    useState(false);
-  const [tenantProfession, setTenantProfession] = useState("Belirtilmemiş");
-  const [tenantMaritalStatus, setTenantMaritalStatus] =
-    useState("Belirtilmemiş");
+  const [isImagePickerVisible, setIsImagePickerVisible] = useState(false);
   const [description, setDescription] = useState("");
 
-  // Kiracı (Tenant) için state değişkenleri
-  const [location, setLocation] = useState("İstanbul"); // Zorunlu
-  const [priceRange, setPriceRange] = useState("0-5000"); // Zorunlu
-  const [numberOfPeople, setNumberOfPeople] = useState("1");
-  const [profession, setProfession] = useState("Belirtilmemiş"); // Zorunlu
-  const [maritalStatus, setMaritalStatus] = useState("Belirtilmemiş"); // Zorunlu
-  const [profileDescription, setProfileDescription] = useState("");
-
-  // Şehir listesi
-  const cities = [
-    "İstanbul",
-    "Ankara",
-    "İzmir",
-    "Adana",
-    "Adıyaman",
-    "Afyonkarahisar",
-    "Ağrı",
-    "Aksaray",
-    "Amasya",
-    "Antalya",
-    "Ardahan",
-    "Artvin",
-    "Aydın",
-    "Balıkesir",
-    "Bartın",
-    "Batman",
-    "Bayburt",
-    "Bilecik",
-    "Bingöl",
-    "Bitlis",
-    "Bolu",
-    "Burdur",
-    "Bursa",
-    "Çanakkale",
-    "Çankırı",
-    "Çorum",
-    "Denizli",
-    "Diyarbakır",
-    "Düzce",
-    "Edirne",
-    "Elazığ",
-    "Erzincan",
-    "Erzurum",
-    "Eskişehir",
-    "Gaziantep",
-    "Giresun",
-    "Gümüşhane",
-    "Hakkâri",
-    "Hatay",
-    "Iğdır",
-    "Isparta",
-    "Kahramanmaraş",
-    "Karabük",
-    "Karaman",
-    "Kars",
-    "Kastamonu",
-    "Kayseri",
-    "Kırıkkale",
-    "Kırklareli",
-    "Kırşehir",
-    "Kilis",
-    "Kocaeli",
-    "Konya",
-    "Kütahya",
-    "Malatya",
-    "Manisa",
-    "Mardin",
-    "Mersin",
-    "Muğla",
-    "Muş",
-    "Nevşehir",
-    "Niğde",
-    "Ordu",
-    "Osmaniye",
-    "Rize",
-    "Sakarya",
-    "Samsun",
-    "Siirt",
-    "Sinop",
-    "Sivas",
-    "Şanlıurfa",
-    "Şırnak",
-    "Tekirdağ",
-    "Tokat",
-    "Trabzon",
-    "Tunceli",
-    "Uşak",
-    "Van",
-    "Yalova",
-    "Yozgat",
-    "Zonguldak",
-  ];
-
-  // Fiyat aralığı listesi
-  const priceRanges = [
-    "0-5000",
-    "5001-10000",
-    "10001-15000",
-    "15001-20000",
-    "20001-25000",
-    "25001-30000",
-    "30001-40000",
-    "40001-50000",
-    "50001+",
-  ];
-
-  // Meslek listesi
-  const professions = [
-    "Belirtilmemiş",
-    "Öğrenci",
-    "Öğretmen",
-    "Mühendis",
-    "Doktor",
-    "Avukat",
-    "Mimar",
-    "Akademisyen",
-    "Memur",
-    "İşçi",
-    "Esnaf",
-    "Serbest Meslek",
-    "Emekli",
-    "Diğer",
-  ];
-
-  // Medeni durum listesi
-  const maritalStatuses = ["Belirtilmemiş", "Bekar", "Evli", "Boşanmış", "Dul"];
-
-  // Kişi sayısı listesi (kiracı için)
-  const peopleNumbers = ["1", "2", "3", "4", "5", "6+"];
-
-  // Kiracı sayısı listesi (ev sahibi için)
-  const occupantOptions = ["1-2", "3-4", "5-6", "6+", "Fark etmez"];
-
-  // UseCreateXXXProfileMutation hooks
   const [createLandlordProfile, { isLoading: createLandlordLoading }] =
     useCreateLandlordProfileMutation();
   const [createTenantProfile, { isLoading: createTenantLoading }] =
@@ -279,127 +244,36 @@ const CreateProfileScreen = (props) => {
   const isLoading = createLandlordLoading || createTenantLoading;
 
   useEffect(() => {
-    // Profil oluşturma sayfasını açıldığında kullanıcı adı/soyad bilgisini dolduralım
     if (currentUser && userRole) {
       if (userRole === "EVSAHIBI") {
         setDescription(
-          `Merhaba, ben ${currentUser.name || ""} ${
-            currentUser.surname || ""
-          }. Kiralayanlar için buradayım.`
+          `Merhaba, ben ${currentUser.name || ""} ${currentUser.surname || ""}. Kiralayanlar için buradayım.`
         );
       } else {
-        setProfileDescription(
-          `Merhaba, ben ${currentUser.name || ""} ${
-            currentUser.surname || ""
-          }. Kiralık ev arıyorum.`
+        setDescription(
+          `Merhaba, ben ${currentUser.name || ""} ${currentUser.surname || ""}. Kiralık ev arıyorum.`
         );
       }
     }
   }, [currentUser, userRole]);
 
-  // Image picker functions - Native Action Sheet kullan
-  const handleImageSelection = async (type) => {
-    setActiveImageType(type);
-
-    // Mevcut fotoğraf var mı kontrol et
-    const hasCurrentImage =
-      type === "profile" ? previewProfileImage : previewCoverImage;
-
-    if (Platform.OS === "ios") {
-      // iOS Native Action Sheet (alttan çıkar)
-      const options = hasCurrentImage
-        ? ["İptal", "Galeriden Seç", "Fotoğraf Çek", "Fotoğrafı Kaldır"]
-        : ["İptal", "Galeriden Seç", "Fotoğraf Çek"];
-
-      const destructiveButtonIndex = hasCurrentImage ? 3 : undefined;
-
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          title: type === "profile" ? "Profil Fotoğrafı" : "Kapak Fotoğrafı",
-          options: options,
-          cancelButtonIndex: 0,
-          destructiveButtonIndex: destructiveButtonIndex,
-        },
-        (buttonIndex) => {
-          if (buttonIndex === 1) {
-            pickImageFromGallery();
-          } else if (buttonIndex === 2) {
-            takePhoto();
-          } else if (buttonIndex === 3 && hasCurrentImage) {
-            removeImage();
-          }
-        }
-      );
-    } else {
-      // Android için Alert dialog (alttan çıkar)
-      const buttons = [
-        {
-          text: "Galeriden Seç",
-          onPress: () => pickImageFromGallery(),
-        },
-        {
-          text: "Fotoğraf Çek",
-          onPress: () => takePhoto(),
-        },
-      ];
-
-      if (hasCurrentImage) {
-        buttons.push({
-          text: "Fotoğrafı Kaldır",
-          onPress: () => removeImage(),
-          style: "destructive",
-        });
-      }
-
-      buttons.push({
-        text: "İptal",
-        style: "cancel",
-      });
-
-      Alert.alert(
-        type === "profile" ? "Profil Fotoğrafı" : "Kapak Fotoğrafı",
-        "Fotoğraf seçin",
-        buttons,
-        { cancelable: true }
-      );
-    }
-  };
-
-  const removeImage = () => {
-    if (activeImageType === "profile") {
-      setProfileImage(null);
-      setPreviewProfileImage(null);
-    } else {
-      setCoverImage(null);
-      setPreviewCoverImage(null);
-    }
-  };
-
   const pickImageFromGallery = async () => {
     try {
-      const permissionResult =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permissionResult.granted) {
         Alert.alert("İzin Gerekli", "Fotoğraflara erişim izni gereklidir.");
         return;
       }
 
-      // Eski versiyonlarda bile çalışacak basit yapı
       const result = await ImagePicker.launchImageLibraryAsync({
         allowsEditing: true,
-        aspect: activeImageType === "profile" ? [1, 1] : [16, 9],
+        aspect: [1, 1],
         quality: 0.7,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        if (activeImageType === "profile") {
-          setProfileImage(result.assets[0].uri);
-          setPreviewProfileImage(result.assets[0].uri);
-        } else {
-          setCoverImage(result.assets[0].uri);
-          setPreviewCoverImage(result.assets[0].uri);
-        }
+        setProfileImage(result.assets[0].uri);
+        setPreviewProfileImage(result.assets[0].uri);
       }
     } catch (error) {
       Alert.alert("Hata", "Fotoğraf seçilirken bir hata oluştu.");
@@ -408,116 +282,50 @@ const CreateProfileScreen = (props) => {
 
   const takePhoto = async () => {
     try {
-      const permissionResult =
-        await ImagePicker.requestCameraPermissionsAsync();
-
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
       if (!permissionResult.granted) {
         Alert.alert("İzin Gerekli", "Kamera erişim izni gereklidir.");
         return;
       }
 
-      // Eski versiyonlarda bile çalışacak basit yapı
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
-        aspect: activeImageType === "profile" ? [1, 1] : [16, 9],
+        aspect: [1, 1],
         quality: 0.7,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        if (activeImageType === "profile") {
-          setProfileImage(result.assets[0].uri);
-          setPreviewProfileImage(result.assets[0].uri);
-        } else {
-          setCoverImage(result.assets[0].uri);
-          setPreviewCoverImage(result.assets[0].uri);
-        }
+        setProfileImage(result.assets[0].uri);
+        setPreviewProfileImage(result.assets[0].uri);
       }
     } catch (error) {
       Alert.alert("Hata", "Fotoğraf çekilirken bir hata oluştu.");
     }
   };
 
-  const handleGoBack = () => {
-    // Rol seçimi ekranına geri dön
-    navigation.navigate("RoleSelection");
+  const removeImage = () => {
+    setProfileImage(null);
+    setPreviewProfileImage(null);
   };
 
-  // Çıkış yapma işlevi
-  const handleLogout = () => {
-    Alert.alert(
-      "Çıkış Yap",
-      "Hesabınızdan çıkış yapmak istediğinize emin misiniz?",
-      [
-        {
-          text: "İptal",
-          style: "cancel",
-        },
-        {
-          text: "Çıkış Yap",
-          onPress: () => {
-            dispatch(logout());
-            // Giriş ekranına yönlendirme
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "Login" }],
-            });
-          },
-          style: "destructive",
-        },
-      ]
-    );
-  };
-
-  // Handle form submission - MODIFIED TO ONLY SEND REQUIRED FIELDS
   const handleCreateProfile = async () => {
     try {
       const formData = new FormData();
-
-      // Add user ID (required for association)
       formData.append("UserId", currentUser.id);
 
-      // Add profile image if selected
       if (profileImage) {
-        // Get file name from URI
         const profileImageName = profileImage.split("/").pop();
         const profileImageType = profileImageName.split(".").pop();
-
         formData.append("ProfileImage", {
           uri: profileImage,
           name: profileImageName,
           type: `image/${profileImageType}`,
         });
-
         dispatch(updateProfileImageStatus("uploading"));
       }
 
-      // Add cover image if selected
-      if (coverImage) {
-        // Get file name from URI
-        const coverImageName = coverImage.split("/").pop();
-        const coverImageType = coverImageName.split(".").pop();
+      formData.append("ProfileDescription", description || "");
 
-        formData.append("CoverProfileImage", {
-          uri: coverImage,
-          name: coverImageName,
-          type: `image/${coverImageType}`,
-        });
-
-        dispatch(updateCoverImageStatus("uploading"));
-      }
-
-      // Add ProfileDescription field (using the appropriate field based on role)
-      if (userRole === "EVSAHIBI") {
-        formData.append("ProfileDescription", description || "");
-      } else {
-        formData.append("ProfileDescription", profileDescription || "");
-      }
-
-      // Log the fields in the form
-      for (let [key, value] of formData.entries()) {
-      }
-
-      // Create profile based on user role
       let response;
       if (userRole === "EVSAHIBI") {
         response = await createLandlordProfile(formData).unwrap();
@@ -525,39 +333,22 @@ const CreateProfileScreen = (props) => {
         response = await createTenantProfile(formData).unwrap();
       }
 
-      console.log("[CreateProfile] Response:", JSON.stringify(response, null, 2));
-
       if (response && response.isSuccess) {
-        // Save profile information to Redux
         if (response.result) {
           dispatch(setUserProfile(response.result));
         }
 
         Alert.alert("Başarılı", "Profiliniz başarıyla oluşturuldu.", [
-          {
-            text: "Tamam",
-            onPress: () => {
-              // App navigator will automatically redirect to the main page
-            },
-          },
+          { text: "Tamam" },
         ]);
       } else {
-        Alert.alert(
-          "Hata",
-          (response && response.message) || "Profil oluşturulamadı."
-        );
+        Alert.alert("Hata", (response && response.message) || "Profil oluşturulamadı.");
       }
 
-      // Reset image upload statuses
       dispatch(updateProfileImageStatus(null));
-      dispatch(updateCoverImageStatus(null));
     } catch (error) {
-      console.log("[CreateProfile] Error:", JSON.stringify(error, null, 2));
-
-      // Show detailed error messages
       if (error && error.data && error.data.errors) {
         let errorMessage = "API şu hataları döndürdü:\n";
-
         Object.entries(error.data.errors).forEach(([field, messages]) => {
           if (Array.isArray(messages)) {
             errorMessage += `• ${field}: ${messages.join(", ")}\n`;
@@ -565,7 +356,6 @@ const CreateProfileScreen = (props) => {
             errorMessage += `• ${field}: Geçersiz değer\n`;
           }
         });
-
         Alert.alert("Doğrulama Hatası", errorMessage);
       } else {
         Alert.alert(
@@ -575,9 +365,7 @@ const CreateProfileScreen = (props) => {
         );
       }
 
-      // Reset image upload statuses on error
       dispatch(updateProfileImageStatus(null));
-      dispatch(updateCoverImageStatus(null));
     }
   };
 
@@ -585,148 +373,143 @@ const CreateProfileScreen = (props) => {
     return (
       <View className="flex-1 justify-center items-center bg-white">
         <ActivityIndicator size="small" color="#000" />
-        <Text className="mt-3 text-base text-gray-500">
-          Profil oluşturuluyor...
-        </Text>
+        <Text className="mt-3 text-base text-gray-500">Profil oluşturuluyor...</Text>
       </View>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
       <KeyboardAvoidingView
-        className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        className="flex-1"
       >
-        {/* Header */}
-        <View className="px-5 py-6 flex-row items-center justify-between bg-white">
-          <Text style={{ fontSize: 20 }} className="font-bold text-gray-900">
-            Profil oluştur
-          </Text>
-          <View className="flex-row gap-2 items-center">
-            <Text className="text-gray-900 mr-2">
-              {userRole === "EVSAHIBI" ? "Ev sahibi" : "Kiracı"}
-            </Text>
-          </View>
-        </View>
+        <CreateProfileHeader navigation={navigation} userRole={userRole} />
 
-        {/* Scrollable Content */}
         <ScrollView
           className="flex-1"
+          contentContainerStyle={{ flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
         >
-          {/* Profile image section */}
-          <View className="mb-6 mt-4 items-center">
-            <TouchableOpacity onPress={() => handleImageSelection("profile")}>
-              <View className="w-24 h-24 rounded-full bg-white border-4 border-white shadow-md overflow-hidden">
-                {previewProfileImage ? (
-                  <Image
-                    source={{ uri: previewProfileImage }}
-                    className="w-full h-full"
-                    contentFit="cover"
-                    cachePolicy="memory-disk"
-                    transition={200}
-                  />
-                ) : (
-                  <View className="w-full h-full bg-gray-100 justify-center items-center">
-                    <Text
-                      style={{ fontSize: 40 }}
-                      className="text-gray-900 font-bold"
-                    >
-                      {currentUser?.name?.charAt(0) || "P"}
-                    </Text>
-                  </View>
-                )}
-              </View>
-              <View
-                style={{ boxShadow: "0px 0px 12px #00000014" }}
-                className="absolute right-0 bottom-0 bg-white w-8 h-8 rounded-full justify-center items-center"
-              >
-                <Plus size={16} color="#000" />
+          {/* Profil fotoğrafı - EditProfileScreen ile aynı */}
+          <View className="relative mb-8 mt-8 px-5">
+            <TouchableOpacity
+              activeOpacity={0.7}
+              className="overflow-hidden justify-center items-center"
+              onPress={() => setIsImagePickerVisible(true)}
+            >
+              <View className="relative">
+                <View
+                  className="rounded-full overflow-hidden"
+                  style={{
+                    width: 120,
+                    height: 120,
+                    backgroundColor: previewProfileImage ? "white" : "#f3f4f6",
+                    borderWidth: 3,
+                    borderColor: "#111827",
+                  }}
+                >
+                  {previewProfileImage ? (
+                    <Image
+                      source={{ uri: previewProfileImage }}
+                      style={{ width: 120, height: 120 }}
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                      transition={200}
+                    />
+                  ) : (
+                    <View className="w-full h-full bg-white justify-center items-center">
+                      <Text className="text-gray-600 text-4xl font-bold">
+                        {currentUser?.name?.charAt(0) || "P"}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                <View
+                  className="absolute right-[6] bottom-[6] bg-gray-900 w-8 h-8 rounded-full justify-center items-center"
+                  style={{
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 4,
+                    elevation: 5,
+                  }}
+                >
+                  <Pencil size={16} color="#fff" />
+                </View>
               </View>
             </TouchableOpacity>
           </View>
 
-          {/* Form fields */}
-          <View className="px-5 pb-10">
-            {/* Description field */}
-            <View className="rounded-xl mb-6">
-              <View className="mb-2">
-                <Text
-                  style={{ fontSize: 20 }}
-                  className="font-bold text-gray-800 mb-2"
-                >
-                  Açıklama
-                </Text>
-                <Text className="mb-4">
-                  {
-                    <Text style={{ fontSize: 12 }} className="text-gray-500">
-                      {userRole === "EVSAHIBI"
-                        ? "Kendinizi kısaca tanıtın ve ev sahibi olarak kiracınızdan beklentilerinizi paylaşın. (Örn: Evi uzun süreli ve sorumluluk sahibi bir kiracıya vermek istiyorum.)"
-                        : "Lütfen kendinizi tanıtın: kim olduğunuzu, mesleğinizi ve ev arama amacınızı yazın. (Örn: 25 yaşında bir yazılım mühendisiyim, işe yakın ve sessiz bir ev arıyorum.)"}
-                    </Text>
-                  }
-                </Text>
-                <TextInput
-                  style={{ fontSize: 16 }}
-                  className="bg-white p-3 rounded-lg border border-gray-400 min-h-[100px]"
-                  value={
-                    userRole === "EVSAHIBI" ? description : profileDescription
-                  }
-                  onChangeText={
-                    userRole === "EVSAHIBI"
-                      ? setDescription
-                      : setProfileDescription
-                  }
-                  placeholder={
-                    userRole === "EVSAHIBI"
-                      ? "Eklemek istediğiniz bilgileri yazınız"
-                      : "Kendinizi kısaca tanıtın"
-                  }
-                  multiline
-                  textAlignVertical="top"
-                />
-              </View>
-            </View>
+          {/* Form */}
+          <View className="px-5 py-4 flex-1">
+            <DescriptionInput
+              value={description}
+              onChangeText={setDescription}
+              placeholder={
+                userRole === "EVSAHIBI"
+                  ? "Kendinizi ve kiracınızdan beklentilerinizi yazın..."
+                  : "Kendinizi kısaca tanıtın..."
+              }
+            />
+          </View>
 
-            {/* Create button */}
+          {/* Buton */}
+          <View className="px-5 pb-8">
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={handleCreateProfile}
               disabled={isLoading}
+              className="rounded-full border-2 border-gray-900 items-center justify-center py-3"
             >
-              <LinearGradient
-                colors={isLoading ? ["#d1d5db", "#d1d5db"] : ["#1a7431", "#155d27"]}
-                start={{ x: 0, y: 0.5 }}
-                end={{ x: 1, y: 0.5 }}
-                style={{ borderRadius: 999, padding: 2 }}
-              >
-                <View
-                  style={{
-                    backgroundColor: "white",
-                    borderRadius: 999,
-                    height: 50,
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
-                  {isLoading ? (
-                    <ActivityIndicator color="#1a7431" />
-                  ) : (
-                    <Text style={{ fontSize: 16, fontWeight: "600", color: "#1a7431" }}>
-                      Devam Et
-                    </Text>
-                  )}
-                </View>
-              </LinearGradient>
+              <Text style={{ fontSize: 16, fontWeight: "600", color: "#111827" }}>
+                Devam Et
+              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+
+      <ImagePickerModal
+        isVisible={isImagePickerVisible}
+        onClose={() => setIsImagePickerVisible(false)}
+        onGallery={pickImageFromGallery}
+        onCamera={takePhoto}
+        onRemove={removeImage}
+        hasCurrentImage={!!previewProfileImage}
+      />
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  backdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  backdropTouchable: { flex: 1 },
+  modal: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: "#ffffff",
+    elevation: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    overflow: "hidden",
+  },
+});
 
 export default CreateProfileScreen;

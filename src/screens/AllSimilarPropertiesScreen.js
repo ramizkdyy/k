@@ -658,10 +658,10 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
           </Text>
           <TouchableOpacity
             className="border px-6 py-3 rounded-full"
-            style={{ borderColor: '#1a7431' }}
+            style={{ borderColor: '#20604C' }}
             onPress={onRefresh}
           >
-            <Text className="font-medium" style={{ color: '#1a7431' }}>Tekrar Dene</Text>
+            <Text className="font-medium" style={{ color: '#20604C' }}>Tekrar Dene</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

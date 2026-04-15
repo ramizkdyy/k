@@ -1171,7 +1171,7 @@ const PostsScreen = ({ navigation }) => {
             onPress={handleCreatePostNavigation}
           >
             <LinearGradient
-              colors={['#25a244', '#1a7431']}
+              colors={['#0A8C66', '#20604C']}
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
               style={{ paddingHorizontal: 24, paddingVertical: 12 }}

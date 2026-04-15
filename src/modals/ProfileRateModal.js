@@ -328,7 +328,7 @@ const ProfileRateModal = ({
                               </View>
                             ) : (
                               <LinearGradient
-                                colors={['#25a244', '#208b3a']}
+                                colors={['#0A8C66', '#0A8C66']}
                                 start={{ x: 0, y: 0.5 }}
                                 end={{ x: 1, y: 0.5 }}
                                 style={{ paddingVertical: 16, alignItems: 'center' }}

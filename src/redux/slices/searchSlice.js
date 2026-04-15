@@ -22,7 +22,7 @@ const initialState = {
         maxKiraFiyati: null,
         minDepozito: null,
         maxDepozito: null,
-        paraBirimi: "TRY",
+        paraBirimi: null,
 
         // Metrekare
         minBrutMetreKare: null,

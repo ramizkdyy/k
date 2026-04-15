@@ -250,19 +250,19 @@ const OfferModal = ({
                         {existingOffer && (
                             <View className="mb-6 p-5 rounded-xl bg-white" style={{
                                 borderWidth: 2,
-                                borderColor: existingOffer.status === 2 ? "#dc2626" : "#208b3a",
+                                borderColor: existingOffer.status === 2 ? "#dc2626" : "#0A8C66",
                             }}>
                                 <Text className="text-sm font-bold text-gray-800 mb-2 uppercase tracking-wide">
                                     Mevcut Teklifiniz
                                 </Text>
                                 <View className="flex-row items-end">
                                     {existingOffer.status === 0
-                                        ? <Clock size={22} color="#155d27" style={{ marginRight: 6, marginBottom: 6 }} />
+                                        ? <Clock size={22} color="#20604C" style={{ marginRight: 6, marginBottom: 6 }} />
                                         : existingOffer.status === 1
-                                        ? <CheckCircle2 size={22} color="#155d27" style={{ marginRight: 6, marginBottom: 6 }} />
+                                        ? <CheckCircle2 size={22} color="#20604C" style={{ marginRight: 6, marginBottom: 6 }} />
                                         : <XCircle size={22} color="#dc2626" style={{ marginRight: 6, marginBottom: 6 }} />
                                     }
-                                    <Text className="text-3xl font-bold" style={{ color: existingOffer.status === 2 ? "#dc2626" : "#155d27" }}>
+                                    <Text className="text-3xl font-bold" style={{ color: existingOffer.status === 2 ? "#dc2626" : "#20604C" }}>
                                         {new Intl.NumberFormat("tr-TR").format(existingOffer.offerAmount)}
                                         {currencyOptions.find(c => c.value === existingOffer.currency)?.symbol || "₺"}
                                     </Text>
@@ -340,7 +340,7 @@ const OfferModal = ({
                             </View>
                         ) : (
                             <LinearGradient
-                                colors={['#25a244', '#155d27']}
+                                colors={['#0A8C66', '#20604C']}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 1 }}
                                 style={{ paddingVertical: 12, alignItems: 'center' }}

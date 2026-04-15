@@ -156,8 +156,8 @@ const CreatePostHeader = ({
         disabled={isLoading}
       >
         <Text
-          style={{ fontSize: 16, color: "#6aeba9", borderColor: "#6aeba9" }}
-          className="font-semibold border px-4 py-2 rounded-full"
+          style={{ fontSize: 16 }}
+          className="font-semibold border border-primary text-primary px-4 py-2 rounded-full"
         >
           {isLoading
             ? propertyData
@@ -1417,7 +1417,7 @@ const CreatePostScreen = ({ navigation, route }) => {
               text: "Tamam",
               onPress: () => {
                 if (newPostId) {
-                  navigation.navigate("PostDetail", { postId: newPostId });
+                  navigation.replace("PostDetail", { postId: newPostId });
                 } else {
                   navigation.navigate("MainTabs", { screen: "Properties" });
                 }
@@ -1594,7 +1594,7 @@ const CreatePostScreen = ({ navigation, route }) => {
                     onPress={() => setShowLocationPicker(true)}
                   >
                     <LinearGradient
-                      colors={['#25a244', '#1a7431']}
+                      colors={['#0A8C66', '#20604C']}
                       start={{ x: 0.5, y: 0 }}
                       end={{ x: 0.5, y: 1 }}
                       style={{ padding: 16 }}

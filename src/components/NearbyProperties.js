@@ -6,7 +6,6 @@ import React, {
   useMemo,
 } from "react";
 import { View, Text, TouchableOpacity, FlatList, Animated } from "react-native";
-import { Image } from "expo-image";
 import { useSelector } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
 import { useGetForYouPageQuery } from "../redux/api/apiSlice";
@@ -16,110 +15,10 @@ import PlatformBlurView from "./PlatformBlurView";
 import { LinearGradient } from "expo-linear-gradient";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import { useFypCacheTracker } from "../hooks/useFypCacheTracker";
+import ImageWithFallback from "./ImageWithFallback";
+import { getCurrencyText } from "../utils/formatters";
 
-// ✅ ULTRA OPTIMIZED: Memoized Static Components
-const ErrorPlaceholder = React.memo(({ width, height, borderRadius = 30 }) => (
-  <View
-    style={{
-      width,
-      height,
-      borderRadius,
-      backgroundColor: "#f5f5f5",
-      justifyContent: "center",
-      alignItems: "center",
-    }}
-  >
-    <Home size={30} color="#ccc" />
-  </View>
-));
-
-const LoadingPlaceholder = React.memo(({ style, borderRadius }) => (
-  <View
-    style={{
-      ...style,
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      borderRadius: borderRadius || 30,
-      backgroundColor: "#f5f5f5",
-      justifyContent: "center",
-      alignItems: "center",
-    }}
-  >
-    <Home size={20} color="#ccc" />
-  </View>
-));
-
-// ✅ ULTRA OPTIMIZED: Memoized ImageWithFallback
-const ImageWithFallback = React.memo(
-  ({
-    source,
-    style,
-    contentFit = "cover",
-    className = "",
-    fallbackWidth,
-    fallbackHeight,
-    borderRadius,
-    ...props
-  }) => {
-    const [hasError, setHasError] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const sourceUri = source?.uri;
-
-    const handleError = useCallback(() => {
-      setHasError(true);
-      setIsLoading(false);
-    }, []);
-
-    const handleLoadStart = useCallback(() => setIsLoading(true), []);
-    const handleLoad = useCallback(() => setIsLoading(false), []);
-
-    // Reset error state when URI changes
-    useEffect(() => {
-      if (sourceUri) {
-        setHasError(false);
-        setIsLoading(false);
-      }
-    }, [sourceUri]);
-
-    if (hasError || !sourceUri) {
-      return (
-        <ErrorPlaceholder
-          width={fallbackWidth || style?.width || 200}
-          height={fallbackHeight || style?.height || 200}
-          borderRadius={borderRadius || style?.borderRadius || 30}
-        />
-      );
-    }
-
-    return (
-      <View style={{ position: "relative" }}>
-        <Image
-          source={source}
-          style={style}
-          className={className}
-          contentFit={contentFit}
-          onError={handleError}
-          onLoadStart={handleLoadStart}
-          onLoad={handleLoad}
-          cachePolicy="memory-disk"
-          transition={0}
-          recyclingKey={sourceUri}
-          placeholder={{ blurhash: "L6PZfSi_.AyE_3t7t7R**0o#DgR4" }}
-          {...props}
-        />
-        {isLoading && (
-          <LoadingPlaceholder
-            style={style}
-            borderRadius={style?.borderRadius}
-          />
-        )}
-      </View>
-    );
-  }
-);
+// ErrorPlaceholder, LoadingPlaceholder, ImageWithFallback -> ./ImageWithFallback.js'den import ediliyor
 
 // ✅ ULTRA OPTIMIZED: Memoized MatchScoreBar
 const MatchScoreBar = React.memo(
@@ -228,13 +127,8 @@ const MatchScoreBar = React.memo(
 
 const FALLBACK_LOCATION = { latitude: 41.0082, longitude: 28.9784 };
 
-const CURRENCY_SYMBOLS = {
-  1: "₺", TRY: "₺", TL: "₺",
-  2: "$", USD: "$",
-  3: "€", EUR: "€",
-  4: "£", GBP: "£",
-};
-const getCurrencySymbol = (val) => CURRENCY_SYMBOLS[val] || "₺";
+// getCurrencySymbol -> getCurrencyText olarak ../utils/formatters.js'den import ediliyor
+const getCurrencySymbol = getCurrencyText;
 
 const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
   // ✅ ULTRA OPTIMIZED: State Management
@@ -695,7 +589,7 @@ const NearbyProperties = ({ navigation, onRefresh, refreshing }) => {
             style={{ borderRadius: 999, overflow: 'hidden', marginTop: 16 }}
           >
             <LinearGradient
-              colors={['#25a244', '#208b3a']}
+              colors={['#0A8C66', '#0A8C66']}
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
               style={{ paddingVertical: 12 }}

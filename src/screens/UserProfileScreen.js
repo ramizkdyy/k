@@ -599,7 +599,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                 style={{ borderRadius: 12, overflow: 'hidden' }}
               >
                 <LinearGradient
-                  colors={['#208b3a', '#155d27']}
+                  colors={['#0A8C66', '#20604C']}
                   start={{ x: 0, y: 0.5 }}
                   end={{ x: 1, y: 0.5 }}
                   style={{ paddingHorizontal: 24, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}
