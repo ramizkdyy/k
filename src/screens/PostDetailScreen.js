@@ -26,7 +26,7 @@ import {
   useGetLandlordTenantsPaginatedQuery,
   useGetOffersByPostIdQuery,
 } from "../redux/api/apiSlice";
-import { setCurrentPost } from "../redux/slices/postSlice";
+// setCurrentPost kaldırıldı — selectCurrentPost hiçbir ekranda kullanılmıyor
 import {
   selectFavoriteProperties,
   addFavoriteProperty,
@@ -296,7 +296,7 @@ const PostDetailScreen = ({ route, navigation }) => {
   // Extract post and images safely
   const post = data?.result.post;
   const images = Array.isArray(post?.postImages) ? post.postImages : [];
-  console.log('🖼️ [PostDetail] postImages from API:', JSON.stringify(post?.postImages));
+
   const similarPosts = similarPostsData?.data || [];
   const matchDetails = data?.result.matchDetails; // Match details from API
 
@@ -332,11 +332,8 @@ const PostDetailScreen = ({ route, navigation }) => {
     useCreateOfferMutation();
   const [toggleFavoriteProperty] = useToggleFavoritePropertyMutation();
 
-  useEffect(() => {
-    if (data && data.isSuccess && data.result && data.result.post) {
-      dispatch(setCurrentPost(data.result.post));
-    }
-  }, [data, dispatch]);
+  // dispatch(setCurrentPost) kaldırıldı — selectCurrentPost hiçbir ekranda kullanılmıyordu
+  // Bu useEffect her data değiştiğinde Redux'a yazıp gereksiz re-render tetikliyordu
 
   // Check if post is favorited
   useEffect(() => {

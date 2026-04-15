@@ -84,27 +84,51 @@ const UserProfileScreen = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
 
 
-  // YENİ: Mevcut kullanıcının kendi profilini fetch et (favoriler için)
+  // ✅ FIX: Koşullu hook ihlali düzeltildi — tüm hook'lar her render'da çağrılır
+  // Mevcut kullanıcının kendi profili (favoriler için)
   const {
-    data: myProfileData,
-    isLoading: myProfileLoading,
-    refetch: refetchMyProfile,
-  } = currentUserProfile?.role === "EVSAHIBI"
-    ? useGetLandlordProfileQuery(currentUserProfile.id, {
-        skip: !currentUserProfile?.id,
-      })
-    : useGetTenantProfileQuery(currentUserProfile.id, {
-        skip: !currentUserProfile?.id,
-      });
-  // Bunu ekleyin (eksik olan query):
+    data: myLandlordProfileData,
+    isLoading: myLandlordLoading,
+    refetch: refetchMyLandlordProfile,
+  } = useGetLandlordProfileQuery(currentUserProfile?.id, {
+    skip: !currentUserProfile?.id || currentUserProfile?.role !== "EVSAHIBI",
+  });
+
   const {
-    data: profileData,
-    isLoading: profileLoading,
-    error: profileError,
-    refetch: refetchProfile,
-  } = userRole === "EVSAHIBI"
-    ? useGetLandlordProfileQuery(userId)
-    : useGetTenantProfileQuery(userId);
+    data: myTenantProfileData,
+    isLoading: myTenantLoading,
+    refetch: refetchMyTenantProfile,
+  } = useGetTenantProfileQuery(currentUserProfile?.id, {
+    skip: !currentUserProfile?.id || currentUserProfile?.role !== "KIRACI",
+  });
+
+  const myProfileData = currentUserProfile?.role === "EVSAHIBI" ? myLandlordProfileData : myTenantProfileData;
+  const myProfileLoading = currentUserProfile?.role === "EVSAHIBI" ? myLandlordLoading : myTenantLoading;
+  const refetchMyProfile = currentUserProfile?.role === "EVSAHIBI" ? refetchMyLandlordProfile : refetchMyTenantProfile;
+
+  // Ziyaret edilen kullanıcının profili
+  const {
+    data: landlordProfileData,
+    isLoading: landlordProfileLoading,
+    error: landlordProfileError,
+    refetch: refetchLandlordProfile,
+  } = useGetLandlordProfileQuery(userId, {
+    skip: !userId || userRole !== "EVSAHIBI",
+  });
+
+  const {
+    data: tenantProfileData,
+    isLoading: tenantProfileLoading,
+    error: tenantProfileError,
+    refetch: refetchTenantProfile,
+  } = useGetTenantProfileQuery(userId, {
+    skip: !userId || userRole !== "KIRACI",
+  });
+
+  const profileData = userRole === "EVSAHIBI" ? landlordProfileData : tenantProfileData;
+  const profileLoading = userRole === "EVSAHIBI" ? landlordProfileLoading : tenantProfileLoading;
+  const profileError = userRole === "EVSAHIBI" ? landlordProfileError : tenantProfileError;
+  const refetchProfile = userRole === "EVSAHIBI" ? refetchLandlordProfile : refetchTenantProfile;
 
   const isOwnProfile = currentUserProfile?.id === userId;
   const userProfile = profileData?.isSuccess ? profileData.result : null;

@@ -226,30 +226,38 @@ const OffersScreen = () => {
 
 
 
-  // Fetch offers based on user role
+  // ✅ FIX: Her iki hook'u da çağır — React Rules of Hooks ihlali düzeltildi
+  // Ternary ile hook çağırmak hook sırasını bozar ve beklenmedik davranışlara yol açar
   const {
-    data: offersData,
-    isLoading,
-    refetch,
-    error,
-  } = isTenant
-      ? useGetSentOffersQuery(currentUser?.id, {
-        skip: !currentUser?.id,
-      })
-      : useGetReceivedOffersQuery(currentUser?.id, {
-        skip: !currentUser?.id,
-      });
+    data: sentOffersData,
+    isLoading: isLoadingSent,
+    refetch: refetchSent,
+    error: sentError,
+  } = useGetSentOffersQuery(currentUser?.id, {
+    skip: !currentUser?.id || !isTenant,
+  });
+
+  const {
+    data: receivedOffersData,
+    isLoading: isLoadingReceived,
+    refetch: refetchReceived,
+    error: receivedError,
+  } = useGetReceivedOffersQuery(currentUser?.id, {
+    skip: !currentUser?.id || !isLandlord,
+  });
+
+  // Role'e göre doğru veriyi seç
+  const offersData = isTenant ? sentOffersData : receivedOffersData;
+  const isLoading = isTenant ? isLoadingSent : isLoadingReceived;
+  const refetch = isTenant ? refetchSent : refetchReceived;
+  const error = isTenant ? sentError : receivedError;
 
   // DÜZELTME: Yeni landlord action mutation'ı kullan
 
   const [landlordOfferAction] = useLandlordOfferActionMutation();
   const [rentOffer] = useRentOfferMutation(); // YENI EKLEME
 
-  // Log the raw API response for debugging
-  useEffect(() => {
-    if (offersData) {
-    }
-  }, [offersData, userRole, isTenant, isLandlord]);
+
 
   // DÜZELTME: Veri yapısını doğru şekilde işle
   let offers = [];

@@ -352,7 +352,7 @@ const LoginScreen = ({ navigation }) => {
                         setChecked(val);
                         if (!val) AsyncStorage.removeItem("remembered_username");
                       }}
-                      color={isChecked ? "#86efac" : undefined}
+                      color={isChecked ? "#25a244" : undefined}
                       disabled={isLoading}
                       style={{
                         borderColor: isLoading ? "#ccc" : "#00000",

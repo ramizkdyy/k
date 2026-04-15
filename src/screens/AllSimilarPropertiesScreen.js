@@ -13,28 +13,18 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
-import { Image } from "expo-image";
 import { useSelector } from "react-redux";
 import { selectCurrentUser, selectUserRole } from "../redux/slices/authSlice";
 import { useGetSimilarPostsPaginatedQuery } from "../redux/api/apiSlice";
 import { MaterialIcons } from "@expo/vector-icons";
-import * as Location from "expo-location";
 import {
-  BedDouble,
-  Banknote,
-  Ruler,
-  ShowerHead,
-  Calendar,
-  Building,
-  Coins,
-  House,
   Heart,
   ChevronLeft,
-
   CircleAlert,
 } from "lucide-react-native";
 import PlatformBlurView from "../components/PlatformBlurView";
-import { LinearGradient } from "expo-linear-gradient";
+import { PropertyCardFull } from "../components/PropertyCard";
+import { getCurrencyText } from "../utils/formatters";
 
 const { width } = Dimensions.get("window");
 
@@ -234,12 +224,7 @@ const PropertyListLoadingSkeleton = memo(({ count = 2 }) => {
   );
 });
 
-// Memoized Currency Function
-const getCurrencyText = (value) => {
-  if (typeof value === "string") return value;
-  const mapping = { 1: "₺", 2: "USD", 3: "EUR", 4: "GBP" };
-  return mapping[value] || "₺";
-};
+// getCurrencyText -> ../utils/formatters.js'den import ediliyor
 
 // Memoized Similarity Score Bar
 const SimilarityScoreBar = memo(
@@ -350,352 +335,9 @@ const SimilarityScoreBar = memo(
   }
 );
 
-// Memoized Property Details Slider
-const PropertyDetailsSlider = memo(({ item }) => {
-  const propertyDetails = [
-    { id: "rooms", Icon: BedDouble, value: item.odaSayisi || "-", label: "Oda" },
-    {
-      id: "bedrooms",
-      Icon: BedDouble,
-      value: item.yatakOdasiSayisi || "-",
-      label: "Y.Odası",
-    },
-    {
-      id: "bathrooms",
-      Icon: ShowerHead,
-      value: item.banyoSayisi || "-",
-      label: "Banyo",
-    },
-    {
-      id: "area",
-      Icon: Ruler,
-      value: item.brutMetreKare ? `${item.brutMetreKare} m²` : "-",
-      label: "Alan",
-    },
-    {
-      id: "floor",
-      Icon: Building,
-      value: item.bulunduguKat || "-",
-      label: "Kat",
-    },
-    {
-      id: "age",
-      Icon: Calendar,
-      value: item.binaYasi ? `${item.binaYasi}` : "-",
-      label: "Bina yaşı",
-    },
-    {
-      id: "dues",
-      Icon: Banknote,
-      value: item.aidat ? `${item.aidat}₺` : "Yok",
-      label: "Aidat",
-    },
-    {
-      id: "deposit",
-      Icon: Coins,
-      value: item.depozito
-        ? `${item.depozito}${getCurrencyText(item.paraBirimi)}`
-        : "Yok",
-      label: "Depozito",
-    },
-  ];
-
-  return (
-    <View className="mt-3">
-      <ScrollView
-        horizontal={true}
-        showsHorizontalScrollIndicator={false}
-        scrollEventThrottle={16}
-        decelerationRate="normal"
-        bounces={true}
-      >
-        {propertyDetails.map((detail, index) => (
-          <View
-            key={`${detail.id}-${index}`}
-            className="items-center justify-center rounded-2xl"
-            style={{
-              width: "fit-content",
-              marginRight: 46,
-              marginLeft: 3,
-              height: 85,
-            }}
-          >
-            <detail.Icon size={30} color="#000" />
-            <Text
-              style={{ fontSize: 16, fontWeight: 600 }}
-              className="text-gray-800 mt-2 text-center"
-              numberOfLines={1}
-            >
-              {detail.value}
-            </Text>
-            <Text
-              style={{ fontSize: 11 }}
-              className="text-gray-500 text-center"
-              numberOfLines={1}
-            >
-              {detail.label}
-            </Text>
-          </View>
-        ))}
-      </ScrollView>
-    </View>
-  );
-});
-
-// Memoized Image Slider
-const PropertyImageSlider = memo(({ images, status, postId, onPress }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const scrollViewRef = useRef(null);
-
-  const handleScroll = useCallback((event) => {
-    const slideSize = width - 32;
-    const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
-    setCurrentIndex(index);
-  }, []);
-
-  const handleDotPress = useCallback((index) => {
-    setCurrentIndex(index);
-    const slideSize = width - 32;
-    scrollViewRef.current?.scrollTo({ x: slideSize * index, animated: true });
-  }, []);
-
-  if (!images || images.length === 0) {
-    return (
-      <View
-        style={{ height: 350 }}
-        className="w-full bg-gray-100 justify-center items-center rounded-3xl"
-      >
-        <House size={50} color="#fff" />
-      </View>
-    );
-  }
-
-  return (
-    <View
-      className="relative bg-gray-100"
-      style={{ borderRadius: 25, overflow: "hidden" }}
-    >
-      <ScrollView
-        ref={scrollViewRef}
-        horizontal={true}
-        pagingEnabled={true}
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={handleScroll}
-        scrollEventThrottle={16}
-        decelerationRate="fast"
-        bounces={true}
-        style={{ width: width - 32 }}
-      >
-        {images.map((item, index) => (
-          <TouchableOpacity
-            key={`image-${postId}-${index}`}
-            style={{ width: width - 32 }}
-            activeOpacity={1}
-            onPress={onPress}
-          >
-            <Image
-              source={{ uri: item.postImageUrl }}
-              style={{ width: width - 32, height: 350 }}
-              contentFit="cover"
-              transition={0}
-              placeholder={{
-                uri: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y5ZmFmYiIvPjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Yw7xrbGVuaXlvcjwvdGV4dD48L3N2Zz4=",
-              }}
-              cachePolicy="memory-disk"
-              recyclingKey={`${postId}-${index}`}
-            />
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Status badge */}
-      <View className="absolute top-3 right-3">
-        <PlatformBlurView
-          intensity={50}
-          tint="dark"
-          style={{ overflow: "hidden", borderRadius: 100 }}
-          className="px-3 py-1.5 rounded-full"
-        >
-          <Text className="text-white text-xs font-semibold">
-            {status === 0 ? "Aktif" : status === 1 ? "Kiralandı" : "Kapalı"}
-          </Text>
-        </PlatformBlurView>
-      </View>
-
-      {/* Pagination dots */}
-      {!!(images && images.length > 1) && (
-        <View className="absolute bottom-3 left-0 right-0 flex-row justify-center">
-          <View
-            style={{
-              borderRadius: 20,
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-            }}
-          >
-            <View className="flex-row justify-center">
-              {images.map((_, index) => (
-                <TouchableOpacity
-                  key={`dot-${index}`}
-                  onPress={() => handleDotPress(index)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    marginHorizontal: 4,
-                    backgroundColor:
-                      index === currentIndex
-                        ? "#FFFFFF"
-                        : "rgba(255, 255, 255, 0.5)",
-                  }}
-                />
-              ))}
-            </View>
-          </View>
-        </View>
-      )}
-    </View>
-  );
-});
-
-// Memoized Property Item - EN ÖNEMLİ PERFORMANCE OPTIMIZATION
-const PropertyItem = memo(
-  ({ item, navigation, getRelativeTime }) => {
-    const handleImagePress = useCallback(() => {
-      navigation.navigate("PostDetail", { postId: item.postId });
-    }, [item.postId, navigation]);
-
-    const handleProfilePress = useCallback(() => {
-      navigation.navigate("UserProfile", {
-        userId: item.landlordId || item.userId,
-        userRole: "EVSAHIBI",
-      });
-    }, [item.landlordId, item.userId, navigation]);
-
-    return (
-      <View
-        style={{ marginHorizontal: 16 }}
-        className="overflow-hidden mb-4 pt-6 border-b border-gray-200"
-      >
-        {/* Image slider */}
-        <PropertyImageSlider
-          images={item.postImages}
-          status={item.status}
-          postId={item.postId}
-          onPress={handleImagePress}
-        />
-
-        <View className="mt-4 px-1">
-          {/* Title and Price */}
-          <View className="items-start mb-1">
-            <Text
-              style={{ fontSize: 18, fontWeight: 700 }}
-              className="text-gray-800 mb-"
-              numberOfLines={2}
-            >
-              {item.ilanBasligi || "İlan başlığı yok"}
-            </Text>
-          </View>
-          <View className="flex-row items-center mb-2">
-            <Text style={{ fontSize: 12 }} className=" text-gray-500">
-              {item.ilce && item.il
-                ? `${item.ilce}, ${item.il}`
-                : item.il || "Konum belirtilmemiş"}
-            </Text>
-          </View>
-
-          <View className="flex-row items-center">
-            <Text
-              style={{ fontSize: 18, fontWeight: 500 }}
-              className="text-gray-900 underline"
-            >
-              {item.kiraFiyati || item.rent
-                ? `${(item.kiraFiyati || item.rent).toLocaleString()} ${getCurrencyText(item.paraBirimi) || "₺"
-                }`
-                : "Fiyat belirtilmemiş"}
-            </Text>
-            <Text className="text-sm text-gray-400 ml-1">/ay</Text>
-          </View>
-
-          {/* Property details slider */}
-          <PropertyDetailsSlider item={item} />
-        </View>
-
-        {/* Similarity Score Bar */}
-        {item.similarityScore && (
-          <PlatformBlurView
-            tint="dark"
-            style={{ top: 32, left: 20 }}
-            className="absolute overflow-hidden px-4 py-1.5 rounded-full"
-          >
-            <Text style={{ fontSize: 12 }} className="text-white font-medium">
-              {item.similarityScore}% Benzer
-            </Text>
-          </PlatformBlurView>
-        )}
-
-        <View className="flex flex-col">
-          <View className="mb-5 pl-1 mt-3">
-            <TouchableOpacity
-              className="flex-row items-center"
-              onPress={handleProfilePress}
-            >
-              <View className="flex-1 flex-row justify-between items-center w-full">
-                <TouchableOpacity
-                  className="flex-row items-center"
-                  onPress={handleProfilePress}
-                >
-                  <View className="w-12 h-12 rounded-full justify-center items-center mr-3 border" style={{ borderColor: '#1a7431' }}>
-                    {!!item.user?.profilePictureUrl ? (
-                      <Image
-                        style={{ width: 48, height: 48, borderRadius: 100 }}
-                        source={{ uri: item.user.profilePictureUrl }}
-                        className="w-full h-full rounded-full"
-                      />
-                    ) : (
-                      <View>
-                        <Text className="text-xl font-bold text-gray-900">
-                          {item.user?.name?.charAt(0) || "E"}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-
-                  <View className="flex-col gap-1">
-                    <Text
-                      style={{ fontSize: 14 }}
-                      className="font-semibold text-gray-800"
-                    >
-                      {item.user?.name} {item.user?.surname}
-                    </Text>
-                    <View className="flex flex-row items-center gap-1">
-                      <Text style={{ fontSize: 12 }} className="text-gray-500">
-                        Ev Sahibi
-                      </Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-                <Text
-                  className="mb-2 pl-1 text-gray-500"
-                  style={{ fontSize: 12, fontWeight: 500 }}
-                >
-                  {getRelativeTime(item.postTime)}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    );
-  },
-  (prevProps, nextProps) => {
-    // Custom comparison for better performance
-    return (
-      prevProps.item.postId === nextProps.item.postId &&
-      prevProps.item.similarityScore === nextProps.item.similarityScore
-    );
-  }
-);
+// PropertyDetailsSlider -> ../components/PropertyDetailsSlider.js'den import ediliyor
+// PropertyImageSlider -> ../components/PropertyImageSlider.js'den import ediliyor
+// PropertyItem -> PropertyCardFull olarak ../components/PropertyCard.js'den import ediliyor
 
 const AllSimilarPropertiesScreen = ({ navigation, route }) => {
   const currentUser = useSelector(selectCurrentUser);
@@ -715,31 +357,7 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
 
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  // Memoized functions
-  const getRelativeTime = useCallback((postTime) => {
-    if (!postTime) return "Tarih belirtilmemiş";
-
-    const now = new Date();
-    const postDate = new Date(postTime);
-    if (isNaN(postDate.getTime())) return "Geçersiz tarih";
-
-    const diffMs = now.getTime() - postDate.getTime();
-    const diffSeconds = Math.floor(diffMs / 1000);
-    const diffMinutes = Math.floor(diffSeconds / 60);
-    const diffHours = Math.floor(diffMinutes / 60);
-    const diffDays = Math.floor(diffHours / 24);
-    const diffWeeks = Math.floor(diffDays / 7);
-    const diffMonths = Math.floor(diffDays / 30);
-    const diffYears = Math.floor(diffDays / 365);
-
-    if (diffYears > 0) return `${diffYears} yıl önce`;
-    if (diffMonths > 0) return `${diffMonths} ay önce`;
-    if (diffWeeks > 0) return `${diffWeeks} hafta önce`;
-    if (diffDays > 0) return `${diffDays} gün önce`;
-    if (diffHours > 0) return `${diffHours} saat önce`;
-    if (diffMinutes > 0) return `${diffMinutes} dakika önce`;
-    return "Az önce";
-  }, []);
+  // getRelativeTime -> ../utils/formatters.js'den import ediliyor
 
   // Filter animations
   const filterTranslateY = scrollY.interpolate({
@@ -927,13 +545,14 @@ const AllSimilarPropertiesScreen = ({ navigation, route }) => {
 
   const renderPropertyItem = useCallback(
     ({ item }) => (
-      <PropertyItem
+      <PropertyCardFull
         item={item}
         navigation={navigation}
-        getRelativeTime={getRelativeTime}
+        showSimilarityScore={true}
+        showMatchScore={false}
       />
     ),
-    [navigation, getRelativeTime]
+    [navigation]
   );
 
   const renderEmptyState = useCallback(() => {
